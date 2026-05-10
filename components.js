@@ -1227,6 +1227,9 @@ function BlackoutPoetryPanel() {
       }}
     >
       <div key={active} className={`blackout-panel__page blackout-panel__page--${activePage.layout}`}>
+        <figure className="blackout-panel__figure" aria-hidden="true">
+          <BlackoutDiagram type={activePage.diagram} />
+        </figure>
         <BlackoutFlowCanvas
           lines={pageLines}
           pretext={pretext}
