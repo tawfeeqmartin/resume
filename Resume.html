@@ -248,6 +248,36 @@ a:hover { color: var(--accent); }
   z-index: 4;
   pointer-events: none;
 }
+.blackout-panel__wrap-shapes {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.blackout-panel__wrap-shape {
+  position: absolute;
+  border: 1.2px solid color-mix(in oklch, var(--ink), transparent 34%);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 18px, rgba(255,255,255,0.18) 18px 19px),
+    color-mix(in oklch, var(--paper), transparent 28%);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--paper), transparent 40%);
+  mix-blend-mode: multiply;
+}
+.blackout-panel__wrap-shape--red {
+  border-color: color-mix(in oklch, #9c332b, var(--ink) 10%);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 18px, rgba(255,255,255,0.24) 18px 19px),
+    color-mix(in oklch, #e84b3c, transparent 78%);
+}
+.blackout-panel__wrap-shape--blue {
+  border-color: color-mix(in oklch, #1f5fbf, var(--ink) 12%);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 18px, rgba(255,255,255,0.2) 18px 19px),
+    color-mix(in oklch, #1f5fbf, transparent 84%);
+}
+.blackout-panel__wrap-shape--ellipse {
+  border-radius: 999px;
+}
 .blackout-panel__page--proof .blackout-panel__figure,
 .blackout-panel__page--lab .blackout-panel__figure,
 .blackout-panel__page--network .blackout-panel__figure,
@@ -380,12 +410,12 @@ a:hover { color: var(--accent); }
 }
 .blackout-panel__manual-flow {
   position: absolute;
-  inset: clamp(0.55rem, 1.4vw, 1rem);
+  inset: 0;
   z-index: 2;
   pointer-events: none;
   display: block;
-  font-size: 13px;
-  line-height: 16px;
+  font-size: 14px;
+  line-height: 18px;
 }
 .blackout-panel__manual-row {
   margin: 0;
@@ -1459,7 +1489,7 @@ body.font-cascadia-signal .identity__vector-name {
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260509-spacebar');
 window.__pretextPromise = import('./vendor/pretext-layout.js');
 </script>
-<script type="text/babel" src="components.js?v=20260510-pretext-dynamic-flow"></script>
+<script type="text/babel" src="components.js?v=20260510-pretext-wrap-shapes"></script>
 <script type="text/babel">
 const HELP_VIDEO_URLS = ["media/help_full.webm", "media/help.f338.webm"];
 const BLACKBIRD_INNOVATION_VIDEO_URL = "media/blackbird-innovation.mp4";

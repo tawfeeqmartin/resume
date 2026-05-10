@@ -17,6 +17,15 @@ const FONT_OPTIONS = [
   { label: 'Cinematic Archive', className: 'font-cinematic-archive' },
 ];
 
+const BLACKOUT_PREPARED_CACHE = new Map();
+function getPreparedBlackoutText(pretext, text, font) {
+  const key = `${font}::${text}`;
+  if (!BLACKOUT_PREPARED_CACHE.has(key)) {
+    BLACKOUT_PREPARED_CACHE.set(key, pretext.prepareWithSegments(text, font));
+  }
+  return BLACKOUT_PREPARED_CACHE.get(key);
+}
+
 function ReviewToggle({ kind, options, classScope }) {
   const [themeIndex, setThemeIndex] = useState(0);
 
@@ -574,64 +583,72 @@ function mapWordsToTokens(words, tokens, startIndex) {
   return { rowTokens, tokenIndex };
 }
 
-function getBlackoutTextBand(layout, rowIndex, rowCount, contentWidth) {
-  const t = rowCount <= 1 ? 0 : rowIndex / (rowCount - 1);
-  const narrow = Math.max(210, contentWidth * 0.28);
-  const mid = Math.max(300, contentWidth * 0.42);
-  const wide = Math.max(420, contentWidth * 0.58);
-  const full = contentWidth;
-  const right = (width) => Math.max(0, contentWidth - width);
-  const center = (width, wobble = 0) => Math.max(0, (contentWidth - width) * 0.5 + wobble);
-
-  const bands = {
-    plate: [
-      [0.00, 0.14, 0, full],
-      [0.14, 0.36, right(narrow), narrow],
-      [0.36, 0.66, 0, narrow],
-      [0.66, 1.01, 0, full],
-    ],
-    proof: [
-      [0.00, 0.22, 0, wide],
-      [0.22, 0.58, right(mid), mid],
-      [0.58, 0.82, 0, mid],
-      [0.82, 1.01, 0, full],
-    ],
-    formula: [
-      [0.00, 0.18, 0, full],
-      [0.18, 0.50, 0, narrow],
-      [0.50, 0.78, right(narrow), narrow],
-      [0.78, 1.01, center(wide), wide],
-    ],
+function getBlackoutWrapShapes(layout, width, height, tick = 0) {
+  const drift = Math.sin(tick * 0.55);
+  const bob = Math.cos(tick * 0.43);
+  const layouts = {
     terminal: [
-      [0.00, 0.18, 0, full],
-      [0.18, 0.72, rowIndex % 2 ? right(wide) : 0, wide],
-      [0.72, 1.01, 0, full],
+      { type: "rect", x: width * (0.38 + drift * 0.035), y: height * 0.24, w: width * 0.30, h: height * 0.16, r: 18, tone: "red" },
+      { type: "ellipse", x: width * (0.54 + bob * 0.04), y: height * 0.63, rx: width * 0.18, ry: height * 0.20, tone: "blue" },
     ],
     attention: [
-      [0.00, 0.16, 0, full],
-      [0.16, 0.36, 0, mid],
-      [0.36, 0.62, right(mid), mid],
-      [0.62, 0.84, 0, mid],
-      [0.84, 1.01, 0, full],
+      { type: "rect", x: width * 0.12, y: height * (0.20 + bob * 0.035), w: width * 0.31, h: height * 0.13, r: 16, tone: "red" },
+      { type: "ellipse", x: width * (0.66 + drift * 0.035), y: height * 0.58, rx: width * 0.20, ry: height * 0.22, tone: "blue" },
     ],
     poem: [
-      [0.00, 0.18, center(wide), wide],
-      [0.18, 0.46, 0, mid],
-      [0.46, 0.72, right(mid), mid],
-      [0.72, 1.01, center(wide, rowIndex % 2 ? 18 : -18), wide],
+      { type: "ellipse", x: width * (0.36 + drift * 0.025), y: height * 0.42, rx: width * 0.17, ry: height * 0.28, tone: "blue" },
+      { type: "rect", x: width * 0.58, y: height * (0.18 + bob * 0.025), w: width * 0.27, h: height * 0.14, r: 14, tone: "red" },
     ],
   };
-  const pattern = bands[layout] || [
-    [0.00, 0.16, 0, full],
-    [0.16, 0.42, 0, mid],
-    [0.42, 0.68, right(mid), mid],
-    [0.68, 1.01, 0, full],
+  return layouts[layout] || [
+    { type: "rect", x: width * (0.36 + drift * 0.035), y: height * 0.20, w: width * 0.30, h: height * 0.14, r: 16, tone: "red" },
+    { type: "ellipse", x: width * (0.54 + bob * 0.035), y: height * 0.58, rx: width * 0.19, ry: height * 0.23, tone: "blue" },
   ];
-  const band = pattern.find(([from, to]) => t >= from && t < to) || pattern[pattern.length - 1];
-  return { x: band[2], width: Math.min(contentWidth - band[2], band[3]) };
 }
 
-function layoutBlackoutText(lines, pretext, panelSize, layoutName) {
+function shapeIntervalAtY(shape, y, margin) {
+  if (shape.type === "rect") {
+    if (y < shape.y - margin || y > shape.y + shape.h + margin) return null;
+    return [shape.x - margin, shape.x + shape.w + margin];
+  }
+  if (shape.type === "ellipse") {
+    const dy = Math.abs(y - shape.y);
+    const ry = shape.ry + margin;
+    if (dy > ry) return null;
+    const rx = shape.rx + margin;
+    const half = rx * Math.sqrt(Math.max(0, 1 - (dy * dy) / (ry * ry)));
+    return [shape.x - half, shape.x + half];
+  }
+  return null;
+}
+
+function mergeIntervals(intervals, min, max) {
+  const sorted = intervals
+    .map(([a, b]) => [Math.max(min, a), Math.min(max, b)])
+    .filter(([a, b]) => b > a)
+    .sort((a, b) => a[0] - b[0]);
+  const merged = [];
+  sorted.forEach((interval) => {
+    const last = merged[merged.length - 1];
+    if (!last || interval[0] > last[1]) merged.push(interval);
+    else last[1] = Math.max(last[1], interval[1]);
+  });
+  return merged;
+}
+
+function getAvailableSegmentsAtY(y, contentWidth, shapes, margin) {
+  const blocked = mergeIntervals(shapes.map((shape) => shapeIntervalAtY(shape, y, margin)).filter(Boolean), 0, contentWidth);
+  const segments = [];
+  let cursor = 0;
+  blocked.forEach(([start, end]) => {
+    if (start - cursor > 120) segments.push({ x: cursor, width: start - cursor });
+    cursor = Math.max(cursor, end);
+  });
+  if (contentWidth - cursor > 120) segments.push({ x: cursor, width: contentWidth - cursor });
+  return segments.length ? segments : [{ x: 0, width: contentWidth }];
+}
+
+function layoutBlackoutText(lines, pretext, panelSize, layoutName, tick = 0) {
   const tokens = lines.flatMap((line, lineIndex) => (
     line.text.split(" ").filter(Boolean).map((word, wordIndex) => ({
       word,
@@ -646,38 +663,43 @@ function layoutBlackoutText(lines, pretext, panelSize, layoutName) {
 
   try {
     const pad = Math.max(14, Math.min(22, panelSize.width * 0.018));
-    const lineHeight = Math.max(14, Math.min(17, panelSize.width * 0.013));
+    const lineHeight = Math.max(15, Math.min(18, panelSize.width * 0.014));
     const contentWidth = Math.max(320, panelSize.width - pad * 2);
     const contentHeight = Math.max(240, panelSize.height - pad * 2);
     const rowCount = Math.floor(contentHeight / lineHeight);
-    const prepared = pretext.prepareWithSegments(tokens.map((token) => token.word).join(" "), '13px "IBM Plex Mono", "IBM Plex Sans", sans-serif');
+    const shapes = getBlackoutWrapShapes(layoutName, contentWidth, contentHeight, tick);
+    const font = '14px Georgia';
+    const prepared = getPreparedBlackoutText(pretext, tokens.map((token) => token.word).join(" "), font);
     const rows = [];
     let cursor = { segmentIndex: 0, graphemeIndex: 0 };
     let tokenIndex = 0;
 
     for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
-      const band = getBlackoutTextBand(layoutName, rowIndex, rowCount, contentWidth);
-      const range = pretext.layoutNextLineRange(prepared, cursor, band.width);
-      if (!range) break;
-      const line = pretext.materializeLineRange(prepared, range);
-      const words = line.text.trim().split(/\s+/).filter(Boolean);
-      const mapped = mapWordsToTokens(words, tokens, tokenIndex);
-      tokenIndex = mapped.tokenIndex;
-      if (mapped.rowTokens.length) {
-        rows.push({
-          tokens: mapped.rowTokens,
-          kind: mapped.rowTokens[0]?.kind || "book",
-          column: rowIndex % 4,
-          x: pad + band.x,
-          y: pad + rowIndex * lineHeight,
-          width: band.width,
-          lineHeight,
-          pretext: true,
-        });
+      const y = rowIndex * lineHeight + lineHeight * 0.5;
+      const segments = getAvailableSegmentsAtY(y, contentWidth, shapes, 12);
+      for (const segment of segments) {
+        const range = pretext.layoutNextLineRange(prepared, cursor, segment.width);
+        if (!range) return rows.length ? { rows, shapes, pad, contentWidth, contentHeight } : fallbackLayoutBlackoutText(tokens);
+        const line = pretext.materializeLineRange(prepared, range);
+        const words = line.text.trim().split(/\s+/).filter(Boolean);
+        const mapped = mapWordsToTokens(words, tokens, tokenIndex);
+        tokenIndex = mapped.tokenIndex;
+        if (mapped.rowTokens.length) {
+          rows.push({
+            tokens: mapped.rowTokens,
+            kind: mapped.rowTokens[0]?.kind || "book",
+            column: rowIndex % 4,
+            x: pad + segment.x,
+            y: pad + rowIndex * lineHeight,
+            width: segment.width,
+            lineHeight,
+            pretext: true,
+          });
+        }
+        cursor = range.end;
       }
-      cursor = range.end;
     }
-    return rows.length ? rows : fallbackLayoutBlackoutText(tokens);
+    return rows.length ? { rows, shapes, pad, contentWidth, contentHeight } : fallbackLayoutBlackoutText(tokens);
   } catch (err) {
     console.warn('[blackout-pretext-layout]', err);
     return fallbackLayoutBlackoutText(tokens);
@@ -1006,18 +1028,28 @@ function BlackoutPoetryPanel() {
   const [active, setActive] = useState(0);
   const [pretext, setPretext] = useState(null);
   const [panelSize, setPanelSize] = useState({ width: 0, height: 0 });
+  const [flowTick, setFlowTick] = useState(0);
   const panelRef = useRef(null);
   const activePage = BLACKOUT_PAGES[active];
   const activeStatement = activePage.phrase;
   const markMode = activePage.mark || "highlight";
   const pageLines = useMemo(() => [...activePage.lines, ...getBlackoutMicroLines(active)], [activePage, active]);
-  const laidOutRows = useMemo(() => layoutBlackoutText(pageLines, pretext, panelSize, activePage.layout), [pageLines, pretext, panelSize, activePage.layout]);
+  const layoutResult = useMemo(() => layoutBlackoutText(pageLines, pretext, panelSize, activePage.layout, flowTick), [pageLines, pretext, panelSize, activePage.layout, flowTick]);
+  const laidOutRows = Array.isArray(layoutResult) ? layoutResult : layoutResult.rows;
+  const wrapShapes = Array.isArray(layoutResult) ? [] : layoutResult.shapes;
+  const wrapPad = Array.isArray(layoutResult) ? 0 : layoutResult.pad;
 
   const cycle = () => setActive((idx) => (idx + 1) % BLACKOUT_PAGES.length);
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
     const id = window.setInterval(cycle, 3600);
+    return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const id = window.setInterval(() => setFlowTick((tick) => tick + 0.24), 180);
     return () => window.clearInterval(id);
   }, []);
 
@@ -1036,7 +1068,10 @@ function BlackoutPoetryPanel() {
     if (!panel || typeof ResizeObserver === 'undefined') return undefined;
     const update = () => {
       const rect = panel.getBoundingClientRect();
-      setPanelSize({ width: Math.round(rect.width), height: Math.round(rect.height) });
+      const next = { width: Math.round(rect.width), height: Math.round(rect.height) };
+      setPanelSize((current) => (
+        current.width === next.width && current.height === next.height ? current : next
+      ));
     };
     update();
     const observer = new ResizeObserver(update);
@@ -1064,6 +1099,36 @@ function BlackoutPoetryPanel() {
         <figure className="blackout-panel__figure" aria-hidden="true">
           <BlackoutDiagram type={activePage.diagram} />
         </figure>
+        {!!wrapShapes.length && (
+          <div className="blackout-panel__wrap-shapes" aria-hidden="true">
+            {wrapShapes.map((shape, index) => (
+              shape.type === "ellipse" ? (
+                <div
+                  key={`${shape.type}-${index}`}
+                  className={`blackout-panel__wrap-shape blackout-panel__wrap-shape--ellipse blackout-panel__wrap-shape--${shape.tone}`}
+                  style={{
+                    left: `${wrapPad + shape.x - shape.rx}px`,
+                    top: `${wrapPad + shape.y - shape.ry}px`,
+                    width: `${shape.rx * 2}px`,
+                    height: `${shape.ry * 2}px`,
+                  }}
+                />
+              ) : (
+                <div
+                  key={`${shape.type}-${index}`}
+                  className={`blackout-panel__wrap-shape blackout-panel__wrap-shape--rect blackout-panel__wrap-shape--${shape.tone}`}
+                  style={{
+                    left: `${wrapPad + shape.x}px`,
+                    top: `${wrapPad + shape.y}px`,
+                    width: `${shape.w}px`,
+                    height: `${shape.h}px`,
+                    borderRadius: `${shape.r}px`,
+                  }}
+                />
+              )
+            ))}
+          </div>
+        )}
         <div className="blackout-panel__manual-flow" aria-hidden="true">
           {laidOutRows.map((row, rowIndex) => (
             <p
