@@ -558,7 +558,7 @@ function fallbackLayoutBlackoutText(tokens) {
   return rows;
 }
 
-function layoutBlackoutText(lines, pretext) {
+function layoutBlackoutText(lines) {
   const tokens = lines.flatMap((line, lineIndex) => (
     line.text.split(" ").filter(Boolean).map((word, wordIndex) => ({
       word,
@@ -567,20 +567,7 @@ function layoutBlackoutText(lines, pretext) {
       wordIndex,
     }))
   ));
-  if (!pretext) return fallbackLayoutBlackoutText(tokens);
-
-  const columnCount = 4;
-  const columnWidth = 245;
-  const font = '13px "IBM Plex Mono", "IBM Plex Sans", sans-serif';
-  const prepared = pretext.prepareWithSegments(tokens.map((token) => token.word).join(" "), font);
-  const { lines: pretextLines } = pretext.layoutWithLines(prepared, columnWidth, 20);
-  let tokenIndex = 0;
-  return pretextLines.map((line, rowIndex) => {
-    const words = line.text.trim().split(/\s+/).filter(Boolean);
-    const rowTokens = tokens.slice(tokenIndex, tokenIndex + words.length);
-    tokenIndex += rowTokens.length;
-    return { tokens: rowTokens, kind: rowTokens[0]?.kind || "book", column: rowIndex % columnCount };
-  }).filter((row) => row.tokens.length);
+  return fallbackLayoutBlackoutText(tokens);
 }
 
 function DiagramText({ x, y, children, className = "" }) {
@@ -903,13 +890,12 @@ function BlackoutDiagram({ type }) {
 
 function BlackoutPoetryPanel() {
   const [active, setActive] = useState(0);
-  const [pretext, setPretext] = useState(null);
   const panelRef = useRef(null);
   const activePage = BLACKOUT_PAGES[active];
   const activeStatement = activePage.phrase;
   const markMode = activePage.mark || "highlight";
   const pageLines = useMemo(() => [...activePage.lines, ...getBlackoutMicroLines(active)], [activePage, active]);
-  const laidOutRows = useMemo(() => layoutBlackoutText(pageLines, pretext), [pageLines, pretext]);
+  const laidOutRows = useMemo(() => layoutBlackoutText(pageLines), [pageLines]);
 
   const cycle = () => setActive((idx) => (idx + 1) % BLACKOUT_PAGES.length);
 
@@ -917,16 +903,6 @@ function BlackoutPoetryPanel() {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
     const id = window.setInterval(cycle, 3600);
     return () => window.clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    window.__pretextPromise
-      ?.then((mod) => {
-        if (!cancelled) setPretext(mod);
-      })
-      .catch((err) => console.warn('[blackout-pretext]', err));
-    return () => { cancelled = true; };
   }, []);
 
   return (
@@ -995,13 +971,21 @@ function HelpPlayer({ src }) {
     let cancelled = false;
     async function go() {
       try {
+        const sources = Array.isArray(src) ? src : [src];
+        let playableSrc = null;
         // HEAD probe first so a missing file fails fast and the
         // placeholder shows immediately instead of stalling.
-        const head = await fetch(src, { method: 'HEAD' }).catch(() => null);
-        if (!head || !head.ok) { if (!cancelled) setStatus('missing'); return; }
+        for (const candidate of sources) {
+          const head = await fetch(candidate, { method: 'HEAD' }).catch(() => null);
+          if (head?.ok) {
+            playableSrc = candidate;
+            break;
+          }
+        }
+        if (!playableSrc) { if (!cancelled) setStatus('missing'); return; }
         const mod = await window.__spotlightBundlePromise;
         if (cancelled) return;
-        const result = await mod.mountSpotlight(hostRef.current, src);
+        const result = await mod.mountSpotlight(hostRef.current, playableSrc);
         if (cancelled) { result.renderer.dispose(); return; }
         rendererRef.current = result.renderer;
         result.renderer.setStateCallback((state) => {

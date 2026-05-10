@@ -1454,11 +1454,10 @@ body.font-cascadia-signal .identity__vector-name {
 <script src="data.js"></script>
 <script type="module">
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260509-spacebar');
-window.__pretextPromise = import('./vendor/pretext-layout.js');
 </script>
-<script type="text/babel" src="components.js?v=20260510-local-components"></script>
+<script type="text/babel" src="components.js?v=20260510-no-pretext-runtime"></script>
 <script type="text/babel">
-const HELP_VIDEO_URL = "media/help.f338.webm";
+const HELP_VIDEO_URLS = ["media/help_full.webm", "media/help.f338.webm"];
 const BLACKBIRD_INNOVATION_VIDEO_URL = "media/blackbird-innovation.mp4";
 const BLACKBIRD_VIDEO_URL = "media/blackbird.mp4";
 
@@ -1470,7 +1469,7 @@ function App() {
         <Identity data={RESUME} />
         <Summary text={RESUME.summary} />
         <Experience items={RESUME.experience} />
-        <HelpFeature src={HELP_VIDEO_URL} />
+        <HelpFeature src={HELP_VIDEO_URLS} />
         <BlackbirdFeature innovationSrc={BLACKBIRD_INNOVATION_VIDEO_URL} behindScenesSrc={BLACKBIRD_VIDEO_URL} />
         <ProjectCard data={RESUME.project} />
         <Awards items={RESUME.awards} />
