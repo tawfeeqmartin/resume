@@ -547,14 +547,14 @@ function fallbackLayoutBlackoutText(tokens) {
   let count = 0;
   tokens.forEach((token) => {
     if (row.length && count + token.word.length + 1 > maxChars) {
-      rows.push({ tokens: row });
+      rows.push({ tokens: row, kind: row[0]?.kind || "book", column: rows.length % 4 });
       row = [];
       count = 0;
     }
     row.push(token);
     count += token.word.length + 1;
   });
-  if (row.length) rows.push({ tokens: row });
+  if (row.length) rows.push({ tokens: row, kind: row[0]?.kind || "book", column: rows.length % 4 });
   return rows;
 }
 
@@ -953,7 +953,7 @@ function BlackoutPoetryPanel() {
           {laidOutRows.map((row, rowIndex) => (
             <p
               key={rowIndex}
-              className={`blackout-panel__manual-row blackout-panel__manual-row--${row.kind.replace(' ', '-')} blackout-panel__manual-row--c${row.column || 0}`}
+              className={`blackout-panel__manual-row blackout-panel__manual-row--${(row.kind || "book").replace(' ', '-')} blackout-panel__manual-row--c${row.column || 0}`}
             >
               {row.tokens.map((token) => {
                 const clean = token.word.toLowerCase().replace(/[^a-z-]/g, '');
