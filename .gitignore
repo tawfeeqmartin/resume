@@ -1,0 +1,9 @@
+.DS_Store
+
+# Local-only source/high-quality media. These exceed GitHub's normal file limit
+# and should move to object storage or Git LFS before production launch.
+media/bg.mov
+media/help_full.webm
+
+# Local scratch output
+*.log
