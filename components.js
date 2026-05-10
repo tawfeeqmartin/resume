@@ -547,14 +547,14 @@ function fallbackLayoutBlackoutText(tokens) {
   let count = 0;
   tokens.forEach((token) => {
     if (row.length && count + token.word.length + 1 > maxChars) {
-      rows.push({ tokens: row, kind: row[0]?.kind || "book", column: rows.length % 4 });
+      rows.push({ tokens: row, kind: row[0]?.kind || "book", column: rows.length % 3 });
       row = [];
       count = 0;
     }
     row.push(token);
     count += token.word.length + 1;
   });
-  if (row.length) rows.push({ tokens: row, kind: row[0]?.kind || "book", column: rows.length % 4 });
+  if (row.length) rows.push({ tokens: row, kind: row[0]?.kind || "book", column: rows.length % 3 });
   return rows;
 }
 

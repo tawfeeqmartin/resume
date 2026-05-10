@@ -240,8 +240,8 @@ a:hover { color: var(--accent); }
   right: clamp(0.55rem, 1.4vw, 1rem);
   bottom: auto;
   left: auto;
-  width: min(46%, 34rem);
-  height: min(46%, 22rem);
+  width: min(28%, 24rem);
+  height: calc(100% - clamp(0.55rem, 1.4vw, 1rem) * 2);
   margin: 0;
   padding: 0;
   border: 0;
@@ -264,28 +264,28 @@ a:hover { color: var(--accent); }
 .blackout-panel__page--diff .blackout-panel__figure,
 .blackout-panel__page--matrix .blackout-panel__figure,
 .blackout-panel__page--attention .blackout-panel__figure {
-  width: min(46%, 34rem);
-  height: min(46%, 22rem);
+  width: min(28%, 24rem);
+  height: calc(100% - clamp(0.55rem, 1.4vw, 1rem) * 2);
   background: transparent;
 }
 .blackout-panel__page--atlas .blackout-panel__figure,
 .blackout-panel__page--cue .blackout-panel__figure {
-  width: min(46%, 34rem);
-  height: min(46%, 22rem);
+  width: min(28%, 24rem);
+  height: calc(100% - clamp(0.55rem, 1.4vw, 1rem) * 2);
 }
 .blackout-panel__page--proof .blackout-panel__figure,
 .blackout-panel__page--formula .blackout-panel__figure,
 .blackout-panel__page--margin .blackout-panel__figure,
 .blackout-panel__page--network .blackout-panel__figure,
 .blackout-panel__page--schematic .blackout-panel__figure {
-  width: min(46%, 34rem);
-  height: min(46%, 22rem);
+  width: min(28%, 24rem);
+  height: calc(100% - clamp(0.55rem, 1.4vw, 1rem) * 2);
 }
 .blackout-panel__page--manual .blackout-panel__figure,
 .blackout-panel__page--diff .blackout-panel__figure,
 .blackout-panel__page--attention .blackout-panel__figure {
-  width: min(46%, 34rem);
-  height: min(46%, 22rem);
+  width: min(28%, 24rem);
+  height: calc(100% - clamp(0.55rem, 1.4vw, 1rem) * 2);
 }
 .diagram-line,
 .diagram-dot,
@@ -383,11 +383,14 @@ a:hover { color: var(--accent); }
 }
 .blackout-panel__manual-flow {
   position: absolute;
-  inset: clamp(0.55rem, 1.4vw, 1rem);
+  top: clamp(0.55rem, 1.4vw, 1rem);
+  right: calc(min(28%, 24rem) + clamp(1.1rem, 2.2vw, 1.8rem));
+  bottom: clamp(0.55rem, 1.4vw, 1rem);
+  left: clamp(0.55rem, 1.4vw, 1rem);
   z-index: 2;
   pointer-events: none;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-auto-flow: column;
   grid-auto-rows: min-content;
   gap: 0.08rem clamp(0.75rem, 1.8vw, 1.35rem);
@@ -408,8 +411,7 @@ a:hover { color: var(--accent); }
 .blackout-panel__manual-row--c1 { grid-column: 2; }
 .blackout-panel__manual-row--c2 { grid-column: 3; }
 .blackout-panel__manual-row--c3 {
-  grid-column: 4;
-  transform: translateY(clamp(9rem, 25vw, 15.5rem));
+  grid-column: 3;
 }
 .blackout-panel__manual-row--terminal {
   background: color-mix(in oklch, var(--ink), transparent 91%);
