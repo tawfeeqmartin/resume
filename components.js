@@ -1024,32 +1024,179 @@ function BlackoutDiagram({ type }) {
   );
 }
 
+function drawRoundedRect(ctx, x, y, w, h, r) {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+  ctx.lineTo(x + radius, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+function drawWrapShape(ctx, shape) {
+  ctx.save();
+  ctx.lineWidth = 1.2;
+  ctx.strokeStyle = shape.tone === "red" ? "rgba(130, 42, 34, 0.72)" : "rgba(31, 84, 155, 0.72)";
+  ctx.fillStyle = shape.tone === "red" ? "rgba(232, 75, 60, 0.14)" : "rgba(31, 95, 191, 0.13)";
+  if (shape.type === "ellipse") {
+    ctx.beginPath();
+    ctx.ellipse(shape.x, shape.y, shape.rx, shape.ry, 0, 0, Math.PI * 2);
+  } else {
+    drawRoundedRect(ctx, shape.x, shape.y, shape.w, shape.h, shape.r || 14);
+  }
+  ctx.fill();
+  ctx.stroke();
+  ctx.clip();
+  ctx.strokeStyle = "rgba(255,255,255,0.28)";
+  ctx.lineWidth = 1;
+  const top = shape.type === "ellipse" ? shape.y - shape.ry : shape.y;
+  const bottom = shape.type === "ellipse" ? shape.y + shape.ry : shape.y + shape.h;
+  const left = shape.type === "ellipse" ? shape.x - shape.rx : shape.x;
+  const right = shape.type === "ellipse" ? shape.x + shape.rx : shape.x + shape.w;
+  for (let y = top + 18; y < bottom; y += 18) {
+    ctx.beginPath();
+    ctx.moveTo(left + 8, y);
+    ctx.lineTo(right - 8, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function BlackoutFlowCanvas({ lines, pretext, layoutName, activeWords, markMode }) {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return undefined;
+
+    let raf = 0;
+    let cancelled = false;
+    const text = lines.map((line) => line.text).join(" ");
+    const activeSet = new Set(activeWords);
+    const fontSize = 15;
+    const lineHeight = 20;
+    const font = `${fontSize}px Georgia`;
+    const hasPretext = !!(pretext?.prepareWithSegments && pretext?.layoutNextLineRange && pretext?.materializeLineRange);
+    const prepared = hasPretext ? getPreparedBlackoutText(pretext, text, font) : null;
+
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+      canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { width: rect.width, height: rect.height };
+    };
+
+    const drawHighlights = (lineText, x, y) => {
+      activeSet.forEach((word) => {
+        const index = lineText.toLowerCase().indexOf(word);
+        if (index < 0) return;
+        const before = lineText.slice(0, index);
+        const match = lineText.slice(index, index + word.length);
+        const hx = x + ctx.measureText(before).width;
+        const hw = ctx.measureText(match).width;
+        ctx.save();
+        ctx.strokeStyle = markMode === "underline" ? "rgba(156, 51, 43, 0.82)" : "rgba(31, 95, 191, 0.72)";
+        ctx.fillStyle = "rgba(243, 200, 58, 0.24)";
+        ctx.lineWidth = 1.2;
+        if (markMode === "circle") {
+          ctx.beginPath();
+          ctx.ellipse(hx + hw / 2, y - fontSize * 0.35, hw / 2 + 5, fontSize * 0.62, -0.08, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (markMode === "underline") {
+          ctx.beginPath();
+          ctx.moveTo(hx, y + 3);
+          ctx.lineTo(hx + hw, y + 3);
+          ctx.stroke();
+        } else {
+          ctx.fillRect(hx - 2, y - fontSize + 2, hw + 4, fontSize + 3);
+        }
+        ctx.restore();
+      });
+    };
+
+    const draw = (now) => {
+      if (cancelled) return;
+      const { width, height } = resize();
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "rgba(246, 242, 232, 0.38)";
+      ctx.fillRect(0, 0, width, height);
+      ctx.strokeStyle = "rgba(26, 24, 20, 0.055)";
+      ctx.lineWidth = 1;
+      for (let y = 16; y < height; y += lineHeight) {
+        ctx.beginPath();
+        ctx.moveTo(0, y + 2);
+        ctx.lineTo(width, y + 2);
+        ctx.stroke();
+      }
+
+      const pad = Math.max(18, Math.min(28, width * 0.025));
+      const contentWidth = width - pad * 2;
+      const contentHeight = height - pad * 2;
+      const shapes = [];
+
+      ctx.font = font;
+      ctx.textBaseline = "alphabetic";
+      ctx.fillStyle = "rgba(26, 24, 20, 0.78)";
+      let cursor = { segmentIndex: 0, graphemeIndex: 0 };
+      for (let row = 0, y = pad + lineHeight; y < height - pad; row += 1, y += lineHeight) {
+        const localY = y - pad - lineHeight * 0.5;
+        const segments = getAvailableSegmentsAtY(localY, contentWidth, [], 13);
+        for (const segment of segments) {
+          if (!hasPretext) continue;
+          const range = pretext.layoutNextLineRange(prepared, cursor, segment.width);
+          if (!range) {
+            shapes.forEach((shape) => drawWrapShape(ctx, shape));
+            raf = window.requestAnimationFrame(draw);
+            return;
+          }
+          const line = pretext.materializeLineRange(prepared, range);
+          const lineText = line.text.trim();
+          if (lineText) {
+            const x = pad + segment.x;
+            drawHighlights(lineText, x, y);
+            ctx.fillText(lineText, x, y);
+          }
+          cursor = range.end;
+        }
+      }
+      shapes.forEach((shape) => drawWrapShape(ctx, shape));
+      raf = window.requestAnimationFrame(draw);
+    };
+
+    raf = window.requestAnimationFrame(draw);
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(raf);
+    };
+  }, [lines, pretext, layoutName, activeWords, markMode]);
+
+  return <canvas ref={canvasRef} className="blackout-panel__flow-canvas" aria-hidden="true" />;
+}
+
 function BlackoutPoetryPanel() {
   const [active, setActive] = useState(0);
   const [pretext, setPretext] = useState(null);
-  const [panelSize, setPanelSize] = useState({ width: 0, height: 0 });
-  const [flowTick, setFlowTick] = useState(0);
   const panelRef = useRef(null);
   const activePage = BLACKOUT_PAGES[active];
   const activeStatement = activePage.phrase;
   const markMode = activePage.mark || "highlight";
   const pageLines = useMemo(() => [...activePage.lines, ...getBlackoutMicroLines(active)], [activePage, active]);
-  const layoutResult = useMemo(() => layoutBlackoutText(pageLines, pretext, panelSize, activePage.layout, flowTick), [pageLines, pretext, panelSize, activePage.layout, flowTick]);
-  const laidOutRows = Array.isArray(layoutResult) ? layoutResult : layoutResult.rows;
-  const wrapShapes = Array.isArray(layoutResult) ? [] : layoutResult.shapes;
-  const wrapPad = Array.isArray(layoutResult) ? 0 : layoutResult.pad;
 
   const cycle = () => setActive((idx) => (idx + 1) % BLACKOUT_PAGES.length);
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
     const id = window.setInterval(cycle, 3600);
-    return () => window.clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
-    const id = window.setInterval(() => setFlowTick((tick) => tick + 0.24), 180);
     return () => window.clearInterval(id);
   }, []);
 
@@ -1061,22 +1208,6 @@ function BlackoutPoetryPanel() {
       })
       .catch((err) => console.warn('[blackout-pretext]', err));
     return () => { cancelled = true; };
-  }, []);
-
-  useEffect(() => {
-    const panel = panelRef.current;
-    if (!panel || typeof ResizeObserver === 'undefined') return undefined;
-    const update = () => {
-      const rect = panel.getBoundingClientRect();
-      const next = { width: Math.round(rect.width), height: Math.round(rect.height) };
-      setPanelSize((current) => (
-        current.width === next.width && current.height === next.height ? current : next
-      ));
-    };
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(panel);
-    return () => observer.disconnect();
   }, []);
 
   return (
@@ -1096,69 +1227,13 @@ function BlackoutPoetryPanel() {
       }}
     >
       <div key={active} className={`blackout-panel__page blackout-panel__page--${activePage.layout}`}>
-        <figure className="blackout-panel__figure" aria-hidden="true">
-          <BlackoutDiagram type={activePage.diagram} />
-        </figure>
-        {!!wrapShapes.length && (
-          <div className="blackout-panel__wrap-shapes" aria-hidden="true">
-            {wrapShapes.map((shape, index) => (
-              shape.type === "ellipse" ? (
-                <div
-                  key={`${shape.type}-${index}`}
-                  className={`blackout-panel__wrap-shape blackout-panel__wrap-shape--ellipse blackout-panel__wrap-shape--${shape.tone}`}
-                  style={{
-                    left: `${wrapPad + shape.x - shape.rx}px`,
-                    top: `${wrapPad + shape.y - shape.ry}px`,
-                    width: `${shape.rx * 2}px`,
-                    height: `${shape.ry * 2}px`,
-                  }}
-                />
-              ) : (
-                <div
-                  key={`${shape.type}-${index}`}
-                  className={`blackout-panel__wrap-shape blackout-panel__wrap-shape--rect blackout-panel__wrap-shape--${shape.tone}`}
-                  style={{
-                    left: `${wrapPad + shape.x}px`,
-                    top: `${wrapPad + shape.y}px`,
-                    width: `${shape.w}px`,
-                    height: `${shape.h}px`,
-                    borderRadius: `${shape.r}px`,
-                  }}
-                />
-              )
-            ))}
-          </div>
-        )}
-        <div className="blackout-panel__manual-flow" aria-hidden="true">
-          {laidOutRows.map((row, rowIndex) => (
-            <p
-              key={rowIndex}
-              className={`blackout-panel__manual-row blackout-panel__manual-row--${(row.kind || "book").replace(' ', '-')} blackout-panel__manual-row--c${row.column || 0}`}
-              style={row.pretext ? {
-                left: `${row.x}px`,
-                top: `${row.y}px`,
-                width: `${row.width}px`,
-                lineHeight: `${row.lineHeight}px`,
-              } : undefined}
-            >
-              {row.tokens.map((token) => {
-                const clean = token.word.toLowerCase().replace(/[^a-z-]/g, '');
-              const isActive = activeStatement.words.includes(clean);
-                const isMicro = token.lineIndex >= activePage.lines.length;
-                const key = `${token.lineIndex}:${token.wordIndex}:${clean}`;
-              return (
-                <React.Fragment key={key}>
-                  <span
-                      className={`blackout-panel__word blackout-panel__word--${token.kind.replace(' ', '-')} ${isMicro ? 'blackout-panel__word--micro' : ''} ${isActive ? `is-active is-active--${markMode}` : ''}`}
-                  >
-                      {token.word}
-                  </span>{" "}
-                </React.Fragment>
-              );
-            })}
-          </p>
-          ))}
-        </div>
+        <BlackoutFlowCanvas
+          lines={pageLines}
+          pretext={pretext}
+          layoutName={activePage.layout}
+          activeWords={activeStatement.words}
+          markMode={markMode}
+        />
       </div>
     </div>
   );

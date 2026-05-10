@@ -233,6 +233,15 @@ a:hover { color: var(--accent); }
   pointer-events: none;
   mix-blend-mode: multiply;
 }
+.blackout-panel__flow-canvas {
+  position: absolute;
+  inset: clamp(0.55rem, 1.4vw, 1rem);
+  z-index: 2;
+  width: calc(100% - clamp(0.55rem, 1.4vw, 1rem) * 2);
+  height: calc(100% - clamp(0.55rem, 1.4vw, 1rem) * 2);
+  display: block;
+  pointer-events: none;
+}
 .blackout-panel__figure {
   float: none;
   position: absolute;
@@ -1489,7 +1498,7 @@ body.font-cascadia-signal .identity__vector-name {
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260509-spacebar');
 window.__pretextPromise = import('./vendor/pretext-layout.js');
 </script>
-<script type="text/babel" src="components.js?v=20260510-pretext-wrap-shapes"></script>
+<script type="text/babel" src="components.js?v=20260510-pretext-canvas-flow"></script>
 <script type="text/babel">
 const HELP_VIDEO_URLS = ["media/help_full.webm", "media/help.f338.webm"];
 const BLACKBIRD_INNOVATION_VIDEO_URL = "media/blackbird-innovation.mp4";
