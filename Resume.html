@@ -236,9 +236,12 @@ a:hover { color: var(--accent); }
 .blackout-panel__figure {
   float: none;
   position: absolute;
-  inset: clamp(0.15rem, 0.65vw, 0.5rem);
-  width: auto;
-  height: auto;
+  top: clamp(0.55rem, 1.4vw, 1rem);
+  right: clamp(0.55rem, 1.4vw, 1rem);
+  bottom: auto;
+  left: auto;
+  width: min(46%, 34rem);
+  height: min(46%, 22rem);
   margin: 0;
   padding: 0;
   border: 0;
@@ -261,28 +264,28 @@ a:hover { color: var(--accent); }
 .blackout-panel__page--diff .blackout-panel__figure,
 .blackout-panel__page--matrix .blackout-panel__figure,
 .blackout-panel__page--attention .blackout-panel__figure {
-  width: auto;
-  height: auto;
+  width: min(46%, 34rem);
+  height: min(46%, 22rem);
   background: transparent;
 }
 .blackout-panel__page--atlas .blackout-panel__figure,
 .blackout-panel__page--cue .blackout-panel__figure {
-  width: auto;
-  height: auto;
+  width: min(46%, 34rem);
+  height: min(46%, 22rem);
 }
 .blackout-panel__page--proof .blackout-panel__figure,
 .blackout-panel__page--formula .blackout-panel__figure,
 .blackout-panel__page--margin .blackout-panel__figure,
 .blackout-panel__page--network .blackout-panel__figure,
 .blackout-panel__page--schematic .blackout-panel__figure {
-  width: auto;
-  height: auto;
+  width: min(46%, 34rem);
+  height: min(46%, 22rem);
 }
 .blackout-panel__page--manual .blackout-panel__figure,
 .blackout-panel__page--diff .blackout-panel__figure,
 .blackout-panel__page--attention .blackout-panel__figure {
-  width: auto;
-  height: auto;
+  width: min(46%, 34rem);
+  height: min(46%, 22rem);
 }
 .diagram-line,
 .diagram-dot,
@@ -404,7 +407,10 @@ a:hover { color: var(--accent); }
 .blackout-panel__manual-row--c0 { grid-column: 1; }
 .blackout-panel__manual-row--c1 { grid-column: 2; }
 .blackout-panel__manual-row--c2 { grid-column: 3; }
-.blackout-panel__manual-row--c3 { grid-column: 4; }
+.blackout-panel__manual-row--c3 {
+  grid-column: 4;
+  transform: translateY(clamp(9rem, 25vw, 15.5rem));
+}
 .blackout-panel__manual-row--terminal {
   background: color-mix(in oklch, var(--ink), transparent 91%);
   box-shadow: -0.45rem 0 0 color-mix(in oklch, var(--ink), transparent 91%);
