@@ -1124,7 +1124,7 @@ function BlackoutFlowCanvas({ lines, pretext, layoutName, activeWords, markMode 
       });
     };
 
-    const draw = () => {
+    const draw = (now) => {
       if (cancelled) return;
       const { width, height } = resize();
       ctx.clearRect(0, 0, width, height);
@@ -1142,7 +1142,8 @@ function BlackoutFlowCanvas({ lines, pretext, layoutName, activeWords, markMode 
       const pad = Math.max(18, Math.min(28, width * 0.025));
       const contentWidth = width - pad * 2;
       const contentHeight = height - pad * 2;
-      const obstacles = getBlackoutWrapShapes(layoutName, contentWidth, contentHeight, 0);
+      const tick = now * 0.001;
+      const obstacles = getBlackoutWrapShapes(layoutName, contentWidth, contentHeight, tick);
 
       ctx.font = font;
       ctx.textBaseline = "alphabetic";
@@ -1155,6 +1156,7 @@ function BlackoutFlowCanvas({ lines, pretext, layoutName, activeWords, markMode 
           if (!hasPretext) continue;
           const range = pretext.layoutNextLineRange(prepared, cursor, segment.width);
           if (!range) {
+            raf = window.requestAnimationFrame(draw);
             return;
           }
           const line = pretext.materializeLineRange(prepared, range);
@@ -1167,6 +1169,7 @@ function BlackoutFlowCanvas({ lines, pretext, layoutName, activeWords, markMode 
           cursor = range.end;
         }
       }
+      raf = window.requestAnimationFrame(draw);
     };
 
     const scheduleDraw = () => {
