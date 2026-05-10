@@ -1124,7 +1124,7 @@ function BlackoutFlowCanvas({ lines, pretext, layoutName, activeWords, markMode 
       });
     };
 
-    const draw = (now) => {
+    const draw = () => {
       if (cancelled) return;
       const { width, height } = resize();
       ctx.clearRect(0, 0, width, height);
@@ -1142,7 +1142,7 @@ function BlackoutFlowCanvas({ lines, pretext, layoutName, activeWords, markMode 
       const pad = Math.max(18, Math.min(28, width * 0.025));
       const contentWidth = width - pad * 2;
       const contentHeight = height - pad * 2;
-      const shapes = [];
+      const obstacles = getBlackoutWrapShapes(layoutName, contentWidth, contentHeight, 0);
 
       ctx.font = font;
       ctx.textBaseline = "alphabetic";
@@ -1150,13 +1150,11 @@ function BlackoutFlowCanvas({ lines, pretext, layoutName, activeWords, markMode 
       let cursor = { segmentIndex: 0, graphemeIndex: 0 };
       for (let row = 0, y = pad + lineHeight; y < height - pad; row += 1, y += lineHeight) {
         const localY = y - pad - lineHeight * 0.5;
-        const segments = getAvailableSegmentsAtY(localY, contentWidth, [], 13);
+        const segments = getAvailableSegmentsAtY(localY, contentWidth, obstacles, 18);
         for (const segment of segments) {
           if (!hasPretext) continue;
           const range = pretext.layoutNextLineRange(prepared, cursor, segment.width);
           if (!range) {
-            shapes.forEach((shape) => drawWrapShape(ctx, shape));
-            raf = window.requestAnimationFrame(draw);
             return;
           }
           const line = pretext.materializeLineRange(prepared, range);
@@ -1169,14 +1167,18 @@ function BlackoutFlowCanvas({ lines, pretext, layoutName, activeWords, markMode 
           cursor = range.end;
         }
       }
-      shapes.forEach((shape) => drawWrapShape(ctx, shape));
-      raf = window.requestAnimationFrame(draw);
     };
 
-    raf = window.requestAnimationFrame(draw);
+    const scheduleDraw = () => {
+      window.cancelAnimationFrame(raf);
+      raf = window.requestAnimationFrame(draw);
+    };
+    scheduleDraw();
+    window.addEventListener('resize', scheduleDraw);
     return () => {
       cancelled = true;
       window.cancelAnimationFrame(raf);
+      window.removeEventListener('resize', scheduleDraw);
     };
   }, [lines, pretext, layoutName, activeWords, markMode]);
 
