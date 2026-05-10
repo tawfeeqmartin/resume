@@ -383,23 +383,26 @@ a:hover { color: var(--accent); }
   inset: clamp(0.55rem, 1.4vw, 1rem);
   z-index: 2;
   pointer-events: none;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-auto-flow: column;
-  grid-auto-rows: min-content;
-  gap: 0.08rem clamp(0.75rem, 1.8vw, 1.35rem);
-  align-content: start;
+  display: block;
+  font-size: 13px;
+  line-height: 16px;
 }
 .blackout-panel__manual-row {
   margin: 0;
   white-space: nowrap;
   overflow: visible;
+  position: absolute;
   color: color-mix(in oklch, var(--ink), transparent 26%);
   background: color-mix(in oklch, var(--paper), transparent 18%);
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
   max-width: 100%;
   min-width: 0;
+}
+.blackout-panel__manual-row:not([style]) {
+  position: relative;
+  display: inline-block;
+  margin-right: 1rem;
 }
 .blackout-panel__manual-row--c0 { grid-column: 1; }
 .blackout-panel__manual-row--c1 { grid-column: 2; }
@@ -1454,8 +1457,9 @@ body.font-cascadia-signal .identity__vector-name {
 <script src="data.js"></script>
 <script type="module">
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260509-spacebar');
+window.__pretextPromise = import('./vendor/pretext-layout.js');
 </script>
-<script type="text/babel" src="components.js?v=20260510-no-pretext-runtime"></script>
+<script type="text/babel" src="components.js?v=20260510-pretext-dynamic-flow"></script>
 <script type="text/babel">
 const HELP_VIDEO_URLS = ["media/help_full.webm", "media/help.f338.webm"];
 const BLACKBIRD_INNOVATION_VIDEO_URL = "media/blackbird-innovation.mp4";

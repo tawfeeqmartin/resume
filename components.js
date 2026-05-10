@@ -558,7 +558,80 @@ function fallbackLayoutBlackoutText(tokens) {
   return rows;
 }
 
-function layoutBlackoutText(lines) {
+function mapWordsToTokens(words, tokens, startIndex) {
+  const rowTokens = [];
+  let tokenIndex = startIndex;
+  words.forEach((word) => {
+    const cleanWord = word.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    while (tokenIndex < tokens.length) {
+      const token = tokens[tokenIndex];
+      tokenIndex += 1;
+      rowTokens.push(token);
+      const cleanToken = token.word.toLowerCase().replace(/[^a-z0-9-]/g, '');
+      if (!cleanWord || cleanToken === cleanWord || cleanWord.includes(cleanToken) || cleanToken.includes(cleanWord)) break;
+    }
+  });
+  return { rowTokens, tokenIndex };
+}
+
+function getBlackoutTextBand(layout, rowIndex, rowCount, contentWidth) {
+  const t = rowCount <= 1 ? 0 : rowIndex / (rowCount - 1);
+  const narrow = Math.max(210, contentWidth * 0.28);
+  const mid = Math.max(300, contentWidth * 0.42);
+  const wide = Math.max(420, contentWidth * 0.58);
+  const full = contentWidth;
+  const right = (width) => Math.max(0, contentWidth - width);
+  const center = (width, wobble = 0) => Math.max(0, (contentWidth - width) * 0.5 + wobble);
+
+  const bands = {
+    plate: [
+      [0.00, 0.14, 0, full],
+      [0.14, 0.36, right(narrow), narrow],
+      [0.36, 0.66, 0, narrow],
+      [0.66, 1.01, 0, full],
+    ],
+    proof: [
+      [0.00, 0.22, 0, wide],
+      [0.22, 0.58, right(mid), mid],
+      [0.58, 0.82, 0, mid],
+      [0.82, 1.01, 0, full],
+    ],
+    formula: [
+      [0.00, 0.18, 0, full],
+      [0.18, 0.50, 0, narrow],
+      [0.50, 0.78, right(narrow), narrow],
+      [0.78, 1.01, center(wide), wide],
+    ],
+    terminal: [
+      [0.00, 0.18, 0, full],
+      [0.18, 0.72, rowIndex % 2 ? right(wide) : 0, wide],
+      [0.72, 1.01, 0, full],
+    ],
+    attention: [
+      [0.00, 0.16, 0, full],
+      [0.16, 0.36, 0, mid],
+      [0.36, 0.62, right(mid), mid],
+      [0.62, 0.84, 0, mid],
+      [0.84, 1.01, 0, full],
+    ],
+    poem: [
+      [0.00, 0.18, center(wide), wide],
+      [0.18, 0.46, 0, mid],
+      [0.46, 0.72, right(mid), mid],
+      [0.72, 1.01, center(wide, rowIndex % 2 ? 18 : -18), wide],
+    ],
+  };
+  const pattern = bands[layout] || [
+    [0.00, 0.16, 0, full],
+    [0.16, 0.42, 0, mid],
+    [0.42, 0.68, right(mid), mid],
+    [0.68, 1.01, 0, full],
+  ];
+  const band = pattern.find(([from, to]) => t >= from && t < to) || pattern[pattern.length - 1];
+  return { x: band[2], width: Math.min(contentWidth - band[2], band[3]) };
+}
+
+function layoutBlackoutText(lines, pretext, panelSize, layoutName) {
   const tokens = lines.flatMap((line, lineIndex) => (
     line.text.split(" ").filter(Boolean).map((word, wordIndex) => ({
       word,
@@ -567,7 +640,48 @@ function layoutBlackoutText(lines) {
       wordIndex,
     }))
   ));
-  return fallbackLayoutBlackoutText(tokens);
+  if (!pretext?.prepareWithSegments || !pretext?.layoutNextLineRange || !pretext?.materializeLineRange || panelSize.width < 560) {
+    return fallbackLayoutBlackoutText(tokens);
+  }
+
+  try {
+    const pad = Math.max(14, Math.min(22, panelSize.width * 0.018));
+    const lineHeight = Math.max(14, Math.min(17, panelSize.width * 0.013));
+    const contentWidth = Math.max(320, panelSize.width - pad * 2);
+    const contentHeight = Math.max(240, panelSize.height - pad * 2);
+    const rowCount = Math.floor(contentHeight / lineHeight);
+    const prepared = pretext.prepareWithSegments(tokens.map((token) => token.word).join(" "), '13px "IBM Plex Mono", "IBM Plex Sans", sans-serif');
+    const rows = [];
+    let cursor = { segmentIndex: 0, graphemeIndex: 0 };
+    let tokenIndex = 0;
+
+    for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+      const band = getBlackoutTextBand(layoutName, rowIndex, rowCount, contentWidth);
+      const range = pretext.layoutNextLineRange(prepared, cursor, band.width);
+      if (!range) break;
+      const line = pretext.materializeLineRange(prepared, range);
+      const words = line.text.trim().split(/\s+/).filter(Boolean);
+      const mapped = mapWordsToTokens(words, tokens, tokenIndex);
+      tokenIndex = mapped.tokenIndex;
+      if (mapped.rowTokens.length) {
+        rows.push({
+          tokens: mapped.rowTokens,
+          kind: mapped.rowTokens[0]?.kind || "book",
+          column: rowIndex % 4,
+          x: pad + band.x,
+          y: pad + rowIndex * lineHeight,
+          width: band.width,
+          lineHeight,
+          pretext: true,
+        });
+      }
+      cursor = range.end;
+    }
+    return rows.length ? rows : fallbackLayoutBlackoutText(tokens);
+  } catch (err) {
+    console.warn('[blackout-pretext-layout]', err);
+    return fallbackLayoutBlackoutText(tokens);
+  }
 }
 
 function DiagramText({ x, y, children, className = "" }) {
@@ -890,12 +1004,14 @@ function BlackoutDiagram({ type }) {
 
 function BlackoutPoetryPanel() {
   const [active, setActive] = useState(0);
+  const [pretext, setPretext] = useState(null);
+  const [panelSize, setPanelSize] = useState({ width: 0, height: 0 });
   const panelRef = useRef(null);
   const activePage = BLACKOUT_PAGES[active];
   const activeStatement = activePage.phrase;
   const markMode = activePage.mark || "highlight";
   const pageLines = useMemo(() => [...activePage.lines, ...getBlackoutMicroLines(active)], [activePage, active]);
-  const laidOutRows = useMemo(() => layoutBlackoutText(pageLines), [pageLines]);
+  const laidOutRows = useMemo(() => layoutBlackoutText(pageLines, pretext, panelSize, activePage.layout), [pageLines, pretext, panelSize, activePage.layout]);
 
   const cycle = () => setActive((idx) => (idx + 1) % BLACKOUT_PAGES.length);
 
@@ -903,6 +1019,29 @@ function BlackoutPoetryPanel() {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
     const id = window.setInterval(cycle, 3600);
     return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    window.__pretextPromise
+      ?.then((mod) => {
+        if (!cancelled) setPretext(mod);
+      })
+      .catch((err) => console.warn('[blackout-pretext]', err));
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel || typeof ResizeObserver === 'undefined') return undefined;
+    const update = () => {
+      const rect = panel.getBoundingClientRect();
+      setPanelSize({ width: Math.round(rect.width), height: Math.round(rect.height) });
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(panel);
+    return () => observer.disconnect();
   }, []);
 
   return (
@@ -930,6 +1069,12 @@ function BlackoutPoetryPanel() {
             <p
               key={rowIndex}
               className={`blackout-panel__manual-row blackout-panel__manual-row--${(row.kind || "book").replace(' ', '-')} blackout-panel__manual-row--c${row.column || 0}`}
+              style={row.pretext ? {
+                left: `${row.x}px`,
+                top: `${row.y}px`,
+                width: `${row.width}px`,
+                lineHeight: `${row.lineHeight}px`,
+              } : undefined}
             >
               {row.tokens.map((token) => {
                 const clean = token.word.toLowerCase().replace(/[^a-z-]/g, '');
