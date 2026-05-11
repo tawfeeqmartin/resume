@@ -35,6 +35,8 @@ function getResumeStrudelAudioEngine() {
   let melodyTriggerId = 0;
   let drumTriggerId = 0;
   let harmonyTriggerId = 0;
+  let videoDucked = false;
+  let videoResumeTimer = null;
   const stemMutes = { drums: false, harmony: false, melody: false };
   const phraseSteps = 32;
   const songPresets = [
@@ -435,8 +437,10 @@ function getResumeStrudelAudioEngine() {
 
   const playCurrent = async () => {
     if (!enabled) return;
+    if (videoDucked) return;
     const module = await ensureStrudel();
     if (!enabled) return;
+    if (videoDucked) return;
     const song = songPresets[songIndex];
     try {
       console.info('Strudel play', song.name, song.bpm);
@@ -481,6 +485,38 @@ function getResumeStrudelAudioEngine() {
     }, true);
   };
 
+  const hushCurrent = () => {
+    if (strudel) {
+      strudel.hush();
+    } else if (initPromise) {
+      initPromise.then((module) => module.hush()).catch((error) => console.warn('Strudel stop failed', error));
+    }
+  };
+
+  const setVideoDucked = (active) => {
+    if (videoResumeTimer) {
+      window.clearTimeout(videoResumeTimer);
+      videoResumeTimer = null;
+    }
+    if (active) {
+      if (!videoDucked && enabled) hushCurrent();
+      videoDucked = true;
+      window.dispatchEvent(new CustomEvent('resume-audio-change'));
+      return;
+    }
+    if (!videoDucked) return;
+    videoResumeTimer = window.setTimeout(() => {
+      videoResumeTimer = null;
+      videoDucked = false;
+      if (enabled) playCurrent();
+      window.dispatchEvent(new CustomEvent('resume-audio-change'));
+    }, 7000);
+  };
+
+  window.addEventListener('resume-video-audio-state', (event) => {
+    setVideoDucked(Boolean(event.detail?.active));
+  });
+
   const visualTimingFor = () => {
     const song = songPresets[songIndex];
     const visual = song.visual || {};
@@ -506,6 +542,7 @@ function getResumeStrudelAudioEngine() {
     get songIndex() { return songIndex; },
     get songCount() { return songPresets.length; },
     get chordOverride() { return activeChordKey; },
+    get videoDucked() { return videoDucked; },
     get stemMutes() { return { ...stemMutes }; },
     toggleStemMute(stem) {
       if (!Object.prototype.hasOwnProperty.call(stemMutes, stem)) return { ...stemMutes };
@@ -531,11 +568,12 @@ function getResumeStrudelAudioEngine() {
         playCurrent();
       } else {
         activeWASD = '';
-        if (strudel) {
-          strudel.hush();
-        } else if (initPromise) {
-          initPromise.then((module) => module.hush()).catch((error) => console.warn('Strudel stop failed', error));
+        videoDucked = false;
+        if (videoResumeTimer) {
+          window.clearTimeout(videoResumeTimer);
+          videoResumeTimer = null;
         }
+        hushCurrent();
       }
       window.dispatchEvent(new CustomEvent('resume-audio-change'));
       return enabled;
@@ -2563,6 +2601,7 @@ function HelpPlayer({ src }) {
   const [paused, setPaused] = useState(true);
   const [showHint, setShowHint] = useState(true);
   const rendererRef = useRef(null);
+  const audibleRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -2588,6 +2627,13 @@ function HelpPlayer({ src }) {
         result.renderer.setStateCallback((state) => {
           setMuted(state.muted);
           setPaused(state.paused);
+          const active = !state.muted && !state.paused;
+          if (active !== audibleRef.current) {
+            audibleRef.current = active;
+            window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
+              detail: { id: 'help-player', active },
+            }));
+          }
         });
         setProjection(result.projection);
         setStatus('ready');
@@ -2599,6 +2645,10 @@ function HelpPlayer({ src }) {
     go();
     return () => {
       cancelled = true;
+      audibleRef.current = false;
+      window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
+        detail: { id: 'help-player', active: false },
+      }));
       if (rendererRef.current) { rendererRef.current.dispose(); rendererRef.current = null; }
     };
   }, [src]);
@@ -2729,6 +2779,16 @@ function VideoSlot({ src, label, fallbackPath }) {
   const [muted, setMuted] = useState(true);
   const [paused, setPaused] = useState(true);
 
+  const emitVideoAudioState = () => {
+    const video = videoRef.current;
+    window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
+      detail: {
+        id: slotIdRef.current,
+        active: Boolean(video && !video.muted && !video.paused && !video.ended),
+      },
+    }));
+  };
+
   useEffect(() => {
     let cancelled = false;
     async function probe() {
@@ -2743,8 +2803,14 @@ function VideoSlot({ src, label, fallbackPath }) {
   useEffect(() => {
     const video = videoRef.current;
     if (!video || status !== 'ready') return undefined;
-    const syncAudio = () => setMuted(video.muted);
-    const syncPlayback = () => setPaused(video.paused);
+    const syncAudio = () => {
+      setMuted(video.muted);
+      emitVideoAudioState();
+    };
+    const syncPlayback = () => {
+      setPaused(video.paused);
+      emitVideoAudioState();
+    };
     const pauseOtherSlots = (event) => {
       if (event.detail?.id === slotIdRef.current) return;
       if (!event.detail?.userInitiated && userHeldPlaybackRef.current) return;
@@ -2755,6 +2821,7 @@ function VideoSlot({ src, label, fallbackPath }) {
     video.addEventListener('volumechange', syncAudio);
     video.addEventListener('play', syncPlayback);
     video.addEventListener('pause', syncPlayback);
+    video.addEventListener('ended', syncPlayback);
     window.addEventListener('resume-video-slot-active', pauseOtherSlots);
     syncAudio();
     syncPlayback();
@@ -2762,6 +2829,10 @@ function VideoSlot({ src, label, fallbackPath }) {
       video.removeEventListener('volumechange', syncAudio);
       video.removeEventListener('play', syncPlayback);
       video.removeEventListener('pause', syncPlayback);
+      video.removeEventListener('ended', syncPlayback);
+      window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
+        detail: { id: slotIdRef.current, active: false },
+      }));
       window.removeEventListener('resume-video-slot-active', pauseOtherSlots);
     };
   }, [status]);
