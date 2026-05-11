@@ -2017,27 +2017,27 @@ body.font-cascadia-signal .identity__vector-name {
 }
 .video-control__icon {
   position: relative;
-  width: 13px;
-  height: 13px;
-  flex: 0 0 13px;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
   display: inline-block;
+  color: var(--accent);
 }
 .video-control__icon--play::before {
   content: "";
   position: absolute;
-  inset: 1px 2px;
-  border-left: 9px solid var(--accent);
-  border-top: 5.5px solid transparent;
-  border-bottom: 5.5px solid transparent;
+  inset: 1px 0 1px 2px;
+  background: currentColor;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
 }
 .video-control__icon--pause::before,
 .video-control__icon--pause::after {
   content: "";
   position: absolute;
-  top: 1px;
-  bottom: 1px;
-  width: 3px;
-  background: var(--accent);
+  top: 2px;
+  width: 4px;
+  height: 10px;
+  background: currentColor;
 }
 .video-control__icon--pause::before { left: 2px; }
 .video-control__icon--pause::after { right: 2px; }
@@ -2045,50 +2045,51 @@ body.font-cascadia-signal .identity__vector-name {
   content: "";
   position: absolute;
   inset: 1px;
-  border: 1.5px solid var(--accent);
-  border-left-color: transparent;
+  border: 1.5px solid currentColor;
   border-radius: 50%;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 22% 100%, 22% 72%, 0 72%);
 }
 .video-control__icon--replay::after {
   content: "";
   position: absolute;
   left: 0;
-  top: 1px;
-  border-right: 5px solid var(--accent);
-  border-top: 4px solid transparent;
-  border-bottom: 4px solid transparent;
-  transform: rotate(-22deg);
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  clip-path: polygon(0 50%, 100% 0, 100% 100%);
 }
 .video-control__icon--sound-on::before,
 .video-control__icon--sound-off::before {
   content: "";
   position: absolute;
   left: 0;
-  top: 4px;
-  width: 5px;
-  height: 5px;
-  background: var(--accent);
-  box-shadow: 4px -3px 0 -1px var(--accent), 4px 3px 0 -1px var(--accent);
+  top: 3px;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
 }
 .video-control__icon--sound-on::after {
   content: "";
   position: absolute;
   right: 0;
-  top: 2px;
-  width: 6px;
-  height: 9px;
-  border-right: 1.5px solid var(--accent);
-  border-radius: 50%;
+  top: 1px;
+  width: 5px;
+  height: 12px;
+  border-right: 1.5px solid currentColor;
+  border-top: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
 }
 .video-control__icon--sound-off::after {
   content: "";
   position: absolute;
-  right: 1px;
-  top: 1px;
-  width: 2px;
-  height: 13px;
-  background: var(--accent);
-  transform: rotate(42deg);
+  right: 0;
+  top: 0;
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid currentColor;
+  transform: rotate(45deg);
   transform-origin: center;
 }
 .video-control__icon--fullscreen::before,
@@ -2096,13 +2097,14 @@ body.font-cascadia-signal .identity__vector-name {
   content: "";
   position: absolute;
   inset: 1px;
-  border: 1.5px solid var(--accent);
+  border: 1.5px solid currentColor;
 }
 .video-control__icon--fullscreen::before {
-  clip-path: polygon(0 0, 43% 0, 43% 16%, 16% 16%, 16% 43%, 0 43%, 0 0);
+  background: transparent;
+  clip-path: polygon(0 0, 48% 0, 48% 18%, 18% 18%, 18% 48%, 0 48%, 0 0);
 }
 .video-control__icon--fullscreen::after {
-  clip-path: polygon(57% 0, 100% 0, 100% 43%, 84% 43%, 84% 16%, 57% 16%, 57% 0, 100% 57%, 100% 100%, 57% 100%, 57% 84%, 84% 84%, 84% 57%);
+  clip-path: polygon(52% 0, 100% 0, 100% 48%, 82% 48%, 82% 18%, 52% 18%, 52% 0, 0 52%, 18% 52%, 18% 82%, 48% 82%, 48% 100%, 0 100%, 0 52%, 52% 52%, 100% 52%, 100% 100%, 52% 100%, 52% 82%, 82% 82%, 82% 52%);
 }
 @media (hover: none) {
   .video-controls {
@@ -2145,7 +2147,7 @@ window.__resumeStrudelReady = initStrudel()
 <script type="module">
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260509-spacebar');
 </script>
-<script type="text/babel" src="components.js?v=20260511-help-video-audio-duck"></script>
+<script type="text/babel" src="components.js?v=20260511-bauhaus-video-controls"></script>
 <script type="text/babel">
 const HELP_VIDEO_URLS = ["media/help-720-mesh.webm", "media/help_full.webm", "media/help.f338.webm"];
 const BLACKBIRD_INNOVATION_VIDEO_URL = "media/blackbird-innovation.mp4";
