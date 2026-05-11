@@ -537,12 +537,12 @@ const BLACKOUT_MICRO_LINES = [
 ];
 
 function getBlackoutMicroLines(pageIndex) {
-  return Array.from({ length: 26 }, (_, i) => BLACKOUT_MICRO_LINES[(pageIndex * 3 + i) % BLACKOUT_MICRO_LINES.length]);
+  return Array.from({ length: 12 }, (_, i) => BLACKOUT_MICRO_LINES[(pageIndex * 5 + i) % BLACKOUT_MICRO_LINES.length]);
 }
 
 function fallbackLayoutBlackoutText(tokens) {
   const rows = [];
-  const maxChars = 72;
+  const maxChars = 34;
   let row = [];
   let count = 0;
   tokens.forEach((token) => {
@@ -555,7 +555,12 @@ function fallbackLayoutBlackoutText(tokens) {
     count += token.word.length + 1;
   });
   if (row.length) rows.push({ tokens: row, kind: row[0]?.kind || "book", column: rows.length % 3 });
-  return rows;
+  const perColumn = Math.ceil(rows.length / 3);
+  return rows.map((item, index) => ({
+    ...item,
+    column: Math.min(2, Math.floor(index / perColumn)),
+    row: (index % perColumn) + 1,
+  }));
 }
 
 function layoutBlackoutText(lines) {
@@ -930,6 +935,7 @@ function BlackoutPoetryPanel() {
             <p
               key={rowIndex}
               className={`blackout-panel__manual-row blackout-panel__manual-row--${(row.kind || "book").replace(' ', '-')} blackout-panel__manual-row--c${row.column || 0}`}
+              style={row.row ? { gridRow: row.row } : undefined}
             >
               {row.tokens.map((token) => {
                 const clean = token.word.toLowerCase().replace(/[^a-z-]/g, '');
