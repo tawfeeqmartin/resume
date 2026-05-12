@@ -3330,7 +3330,7 @@ function Footer({ data }) {
         <a href={`https://${data.site}`} target="_blank" rel="noreferrer">{data.site}</a>
       </div>
       <div className="page-footer__build">
-        rev · 2026.05 · built with three.js + a parser for google's mesh projection
+        rev · 2026.05 · built with three.js + a parser for google's mesh projection + strudel.cc audio
       </div>
     </footer>
   );
