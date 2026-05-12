@@ -81,6 +81,8 @@ const RESUME = {
   },
 
   awards: [
+    { org: "Television Academy", title: "74th Engineering, Science & Technology Emmy · StageCraft Virtual Production Tool Suite", project: "ILM StageCraft", role: "Senior Virtual Production Engineer", tier: "gold" },
+    { org: "NATAS", title: "75th Technology & Engineering Emmy · Excellence in Production Technology", project: "The Santa Clauses Season Two · ILM StageCraft", role: "Senior Virtual Production Engineer", tier: "gold" },
     { org: "HPA", title: "Judges Award · Creativity & Innovation", project: "The Mill Blackbird", role: "Technical Innovations Manager", tier: "gold" },
     { org: "Cannes Lions", title: "Gold · Digital Craft · Innovative Use of Technology", project: "The Mill Blackbird", role: "TIM & Project Manager", tier: "gold" },
     { org: "Cannes Lions", title: "Gold · Digital Craft · Innovative Use of Technology", project: "Google Spotlight Stories ‘HELP’ (dir. Justin Lin)", role: "TIM & Shoot Supervisor", tier: "gold" },
