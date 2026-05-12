@@ -2114,6 +2114,238 @@ body.font-cascadia-signal .identity__vector-name {
   }
 }
 
+@media (max-width: 700px) {
+  :root {
+    --pad: clamp(1rem, 5vw, 1.35rem);
+  }
+  html, body {
+    font-size: 15px;
+    overflow-x: hidden;
+  }
+  .page {
+    padding-top: 1.1rem;
+    padding-bottom: 2.5rem;
+  }
+  .review-controls {
+    left: var(--pad);
+    right: var(--pad);
+    top: auto;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    justify-items: stretch;
+    z-index: 50;
+  }
+  .review-toggle {
+    width: 100%;
+    justify-content: space-between;
+    padding: 0.5rem 0.62rem;
+  }
+  .review-toggle__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .identity__top,
+  .identity__poetry-title,
+  .stem-mutes {
+    transform: none;
+  }
+  .identity__top {
+    gap: 0.5rem;
+    font-size: 0.62rem;
+    line-height: 1.35;
+  }
+  .identity__top-dot {
+    width: 0.44rem;
+    height: 0.38rem;
+  }
+  .identity__poetry-title {
+    margin-top: 0.9rem;
+    font-size: clamp(1.55rem, 9vw, 2.2rem);
+    white-space: normal;
+  }
+  .identity__poetry-type {
+    white-space: normal;
+  }
+  .stem-mutes {
+    margin: 0.2rem 0 0.55rem;
+  }
+  .stem-mute {
+    min-height: 2.4rem;
+  }
+  .stem-mute__shape {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+  .stem-mute--triangle .stem-mute__shape {
+    width: 1.95rem;
+    height: 1.72rem;
+  }
+  .blackout-panel {
+    min-height: min(132vw, 560px);
+    height: auto;
+    aspect-ratio: 0.78 / 1;
+    border-radius: 3px;
+    --blackout-panel-inset: 0.55rem;
+    --blackout-copy-size: clamp(0.48rem, 1.85vw, 0.62rem);
+    --blackout-code-size: clamp(0.43rem, 1.62vw, 0.56rem);
+    --blackout-diagram-size: clamp(0.48rem, 1.9vw, 0.62rem);
+    --blackout-diagram-label-size: clamp(0.36rem, 1.35vw, 0.48rem);
+  }
+  .blackout-panel__manual-flow {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: auto;
+    gap: 0.16rem;
+    line-height: 1.18;
+  }
+  .blackout-panel__manual-row,
+  .blackout-panel__manual-row--c0,
+  .blackout-panel__manual-row--c1,
+  .blackout-panel__manual-row--c2,
+  .blackout-panel__manual-row--c3 {
+    grid-column: 1;
+    grid-row: auto !important;
+  }
+  .blackout-panel__manual-row--c2,
+  .blackout-panel__manual-row--c3 {
+    display: none;
+  }
+  .blackout-panel__figure,
+  .blackout-panel__page--proof .blackout-panel__figure,
+  .blackout-panel__page--lab .blackout-panel__figure,
+  .blackout-panel__page--network .blackout-panel__figure,
+  .blackout-panel__page--schematic .blackout-panel__figure,
+  .blackout-panel__page--poem .blackout-panel__figure,
+  .blackout-panel__page--terminal .blackout-panel__figure,
+  .blackout-panel__page--diff .blackout-panel__figure,
+  .blackout-panel__page--matrix .blackout-panel__figure,
+  .blackout-panel__page--attention .blackout-panel__figure,
+  .blackout-panel__page--atlas .blackout-panel__figure,
+  .blackout-panel__page--cue .blackout-panel__figure {
+    top: 0.55rem;
+    right: 0.55rem;
+    left: 38%;
+    width: auto;
+    height: 33%;
+  }
+  .section {
+    grid-template-columns: 1fr;
+    grid-template-areas: "head" "body";
+    gap: 0.75rem;
+    padding: 2rem 0;
+  }
+  .section__rule {
+    display: none;
+  }
+  .section__header {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+  .section__mark {
+    position: static;
+    flex: 0 0 auto;
+  }
+  .section__label {
+    padding-top: 0;
+    font-size: 0.62rem;
+  }
+  .summary {
+    font-size: clamp(1.15rem, 6vw, 1.65rem);
+  }
+  .job {
+    grid-template-columns: 1fr;
+    grid-template-areas: "head" "body";
+    gap: 0.9rem;
+    padding: 1.5rem 0;
+  }
+  .job__rail {
+    display: none;
+  }
+  .job__head {
+    display: block;
+  }
+  .job__meta {
+    margin-top: 0.35rem;
+  }
+  .help-feature,
+  .help-hero,
+  .help-hero__details,
+  .blackbird-facts,
+  .edu__row,
+  .refs {
+    grid-template-columns: 1fr;
+  }
+  .help-feature {
+    gap: 1rem;
+  }
+  .help-feature__player-col,
+  .help-feature__player-col--wide,
+  .help-player,
+  .video-slot {
+    min-height: 0;
+  }
+  .help-player,
+  .video-slot {
+    aspect-ratio: 1.85 / 1;
+    height: auto;
+  }
+  .video-stack {
+    gap: 0.85rem;
+  }
+  .video-controls {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    gap: 5px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .video-controls::-webkit-scrollbar {
+    display: none;
+  }
+  .video-control {
+    min-height: 28px;
+    padding: 5px 8px;
+    gap: 6px;
+    font-size: 0.55rem;
+  }
+  .video-control--primary {
+    min-width: 68px;
+  }
+  .video-control--icon {
+    min-width: 28px;
+    flex: 0 0 28px;
+  }
+  .wasd-hint {
+    display: none;
+  }
+  .awards,
+  .skills {
+    grid-template-columns: 1fr;
+  }
+  .awards__filters {
+    overflow-x: auto;
+    padding-bottom: 0.2rem;
+  }
+  .awards__filter {
+    white-space: nowrap;
+  }
+  .refs__quote {
+    padding: 1.35rem 1.2rem;
+  }
+  .refs__qmark {
+    font-size: 3.8rem;
+  }
+  .refs__text {
+    font-size: 1.05rem;
+    padding-left: 0.6rem;
+  }
+  .page-footer {
+    margin-bottom: 4.4rem;
+  }
+}
+
 /* ── print ───────────────────────────────────────────── */
 @media print {
   body { background: white; }
