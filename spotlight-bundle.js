@@ -336,11 +336,12 @@ function normalizeSource(source) {
   return {
     videoUrl: source.videoUrl || source.src || source.url,
     projectionUrl: source.projectionUrl || source.projection || source.videoUrl || source.src || source.url,
+    inlineVideoFallback: Boolean(source.inlineVideoFallback),
   };
 }
 
 async function loadFromUrl(source) {
-  const { videoUrl, projectionUrl } = normalizeSource(source);
+  const { videoUrl, projectionUrl, inlineVideoFallback } = normalizeSource(source);
   let geometry = makeEquirectSphere();
   let projection = 'equirect';
   const isCoarsePointer = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
@@ -374,7 +375,7 @@ async function loadFromUrl(source) {
   }
 
   const video = document.createElement('video');
-  video.crossOrigin = 'anonymous';
+  if (!inlineVideoFallback) video.crossOrigin = 'anonymous';
   video.src = videoUrl;
   video.loop = true;
   video.playsInline = true;
@@ -382,9 +383,9 @@ async function loadFromUrl(source) {
   video.setAttribute('webkit-playsinline', '');
   video.muted = true;
   video.preload = 'metadata';
-  video.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;opacity:0.01;pointer-events:none;';
+  video.style.cssText = `position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:${inlineVideoFallback ? '1' : '0.01'};pointer-events:none;`;
 
-  return { geometry, projection, video, dispose: () => { video.removeAttribute('src'); video.load(); video.remove(); } };
+  return { geometry, projection, video, inlineVideoFallback, dispose: () => { video.removeAttribute('src'); video.load(); video.remove(); } };
 }
 
 // ────────────────────────────────────────────────────────────────────
@@ -455,6 +456,11 @@ class SpotlightRenderer {
     const mesh = new THREE.Mesh(loaded.geometry, mat);
     this.scene.add(mesh);
     this.current = { mesh, texture: tex, loaded };
+    if (loaded.inlineVideoFallback) {
+      this.renderer.domElement.style.opacity = '0';
+    } else {
+      this.renderer.domElement.style.opacity = '1';
+    }
     // Try silent autoplay — we already set muted=true so this should pass the autoplay gate.
     loaded.video.play().catch(err => console.warn('[spotlight] autoplay blocked:', err));
   }
@@ -504,6 +510,21 @@ class SpotlightRenderer {
     const video = this.current.loaded.video;
     video.muted = !video.muted;
     if (video.paused) video.play().catch(()=>{});
+  }
+  enterNativeVideoFullscreen() {
+    const video = this.current?.loaded.video;
+    if (!video) return false;
+    const enter = video.webkitEnterFullscreen || video.webkitEnterFullScreen || video.requestFullscreen;
+    if (!enter) return false;
+    try {
+      enter.call(video);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+  resize() {
+    this._onResize();
   }
   getState() {
     const video = this.current?.loaded.video;
