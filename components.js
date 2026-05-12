@@ -668,8 +668,6 @@ function ReviewToggle({ kind, options, classScope }) {
 function ReviewControls() {
   return (
     <div className="review-controls">
-      <ReviewToggle kind="Theme" options={THEME_OPTIONS} classScope="theme" />
-      <ReviewToggle kind="Fonts" options={FONT_OPTIONS} classScope="font" />
       <AudioToggle />
     </div>
   );
@@ -2847,6 +2845,10 @@ function VideoSlot({ src, label, fallbackPath }) {
   useEffect(() => {
     let cancelled = false;
     async function probe() {
+      if (/^https?:\/\//.test(src)) {
+        setStatus('ready');
+        return;
+      }
       const res = await fetch(src, { method: 'HEAD' }).catch(() => null);
       if (cancelled) return;
       if (res && res.ok) setStatus('ready'); else setStatus('missing');
@@ -2991,6 +2993,7 @@ function VideoSlot({ src, label, fallbackPath }) {
           playsInline
           preload="metadata"
           className="video-slot__video"
+          onError={() => setStatus('missing')}
         />
       )}
       {status === 'loading' && (
