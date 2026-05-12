@@ -1668,13 +1668,12 @@ body.font-cascadia-signal .identity__vector-name {
 }
 .help-hero {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.38fr);
   grid-template-areas:
-    "intro"
-    "awards"
-    "player"
-    "details";
-  gap: 1.1rem;
+    "intro awards"
+    "player player"
+    "details details";
+  gap: 1.25rem 2rem;
 }
 .help-hero__intro { grid-area: intro; max-width: 68ch; }
 .help-hero__intro h3 {
@@ -1705,111 +1704,27 @@ body.font-cascadia-signal .identity__vector-name {
 }
 .help-hero__awards {
   grid-area: awards;
-  align-self: start;
+  align-self: end;
 }
-.award-laurels {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: clamp(0.45rem, 1vw, 0.8rem);
-  width: 100%;
-  max-width: 920px;
-  overflow: hidden;
-}
-.award-laurel {
-  position: relative;
-  min-width: 0;
-  min-height: 88px;
-  display: grid;
-  place-items: center;
-  color: color-mix(in oklch, var(--ink), transparent 12%);
-  background: color-mix(in oklch, var(--paper), transparent 10%);
-  border-top: 1px solid color-mix(in oklch, var(--rule), transparent 20%);
-  border-bottom: 1px solid color-mix(in oklch, var(--rule), transparent 20%);
-  overflow: hidden;
-}
-.award-laurel__wreath {
-  position: absolute;
-  inset: 6px 4px 3px;
-  width: calc(100% - 8px);
-  height: calc(100% - 9px);
-  display: block;
-  color: var(--accent);
-  opacity: 0.72;
-}
-.award-laurel__branch path {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.05;
-  stroke-linecap: round;
-  vector-effect: non-scaling-stroke;
-}
-.award-laurel__branch ellipse {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 0.9;
-  vector-effect: non-scaling-stroke;
-}
-.award-laurel__copy {
-  position: relative;
-  z-index: 1;
-  min-width: 0;
-  max-width: 100%;
-  display: grid;
-  justify-items: center;
-  gap: 0.05rem;
-  padding-top: 0.18rem;
-  text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-}
-.award-laurel__org,
-.award-laurel__field {
-  font-family: var(--mono);
-  font-size: clamp(0.52rem, 0.72vw, 0.64rem);
-  line-height: 1.05;
-}
-.award-laurel__prize {
-  font-family: var(--serif);
-  font-size: clamp(1rem, 1.45vw, 1.32rem);
-  font-weight: 500;
-  line-height: 0.95;
-  letter-spacing: 0.02em;
+.help-hero__awards .help-feature__chips {
+  justify-content: flex-end;
+  margin-top: 0;
 }
 @media (max-width: 900px) {
   .help-hero {
     grid-template-columns: 1fr;
     grid-template-areas:
       "intro"
-      "awards"
       "player"
-      "details";
+      "details"
+      "awards";
   }
   .help-hero__details {
     grid-template-columns: 1fr;
     gap: 0.9rem;
   }
-  .award-laurels {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .award-laurel {
-    min-height: 82px;
-  }
-  .award-laurel__wreath {
-    inset: 8px 1px 4px;
-    width: calc(100% - 2px);
-  }
-  .award-laurel__copy {
-    letter-spacing: 0.08em;
-  }
-  .award-laurel__org,
-  .award-laurel__field {
-    font-size: 0.48rem;
-  }
-  .award-laurel__prize {
-    font-size: 0.95rem;
+  .help-hero__awards .help-feature__chips {
+    justify-content: flex-start;
   }
 }
 
@@ -2772,7 +2687,7 @@ window.__resumeStrudelReady = initStrudel()
 <script type="module">
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260512-harmony-diagrams');
 </script>
-<script type="text/babel" src="components.js?v=20260512-help-laurels"></script>
+<script type="text/babel" src="components.js?v=20260512-footer-trim"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
