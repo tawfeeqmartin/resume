@@ -491,6 +491,15 @@ button.review-toggle {
 .blackout-panel__diagram.is-structure-accent--5.is-structure-tick-b .diagram-note--5 {
   animation: diagram-structure-note-b var(--melody-pulse-ms, 240ms) ease-out;
 }
+.blackout-panel__diagram:is(.is-harmony-diagram-hit-a, .is-harmony-diagram-hit-b) .diagram-harmony-target {
+  animation-name: diagram-harmony-adsr, diagram-harmony-color;
+  animation-duration: var(--harmony-diagram-ms, 920ms), var(--harmony-diagram-ms, 920ms);
+  animation-timing-function: cubic-bezier(0.18, 0.82, 0.25, 1), ease-out;
+  animation-fill-mode: both, both;
+}
+.blackout-panel__diagram:is(.is-harmony-diagram-hit-a, .is-harmony-diagram-hit-b) .diagram-harmony-plane {
+  animation: diagram-harmony-plane var(--harmony-diagram-ms, 920ms) ease-out both;
+}
 .blackout-panel__diagram.is-detail-accent--0.is-detail-tick-a .diagram-ray.diagram-note--0,
 .blackout-panel__diagram.is-detail-accent--1.is-detail-tick-a .diagram-ray.diagram-note--1,
 .blackout-panel__diagram.is-detail-accent--2.is-detail-tick-a .diagram-ray.diagram-note--2,
@@ -602,6 +611,24 @@ button.review-toggle {
   14% { opacity: 1; stroke: var(--accent-blue); filter: none; }
   62% { opacity: 1; stroke: var(--accent-blue); filter: none; }
   100% { opacity: 1; filter: none; }
+}
+@keyframes diagram-harmony-adsr {
+  0% { stroke-dashoffset: 900; opacity: 0.58; }
+  18% { stroke-dashoffset: 0; opacity: 1; }
+  68% { stroke-dashoffset: 0; opacity: 0.92; }
+  100% { stroke-dashoffset: 0; opacity: 1; }
+}
+@keyframes diagram-harmony-color {
+  0% { stroke: var(--ink); }
+  18% { stroke: var(--accent-blue); }
+  70% { stroke: var(--accent-blue); }
+  100% { stroke: color-mix(in oklch, var(--ink), transparent 18%); }
+}
+@keyframes diagram-harmony-plane {
+  0% { opacity: 0.12; }
+  18% { opacity: 0.34; }
+  70% { opacity: 0.22; }
+  100% { opacity: 0; }
 }
 .diagram-text {
   fill: color-mix(in oklch, var(--ink), transparent 6%);
@@ -2607,7 +2634,7 @@ html.has-pseudo-fullscreen body {
 <script src="vendor/react-dom.development.js"></script>
 <script src="vendor/babel.min.js"></script>
 
-<script src="data.js"></script>
+<script src="data.js?v=20260512-harmony-diagrams"></script>
 <script type="module">
 import { initStrudel, initAudio, getAudioContext, evaluate, hush } from './vendor/strudel-web.mjs';
 window.__resumeStrudelModule = { initAudio, getAudioContext, evaluate, hush };
@@ -2619,9 +2646,9 @@ window.__resumeStrudelReady = initStrudel()
   });
 </script>
 <script type="module">
-window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260512-mobile-video-fs');
+window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260512-harmony-diagrams');
 </script>
-<script type="text/babel" src="components.js?v=20260512-mobile-video-fs"></script>
+<script type="text/babel" src="components.js?v=20260512-harmony-diagrams"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);

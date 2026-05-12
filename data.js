@@ -21,7 +21,7 @@ const RESUME = {
       tag: "Current",
       bullets: [
         "Core engineering team for ILM StageCraft, the world's leading LED volume virtual production system, supporting major episodic and feature productions.",
-        "Architect and maintain real-time rendering infrastructure connecting Unreal Engine to in-camera VFX (ICVFX) pipelines across multiple stage facilities.",
+        "Architect and maintain real-time rendering infrastructure connecting both ILM in-house renderer / Unreal Engine to in-camera VFX (ICVFX) pipelines across multiple stage facilities.",
         "Active research into AI-augmented production workflows: LLM-based tooling, multi-agent orchestration, and local inference pipelines as future enhancements to virtual production infrastructure.",
         "Identify opportunities to apply frontier AI capabilities to virtual production; translate research into actionable prototypes and proposals for production integration.",
         "Collaborate directly with directors, DPs, and VFX supervisors to solve on-set technical challenges during live photography.",

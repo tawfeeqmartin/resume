@@ -1892,8 +1892,8 @@ function GeometryPlate({ variant = "euclid" }) {
       <rect className="diagram-plane diagram-plane--blue" x="700" y="92" width="198" height="256" />
       <path className="diagram-line diagram-line--axis" d="M78 348 H930 M112 378 V52" />
       <path className={`diagram-line diagram-line--soft ${diagramNote(0)}`} d="M126 318 L326 84 L526 318 Z M126 318 H526 M326 84 V318" />
-      <circle className={`diagram-circle ${diagramNote(1)}`} cx="126" cy="318" r="200" />
-      <circle className={`diagram-circle ${diagramNote(2)}`} cx="526" cy="318" r="200" />
+      <circle className={`diagram-circle diagram-harmony-target ${diagramNote(1)}`} cx="126" cy="318" r="200" />
+      <circle className={`diagram-circle diagram-harmony-target ${diagramNote(2)}`} cx="526" cy="318" r="200" />
       <path className={`diagram-line ${diagramNote(3)}`} d="M652 304 L652 118 L884 304 Z M652 304 H884 M652 118 L884 304" />
       <path className={`diagram-line diagram-line--thin ${diagramNote(4)}`} d="M686 270 L686 304 L652 304 M120 318 C212 180 430 180 526 318" />
       <DiagramText x="114" y="346">A</DiagramText><DiagramText x="318" y="66">C</DiagramText><DiagramText x="520" y="346">B</DiagramText>
@@ -1911,7 +1911,7 @@ function OpticsPlate() {
       <rect className="diagram-plane diagram-plane--yellow" x="664" y="54" width="246" height="310" />
       <path className="diagram-line diagram-line--axis" d="M70 210 H930 M392 70 V350" />
       <path className={`diagram-line diagram-line--soft ${diagramNote(5)}`} d="M76 210 L392 144 L392 276 Z" />
-      <path className={`diagram-prism ${diagramNote(4)}`} d="M392 144 L392 276 L522 210 Z" />
+      <path className={`diagram-prism diagram-harmony-plane ${diagramNote(4)}`} d="M392 144 L392 276 L522 210 Z" />
       <path className={`diagram-line diagram-ray diagram-ray--0 ${diagramNote(0)}`} d="M522 210 L850 82" />
       <path className={`diagram-line diagram-ray diagram-ray--1 ${diagramNote(1)}`} d="M522 210 L888 150" />
       <path className={`diagram-line diagram-ray diagram-ray--2 ${diagramNote(2)}`} d="M522 210 L902 212" />
@@ -1931,7 +1931,7 @@ function ComputationPlate() {
       <rect className="diagram-plane diagram-plane--blue" x="58" y="70" width="842" height="70" />
       <rect className="diagram-plane diagram-plane--yellow" x="118" y="250" width="232" height="86" />
       <path className={`diagram-line diagram-line--soft ${diagramNote(0)}`} d="M84 104 H884 M84 104 v70 M184 104 v70 M284 104 v70 M384 104 v70 M484 104 v70 M584 104 v70 M684 104 v70 M784 104 v70 M884 104 v70 M84 174 H884" />
-      <path className={`diagram-line ${diagramNote(1)}`} d="M170 292 C268 188 390 188 488 292 S708 396 820 226" />
+      <path className={`diagram-line diagram-harmony-target ${diagramNote(1)}`} d="M170 292 C268 188 390 188 488 292 S708 396 820 226" />
       <path className={`diagram-line diagram-line--thin ${diagramNote(2)}`} d="M218 292 L336 198 L488 292 L650 252 L820 226" />
       <circle className={`diagram-node diagram-node--3 ${diagramNote(3)}`} cx="218" cy="292" r="22" /><circle className={`diagram-node diagram-node--4 ${diagramNote(4)}`} cx="488" cy="292" r="22" /><circle className={`diagram-node diagram-node--5 ${diagramNote(5)}`} cx="820" cy="226" r="22" />
       <DiagramText x="102" y="94">tape</DiagramText><DiagramText x="188" y="154">1</DiagramText><DiagramText x="288" y="154">0</DiagramText><DiagramText x="388" y="154">□</DiagramText>
@@ -1980,7 +1980,7 @@ function SystemsPlate() {
       <rect className="diagram-plane diagram-plane--yellow" x="70" y="68" width="194" height="94" />
       <rect className="diagram-plane diagram-plane--blue" x="390" y="164" width="220" height="102" />
       <rect className="diagram-plane diagram-plane--red" x="720" y="258" width="188" height="94" />
-      <path className={`diagram-line diagram-line--soft ${diagramNote(0)}`} d="M166 162 C270 62 392 92 498 164 S702 342 814 258" />
+      <path className={`diagram-line diagram-line--soft diagram-harmony-target ${diagramNote(0)}`} d="M166 162 C270 62 392 92 498 164 S702 342 814 258" />
       <path className={`diagram-line ${diagramNote(1)}`} d="M166 162 L500 216 L814 258 M166 162 L500 216 M500 216 L814 258" />
       <path className={`diagram-line diagram-line--thin ${diagramNote(2)}`} d="M100 116 H236 M424 214 H578 M748 306 H880 M500 70 V372" />
       <DiagramText x="102" y="116">idea</DiagramText><DiagramText x="426" y="214">prototype</DiagramText><DiagramText x="748" y="306">shot</DiagramText>
@@ -1995,9 +1995,11 @@ function BlackoutDiagram({ type, pulse }) {
     ? [
         pulse.detail ? `is-detail-tick-${pulse.detail.id % 2 ? 'a' : 'b'} is-detail-accent--${pulse.detail.accent} is-melody-lane--${pulse.detail.lane}` : '',
         pulse.structure ? `is-structure-tick-${pulse.structure.id % 2 ? 'a' : 'b'} is-structure-accent--${pulse.structure.accent} is-melody-lane--${pulse.structure.lane}` : '',
+        pulse.harmony ? `is-harmony-diagram-hit-${pulse.harmony.id % 2 ? 'a' : 'b'} is-harmony-lane--${pulse.harmony.lane}` : '',
       ].filter(Boolean).join(' ')
     : '';
   const pulseDuration = Math.max(pulse?.detail?.duration || 0, pulse?.structure?.duration || 0);
+  const harmonyDuration = pulse?.harmony?.duration || 0;
   const archetypes = {
     euclid: <GeometryPlate variant="euclid" />,
     light: <OpticsPlate />,
@@ -2012,7 +2014,10 @@ function BlackoutDiagram({ type, pulse }) {
         className={`blackout-panel__diagram blackout-panel__diagram--${type} ${pulseClass}`}
         viewBox="0 0 1000 420"
         aria-hidden="true"
-        style={pulseDuration ? { '--melody-pulse-ms': `${pulseDuration}ms` } : undefined}
+        style={{
+          ...(pulseDuration ? { '--melody-pulse-ms': `${pulseDuration}ms` } : {}),
+          ...(harmonyDuration ? { '--harmony-diagram-ms': `${harmonyDuration}ms` } : {}),
+        }}
       >
         {archetypes[type]}
       </svg>
@@ -2049,7 +2054,7 @@ function BlackoutDiagram({ type, pulse }) {
       <>
         <rect className="diagram-plane diagram-plane--blue" x="78" y="116" width="842" height="208" />
         <rect className="diagram-plane diagram-plane--yellow" x="594" y="62" width="276" height="94" />
-        <path className={`diagram-line diagram-line--soft ${diagramNote(0)}`} d="M80 322 C180 322 192 118 294 118 C402 118 390 322 510 322 C625 322 642 140 760 120 C850 105 902 178 940 250" />
+        <path className={`diagram-line diagram-line--soft diagram-harmony-target ${diagramNote(0)}`} d="M80 322 C180 322 192 118 294 118 C402 118 390 322 510 322 C625 322 642 140 760 120 C850 105 902 178 940 250" />
         <path className={`diagram-line diagram-line--thin ${diagramNote(1)}`} d="M76 342 L930 342 M114 368 L114 84 M256 342 L256 124 M420 342 L420 238 M604 342 L604 300 M784 342 L784 134" />
         <path className={`diagram-line ${diagramNote(2)}`} d="M250 132 L440 248 M600 300 L792 132" />
         <DiagramText x="128" y="96">y</DiagramText><DiagramText x="910" y="360">x</DiagramText>
@@ -2130,7 +2135,7 @@ function BlackoutDiagram({ type, pulse }) {
       <>
         <rect className="diagram-plane diagram-plane--blue" x="118" y="92" width="782" height="70" />
         <rect className="diagram-plane diagram-plane--red" x="118" y="260" width="782" height="70" />
-        <path className={`diagram-line diagram-line--thin ${diagramNote(0)}`} d="M120 120 C260 96 370 96 510 120 S760 144 900 120 M120 300 C260 276 370 276 510 300 S760 324 900 300" />
+        <path className={`diagram-line diagram-line--thin diagram-harmony-target ${diagramNote(0)}`} d="M120 120 C260 96 370 96 510 120 S760 144 900 120 M120 300 C260 276 370 276 510 300 S760 324 900 300" />
         <path className={`diagram-line diagram-line--soft ${diagramNote(1)}`} d="M160 102 L160 318 M262 102 L262 318 M364 102 L364 318 M466 102 L466 318 M568 102 L568 318 M670 102 L670 318 M772 102 L772 318 M874 102 L874 318" />
         <path className={`diagram-line ${diagramNote(2)}`} d="M160 120 L874 300 M160 300 L874 120 M262 120 L772 300 M262 300 L772 120" />
         <DiagramText x="150" y="92">u</DiagramText><DiagramText x="872" y="92">v</DiagramText><DiagramText x="132" y="338">s</DiagramText><DiagramText x="884" y="338">t</DiagramText>
@@ -2154,7 +2159,7 @@ function BlackoutDiagram({ type, pulse }) {
       <>
         <rect className="diagram-plane diagram-plane--red" x="120" y="238" width="760" height="102" />
         <rect className="diagram-plane diagram-plane--yellow" x="400" y="70" width="200" height="110" />
-        <path className={`diagram-line diagram-line--soft ${diagramNote(0)}`} d="M120 330 C270 240 410 202 500 202 C590 202 730 240 880 330" />
+        <path className={`diagram-line diagram-line--soft diagram-harmony-target ${diagramNote(0)}`} d="M120 330 C270 240 410 202 500 202 C590 202 730 240 880 330" />
         <path className={`diagram-line ${diagramNote(1)}`} d="M120 330 L500 72 L880 330 M254 240 L746 240 M360 168 L640 168" />
         <path className={`diagram-line diagram-line--thin ${diagramNote(2)}`} d="M190 90 L300 240 M810 90 L700 240 M500 72 L500 360" />
         <DiagramText x="468" y="64">fly</DiagramText><DiagramText x="156" y="356">audience</DiagramText><DiagramText x="690" y="228">sightline</DiagramText>
@@ -2213,7 +2218,7 @@ function BlackoutDiagram({ type, pulse }) {
     ),
     story: (
       <>
-        <path className={`diagram-line diagram-line--soft ${diagramNote(0)}`} d="M120 300 C230 90 408 360 500 186 C592 18 770 330 880 118" />
+        <path className={`diagram-line diagram-line--soft diagram-harmony-target ${diagramNote(0)}`} d="M120 300 C230 90 408 360 500 186 C592 18 770 330 880 118" />
         <path className={`diagram-line ${diagramNote(1)}`} d="M120 300 L500 186 L880 118 M206 210 C290 250 350 250 428 210 M570 196 C650 150 724 150 800 196" />
         <path className={`diagram-line diagram-line--thin ${diagramNote(2)}`} d="M160 340 h680 M500 66 v300" />
         <DiagramText x="118" y="322">geometry</DiagramText><DiagramText x="456" y="178">story</DiagramText><DiagramText x="782" y="106">AI</DiagramText>
@@ -2228,7 +2233,10 @@ function BlackoutDiagram({ type, pulse }) {
       className={`blackout-panel__diagram blackout-panel__diagram--${type} ${pulseClass}`}
       viewBox="0 0 1000 420"
       aria-hidden="true"
-      style={pulseDuration ? { '--melody-pulse-ms': `${pulseDuration}ms` } : undefined}
+      style={{
+        ...(pulseDuration ? { '--melody-pulse-ms': `${pulseDuration}ms` } : {}),
+        ...(harmonyDuration ? { '--harmony-diagram-ms': `${harmonyDuration}ms` } : {}),
+      }}
     >
       {diagrams[type] || diagrams.euclid}
     </svg>
@@ -2431,6 +2439,14 @@ function BlackoutPoetryPanel() {
         lane: event.detail.lane,
         duration: event.detail.duration,
       });
+      setDiagramPulse((current) => ({
+        ...current,
+        harmony: {
+          id: event.detail.id,
+          lane: event.detail.lane,
+          duration: Math.max(760, event.detail.duration * 3.2),
+        },
+      }));
       beginPhraseRevealSequence();
     };
     window.addEventListener('resume-harmony-hit', onHarmonyHit);
