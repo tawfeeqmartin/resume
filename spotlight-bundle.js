@@ -365,8 +365,7 @@ async function loadFromUrl(source) {
   video.setAttribute('webkit-playsinline', '');
   video.muted = true;
   video.preload = 'metadata';
-  video.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px;';
-  document.body.appendChild(video);
+  video.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;opacity:0.01;pointer-events:none;';
 
   return { geometry, projection, video, dispose: () => { video.removeAttribute('src'); video.load(); video.remove(); } };
 }
@@ -383,6 +382,7 @@ class SpotlightRenderer {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(host.clientWidth, host.clientHeight, false);
+    this.host.style.position ||= 'relative';
     host.appendChild(this.renderer.domElement);
     this.renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;cursor:grab;';
     this.renderer.domElement.tabIndex = 0;
@@ -427,6 +427,7 @@ class SpotlightRenderer {
       this.current.mesh.material.dispose();
       this.current.loaded.dispose();
     }
+    this.host.appendChild(loaded.video);
     const tex = new THREE.VideoTexture(loaded.video);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.minFilter = THREE.LinearFilter;

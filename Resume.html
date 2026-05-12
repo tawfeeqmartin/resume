@@ -1700,6 +1700,25 @@ html.has-pseudo-fullscreen body {
   width: 100% !important;
   height: 100% !important;
 }
+.video-slot.is-pseudo-fullscreen .video-slot__video,
+.video-slot:fullscreen .video-slot__video {
+  object-fit: contain !important;
+  background: #000;
+}
+.video-slot:fullscreen,
+.help-player:fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  min-height: 100vh !important;
+  aspect-ratio: auto !important;
+  border-radius: 0 !important;
+  background: #000;
+}
+.video-slot:fullscreen .video-slot__video,
+.help-player:fullscreen .help-player__canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
 .help-player__overlay {
   position: absolute; inset: 0;
   display: grid; place-items: center;
@@ -2591,9 +2610,9 @@ window.__resumeStrudelReady = initStrudel()
   });
 </script>
 <script type="module">
-window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260511-mobile-fs-play');
+window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260511-mobile-fs-video');
 </script>
-<script type="text/babel" src="components.js?v=20260511-mobile-fs-play"></script>
+<script type="text/babel" src="components.js?v=20260511-mobile-fs-video"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
