@@ -2188,16 +2188,16 @@ body.font-cascadia-signal .identity__vector-name {
     height: auto;
     min-height: 0;
     aspect-ratio: auto;
-    margin: 0.85rem 0 1.1rem;
+    margin: 0.85rem 0 0.7rem;
     padding: 0;
     overflow: hidden;
     border-left: 1px solid var(--ink);
     background: var(--paper-2);
     --blackout-panel-inset: 0.62rem;
-    --blackout-copy-size: clamp(0.58rem, 2.45vw, 0.72rem);
-    --blackout-code-size: clamp(0.5rem, 2.15vw, 0.64rem);
-    --blackout-diagram-size: clamp(0.58rem, 2.35vw, 0.72rem);
-    --blackout-diagram-label-size: clamp(0.42rem, 1.7vw, 0.54rem);
+    --blackout-copy-size: clamp(0.54rem, 2.18vw, 0.66rem);
+    --blackout-code-size: clamp(0.48rem, 1.95vw, 0.58rem);
+    --blackout-diagram-size: clamp(0.78rem, 3.35vw, 1rem);
+    --blackout-diagram-label-size: clamp(0.58rem, 2.45vw, 0.78rem);
   }
   .blackout-panel::before {
     opacity: 0.28;
@@ -2208,7 +2208,7 @@ body.font-cascadia-signal .identity__vector-name {
     height: auto;
     padding: 0;
     display: grid;
-    grid-template-rows: minmax(10rem, 38vw) auto;
+    grid-template-rows: minmax(12.5rem, 52vw) auto;
   }
   .blackout-panel__figure,
   .blackout-panel__page--proof .blackout-panel__figure,
@@ -2230,7 +2230,7 @@ body.font-cascadia-signal .identity__vector-name {
     grid-row: 1;
     width: 100%;
     height: 100%;
-    padding: 0.42rem 0.5rem 0.15rem;
+    padding: 0.5rem 0.58rem 0.2rem;
     z-index: 4;
   }
   .blackout-panel__manual-flow {
@@ -2238,10 +2238,13 @@ body.font-cascadia-signal .identity__vector-name {
     inset: auto;
     grid-row: 2;
     z-index: 6;
-    display: block;
-    padding: 0.12rem 0.62rem 0.68rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.12rem 0.5rem;
+    align-content: start;
+    padding: 0.12rem 0.62rem 0.62rem;
     font-size: var(--blackout-copy-size);
-    line-height: 1.28;
+    line-height: 1.22;
   }
   .blackout-panel__manual-row,
   .blackout-panel__manual-row--c0,
@@ -2253,18 +2256,15 @@ body.font-cascadia-signal .identity__vector-name {
     transform: none;
     white-space: normal;
     overflow-wrap: anywhere;
-    margin: 0 0 0.16rem;
-  }
-  .blackout-panel__manual-row--c2,
-  .blackout-panel__manual-row--c3 {
-    display: none;
+    margin: 0;
   }
   .blackout-panel__manual-row--terminal,
   .blackout-panel__manual-row--code,
   .blackout-panel__manual-row--diff-add,
   .blackout-panel__manual-row--diff-remove,
   .blackout-panel__manual-row--spec {
-    margin-top: 0.34rem;
+    margin-top: 0.22rem;
+    grid-column: span 2;
   }
   .blackout-panel__phrase-map {
     display: none;
@@ -2276,7 +2276,7 @@ body.font-cascadia-signal .identity__vector-name {
     grid-template-columns: 1fr;
     grid-template-areas: "head" "body";
     gap: 0.75rem;
-    padding: 2rem 0;
+    padding: 1.45rem 0;
   }
   .section__rule {
     display: none;
@@ -2286,7 +2286,7 @@ body.font-cascadia-signal .identity__vector-name {
     align-items: center;
     gap: 0.65rem;
     margin-left: 0;
-    margin-bottom: 1rem;
+    margin-bottom: 0.65rem;
   }
   .section__mark {
     position: static;
@@ -2306,7 +2306,7 @@ body.font-cascadia-signal .identity__vector-name {
     grid-template-columns: 1fr;
     grid-template-areas: "head" "body";
     gap: 0.9rem;
-    padding: 1.5rem 0;
+    padding: 1.1rem 0;
   }
   .job__rail {
     display: none;
@@ -2326,7 +2326,7 @@ body.font-cascadia-signal .identity__vector-name {
     grid-template-columns: 1fr;
   }
   .help-feature {
-    gap: 1rem;
+    gap: 0.75rem;
   }
   .help-feature__player-col,
   .help-feature__player-col--wide,
@@ -2340,7 +2340,7 @@ body.font-cascadia-signal .identity__vector-name {
     height: auto;
   }
   .video-stack {
-    gap: 0.85rem;
+    gap: 0.62rem;
   }
   .video-controls {
     left: 8px;
