@@ -3309,15 +3309,22 @@ function useMusicPulse() {
   useEffect(() => {
     let timeoutId;
     const onDrum = (event) => {
-      if (event.detail?.lane !== "snare") return;
+      const lane = event.detail?.lane;
+      if (lane !== "snare" && lane !== "clap") return;
       window.clearTimeout(timeoutId);
       setPulse({ lane: "clap", id: event.detail?.id || Date.now() });
-      timeoutId = window.setTimeout(() => setPulse((current) => ({ ...current, lane: null })), 210);
+      timeoutId = window.setTimeout(() => setPulse((current) => ({ ...current, lane: null })), 520);
     };
     window.addEventListener("resume-drum-hit", onDrum);
+    window.__resumeProofStampPulse = () => {
+      window.clearTimeout(timeoutId);
+      setPulse({ lane: "clap", id: Date.now() });
+      timeoutId = window.setTimeout(() => setPulse((current) => ({ ...current, lane: null })), 520);
+    };
     return () => {
       window.clearTimeout(timeoutId);
       window.removeEventListener("resume-drum-hit", onDrum);
+      if (window.__resumeProofStampPulse) delete window.__resumeProofStampPulse;
     };
   }, []);
   return pulse;
@@ -3327,6 +3334,7 @@ function ProofDiagram({ type }) {
   if (type === "sphere") {
     return (
       <svg viewBox="0 0 88 52" aria-hidden="true" focusable="false">
+        <circle className="proof-stamp__area proof-stamp__area--blue" cx="44" cy="26" r="17" />
         <circle className="proof-stamp__line" cx="44" cy="26" r="17" />
         <ellipse className="proof-stamp__line proof-stamp__line--dash" cx="44" cy="26" rx="24" ry="10" />
         <path className="proof-stamp__line" d="M44 9 V43 M20 26 H68" />
@@ -3337,6 +3345,7 @@ function ProofDiagram({ type }) {
   if (type === "axis") {
     return (
       <svg viewBox="0 0 88 52" aria-hidden="true" focusable="false">
+        <path className="proof-stamp__area proof-stamp__area--red" d="M28 38 L61 17 L61 38 Z" />
         <path className="proof-stamp__line" d="M18 38 H70 M28 44 V12" />
         <path className="proof-stamp__line proof-stamp__line--dash" d="M28 38 L61 17" />
         <rect className="proof-stamp__fill proof-stamp__fill--red" x="56" y="14" width="8" height="8" />
@@ -3347,6 +3356,7 @@ function ProofDiagram({ type }) {
   if (type === "triangle") {
     return (
       <svg viewBox="0 0 88 52" aria-hidden="true" focusable="false">
+        <path className="proof-stamp__area proof-stamp__area--yellow" d="M18 39 H70 L44 12 Z" />
         <path className="proof-stamp__line" d="M18 39 H70 L44 12 Z" />
         <path className="proof-stamp__line proof-stamp__line--dash" d="M44 12 V39 M31 26 H57" />
         <polygon className="proof-stamp__fill proof-stamp__fill--yellow" points="44,18 50,29 38,29" />
@@ -3355,6 +3365,7 @@ function ProofDiagram({ type }) {
   }
   return (
     <svg viewBox="0 0 88 52" aria-hidden="true" focusable="false">
+      <path className="proof-stamp__area proof-stamp__area--blue" d="M44 10 A18 18 0 0 1 44 44 A18 18 0 0 1 44 10" />
       <circle className="proof-stamp__line" cx="35" cy="27" r="18" />
       <circle className="proof-stamp__line" cx="53" cy="27" r="18" />
       <path className="proof-stamp__line proof-stamp__line--dash" d="M18 27 H70 M44 9 V45" />

@@ -1764,23 +1764,40 @@ body.font-cascadia-signal .identity__vector-name {
   stroke-dasharray: 4 4;
   stroke: color-mix(in oklch, var(--ink), transparent 42%);
 }
+.proof-stamp__area {
+  opacity: 0.18;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: opacity 0.08s ease, transform 0.08s ease;
+}
+.proof-stamp__area--blue { fill: var(--accent-blue); }
+.proof-stamp__area--red { fill: var(--accent-red); }
+.proof-stamp__area--yellow { fill: var(--accent-yellow); }
 .proof-stamp__fill {
   opacity: var(--stamp-fill-alpha);
   transform-box: fill-box;
   transform-origin: center;
-  transition: opacity 0.12s ease, transform 0.12s ease;
+  transition: opacity 0.08s ease, transform 0.08s ease, filter 0.08s ease;
 }
 .proof-stamp__fill--blue { fill: var(--accent-blue); }
 .proof-stamp__fill--red { fill: var(--accent-red); }
 .proof-stamp__fill--yellow { fill: var(--accent-yellow); }
 .proof-stamp.is-music-active {
   --stamp-fill-alpha: 1;
+  background: color-mix(in oklch, var(--accent-blue), transparent 92%);
+  border-color: color-mix(in oklch, var(--accent-blue), transparent 55%);
 }
 .proof-stamp.is-music-active .proof-stamp__fill {
-  transform: scale(1.24);
+  transform: scale(1.55);
+  filter: saturate(1.4);
+}
+.proof-stamp.is-music-active .proof-stamp__area {
+  opacity: 0.42;
+  transform: scale(1.05);
 }
 .proof-stamp.is-music-active .proof-stamp__line {
-  stroke: color-mix(in oklch, var(--ink), transparent 4%);
+  stroke: color-mix(in oklch, var(--accent-blue), var(--ink) 18%);
+  stroke-width: 1.35;
 }
 .proof-stamp__award {
   max-width: 17ch;
@@ -2780,7 +2797,7 @@ window.__resumeStrudelReady = initStrudel()
 <script type="module">
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260512-harmony-diagrams');
 </script>
-<script type="text/babel" src="components.js?v=20260512-proof-stamps"></script>
+<script type="text/babel" src="components.js?v=20260512-proof-stamps-pulse"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
