@@ -1726,9 +1726,9 @@ body.font-cascadia-signal .identity__vector-name {
 }
 .proof-stamp {
   --stamp-fill-alpha: 0.72;
-  --stamp-red: #d72828;
-  --stamp-yellow: #f6c400;
-  --stamp-blue: #0057b8;
+  --stamp-red: #e31b23;
+  --stamp-yellow: #f7d117;
+  --stamp-blue: #005bbb;
   min-width: 0;
   display: grid;
   grid-template-rows: auto 42px auto;
@@ -1803,17 +1803,25 @@ body.font-cascadia-signal .identity__vector-name {
   stroke: #000;
   stroke-width: 1.45;
 }
-html.is-proof-stamp-pulse .proof-stamp {
+html.is-proof-stamp-pulse--drums .proof-stamp--drums,
+html.is-proof-stamp-pulse--harmony .proof-stamp--harmony,
+html.is-proof-stamp-pulse--melody .proof-stamp--melody {
   --stamp-fill-alpha: 1;
   animation: proofStampPaperHit 520ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-html.is-proof-stamp-pulse .proof-stamp__area {
+html.is-proof-stamp-pulse--drums .proof-stamp--drums .proof-stamp__area,
+html.is-proof-stamp-pulse--harmony .proof-stamp--harmony .proof-stamp__area,
+html.is-proof-stamp-pulse--melody .proof-stamp--melody .proof-stamp__area {
   animation: proofStampColorHit 520ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-html.is-proof-stamp-pulse .proof-stamp__fill {
+html.is-proof-stamp-pulse--drums .proof-stamp--drums .proof-stamp__fill,
+html.is-proof-stamp-pulse--harmony .proof-stamp--harmony .proof-stamp__fill,
+html.is-proof-stamp-pulse--melody .proof-stamp--melody .proof-stamp__fill {
   animation: proofStampNodeHit 520ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-html.is-proof-stamp-pulse .proof-stamp__line {
+html.is-proof-stamp-pulse--drums .proof-stamp--drums .proof-stamp__line,
+html.is-proof-stamp-pulse--harmony .proof-stamp--harmony .proof-stamp__line,
+html.is-proof-stamp-pulse--melody .proof-stamp--melody .proof-stamp__line {
   animation: proofStampLineHit 520ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes proofStampPaperHit {
@@ -2851,7 +2859,7 @@ window.__resumeStrudelReady = initStrudel()
 <script type="module">
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260512-harmony-diagrams');
 </script>
-<script type="text/babel" src="components.js?v=20260512-proof-stamps-byrne-pulse"></script>
+<script type="text/babel" src="components.js?v=20260512-proof-stamps-lane-pulse"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);

@@ -3309,35 +3309,78 @@ function useMusicPulse() {
   useEffect(() => {
     let timeoutId;
     let classTimeoutId;
-    const triggerProofPulse = () => {
+    let clockId;
+    let pulseId = 0;
+    const laneMap = {
+      "resume-drum-hit": "drums",
+      "resume-harmony-hit": "harmony",
+      "resume-melody-note": "melody",
+    };
+    const orderedLanes = ["drums", "harmony", "melody"];
+    const triggerProofPulse = (lane = "drums", id = Date.now()) => {
       document.documentElement.classList.remove("is-proof-stamp-pulse");
+      document.documentElement.classList.remove("is-proof-stamp-pulse--drums");
+      document.documentElement.classList.remove("is-proof-stamp-pulse--harmony");
+      document.documentElement.classList.remove("is-proof-stamp-pulse--melody");
       void document.documentElement.offsetWidth;
       document.documentElement.classList.add("is-proof-stamp-pulse");
+      document.documentElement.classList.add(`is-proof-stamp-pulse--${lane}`);
+      document.documentElement.dataset.proofPulseLane = lane;
+      document.documentElement.dataset.proofPulseId = String(id);
       window.clearTimeout(classTimeoutId);
       classTimeoutId = window.setTimeout(() => {
         document.documentElement.classList.remove("is-proof-stamp-pulse");
+        document.documentElement.classList.remove("is-proof-stamp-pulse--drums");
+        document.documentElement.classList.remove("is-proof-stamp-pulse--harmony");
+        document.documentElement.classList.remove("is-proof-stamp-pulse--melody");
       }, 520);
     };
-    const onDrum = (event) => {
-      const lane = event.detail?.lane;
-      if (lane !== "snare" && lane !== "clap") return;
+    const emitPulse = (lane, id) => {
       window.clearTimeout(timeoutId);
-      triggerProofPulse();
-      setPulse({ lane: "clap", id: event.detail?.id || Date.now() });
+      triggerProofPulse(lane, id);
+      setPulse({ lane, id });
       timeoutId = window.setTimeout(() => setPulse((current) => ({ ...current, lane: null })), 520);
     };
-    window.addEventListener("resume-drum-hit", onDrum);
+    const onMusicHit = (event) => {
+      const lane = laneMap[event.type];
+      if (!lane) return;
+      emitPulse(lane, event.detail?.id || Date.now());
+    };
+    const resetClock = () => {
+      window.clearInterval(clockId);
+      if (!getResumeAudioEngine().enabled) return;
+      const timing = getResumeAudioEngine().visualTiming || {};
+      const stepMs = Math.max(180, timing.stemPulseMs || timing.stepMs * 4 || 625);
+      clockId = window.setInterval(() => {
+        const lane = orderedLanes[pulseId % orderedLanes.length];
+        pulseId += 1;
+        emitPulse(lane, Date.now());
+      }, stepMs);
+    };
+    window.addEventListener("resume-drum-hit", onMusicHit);
+    window.addEventListener("resume-harmony-hit", onMusicHit);
+    window.addEventListener("resume-melody-note", onMusicHit);
+    window.addEventListener("resume-audio-change", resetClock);
+    window.addEventListener("resume-song-change", resetClock);
+    resetClock();
     window.__resumeProofStampPulse = () => {
-      window.clearTimeout(timeoutId);
-      triggerProofPulse();
-      setPulse({ lane: "clap", id: Date.now() });
-      timeoutId = window.setTimeout(() => setPulse((current) => ({ ...current, lane: null })), 520);
+      const lane = orderedLanes[pulseId % orderedLanes.length];
+      pulseId += 1;
+      emitPulse(lane, Date.now());
     };
     return () => {
       window.clearTimeout(timeoutId);
       window.clearTimeout(classTimeoutId);
+      window.clearInterval(clockId);
       document.documentElement.classList.remove("is-proof-stamp-pulse");
-      window.removeEventListener("resume-drum-hit", onDrum);
+      document.documentElement.classList.remove("is-proof-stamp-pulse--drums");
+      document.documentElement.classList.remove("is-proof-stamp-pulse--harmony");
+      document.documentElement.classList.remove("is-proof-stamp-pulse--melody");
+      window.removeEventListener("resume-drum-hit", onMusicHit);
+      window.removeEventListener("resume-harmony-hit", onMusicHit);
+      window.removeEventListener("resume-melody-note", onMusicHit);
+      window.removeEventListener("resume-audio-change", resetClock);
+      window.removeEventListener("resume-song-change", resetClock);
       if (window.__resumeProofStampPulse) delete window.__resumeProofStampPulse;
     };
   }, []);
@@ -3398,7 +3441,7 @@ function ProofDiagram({ type }) {
 
 function ProofStamp({ item, active }) {
   return (
-    <li className={`proof-stamp ${active ? "is-music-active" : ""}`}>
+    <li className={`proof-stamp proof-stamp--${item.lane} ${active ? "is-music-active" : ""}`}>
       <span className="proof-stamp__org mono">{item.org}</span>
       <span className="proof-stamp__diagram">
         <ProofDiagram type={item.diagram} />
@@ -3413,7 +3456,7 @@ function ProofStampRow({ items, compact }) {
   return (
     <ul className={`proof-stamps ${compact ? "proof-stamps--compact" : ""}`}>
       {items.map((item, index) => (
-        <ProofStamp key={`${item.org}-${index}`} item={item} active={pulse.lane === "clap"} />
+        <ProofStamp key={`${item.org}-${index}`} item={item} active={pulse.lane === item.lane} />
       ))}
     </ul>
   );
