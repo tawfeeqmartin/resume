@@ -315,8 +315,17 @@ async function fetchProjectionBytes(url) {
   return res.arrayBuffer();
 }
 
-async function loadFromUrl(url) {
-  const buf = await fetchProjectionBytes(url);
+function normalizeSource(source) {
+  if (typeof source === 'string') return { videoUrl: source, projectionUrl: source };
+  return {
+    videoUrl: source.videoUrl || source.src || source.url,
+    projectionUrl: source.projectionUrl || source.projection || source.videoUrl || source.src || source.url,
+  };
+}
+
+async function loadFromUrl(source) {
+  const { videoUrl, projectionUrl } = normalizeSource(source);
+  const buf = await fetchProjectionBytes(projectionUrl);
   const head = new Uint8Array(buf, 0, Math.min(16, buf.byteLength));
   const isWebm = head.length >= 4 && head[0] === 0x1a && head[1] === 0x45 && head[2] === 0xdf && head[3] === 0xa3;
 
@@ -352,9 +361,11 @@ async function loadFromUrl(url) {
 
   const video = document.createElement('video');
   video.crossOrigin = 'anonymous';
-  video.src = url;
+  video.src = videoUrl;
   video.loop = true;
   video.playsInline = true;
+  video.setAttribute('playsinline', '');
+  video.setAttribute('webkit-playsinline', '');
   video.muted = true;
   video.preload = 'metadata';
   video.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px;';

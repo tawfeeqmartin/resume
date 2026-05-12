@@ -2470,12 +2470,16 @@ function BlackoutPoetryPanel() {
   useEffect(() => () => clearRevealTimers(), []);
 
   useEffect(() => {
-    const raf = window.requestAnimationFrame(() => {
+    let raf = null;
+    let retryTimer = null;
+    let cancelled = false;
+
+    const measureSegments = () => {
       const mapBox = phraseMapRef.current?.getBoundingClientRect();
       const nodes = activeWordRefs.current.filter(Boolean);
       if (!mapBox || nodes.length < 2) {
         setPhraseSegments([]);
-        return;
+        return false;
       }
       const points = nodes.map((node) => {
         const rect = node.getBoundingClientRect();
@@ -2505,8 +2509,46 @@ function BlackoutPoetryPanel() {
           y2: next.y - uy * endInset,
         };
       }).filter(Boolean));
+      return true;
+    };
+
+    const scheduleMeasure = () => {
+      if (raf) window.cancelAnimationFrame(raf);
+      raf = window.requestAnimationFrame(() => {
+        raf = null;
+        measureSegments();
+      });
+    };
+
+    const retryMeasure = (attempt = 0) => {
+      if (cancelled) return;
+      const measured = measureSegments();
+      if (measured || attempt >= 10) return;
+      retryTimer = window.setTimeout(() => retryMeasure(attempt + 1), attempt < 4 ? 80 : 180);
+    };
+
+    const readyFonts = document.fonts?.ready;
+    scheduleMeasure();
+    retryMeasure();
+    readyFonts?.then(() => {
+      if (!cancelled) scheduleMeasure();
     });
-    return () => window.cancelAnimationFrame(raf);
+
+    const observer = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(scheduleMeasure)
+      : null;
+    if (observer && panelRef.current) observer.observe(panelRef.current);
+    window.addEventListener('resize', scheduleMeasure);
+    window.addEventListener('orientationchange', scheduleMeasure);
+
+    return () => {
+      cancelled = true;
+      if (raf) window.cancelAnimationFrame(raf);
+      if (retryTimer) window.clearTimeout(retryTimer);
+      observer?.disconnect();
+      window.removeEventListener('resize', scheduleMeasure);
+      window.removeEventListener('orientationchange', scheduleMeasure);
+    };
   }, [active, laidOutRows, revealedWordCount, phraseWordKeys]);
 
   return (
@@ -2617,6 +2659,17 @@ function HelpPlayer({ src }) {
 
   useEffect(() => {
     let cancelled = false;
+    const probeVideo = document.createElement('video');
+    const getVideoUrl = (candidate) => {
+      if (typeof candidate === 'string') return candidate;
+      return candidate.videoUrl || candidate.src || candidate.url;
+    };
+    const canPlaySource = (candidate) => {
+      const clean = String(getVideoUrl(candidate)).split('?')[0].toLowerCase();
+      if (clean.endsWith('.mp4')) return probeVideo.canPlayType('video/mp4') !== '';
+      if (clean.endsWith('.webm')) return probeVideo.canPlayType('video/webm; codecs="vp9, opus"') !== '' || probeVideo.canPlayType('video/webm') !== '';
+      return true;
+    };
     async function go() {
       try {
         const sources = Array.isArray(src) ? src : [src];
@@ -2624,7 +2677,8 @@ function HelpPlayer({ src }) {
         // HEAD probe first so a missing file fails fast and the
         // placeholder shows immediately instead of stalling.
         for (const candidate of sources) {
-          const head = await fetch(candidate, { method: 'HEAD' }).catch(() => null);
+          if (!canPlaySource(candidate)) continue;
+          const head = await fetch(getVideoUrl(candidate), { method: 'HEAD' }).catch(() => null);
           if (head?.ok) {
             playableSrc = candidate;
             break;
@@ -2802,6 +2856,9 @@ function HelpPlayer({ src }) {
               <span className="wasd-key"><b>A</b><i>←</i></span>
               <span className="wasd-key wasd-key--center"><b>S</b><i>↓</i></span>
               <span className="wasd-key"><b>D</b><i>→</i></span>
+            </div>
+            <div className="swipe-hint">
+              <span className="swipe-hint__track"><i /></span>
             </div>
           </div>
           <div className="video-controls video-controls--help" aria-label="HELP video controls">

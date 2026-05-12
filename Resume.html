@@ -1772,6 +1772,51 @@ body.font-cascadia-signal .identity__vector-name {
   grid-template-rows: repeat(2, 42px);
   gap: 7px;
 }
+.swipe-hint {
+  display: none;
+}
+.swipe-hint__track {
+  position: relative;
+  display: block;
+  width: 96px;
+  height: 2px;
+  background: rgba(244,240,230,0.52);
+}
+.swipe-hint__track::before,
+.swipe-hint__track::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid rgba(244,240,230,0.8);
+}
+.swipe-hint__track::before {
+  left: 0;
+  border-left: 2px solid rgba(244,240,230,0.8);
+  transform: translateY(-50%) rotate(-45deg);
+}
+.swipe-hint__track::after {
+  right: 0;
+  border-right: 2px solid rgba(244,240,230,0.8);
+  transform: translateY(-50%) rotate(45deg);
+}
+.swipe-hint__track i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #f4f0e6;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  animation: swipePulse 1.4s ease-in-out infinite;
+}
+@keyframes swipePulse {
+  0%, 100% { transform: translate(-50%, -50%); opacity: 0.45; }
+  35% { transform: translate(-145%, -50%); opacity: 1; }
+  70% { transform: translate(45%, -50%); opacity: 1; }
+}
 .wasd-key {
   border: 1px solid rgba(244,240,230,0.28);
   background: rgba(244,240,230,0.08);
@@ -2451,8 +2496,11 @@ body.font-cascadia-signal .identity__vector-name {
     height: 29px;
     flex-basis: 29px;
   }
-  .wasd-hint {
+  .wasd-hint__grid {
     display: none;
+  }
+  .swipe-hint {
+    display: block;
   }
   .awards,
   .skills {
@@ -2523,9 +2571,9 @@ window.__resumeStrudelReady = initStrudel()
   });
 </script>
 <script type="module">
-window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260511-r2-streaming');
+window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260511-mobile-help');
 </script>
-<script type="text/babel" src="components.js?v=20260511-r2-media"></script>
+<script type="text/babel" src="components.js?v=20260511-mobile-help"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
@@ -2536,7 +2584,11 @@ const mediaUrl = (path) => {
 const HELP_VIDEO_URLS = [
   mediaUrl("media/help_full.webm"),
   mediaUrl("media/help-720-mesh.webm"),
-  mediaUrl("media/help.f338.webm")
+  mediaUrl("media/help.f338.webm"),
+  {
+    videoUrl: mediaUrl("media/help-720-mobile.mp4"),
+    projectionUrl: mediaUrl("media/help_full.webm")
+  }
 ];
 const BLACKBIRD_INNOVATION_VIDEO_URL = mediaUrl("media/blackbird-innovation.mp4");
 const BLACKBIRD_VIDEO_URL = mediaUrl("media/blackbird.mp4");
