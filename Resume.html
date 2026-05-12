@@ -1755,20 +1755,21 @@ body.font-cascadia-signal .identity__vector-name {
 }
 .proof-stamp__line {
   fill: none;
-  stroke: color-mix(in oklch, var(--ink), transparent 18%);
-  stroke-width: 1;
+  stroke: #111;
+  stroke-width: 1.15;
   vector-effect: non-scaling-stroke;
   shape-rendering: geometricPrecision;
 }
 .proof-stamp__line--dash {
   stroke-dasharray: 4 4;
-  stroke: color-mix(in oklch, var(--ink), transparent 42%);
+  stroke: color-mix(in oklch, #111, transparent 24%);
 }
 .proof-stamp__area {
-  opacity: 0.18;
+  opacity: 0.76;
   transform-box: fill-box;
   transform-origin: center;
   transition: opacity 0.08s ease, transform 0.08s ease;
+  mix-blend-mode: multiply;
 }
 .proof-stamp__area--blue { fill: var(--accent-blue); }
 .proof-stamp__area--red { fill: var(--accent-red); }
@@ -1792,12 +1793,12 @@ body.font-cascadia-signal .identity__vector-name {
   filter: saturate(1.4);
 }
 .proof-stamp.is-music-active .proof-stamp__area {
-  opacity: 0.42;
-  transform: scale(1.05);
+  opacity: 0.96;
+  transform: scale(1.08);
 }
 .proof-stamp.is-music-active .proof-stamp__line {
-  stroke: color-mix(in oklch, var(--accent-blue), var(--ink) 18%);
-  stroke-width: 1.35;
+  stroke: #000;
+  stroke-width: 1.45;
 }
 .proof-stamp__award {
   max-width: 17ch;

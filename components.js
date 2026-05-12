@@ -3335,6 +3335,8 @@ function ProofDiagram({ type }) {
     return (
       <svg viewBox="0 0 88 52" aria-hidden="true" focusable="false">
         <circle className="proof-stamp__area proof-stamp__area--blue" cx="44" cy="26" r="17" />
+        <path className="proof-stamp__area proof-stamp__area--yellow" d="M44 9 A17 17 0 0 1 61 26 H44 Z" />
+        <path className="proof-stamp__area proof-stamp__area--red" d="M44 43 A17 17 0 0 1 27 26 H44 Z" />
         <circle className="proof-stamp__line" cx="44" cy="26" r="17" />
         <ellipse className="proof-stamp__line proof-stamp__line--dash" cx="44" cy="26" rx="24" ry="10" />
         <path className="proof-stamp__line" d="M44 9 V43 M20 26 H68" />
@@ -3346,6 +3348,8 @@ function ProofDiagram({ type }) {
     return (
       <svg viewBox="0 0 88 52" aria-hidden="true" focusable="false">
         <path className="proof-stamp__area proof-stamp__area--red" d="M28 38 L61 17 L61 38 Z" />
+        <path className="proof-stamp__area proof-stamp__area--yellow" d="M28 38 L44 27 L44 38 Z" />
+        <path className="proof-stamp__area proof-stamp__area--blue" d="M44 27 L61 17 L61 27 Z" />
         <path className="proof-stamp__line" d="M18 38 H70 M28 44 V12" />
         <path className="proof-stamp__line proof-stamp__line--dash" d="M28 38 L61 17" />
         <rect className="proof-stamp__fill proof-stamp__fill--red" x="56" y="14" width="8" height="8" />
@@ -3357,6 +3361,8 @@ function ProofDiagram({ type }) {
     return (
       <svg viewBox="0 0 88 52" aria-hidden="true" focusable="false">
         <path className="proof-stamp__area proof-stamp__area--yellow" d="M18 39 H70 L44 12 Z" />
+        <path className="proof-stamp__area proof-stamp__area--blue" d="M18 39 H44 L44 12 Z" />
+        <path className="proof-stamp__area proof-stamp__area--red" d="M44 39 H70 L44 12 Z" />
         <path className="proof-stamp__line" d="M18 39 H70 L44 12 Z" />
         <path className="proof-stamp__line proof-stamp__line--dash" d="M44 12 V39 M31 26 H57" />
         <polygon className="proof-stamp__fill proof-stamp__fill--yellow" points="44,18 50,29 38,29" />
@@ -3365,7 +3371,9 @@ function ProofDiagram({ type }) {
   }
   return (
     <svg viewBox="0 0 88 52" aria-hidden="true" focusable="false">
-      <path className="proof-stamp__area proof-stamp__area--blue" d="M44 10 A18 18 0 0 1 44 44 A18 18 0 0 1 44 10" />
+      <path className="proof-stamp__area proof-stamp__area--blue" d="M35 9 A18 18 0 0 1 35 45 A18 18 0 0 1 35 9" />
+      <path className="proof-stamp__area proof-stamp__area--yellow" d="M53 9 A18 18 0 0 1 53 45 A18 18 0 0 1 53 9" />
+      <path className="proof-stamp__area proof-stamp__area--red" d="M44 12 A18 18 0 0 1 44 42 A18 18 0 0 1 44 12" />
       <circle className="proof-stamp__line" cx="35" cy="27" r="18" />
       <circle className="proof-stamp__line" cx="53" cy="27" r="18" />
       <path className="proof-stamp__line proof-stamp__line--dash" d="M18 27 H70 M44 9 V45" />
