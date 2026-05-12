@@ -2001,49 +2001,37 @@ body.font-cascadia-signal .identity__vector-name {
 }
 .video-control {
   appearance: none;
-  border: 1px solid rgba(244,240,230,0.22);
-  background: rgba(10,9,8,0.7);
+  border: 0;
+  background: transparent;
   color: #f4f0e6;
-  backdrop-filter: blur(6px);
-  min-height: 30px;
-  padding: 6px 10px;
-  border-radius: 999px;
+  min-height: 56px;
+  padding: 0;
+  border-radius: 0;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
   cursor: pointer;
-  font-size: 0.64rem;
-  letter-spacing: 0.1em;
-  white-space: nowrap;
 }
 .video-control:hover,
 .video-control:focus-visible {
-  background: rgba(20,18,15,0.92);
-  border-color: rgba(244,240,230,0.36);
   outline: none;
 }
 .video-control--primary {
-  width: 34px;
-  min-width: 34px;
-  padding: 0;
-  justify-content: center;
+  width: 56px;
+  min-width: 56px;
 }
 .video-control:has(.video-control__icon--replay) {
-  width: 34px;
-  min-width: 34px;
-  padding: 0;
-  justify-content: center;
+  width: 56px;
+  min-width: 56px;
 }
 .video-control--icon {
-  width: 30px;
-  padding: 0;
-  justify-content: center;
+  width: 56px;
 }
 .video-control__icon {
   position: relative;
-  width: 14px;
-  height: 14px;
-  flex: 0 0 14px;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
   display: inline-block;
   color: var(--accent);
 }
@@ -2074,17 +2062,9 @@ body.font-cascadia-signal .identity__vector-name {
 .video-control__icon--replay::before {
   content: "";
   position: absolute;
-  inset: 2px;
+  inset: 1px;
   background: var(--accent-blue);
   border-radius: 50%;
-}
-.video-control__icon--replay::after {
-  content: "";
-  position: absolute;
-  inset: 5px;
-  border-left: 1.5px solid #f4f0e6;
-  transform: rotate(-35deg);
-  transform-origin: center;
 }
 .video-control__icon--sound-on::before,
 .video-control__icon--sound-off::before {
@@ -2124,12 +2104,12 @@ body.font-cascadia-signal .identity__vector-name {
   position: absolute;
   right: 12px;
   bottom: 12px;
-  width: 24px;
-  height: 24px;
+  width: 40px;
+  height: 40px;
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: #f4f0e6;
+  color: #fff;
   cursor: pointer;
   opacity: 0;
   transform: translateY(6px);
@@ -2139,22 +2119,22 @@ body.font-cascadia-signal .identity__vector-name {
 .video-fullscreen-corner::before {
   content: "";
   position: absolute;
-  right: 3px;
-  bottom: 3px;
-  width: 13px;
-  height: 13px;
-  border-right: 1.5px solid currentColor;
-  border-bottom: 1.5px solid currentColor;
+  right: 8px;
+  top: 8px;
+  width: 12px;
+  height: 12px;
+  border-top: 2px solid currentColor;
+  border-right: 2px solid currentColor;
 }
 .video-fullscreen-corner::after {
   content: "";
   position: absolute;
-  right: 3px;
-  bottom: 3px;
-  width: 13px;
-  height: 1.5px;
+  right: 9px;
+  top: 10px;
+  width: 25px;
+  height: 2px;
   background: currentColor;
-  transform: rotate(45deg);
+  transform: rotate(-45deg);
   transform-origin: right center;
 }
 .video-slot:hover .video-fullscreen-corner,
@@ -2438,26 +2418,30 @@ body.font-cascadia-signal .identity__vector-name {
     display: none;
   }
   .video-control {
-    min-height: 28px;
-    padding: 5px 8px;
-    gap: 6px;
-    font-size: 0.55rem;
+    min-height: 48px;
   }
   .video-control--primary {
-    width: 30px;
-    min-width: 30px;
+    width: 48px;
+    min-width: 48px;
   }
   .video-control--icon {
-    min-width: 28px;
-    flex: 0 0 28px;
+    min-width: 48px;
+    flex: 0 0 48px;
   }
   .video-fullscreen-corner {
     right: 8px;
     bottom: 8px;
+    width: 36px;
+    height: 36px;
   }
   .video-control:has(.video-control__icon--replay) {
-    width: 30px;
-    min-width: 30px;
+    width: 48px;
+    min-width: 48px;
+  }
+  .video-control__icon {
+    width: 24px;
+    height: 24px;
+    flex-basis: 24px;
   }
   .wasd-hint {
     display: none;
