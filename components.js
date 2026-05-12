@@ -3291,6 +3291,101 @@ function VideoSlot({ src, label, fallbackPath }) {
 //  BlackbirdFeature — flat video + context (parallel to HELP)
 // ────────────────────────────────────────────────────────────────────
 
+const HELP_AWARD_STAMPS = [
+  { org: "Cannes Lions", award: "Gold · Innovative Use of Tech", diagram: "circles", lane: "harmony" },
+  { org: "Cannes Lions", award: "Gold · Virtual Reality", diagram: "sphere", lane: "melody" },
+  { org: "SXSW", award: "Gold · AR/VR Breakthrough", diagram: "axis", lane: "drums" },
+  { org: "Webby", award: "Technical Achievement", diagram: "triangle", lane: "melody" },
+];
+
+const BLACKBIRD_AWARD_STAMPS = [
+  { org: "HPA", award: "Judges Award · Creativity + Innovation", diagram: "axis", lane: "harmony" },
+  { org: "Cannes Lions", award: "Gold · Innovative Use of Tech", diagram: "triangle", lane: "melody" },
+  { org: "CLIO Awards", award: "2016 · Production Innovation", diagram: "circles", lane: "drums" },
+];
+
+function useMusicPulse() {
+  const [pulse, setPulse] = useState({ lane: null, id: 0 });
+  useEffect(() => {
+    let timeoutId;
+    const onDrum = (event) => {
+      if (event.detail?.lane !== "snare") return;
+      window.clearTimeout(timeoutId);
+      setPulse({ lane: "clap", id: event.detail?.id || Date.now() });
+      timeoutId = window.setTimeout(() => setPulse((current) => ({ ...current, lane: null })), 210);
+    };
+    window.addEventListener("resume-drum-hit", onDrum);
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.removeEventListener("resume-drum-hit", onDrum);
+    };
+  }, []);
+  return pulse;
+}
+
+function ProofDiagram({ type }) {
+  if (type === "sphere") {
+    return (
+      <svg viewBox="0 0 88 52" aria-hidden="true" focusable="false">
+        <circle className="proof-stamp__line" cx="44" cy="26" r="17" />
+        <ellipse className="proof-stamp__line proof-stamp__line--dash" cx="44" cy="26" rx="24" ry="10" />
+        <path className="proof-stamp__line" d="M44 9 V43 M20 26 H68" />
+        <circle className="proof-stamp__fill proof-stamp__fill--blue" cx="44" cy="26" r="3.5" />
+      </svg>
+    );
+  }
+  if (type === "axis") {
+    return (
+      <svg viewBox="0 0 88 52" aria-hidden="true" focusable="false">
+        <path className="proof-stamp__line" d="M18 38 H70 M28 44 V12" />
+        <path className="proof-stamp__line proof-stamp__line--dash" d="M28 38 L61 17" />
+        <rect className="proof-stamp__fill proof-stamp__fill--red" x="56" y="14" width="8" height="8" />
+        <circle className="proof-stamp__line" cx="28" cy="38" r="13" />
+      </svg>
+    );
+  }
+  if (type === "triangle") {
+    return (
+      <svg viewBox="0 0 88 52" aria-hidden="true" focusable="false">
+        <path className="proof-stamp__line" d="M18 39 H70 L44 12 Z" />
+        <path className="proof-stamp__line proof-stamp__line--dash" d="M44 12 V39 M31 26 H57" />
+        <polygon className="proof-stamp__fill proof-stamp__fill--yellow" points="44,18 50,29 38,29" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 88 52" aria-hidden="true" focusable="false">
+      <circle className="proof-stamp__line" cx="35" cy="27" r="18" />
+      <circle className="proof-stamp__line" cx="53" cy="27" r="18" />
+      <path className="proof-stamp__line proof-stamp__line--dash" d="M18 27 H70 M44 9 V45" />
+      <circle className="proof-stamp__fill proof-stamp__fill--blue" cx="44" cy="27" r="4" />
+    </svg>
+  );
+}
+
+function ProofStamp({ item, active }) {
+  return (
+    <li className={`proof-stamp ${active ? "is-music-active" : ""}`}>
+      <span className="proof-stamp__org mono">{item.org}</span>
+      <span className="proof-stamp__diagram">
+        <ProofDiagram type={item.diagram} />
+      </span>
+      <span className="proof-stamp__award">{item.award}</span>
+    </li>
+  );
+}
+
+function ProofStampRow({ items, compact }) {
+  const pulse = useMusicPulse();
+  return (
+    <ul className={`proof-stamps ${compact ? "proof-stamps--compact" : ""}`}>
+      {items.map((item, index) => (
+        <ProofStamp key={`${item.org}-${index}`} item={item} active={pulse.lane === "clap"} />
+      ))}
+    </ul>
+  );
+}
+
 function BlackbirdFeature({ innovationSrc, behindScenesSrc }) {
   return (
     <Section id="blackbird" label="04 · LIVE · THE MILL BLACKBIRD">
@@ -3338,9 +3433,8 @@ function BlackbirdFeature({ innovationSrc, behindScenesSrc }) {
             <li>Unreal Engine · real-time AR composite</li>
             <li>Mill Cyclops™ · virtual production toolkit</li>
             <li>Arraiy tracking · live positional data</li>
-            <li>HPA · Judges Award · Creativity & Innovation</li>
-            <li>Cannes Gold · Innovative Use of Technology</li>
           </ul>
+          <ProofStampRow items={BLACKBIRD_AWARD_STAMPS} compact />
         </aside>
       </div>
     </Section>
@@ -3472,12 +3566,7 @@ function HelpFeature({ src }) {
           </p>
         </div>
         <div className="help-hero__awards">
-          <ul className="help-feature__chips mono">
-            <li>Cannes Gold · Innovative Use of Tech</li>
-            <li>Cannes Gold · VR</li>
-            <li>SXSW Gold · AR/VR Breakthrough</li>
-            <li>Webby · Technical Achievement</li>
-          </ul>
+          <ProofStampRow items={HELP_AWARD_STAMPS} />
         </div>
       </div>
     </Section>
