@@ -325,38 +325,35 @@ function normalizeSource(source) {
 
 async function loadFromUrl(source) {
   const { videoUrl, projectionUrl } = normalizeSource(source);
-  const buf = await fetchProjectionBytes(projectionUrl);
-  const head = new Uint8Array(buf, 0, Math.min(16, buf.byteLength));
-  const isWebm = head.length >= 4 && head[0] === 0x1a && head[1] === 0x45 && head[2] === 0xdf && head[3] === 0xa3;
+  let geometry = makeEquirectSphere();
+  let projection = 'equirect';
 
-  let geometry, projection;
-  if (isWebm) {
-    const proj = extractWebmProjection(buf);
-    if (proj && proj.type === 3 && proj.projectionPrivate) {
-      const parsed = await parseMshpPayload(proj.projectionPrivate);
-      parsed.geometry.scale(100, 100, 100);
-      geometry = parsed.geometry;
-      projection = 'mesh';
-    } else {
-      geometry = makeEquirectSphere();
-      projection = 'equirect';
-    }
-  } else {
-    const sv3dBoxes = findAllBoxes(buf, 'sv3d');
-    if (sv3dBoxes.length > 0) {
-      const proj = readProjection(buf, sv3dBoxes[0]);
-      if (proj && proj.type === 'mshp') {
-        const parsed = await parseMshp(buf, proj.payloadStart, proj.payloadLength);
+  try {
+    const buf = await fetchProjectionBytes(projectionUrl);
+    const head = new Uint8Array(buf, 0, Math.min(16, buf.byteLength));
+    const isWebm = head.length >= 4 && head[0] === 0x1a && head[1] === 0x45 && head[2] === 0xdf && head[3] === 0xa3;
+
+    if (isWebm) {
+      const proj = extractWebmProjection(buf);
+      if (proj && proj.type === 3 && proj.projectionPrivate) {
+        const parsed = await parseMshpPayload(proj.projectionPrivate);
+        parsed.geometry.scale(100, 100, 100);
         geometry = parsed.geometry;
         projection = 'mesh';
-      } else {
-        geometry = makeEquirectSphere();
-        projection = 'equirect';
       }
     } else {
-      geometry = makeEquirectSphere();
-      projection = 'equirect';
+      const sv3dBoxes = findAllBoxes(buf, 'sv3d');
+      if (sv3dBoxes.length > 0) {
+        const proj = readProjection(buf, sv3dBoxes[0]);
+        if (proj && proj.type === 'mshp') {
+          const parsed = await parseMshp(buf, proj.payloadStart, proj.payloadLength);
+          geometry = parsed.geometry;
+          projection = 'mesh';
+        }
+      }
     }
+  } catch (error) {
+    console.warn('[spotlight] projection decode failed, using equirect fallback', error);
   }
 
   const video = document.createElement('video');
@@ -471,9 +468,17 @@ class SpotlightRenderer {
   replayWithSound() {
     if (!this.current) return;
     const video = this.current.loaded.video;
-    video.currentTime = 0;
     video.muted = false;
-    video.play().catch(()=>{});
+    const restart = () => {
+      try { video.currentTime = 0; } catch (_) {}
+      video.play().catch(()=>{});
+    };
+    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) restart();
+    else {
+      video.load();
+      video.addEventListener('loadedmetadata', restart, { once: true });
+      video.play().catch(()=>{});
+    }
   }
   toggleMuted() {
     if (!this.current) return;

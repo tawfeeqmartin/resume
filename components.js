@@ -2796,11 +2796,24 @@ function HelpPlayer({ src }) {
     hideHint();
     const slot = hostRef.current?.closest('.help-player');
     if (!slot) return;
+    if (slot.classList.contains('is-pseudo-fullscreen')) {
+      slot.classList.remove('is-pseudo-fullscreen');
+      document.documentElement.classList.remove('has-pseudo-fullscreen');
+      return;
+    }
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
-    } else {
-      slot.requestFullscreen?.().catch(() => {});
+      return;
     }
+    if (slot.requestFullscreen) {
+      slot.requestFullscreen().catch(() => {
+        slot.classList.add('is-pseudo-fullscreen');
+        document.documentElement.classList.add('has-pseudo-fullscreen');
+      });
+      return;
+    }
+    slot.classList.add('is-pseudo-fullscreen');
+    document.documentElement.classList.add('has-pseudo-fullscreen');
   };
 
   return (
@@ -3020,11 +3033,24 @@ function VideoSlot({ src, label, fallbackPath }) {
   const toggleFullscreen = () => {
     const slot = videoRef.current?.closest('.video-slot');
     if (!slot) return;
+    if (slot.classList.contains('is-pseudo-fullscreen')) {
+      slot.classList.remove('is-pseudo-fullscreen');
+      document.documentElement.classList.remove('has-pseudo-fullscreen');
+      return;
+    }
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
-    } else {
-      slot.requestFullscreen?.().catch(() => {});
+      return;
     }
+    if (slot.requestFullscreen) {
+      slot.requestFullscreen().catch(() => {
+        slot.classList.add('is-pseudo-fullscreen');
+        document.documentElement.classList.add('has-pseudo-fullscreen');
+      });
+      return;
+    }
+    slot.classList.add('is-pseudo-fullscreen');
+    document.documentElement.classList.add('has-pseudo-fullscreen');
   };
 
   return (

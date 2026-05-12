@@ -1680,6 +1680,26 @@ body.font-cascadia-signal .identity__vector-name {
   box-shadow: 0 30px 60px -30px rgba(0,0,0,0.4), 0 0 0 1px var(--rule);
 }
 .help-player__canvas { position: absolute; inset: 0; touch-action: none; }
+html.has-pseudo-fullscreen,
+html.has-pseudo-fullscreen body {
+  overflow: hidden;
+}
+.help-player.is-pseudo-fullscreen,
+.video-slot.is-pseudo-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999;
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  aspect-ratio: auto !important;
+  border-radius: 0 !important;
+}
+.help-player.is-pseudo-fullscreen .help-player__canvas,
+.video-slot.is-pseudo-fullscreen .video-slot__video {
+  width: 100% !important;
+  height: 100% !important;
+}
 .help-player__overlay {
   position: absolute; inset: 0;
   display: grid; place-items: center;
@@ -2571,9 +2591,9 @@ window.__resumeStrudelReady = initStrudel()
   });
 </script>
 <script type="module">
-window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260511-mobile-help');
+window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260511-mobile-fs-play');
 </script>
-<script type="text/babel" src="components.js?v=20260511-mobile-help"></script>
+<script type="text/babel" src="components.js?v=20260511-mobile-fs-play"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
