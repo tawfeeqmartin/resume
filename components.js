@@ -1255,6 +1255,12 @@ const BLACKOUT_MICRO_LINES = [
   { kind: "spec", text: "implementation note: theorem becomes algorithm becomes interface becomes shot" },
 ];
 
+const totalWorkPageIndex = BLACKOUT_PAGES.findIndex((page) => page.phrase.label === "total work of art");
+if (totalWorkPageIndex > 1) {
+  const [totalWorkPage] = BLACKOUT_PAGES.splice(totalWorkPageIndex, 1);
+  BLACKOUT_PAGES.splice(1, 0, totalWorkPage);
+}
+
 const PHRASE_BRIDGES = {
   "measure becomes form": [
     { kind: "ref", column: 0, text: "measure begins as a rule the crew can share across scale" },
