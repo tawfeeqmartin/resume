@@ -3138,7 +3138,7 @@ function Identity({ data }) {
       <div className="identity__top mono dim">
         <span>{data.name}</span>
         <span className="identity__top-dot">●</span>
-        <span>FOLIO · 2026</span>
+        <span>Creative Technologist</span>
         <span className="identity__top-dot">●</span>
         <span>{data.location}</span>
         <span className="identity__top-dot">●</span>
