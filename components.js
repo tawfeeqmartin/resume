@@ -3637,13 +3637,6 @@ function References({ items }) {
 function Footer({ data }) {
   return (
     <footer className="page-footer mono dim">
-      <div>
-        <span>{data.name}</span>
-        <span className="dot">●</span>
-        <span>{data.location}</span>
-        <span className="dot">●</span>
-        <a href={`https://${data.site}`} target="_blank" rel="noreferrer">{data.site}</a>
-      </div>
       <div className="page-footer__build">
         rev · 2026.05 · built with three.js + a parser for google's mesh projection + strudel.cc audio
       </div>

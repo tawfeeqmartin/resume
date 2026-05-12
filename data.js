@@ -25,7 +25,7 @@ const RESUME = {
         "Active research into AI-augmented production workflows: LLM-based tooling, multi-agent orchestration, and local inference pipelines as future enhancements to virtual production infrastructure.",
         "Identify opportunities to apply frontier AI capabilities to virtual production; translate research into actionable prototypes and proposals for production integration.",
         "Collaborate directly with directors, DPs, and VFX supervisors to solve on-set technical challenges during live photography.",
-        "Recognized at SIGGRAPH for contributions to virtual production methodology and tooling.",
+        "Contributed to ILM StageCraft work recognized by SIGGRAPH, the Television Academy's 74th Engineering, Science & Technology Emmy, and NATAS's 75th Technology & Engineering Emmy.",
       ],
     },
     {
