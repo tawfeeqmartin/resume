@@ -25,23 +25,24 @@ Current large assets include:
 
 - Store large media in R2 Standard storage.
 - Configure public access through a custom domain, not the `r2.dev` development URL for production.
+- Use `media.tawfeeqmartin.com` for production media. The site keeps local `media/...` URLs only when viewed from localhost.
 - Add cache rules for media paths with long edge/browser TTLs.
+- Add a WAF rate limiting rule for the media host so obvious abuse is challenged or blocked before it can burn through read operations.
+- Add Cloudflare budget alerts at `$1`, `$5`, and `$10`. These are notifications, not hard caps.
 - Confirm R2 responses include `Content-Length` so browsers and Cloudflare can handle range requests efficiently.
 - Keep media URLs configurable so local development can use `media/...` and production can use `https://media.../...`.
 - Keep `media/bg.mov` and `media/help_full.webm` out of normal Git history unless Git LFS is added. They exceed GitHub's normal file limits.
 
 ## HELP MESH Player Caveat
 
-The current HELP player loads the video via `fetch()` and creates a Blob URL. That means the full `help_full.webm` can be pulled into memory before playback.
+The HELP player should stream the full `help_full.webm` from R2. It should not fetch the entire file into memory before playback.
 
-Before publishing, update the HELP loader so it:
+The loader should:
 
 - Reads only the header/metadata needed to extract the MESH projection.
 - Sets the video element `src` directly to the remote media URL.
 - Lets the browser stream/range-load the actual video data.
 - Preserves the custom MESH metadata path from the source WebM.
-
-This is the main optimization needed before going live.
 
 ## Cost Expectation
 
@@ -51,5 +52,8 @@ Expected cost should be free or very low for normal portfolio traffic if:
 - R2 hosts the large assets.
 - Media is cacheable.
 - The HELP loader is fixed to avoid full-file eager downloads.
+- Budget alerts and WAF rate limiting are enabled before the site points at R2.
+
+Guardrail rule: do not publish the R2 media origin until the cache rule, WAF rate limit, CORS policy, and budget alerts are all active.
 
 Cloudflare Stream can be considered later for normal flat videos, but it should not be used for the HELP MESH video unless verified to preserve the custom projection metadata.

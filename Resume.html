@@ -2145,13 +2145,23 @@ window.__resumeStrudelReady = initStrudel()
   });
 </script>
 <script type="module">
-window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260509-spacebar');
+window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260511-r2-streaming');
 </script>
-<script type="text/babel" src="components.js?v=20260511-bauhaus-video-controls"></script>
+<script type="text/babel" src="components.js?v=20260511-r2-media"></script>
 <script type="text/babel">
-const HELP_VIDEO_URLS = ["media/help-720-mesh.webm", "media/help_full.webm", "media/help.f338.webm"];
-const BLACKBIRD_INNOVATION_VIDEO_URL = "media/blackbird-innovation.mp4";
-const BLACKBIRD_VIDEO_URL = "media/blackbird.mp4";
+const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
+const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
+const mediaUrl = (path) => {
+  if (IS_LOCAL_PREVIEW) return path;
+  return `${PRODUCTION_MEDIA_ORIGIN}/${path.replace(/^media\//, '')}`;
+};
+const HELP_VIDEO_URLS = [
+  mediaUrl("media/help_full.webm"),
+  mediaUrl("media/help-720-mesh.webm"),
+  mediaUrl("media/help.f338.webm")
+];
+const BLACKBIRD_INNOVATION_VIDEO_URL = mediaUrl("media/blackbird-innovation.mp4");
+const BLACKBIRD_VIDEO_URL = mediaUrl("media/blackbird.mp4");
 
 function App() {
   return (

@@ -309,11 +309,14 @@ function makeEquirectSphere() {
   return geo;
 }
 
-async function loadFromUrl(url) {
-  const res = await fetch(url);
+async function fetchProjectionBytes(url) {
+  const res = await fetch(url, { headers: { Range: 'bytes=0-5242879' } });
   if (!res.ok) throw new Error(`fetch ${url} → ${res.status}`);
-  const buf = await res.arrayBuffer();
+  return res.arrayBuffer();
+}
 
+async function loadFromUrl(url) {
+  const buf = await fetchProjectionBytes(url);
   const head = new Uint8Array(buf, 0, Math.min(16, buf.byteLength));
   const isWebm = head.length >= 4 && head[0] === 0x1a && head[1] === 0x45 && head[2] === 0xdf && head[3] === 0xa3;
 
@@ -347,19 +350,17 @@ async function loadFromUrl(url) {
     }
   }
 
-  // Build the video using a Blob URL so we don't re-fetch.
-  const blobUrl = URL.createObjectURL(new Blob([buf]));
   const video = document.createElement('video');
-  video.src = blobUrl;
   video.crossOrigin = 'anonymous';
+  video.src = url;
   video.loop = true;
   video.playsInline = true;
   video.muted = true;
-  video.preload = 'auto';
+  video.preload = 'metadata';
   video.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px;';
   document.body.appendChild(video);
 
-  return { geometry, projection, video, dispose: () => { URL.revokeObjectURL(blobUrl); video.remove(); } };
+  return { geometry, projection, video, dispose: () => { video.removeAttribute('src'); video.load(); video.remove(); } };
 }
 
 // ────────────────────────────────────────────────────────────────────
