@@ -2030,7 +2030,10 @@ body.font-cascadia-signal .identity__vector-name {
   outline: none;
 }
 .video-control--primary {
-  min-width: 82px;
+  width: 34px;
+  min-width: 34px;
+  padding: 0;
+  justify-content: center;
 }
 .video-control--icon {
   width: 30px;
@@ -2050,8 +2053,14 @@ body.font-cascadia-signal .identity__vector-name {
   content: "";
   position: absolute;
   inset: 1px 0 1px 2px;
-  background: currentColor;
+  background: var(--accent-yellow);
   clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+.video-control__icon--stop::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  background: var(--accent-red);
 }
 .video-control__icon--pause::before,
 .video-control__icon--pause::after {
@@ -2398,7 +2407,8 @@ body.font-cascadia-signal .identity__vector-name {
     font-size: 0.55rem;
   }
   .video-control--primary {
-    min-width: 68px;
+    width: 30px;
+    min-width: 30px;
   }
   .video-control--icon {
     min-width: 28px;

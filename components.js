@@ -2724,7 +2724,8 @@ function HelpPlayer({ src }) {
     if (!rendererRef.current) return;
     if (paused) {
       userPausedRef.current = false;
-      rendererRef.current.play();
+      wasPlayingBeforeHiddenRef.current = false;
+      rendererRef.current.replayWithSound();
     } else {
       userPausedRef.current = true;
       wasPlayingBeforeHiddenRef.current = false;
@@ -2736,11 +2737,6 @@ function HelpPlayer({ src }) {
     userPausedRef.current = false;
     wasPlayingBeforeHiddenRef.current = false;
     rendererRef.current?.replayWithSound();
-  };
-  const toggleSound = () => {
-    hideHint();
-    userPausedRef.current = false;
-    rendererRef.current?.toggleMuted();
   };
   const toggleFullscreen = () => {
     hideHint();
@@ -2810,16 +2806,11 @@ function HelpPlayer({ src }) {
           </div>
           <div className="video-controls video-controls--help" aria-label="HELP video controls">
             <button className="video-control video-control--primary mono" onClick={togglePlayback} aria-label={paused ? 'Play video' : 'Pause video'}>
-              <span className={`video-control__icon ${paused ? 'video-control__icon--play' : 'video-control__icon--pause'}`} aria-hidden="true" />
-              <span>{paused ? 'play' : 'pause'}</span>
+              <span className={`video-control__icon ${paused ? 'video-control__icon--play' : 'video-control__icon--stop'}`} aria-hidden="true" />
             </button>
             <button className="video-control mono" onClick={replayWithSound} aria-label="Replay from beginning with sound">
               <span className="video-control__icon video-control__icon--replay" aria-hidden="true" />
               <span>replay</span>
-            </button>
-            <button className="video-control mono" onClick={toggleSound} aria-label={muted ? 'Turn sound on' : 'Mute video'}>
-              <span className={`video-control__icon ${muted ? 'video-control__icon--sound-off' : 'video-control__icon--sound-on'}`} aria-hidden="true" />
-              <span>{muted ? 'click for sound' : 'mute'}</span>
             </button>
             <button className="video-control video-control--icon mono" onClick={toggleFullscreen} aria-label="Enter fullscreen">
               <span className="video-control__icon video-control__icon--fullscreen" aria-hidden="true" />
@@ -2952,24 +2943,11 @@ function VideoSlot({ src, label, fallbackPath }) {
     video.play().catch(() => {});
   }
 
-  const toggleSound = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    window.dispatchEvent(new CustomEvent('resume-video-slot-active', {
-      detail: { id: slotIdRef.current, userInitiated: true }
-    }));
-    video.muted = !video.muted;
-    userHeldPlaybackRef.current = !video.muted;
-    window.__resumeHeldVideoSlot = video.muted ? null : slotIdRef.current;
-    setMuted(video.muted);
-    if (video.paused) video.play().catch(() => {});
-  };
-
   const togglePlayback = () => {
     const video = videoRef.current;
     if (!video) return;
     if (video.paused) {
-      activateSlot({ userInitiated: true });
+      activateSlot({ withSound: true, restart: true, userInitiated: true });
     } else {
       userHeldPlaybackRef.current = false;
       if (window.__resumeHeldVideoSlot === slotIdRef.current) window.__resumeHeldVideoSlot = null;
@@ -3038,16 +3016,11 @@ function VideoSlot({ src, label, fallbackPath }) {
       {status === 'ready' && (
         <div className="video-controls" aria-label="Video controls">
           <button className="video-control video-control--primary mono" onClick={togglePlayback} aria-label={paused ? 'Play video' : 'Pause video'}>
-            <span className={`video-control__icon ${paused ? 'video-control__icon--play' : 'video-control__icon--pause'}`} aria-hidden="true" />
-            <span>{paused ? 'play' : 'pause'}</span>
+            <span className={`video-control__icon ${paused ? 'video-control__icon--play' : 'video-control__icon--stop'}`} aria-hidden="true" />
           </button>
           <button className="video-control mono" onClick={replayWithSound} aria-label="Replay from beginning with sound">
             <span className="video-control__icon video-control__icon--replay" aria-hidden="true" />
             <span>replay</span>
-          </button>
-          <button className="video-control mono" onClick={toggleSound} aria-label={muted ? 'Turn sound on' : 'Mute video'}>
-            <span className={`video-control__icon ${muted ? 'video-control__icon--sound-off' : 'video-control__icon--sound-on'}`} aria-hidden="true" />
-            <span>{muted ? 'click for sound' : 'mute'}</span>
           </button>
           <button className="video-control video-control--icon mono" onClick={toggleFullscreen} aria-label="Enter fullscreen">
             <span className="video-control__icon video-control__icon--fullscreen" aria-hidden="true" />
