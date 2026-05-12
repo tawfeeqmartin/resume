@@ -1929,6 +1929,7 @@ body.font-cascadia-signal .identity__vector-name {
 .refs__chip-num { font-size: 0.7rem; color: var(--accent); grid-row: span 2; align-self: start; padding-top: 4px; }
 .refs__chip-name { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); }
 .refs__chip-title { font-size: 0.6rem; }
+.refs__inline-quote { display: none; }
 
 /* ── footer ──────────────────────────────────────────── */
 .page-footer {
@@ -2402,6 +2403,36 @@ body.font-cascadia-signal .identity__vector-name {
   .refs__text {
     font-size: 1.05rem;
     padding-left: 0.6rem;
+  }
+  .refs > .refs__quote {
+    display: none;
+  }
+  .refs__list {
+    gap: 0;
+  }
+  .refs__chip {
+    padding: 0.78rem 0;
+  }
+  .refs__chip.is-on {
+    background: transparent;
+  }
+  .refs__inline-quote {
+    display: block;
+    margin: 0 0 0.9rem 2.55rem;
+    padding: 0.85rem 0 0.95rem 0.85rem;
+    border-left: 1px solid var(--accent);
+  }
+  .refs__inline-text {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.48;
+    color: var(--ink);
+    text-wrap: pretty;
+  }
+  .refs__inline-sub {
+    margin-top: 0.75rem;
+    font-size: 0.58rem;
+    line-height: 1.35;
   }
   .page-footer {
     margin-bottom: 4.4rem;

@@ -3378,6 +3378,12 @@ function References({ items }) {
                 <span className="refs__chip-name">{r.name}</span>
                 <span className="refs__chip-title mono dim">{r.title}</span>
               </button>
+              {i === active && (
+                <div className="refs__inline-quote">
+                  <blockquote className="refs__inline-text serif">{r.quote}</blockquote>
+                  {r.sub && <div className="refs__inline-sub mono dim">{r.sub}</div>}
+                </div>
+              )}
             </li>
           ))}
         </ol>
