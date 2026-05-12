@@ -1713,38 +1713,44 @@ body.font-cascadia-signal .identity__vector-name {
   margin: 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: clamp(0.5rem, 1vw, 0.9rem);
+  gap: clamp(0.45rem, 1vw, 0.8rem);
   width: 100%;
   max-width: 920px;
   overflow: hidden;
 }
-.award-laurels--blackbird {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  max-width: 520px;
-  margin: 0 0 0.85rem;
-}
 .award-laurel {
   position: relative;
   min-width: 0;
-  min-height: 74px;
+  min-height: 88px;
   display: grid;
   place-items: center;
-  color: color-mix(in oklch, var(--ink), transparent 26%);
-  background: transparent;
-  border-top: 1px solid color-mix(in oklch, var(--rule), transparent 10%);
-  border-bottom: 1px solid color-mix(in oklch, var(--rule), transparent 10%);
+  color: color-mix(in oklch, var(--ink), transparent 12%);
+  background: color-mix(in oklch, var(--paper), transparent 10%);
+  border-top: 1px solid color-mix(in oklch, var(--rule), transparent 20%);
+  border-bottom: 1px solid color-mix(in oklch, var(--rule), transparent 20%);
   overflow: hidden;
 }
 .award-laurel__wreath {
   position: absolute;
-  inset: 4px 14px 4px;
-  width: calc(100% - 28px);
-  height: calc(100% - 8px);
+  inset: 6px 4px 3px;
+  width: calc(100% - 8px);
+  height: calc(100% - 9px);
   display: block;
-  background: color-mix(in oklch, var(--accent), var(--ink) 22%);
-  opacity: 0.26;
-  mask: url("media/laurel-wreath-cc0.svg") center / contain no-repeat;
-  -webkit-mask: url("media/laurel-wreath-cc0.svg") center / contain no-repeat;
+  color: var(--accent);
+  opacity: 0.72;
+}
+.award-laurel__branch path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.05;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.award-laurel__branch ellipse {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 0.9;
+  vector-effect: non-scaling-stroke;
 }
 .award-laurel__copy {
   position: relative;
@@ -1757,22 +1763,20 @@ body.font-cascadia-signal .identity__vector-name {
   padding-top: 0.18rem;
   text-align: center;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
 }
 .award-laurel__org,
 .award-laurel__field {
   font-family: var(--mono);
-  font-size: clamp(0.38rem, 0.5vw, 0.48rem);
-  line-height: 1.12;
-  color: color-mix(in oklch, var(--ink), transparent 34%);
+  font-size: clamp(0.52rem, 0.72vw, 0.64rem);
+  line-height: 1.05;
 }
 .award-laurel__prize {
   font-family: var(--serif);
-  font-size: clamp(0.68rem, 0.86vw, 0.84rem);
+  font-size: clamp(1rem, 1.45vw, 1.32rem);
   font-weight: 500;
-  line-height: 1.02;
-  letter-spacing: 0.01em;
-  color: color-mix(in oklch, var(--ink), transparent 10%);
+  line-height: 0.95;
+  letter-spacing: 0.02em;
 }
 @media (max-width: 900px) {
   .help-hero {
@@ -1791,21 +1795,21 @@ body.font-cascadia-signal .identity__vector-name {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .award-laurel {
-    min-height: 72px;
+    min-height: 82px;
   }
   .award-laurel__wreath {
-    inset: 6px 5px 5px;
-    width: calc(100% - 10px);
+    inset: 8px 1px 4px;
+    width: calc(100% - 2px);
   }
   .award-laurel__copy {
-    letter-spacing: 0.07em;
+    letter-spacing: 0.08em;
   }
   .award-laurel__org,
   .award-laurel__field {
-    font-size: 0.36rem;
+    font-size: 0.48rem;
   }
   .award-laurel__prize {
-    font-size: 0.72rem;
+    font-size: 0.95rem;
   }
 }
 
@@ -2768,7 +2772,7 @@ window.__resumeStrudelReady = initStrudel()
 <script type="module">
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260512-harmony-diagrams');
 </script>
-<script type="text/babel" src="components.js?v=20260512-award-laurels-refine"></script>
+<script type="text/babel" src="components.js?v=20260512-help-laurels"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);

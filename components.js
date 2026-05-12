@@ -3291,17 +3291,11 @@ function VideoSlot({ src, label, fallbackPath }) {
 //  BlackbirdFeature — flat video + context (parallel to HELP)
 // ────────────────────────────────────────────────────────────────────
 
-const BLACKBIRD_AWARD_LAURELS = [
-  { org: "HPA", prize: "Judges Award", field: "Creativity + Innovation" },
-  { org: "Cannes Lions", prize: "Gold Lion", field: "Innovative Use of Tech" },
-];
-
 function BlackbirdFeature({ innovationSrc, behindScenesSrc }) {
   return (
     <Section id="blackbird" label="04 · LIVE · THE MILL BLACKBIRD">
       <div className="help-feature">
         <div className="help-feature__player-col help-feature__player-col--wide">
-          <AwardLaurels items={BLACKBIRD_AWARD_LAURELS} variant="blackbird" />
           <div className="video-stack">
             <VideoSlot src={innovationSrc} fallbackPath="resume/media/blackbird-innovation.mp4" label="cannes lions innovation film · the mill blackbird" />
             <VideoSlot src={behindScenesSrc} fallbackPath="resume/media/blackbird.mp4" label="behind the scenes · chevrolet the human race" />
@@ -3344,6 +3338,8 @@ function BlackbirdFeature({ innovationSrc, behindScenesSrc }) {
             <li>Unreal Engine · real-time AR composite</li>
             <li>Mill Cyclops™ · virtual production toolkit</li>
             <li>Arraiy tracking · live positional data</li>
+            <li>HPA · Judges Award · Creativity & Innovation</li>
+            <li>Cannes Gold · Innovative Use of Technology</li>
           </ul>
         </aside>
       </div>
@@ -3449,16 +3445,31 @@ function Experience({ items }) {
 // ────────────────────────────────────────────────────────────────────
 
 const HELP_AWARD_LAURELS = [
-  { org: "Cannes Lions", prize: "Gold Lion", field: "Innovative Use of Tech" },
-  { org: "Cannes Lions", prize: "Gold Lion", field: "Virtual Reality" },
-  { org: "SXSW", prize: "Gold", field: "AR/VR Breakthrough" },
-  { org: "Webby", prize: "Winner", field: "Technical Achievement" },
+  { org: "Cannes", prize: "Gold", field: "Tech" },
+  { org: "Cannes", prize: "Gold", field: "VR" },
+  { org: "SXSW", prize: "Gold", field: "AR/VR" },
+  { org: "Webby", prize: "Winner", field: "Technical" },
 ];
 
 function AwardLaurel({ org, prize, field }) {
   return (
     <li className="award-laurel">
-      <span className="award-laurel__wreath" aria-hidden="true" />
+      <svg className="award-laurel__wreath" viewBox="0 0 120 92" aria-hidden="true" focusable="false">
+        <g className="award-laurel__branch award-laurel__branch--left">
+          <path d="M43 78 C25 64 18 42 25 19" />
+          <ellipse cx="31" cy="64" rx="3" ry="8" transform="rotate(-38 31 64)" />
+          <ellipse cx="25" cy="53" rx="3" ry="8" transform="rotate(-50 25 53)" />
+          <ellipse cx="23" cy="41" rx="3" ry="8" transform="rotate(-62 23 41)" />
+          <ellipse cx="26" cy="29" rx="3" ry="8" transform="rotate(-72 26 29)" />
+        </g>
+        <g className="award-laurel__branch award-laurel__branch--right">
+          <path d="M77 78 C95 64 102 42 95 19" />
+          <ellipse cx="89" cy="64" rx="3" ry="8" transform="rotate(38 89 64)" />
+          <ellipse cx="95" cy="53" rx="3" ry="8" transform="rotate(50 95 53)" />
+          <ellipse cx="97" cy="41" rx="3" ry="8" transform="rotate(62 97 41)" />
+          <ellipse cx="94" cy="29" rx="3" ry="8" transform="rotate(72 94 29)" />
+        </g>
+      </svg>
       <span className="award-laurel__copy">
         <span className="award-laurel__org">{org}</span>
         <span className="award-laurel__prize">{prize}</span>
@@ -3468,9 +3479,9 @@ function AwardLaurel({ org, prize, field }) {
   );
 }
 
-function AwardLaurels({ items, variant }) {
+function AwardLaurels({ items }) {
   return (
-    <ul className={`award-laurels ${variant ? `award-laurels--${variant}` : ''}`} aria-label="Selected awards">
+    <ul className="award-laurels" aria-label="Selected awards">
       {items.map((item) => (
         <AwardLaurel key={`${item.org}-${item.field}`} {...item} />
       ))}
