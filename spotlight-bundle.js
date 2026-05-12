@@ -315,6 +315,22 @@ async function fetchProjectionBytes(url) {
   return res.arrayBuffer();
 }
 
+function withTimeout(promise, ms, label) {
+  return new Promise((resolve, reject) => {
+    const id = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(id);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(id);
+        reject(error);
+      }
+    );
+  });
+}
+
 function normalizeSource(source) {
   if (typeof source === 'string') return { videoUrl: source, projectionUrl: source };
   return {
@@ -327,9 +343,10 @@ async function loadFromUrl(source) {
   const { videoUrl, projectionUrl } = normalizeSource(source);
   let geometry = makeEquirectSphere();
   let projection = 'equirect';
+  const isCoarsePointer = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
 
   try {
-    const buf = await fetchProjectionBytes(projectionUrl);
+    const buf = await withTimeout(fetchProjectionBytes(projectionUrl), isCoarsePointer ? 2200 : 7000, 'projection fetch');
     const head = new Uint8Array(buf, 0, Math.min(16, buf.byteLength));
     const isWebm = head.length >= 4 && head[0] === 0x1a && head[1] === 0x45 && head[2] === 0xdf && head[3] === 0xa3;
 
@@ -428,6 +445,7 @@ class SpotlightRenderer {
       this.current.loaded.dispose();
     }
     this.host.appendChild(loaded.video);
+    loaded.video.load();
     const tex = new THREE.VideoTexture(loaded.video);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.minFilter = THREE.LinearFilter;

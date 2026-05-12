@@ -995,15 +995,15 @@ const BLACKOUT_PAGES = [
     lines: [
       { kind: "book", text: "perspective turns space into a picture plane with vanishing points and ruled convergence" },
       { kind: "ref", text: "alberti treats the frame as a window; the camera inherits the contract" },
-      { kind: "spec", text: "eye point horizon orthogonal total projection plane" },
+      { kind: "spec", text: "eye point horizon orthogonal total projection plane", targetWords: ["total"] },
       { kind: "code", text: "screen = project(world * view * lens)" },
       { kind: "code", text: "clip = projection * view * model * vec4(position, 1)" },
       { kind: "diff add", text: "+ picture plane means the world can be staged for one exact observer" },
       { kind: "terminal", text: "$ align frustum --horizon --vanishing-point --lens" },
       { kind: "book", text: "virtual production is perspective theory with a live renderer behind the wall" },
-      { kind: "ref", text: "the picture plane makes the work legible before the lens begins to move" },
+      { kind: "ref", text: "the picture plane makes the work legible before the lens begins to move", targetWords: ["work"] },
       { kind: "ref", text: "the illusion holds when geometry optics and viewer position agree" },
-      { kind: "ref", text: "projection becomes one part of art when space timing and observer position agree" },
+      { kind: "ref", text: "projection becomes one part of art when space timing and observer position agree", targetWords: ["of", "art"] },
     ],
   },
   {
