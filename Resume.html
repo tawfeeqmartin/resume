@@ -2182,6 +2182,91 @@ body.font-cascadia-signal .identity__vector-name {
     height: 1.72rem;
   }
   .blackout-panel {
+    display: block;
+    width: 100%;
+    transform: none;
+    height: auto;
+    min-height: 0;
+    aspect-ratio: auto;
+    margin: 0.85rem 0 1.1rem;
+    padding: 0;
+    overflow: hidden;
+    border-left: 1px solid var(--ink);
+    background: var(--paper-2);
+    --blackout-panel-inset: 0.62rem;
+    --blackout-copy-size: clamp(0.58rem, 2.45vw, 0.72rem);
+    --blackout-code-size: clamp(0.5rem, 2.15vw, 0.64rem);
+    --blackout-diagram-size: clamp(0.58rem, 2.35vw, 0.72rem);
+    --blackout-diagram-label-size: clamp(0.42rem, 1.7vw, 0.54rem);
+  }
+  .blackout-panel::before {
+    opacity: 0.28;
+  }
+  .blackout-panel__page {
+    position: relative;
+    min-height: 0;
+    height: auto;
+    padding: 0;
+    display: grid;
+    grid-template-rows: minmax(10rem, 38vw) auto;
+  }
+  .blackout-panel__figure,
+  .blackout-panel__page--proof .blackout-panel__figure,
+  .blackout-panel__page--lab .blackout-panel__figure,
+  .blackout-panel__page--network .blackout-panel__figure,
+  .blackout-panel__page--schematic .blackout-panel__figure,
+  .blackout-panel__page--poem .blackout-panel__figure,
+  .blackout-panel__page--terminal .blackout-panel__figure,
+  .blackout-panel__page--diff .blackout-panel__figure,
+  .blackout-panel__page--matrix .blackout-panel__figure,
+  .blackout-panel__page--attention .blackout-panel__figure,
+  .blackout-panel__page--atlas .blackout-panel__figure,
+  .blackout-panel__page--cue .blackout-panel__figure,
+  .blackout-panel__page--formula .blackout-panel__figure,
+  .blackout-panel__page--margin .blackout-panel__figure,
+  .blackout-panel__page--manual .blackout-panel__figure {
+    position: relative;
+    inset: auto;
+    grid-row: 1;
+    width: 100%;
+    height: 100%;
+    padding: 0.42rem 0.5rem 0.15rem;
+    z-index: 4;
+  }
+  .blackout-panel__manual-flow {
+    position: relative;
+    inset: auto;
+    grid-row: 2;
+    z-index: 6;
+    display: block;
+    padding: 0.12rem 0.62rem 0.68rem;
+    font-size: var(--blackout-copy-size);
+    line-height: 1.28;
+  }
+  .blackout-panel__manual-row,
+  .blackout-panel__manual-row--c0,
+  .blackout-panel__manual-row--c1,
+  .blackout-panel__manual-row--c2,
+  .blackout-panel__manual-row--c3 {
+    grid-column: auto;
+    grid-row: auto !important;
+    transform: none;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    margin: 0 0 0.16rem;
+  }
+  .blackout-panel__manual-row--c2,
+  .blackout-panel__manual-row--c3 {
+    display: none;
+  }
+  .blackout-panel__manual-row--terminal,
+  .blackout-panel__manual-row--code,
+  .blackout-panel__manual-row--diff-add,
+  .blackout-panel__manual-row--diff-remove,
+  .blackout-panel__manual-row--spec {
+    margin-top: 0.34rem;
+  }
+  .blackout-panel__phrase-map {
     display: none;
   }
   .identity {
