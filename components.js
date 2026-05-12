@@ -3444,6 +3444,51 @@ function Experience({ items }) {
 //  HELP feature panel — wraps the player + context
 // ────────────────────────────────────────────────────────────────────
 
+const HELP_AWARD_LAURELS = [
+  { org: "Cannes", prize: "Gold", field: "Tech" },
+  { org: "Cannes", prize: "Gold", field: "VR" },
+  { org: "SXSW", prize: "Gold", field: "AR/VR" },
+  { org: "Webby", prize: "Winner", field: "Technical" },
+];
+
+function AwardLaurel({ org, prize, field }) {
+  return (
+    <li className="award-laurel">
+      <svg className="award-laurel__wreath" viewBox="0 0 120 92" aria-hidden="true" focusable="false">
+        <g className="award-laurel__branch award-laurel__branch--left">
+          <path d="M43 78 C25 64 18 42 25 19" />
+          <ellipse cx="31" cy="64" rx="3" ry="8" transform="rotate(-38 31 64)" />
+          <ellipse cx="25" cy="53" rx="3" ry="8" transform="rotate(-50 25 53)" />
+          <ellipse cx="23" cy="41" rx="3" ry="8" transform="rotate(-62 23 41)" />
+          <ellipse cx="26" cy="29" rx="3" ry="8" transform="rotate(-72 26 29)" />
+        </g>
+        <g className="award-laurel__branch award-laurel__branch--right">
+          <path d="M77 78 C95 64 102 42 95 19" />
+          <ellipse cx="89" cy="64" rx="3" ry="8" transform="rotate(38 89 64)" />
+          <ellipse cx="95" cy="53" rx="3" ry="8" transform="rotate(50 95 53)" />
+          <ellipse cx="97" cy="41" rx="3" ry="8" transform="rotate(62 97 41)" />
+          <ellipse cx="94" cy="29" rx="3" ry="8" transform="rotate(72 94 29)" />
+        </g>
+      </svg>
+      <span className="award-laurel__copy">
+        <span className="award-laurel__org">{org}</span>
+        <span className="award-laurel__prize">{prize}</span>
+        <span className="award-laurel__field">{field}</span>
+      </span>
+    </li>
+  );
+}
+
+function AwardLaurels({ items }) {
+  return (
+    <ul className="award-laurels" aria-label="Selected awards">
+      {items.map((item) => (
+        <AwardLaurel key={`${item.org}-${item.field}`} {...item} />
+      ))}
+    </ul>
+  );
+}
+
 function HelpFeature({ src }) {
   return (
     <Section id="help" label="03 · LIVE · MILL STITCH ™ ON HELP">
@@ -3455,6 +3500,9 @@ function HelpFeature({ src }) {
             experience built for mobile — a Google Spotlight Stories title delivered in a
             custom MESH projection rather than equirectangular video.
           </p>
+        </div>
+        <div className="help-hero__awards">
+          <AwardLaurels items={HELP_AWARD_LAURELS} />
         </div>
         <div className="help-hero__player">
           <HelpPlayer src={src} />
@@ -3470,14 +3518,6 @@ function HelpFeature({ src }) {
             <span className="mono"> sv3d → proj → mshp</span>, the geometry inflated and rendered
             on a sphere at the world origin. Drag to look around.
           </p>
-        </div>
-        <div className="help-hero__awards">
-          <ul className="help-feature__chips mono">
-            <li>Cannes Gold · Innovative Use of Tech</li>
-            <li>Cannes Gold · VR</li>
-            <li>SXSW Gold · AR/VR Breakthrough</li>
-            <li>Webby · Technical Achievement</li>
-          </ul>
         </div>
       </div>
     </Section>
