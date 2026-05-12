@@ -1726,6 +1726,9 @@ body.font-cascadia-signal .identity__vector-name {
 }
 .proof-stamp {
   --stamp-fill-alpha: 0.72;
+  --stamp-red: #d72828;
+  --stamp-yellow: #f6c400;
+  --stamp-blue: #0057b8;
   min-width: 0;
   display: grid;
   grid-template-rows: auto 42px auto;
@@ -1771,22 +1774,22 @@ body.font-cascadia-signal .identity__vector-name {
   transition: opacity 0.08s ease, transform 0.08s ease;
   mix-blend-mode: multiply;
 }
-.proof-stamp__area--blue { fill: var(--accent-blue); }
-.proof-stamp__area--red { fill: var(--accent-red); }
-.proof-stamp__area--yellow { fill: var(--accent-yellow); }
+.proof-stamp__area--blue { fill: var(--stamp-blue); }
+.proof-stamp__area--red { fill: var(--stamp-red); }
+.proof-stamp__area--yellow { fill: var(--stamp-yellow); }
 .proof-stamp__fill {
   opacity: var(--stamp-fill-alpha);
   transform-box: fill-box;
   transform-origin: center;
   transition: opacity 0.08s ease, transform 0.08s ease, filter 0.08s ease;
 }
-.proof-stamp__fill--blue { fill: var(--accent-blue); }
-.proof-stamp__fill--red { fill: var(--accent-red); }
-.proof-stamp__fill--yellow { fill: var(--accent-yellow); }
+.proof-stamp__fill--blue { fill: var(--stamp-blue); }
+.proof-stamp__fill--red { fill: var(--stamp-red); }
+.proof-stamp__fill--yellow { fill: var(--stamp-yellow); }
 .proof-stamp.is-music-active {
   --stamp-fill-alpha: 1;
-  background: color-mix(in oklch, var(--accent-blue), transparent 92%);
-  border-color: color-mix(in oklch, var(--accent-blue), transparent 55%);
+  background: color-mix(in srgb, var(--stamp-yellow), transparent 88%);
+  border-color: color-mix(in srgb, var(--stamp-blue), transparent 44%);
 }
 .proof-stamp.is-music-active .proof-stamp__fill {
   transform: scale(1.55);
@@ -1799,6 +1802,56 @@ body.font-cascadia-signal .identity__vector-name {
 .proof-stamp.is-music-active .proof-stamp__line {
   stroke: #000;
   stroke-width: 1.45;
+}
+html.is-proof-stamp-pulse .proof-stamp {
+  --stamp-fill-alpha: 1;
+  animation: proofStampPaperHit 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+html.is-proof-stamp-pulse .proof-stamp__area {
+  animation: proofStampColorHit 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+html.is-proof-stamp-pulse .proof-stamp__fill {
+  animation: proofStampNodeHit 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+html.is-proof-stamp-pulse .proof-stamp__line {
+  animation: proofStampLineHit 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes proofStampPaperHit {
+  0% {
+    background: color-mix(in srgb, var(--stamp-yellow), transparent 78%);
+    border-color: color-mix(in srgb, var(--stamp-blue), transparent 34%);
+  }
+  100% {
+    background: transparent;
+  }
+}
+@keyframes proofStampColorHit {
+  0% {
+    opacity: 1;
+    transform: scale(1.14);
+  }
+  100% {
+    opacity: 0.76;
+    transform: scale(1);
+  }
+}
+@keyframes proofStampNodeHit {
+  0% {
+    opacity: 1;
+    transform: scale(1.7);
+  }
+  100% {
+    opacity: var(--stamp-fill-alpha);
+    transform: scale(1);
+  }
+}
+@keyframes proofStampLineHit {
+  0% {
+    stroke-width: 1.65;
+  }
+  100% {
+    stroke-width: 1.15;
+  }
 }
 .proof-stamp__award {
   max-width: 17ch;
@@ -2798,7 +2851,7 @@ window.__resumeStrudelReady = initStrudel()
 <script type="module">
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260512-harmony-diagrams');
 </script>
-<script type="text/babel" src="components.js?v=20260512-proof-stamps-pulse"></script>
+<script type="text/babel" src="components.js?v=20260512-proof-stamps-byrne-pulse"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);

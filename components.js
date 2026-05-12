@@ -3308,21 +3308,35 @@ function useMusicPulse() {
   const [pulse, setPulse] = useState({ lane: null, id: 0 });
   useEffect(() => {
     let timeoutId;
+    let classTimeoutId;
+    const triggerProofPulse = () => {
+      document.documentElement.classList.remove("is-proof-stamp-pulse");
+      void document.documentElement.offsetWidth;
+      document.documentElement.classList.add("is-proof-stamp-pulse");
+      window.clearTimeout(classTimeoutId);
+      classTimeoutId = window.setTimeout(() => {
+        document.documentElement.classList.remove("is-proof-stamp-pulse");
+      }, 520);
+    };
     const onDrum = (event) => {
       const lane = event.detail?.lane;
       if (lane !== "snare" && lane !== "clap") return;
       window.clearTimeout(timeoutId);
+      triggerProofPulse();
       setPulse({ lane: "clap", id: event.detail?.id || Date.now() });
       timeoutId = window.setTimeout(() => setPulse((current) => ({ ...current, lane: null })), 520);
     };
     window.addEventListener("resume-drum-hit", onDrum);
     window.__resumeProofStampPulse = () => {
       window.clearTimeout(timeoutId);
+      triggerProofPulse();
       setPulse({ lane: "clap", id: Date.now() });
       timeoutId = window.setTimeout(() => setPulse((current) => ({ ...current, lane: null })), 520);
     };
     return () => {
       window.clearTimeout(timeoutId);
+      window.clearTimeout(classTimeoutId);
+      document.documentElement.classList.remove("is-proof-stamp-pulse");
       window.removeEventListener("resume-drum-hit", onDrum);
       if (window.__resumeProofStampPulse) delete window.__resumeProofStampPulse;
     };
