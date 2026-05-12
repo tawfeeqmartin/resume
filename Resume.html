@@ -1771,12 +1771,6 @@ body.font-cascadia-signal .identity__vector-name {
   grid-template-columns: repeat(3, 42px);
   grid-template-rows: repeat(2, 42px);
   gap: 7px;
-  padding: 13px;
-  border: 1px solid rgba(244,240,230,0.16);
-  border-radius: 4px;
-  background: rgba(10,9,8,0.48);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 18px 42px rgba(0,0,0,0.34);
 }
 .wasd-key {
   border: 1px solid rgba(244,240,230,0.28);
@@ -1987,7 +1981,6 @@ body.font-cascadia-signal .identity__vector-name {
 .video-controls {
   position: absolute;
   left: 12px;
-  right: 12px;
   bottom: 12px;
   display: flex;
   align-items: center;
@@ -2035,11 +2028,16 @@ body.font-cascadia-signal .identity__vector-name {
   padding: 0;
   justify-content: center;
 }
+.video-control:has(.video-control__icon--replay) {
+  width: 34px;
+  min-width: 34px;
+  padding: 0;
+  justify-content: center;
+}
 .video-control--icon {
   width: 30px;
   padding: 0;
   justify-content: center;
-  margin-left: auto;
 }
 .video-control__icon {
   position: relative;
@@ -2076,20 +2074,17 @@ body.font-cascadia-signal .identity__vector-name {
 .video-control__icon--replay::before {
   content: "";
   position: absolute;
-  inset: 1px;
-  border: 1.5px solid currentColor;
+  inset: 2px;
+  background: var(--accent-blue);
   border-radius: 50%;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 22% 100%, 22% 72%, 0 72%);
 }
 .video-control__icon--replay::after {
   content: "";
   position: absolute;
-  left: 0;
-  top: 7px;
-  width: 6px;
-  height: 6px;
-  background: currentColor;
-  clip-path: polygon(0 50%, 100% 0, 100% 100%);
+  inset: 5px;
+  border-left: 1.5px solid #f4f0e6;
+  transform: rotate(-35deg);
+  transform-origin: center;
 }
 .video-control__icon--sound-on::before,
 .video-control__icon--sound-off::before {
@@ -2124,22 +2119,64 @@ body.font-cascadia-signal .identity__vector-name {
   transform: rotate(45deg);
   transform-origin: center;
 }
-.video-control__icon--fullscreen::before,
-.video-control__icon--fullscreen::after {
+.video-fullscreen-corner {
+  appearance: none;
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #f4f0e6;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease;
+  pointer-events: none;
+}
+.video-fullscreen-corner::before {
   content: "";
   position: absolute;
-  inset: 1px;
-  border: 1.5px solid currentColor;
+  right: 3px;
+  bottom: 3px;
+  width: 13px;
+  height: 13px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
 }
-.video-control__icon--fullscreen::before {
-  background: transparent;
-  clip-path: polygon(0 0, 48% 0, 48% 18%, 18% 18%, 18% 48%, 0 48%, 0 0);
+.video-fullscreen-corner::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 13px;
+  height: 1.5px;
+  background: currentColor;
+  transform: rotate(45deg);
+  transform-origin: right center;
 }
-.video-control__icon--fullscreen::after {
-  clip-path: polygon(52% 0, 100% 0, 100% 48%, 82% 48%, 82% 18%, 52% 18%, 52% 0, 0 52%, 18% 52%, 18% 82%, 48% 82%, 48% 100%, 0 100%, 0 52%, 52% 52%, 100% 52%, 100% 100%, 52% 100%, 52% 82%, 82% 82%, 82% 52%);
+.video-slot:hover .video-fullscreen-corner,
+.video-slot:focus-within .video-fullscreen-corner,
+.help-player:hover .video-fullscreen-corner,
+.help-player:focus-within .video-fullscreen-corner {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.video-fullscreen-corner:hover,
+.video-fullscreen-corner:focus-visible {
+  color: var(--accent-yellow);
+  outline: none;
 }
 @media (hover: none) {
   .video-controls {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+  .video-fullscreen-corner {
     opacity: 1;
     transform: none;
     pointer-events: auto;
@@ -2391,7 +2428,7 @@ body.font-cascadia-signal .identity__vector-name {
   }
   .video-controls {
     left: 8px;
-    right: 8px;
+    right: auto;
     bottom: 8px;
     gap: 5px;
     overflow-x: auto;
@@ -2413,6 +2450,14 @@ body.font-cascadia-signal .identity__vector-name {
   .video-control--icon {
     min-width: 28px;
     flex: 0 0 28px;
+  }
+  .video-fullscreen-corner {
+    right: 8px;
+    bottom: 8px;
+  }
+  .video-control:has(.video-control__icon--replay) {
+    width: 30px;
+    min-width: 30px;
   }
   .wasd-hint {
     display: none;

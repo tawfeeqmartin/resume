@@ -2810,12 +2810,9 @@ function HelpPlayer({ src }) {
             </button>
             <button className="video-control mono" onClick={replayWithSound} aria-label="Replay from beginning with sound">
               <span className="video-control__icon video-control__icon--replay" aria-hidden="true" />
-              <span>replay</span>
-            </button>
-            <button className="video-control video-control--icon mono" onClick={toggleFullscreen} aria-label="Enter fullscreen">
-              <span className="video-control__icon video-control__icon--fullscreen" aria-hidden="true" />
             </button>
           </div>
+          <button className="video-fullscreen-corner" onClick={toggleFullscreen} aria-label="Enter fullscreen" />
         </>
       )}
     </div>
@@ -3020,12 +3017,11 @@ function VideoSlot({ src, label, fallbackPath }) {
           </button>
           <button className="video-control mono" onClick={replayWithSound} aria-label="Replay from beginning with sound">
             <span className="video-control__icon video-control__icon--replay" aria-hidden="true" />
-            <span>replay</span>
-          </button>
-          <button className="video-control video-control--icon mono" onClick={toggleFullscreen} aria-label="Enter fullscreen">
-            <span className="video-control__icon video-control__icon--fullscreen" aria-hidden="true" />
           </button>
         </div>
+      )}
+      {status === 'ready' && (
+        <button className="video-fullscreen-corner" onClick={toggleFullscreen} aria-label="Enter fullscreen" />
       )}
     </div>
   );
