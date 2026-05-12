@@ -32,6 +32,7 @@ function getResumeStrudelAudioEngine() {
   let songIndex = 1;
   let activeWASD = '';
   let activeChordKey = '';
+  let chordReturnTimer = null;
   let melodyTriggerId = 0;
   let drumTriggerId = 0;
   let harmonyTriggerId = 0;
@@ -450,6 +451,32 @@ function getResumeStrudelAudioEngine() {
     }
   };
 
+  const clearChordReturnTimer = () => {
+    if (!chordReturnTimer) return;
+    window.clearTimeout(chordReturnTimer);
+    chordReturnTimer = null;
+  };
+
+  const clearChordOverride = () => {
+    if (!activeWASD) return;
+    activeWASD = '';
+    activeChordKey = '';
+    console.info('Strudel chord override returned to autoplay');
+    playCurrent();
+    window.dispatchEvent(new CustomEvent('resume-audio-change'));
+  };
+
+  const scheduleChordReturn = (releasedKey) => {
+    if (!activeWASD || releasedKey.toUpperCase() !== activeChordKey) return;
+    clearChordReturnTimer();
+    const song = songPresets[songIndex];
+    const measureMs = Math.max(1200, (60000 / song.bpm) * 4);
+    chordReturnTimer = window.setTimeout(() => {
+      chordReturnTimer = null;
+      clearChordOverride();
+    }, measureMs);
+  };
+
   const bindKeyboard = () => {
     if (keyboardBound) return;
     keyboardBound = true;
@@ -467,20 +494,27 @@ function getResumeStrudelAudioEngine() {
       const key = event.key.toLowerCase();
       if (event.key === 'Escape' && activeWASD) {
         event.preventDefault();
-        activeWASD = '';
-        activeChordKey = '';
-        console.info('Strudel chord override cleared');
-        playCurrent();
-        window.dispatchEvent(new CustomEvent('resume-audio-change'));
+        clearChordReturnTimer();
+        clearChordOverride();
         return;
       }
       if (Object.prototype.hasOwnProperty.call(map, key)) {
         event.preventDefault();
+        clearChordReturnTimer();
         activeWASD = map[key];
         activeChordKey = key.toUpperCase();
         console.info('Strudel chord override', activeChordKey, activeWASD);
         playCurrent();
         window.dispatchEvent(new CustomEvent('resume-audio-change'));
+      }
+    }, true);
+    window.addEventListener('keyup', (event) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target;
+      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
+      const key = event.key.toLowerCase();
+      if (key === 'w' || key === 'a' || key === 's' || key === 'd') {
+        scheduleChordReturn(key);
       }
     }, true);
   };
@@ -553,6 +587,7 @@ function getResumeStrudelAudioEngine() {
     },
     setSong(delta) {
       songIndex = (songIndex + delta + songPresets.length) % songPresets.length;
+      clearChordReturnTimer();
       activeWASD = '';
       activeChordKey = '';
       playCurrent();
@@ -567,7 +602,9 @@ function getResumeStrudelAudioEngine() {
         if (module.initAudio) await module.initAudio();
         playCurrent();
       } else {
+        clearChordReturnTimer();
         activeWASD = '';
+        activeChordKey = '';
         videoDucked = false;
         if (videoResumeTimer) {
           window.clearTimeout(videoResumeTimer);
