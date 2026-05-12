@@ -2602,6 +2602,9 @@ function HelpPlayer({ src }) {
   const [showHint, setShowHint] = useState(true);
   const rendererRef = useRef(null);
   const audibleRef = useRef(false);
+  const pausedRef = useRef(true);
+  const userPausedRef = useRef(false);
+  const wasPlayingBeforeHiddenRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -2625,6 +2628,7 @@ function HelpPlayer({ src }) {
         if (cancelled) { result.renderer.dispose(); return; }
         rendererRef.current = result.renderer;
         result.renderer.setStateCallback((state) => {
+          pausedRef.current = state.paused;
           setMuted(state.muted);
           setPaused(state.paused);
           const active = !state.muted && !state.paused;
@@ -2662,20 +2666,57 @@ function HelpPlayer({ src }) {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  useEffect(() => {
+    if (status !== 'ready' || typeof IntersectionObserver === 'undefined') return undefined;
+    const slot = hostRef.current?.closest('.help-player');
+    if (!slot) return undefined;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const renderer = rendererRef.current;
+        if (!renderer) return;
+        if (!entry.isIntersecting || entry.intersectionRatio < 0.16) {
+          wasPlayingBeforeHiddenRef.current = !pausedRef.current;
+          if (!pausedRef.current) renderer.pause();
+          return;
+        }
+        if (
+          entry.intersectionRatio >= 0.48 &&
+          wasPlayingBeforeHiddenRef.current &&
+          !userPausedRef.current
+        ) {
+          wasPlayingBeforeHiddenRef.current = false;
+          renderer.play();
+        }
+      },
+      { threshold: [0, 0.16, 0.48, 1] }
+    );
+    observer.observe(slot);
+    return () => observer.disconnect();
+  }, [status]);
+
   const hideHint = () => setShowHint(false);
   const resetHint = () => setShowHint(true);
 
   const togglePlayback = () => {
     if (!rendererRef.current) return;
-    if (paused) rendererRef.current.play();
-    else rendererRef.current.pause();
+    if (paused) {
+      userPausedRef.current = false;
+      rendererRef.current.play();
+    } else {
+      userPausedRef.current = true;
+      wasPlayingBeforeHiddenRef.current = false;
+      rendererRef.current.pause();
+    }
   };
   const replayWithSound = () => {
     hideHint();
+    userPausedRef.current = false;
+    wasPlayingBeforeHiddenRef.current = false;
     rendererRef.current?.replayWithSound();
   };
   const toggleSound = () => {
     hideHint();
+    userPausedRef.current = false;
     rendererRef.current?.toggleMuted();
   };
   const toggleFullscreen = () => {
