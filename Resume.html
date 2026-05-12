@@ -2004,7 +2004,7 @@ body.font-cascadia-signal .identity__vector-name {
   border: 0;
   background: transparent;
   color: #f4f0e6;
-  min-height: 72px;
+  min-height: 65px;
   padding: 0;
   border-radius: 0;
   display: inline-flex;
@@ -2017,21 +2017,21 @@ body.font-cascadia-signal .identity__vector-name {
   outline: none;
 }
 .video-control--primary {
-  width: 72px;
-  min-width: 72px;
+  width: 65px;
+  min-width: 65px;
 }
 .video-control:has(.video-control__icon--replay) {
-  width: 72px;
-  min-width: 72px;
+  width: 65px;
+  min-width: 65px;
 }
 .video-control--icon {
-  width: 72px;
+  width: 65px;
 }
 .video-control__icon {
   position: relative;
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
   display: inline-block;
   color: var(--accent);
 }
@@ -2042,12 +2042,17 @@ body.font-cascadia-signal .identity__vector-name {
   background: var(--accent-yellow);
   clip-path: polygon(0 0, 100% 50%, 0 100%);
 }
-.video-control__icon--stop::before {
+.video-control__icon--stop::before,
+.video-control__icon--stop::after {
   content: "";
   position: absolute;
-  inset: 2px;
+  top: 2px;
+  bottom: 2px;
+  width: 8px;
   background: var(--accent-red);
 }
+.video-control__icon--stop::before { left: 5px; }
+.video-control__icon--stop::after { right: 5px; }
 .video-control__icon--pause::before,
 .video-control__icon--pause::after {
   content: "";
@@ -2421,15 +2426,15 @@ body.font-cascadia-signal .identity__vector-name {
     display: none;
   }
   .video-control {
-    min-height: 60px;
+    min-height: 54px;
   }
   .video-control--primary {
-    width: 60px;
-    min-width: 60px;
+    width: 54px;
+    min-width: 54px;
   }
   .video-control--icon {
-    min-width: 60px;
-    flex: 0 0 60px;
+    min-width: 54px;
+    flex: 0 0 54px;
   }
   .video-fullscreen-corner {
     right: 8px;
@@ -2438,13 +2443,13 @@ body.font-cascadia-signal .identity__vector-name {
     height: 36px;
   }
   .video-control:has(.video-control__icon--replay) {
-    width: 60px;
-    min-width: 60px;
+    width: 54px;
+    min-width: 54px;
   }
   .video-control__icon {
-    width: 32px;
-    height: 32px;
-    flex-basis: 32px;
+    width: 29px;
+    height: 29px;
+    flex-basis: 29px;
   }
   .wasd-hint {
     display: none;
