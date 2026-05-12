@@ -2910,6 +2910,19 @@ function VideoSlot({ src, label, fallbackPath }) {
     return () => observer.disconnect();
   }, [status]);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || status !== 'ready') return undefined;
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== 'hidden') return;
+      userHeldPlaybackRef.current = true;
+      if (window.__resumeHeldVideoSlot === slotIdRef.current) window.__resumeHeldVideoSlot = null;
+      if (!video.paused) video.pause();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, [status]);
+
   function activateSlot({ withSound = false, restart = false, userInitiated = false } = {}) {
     const video = videoRef.current;
     if (!video) return;
