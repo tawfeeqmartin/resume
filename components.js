@@ -2694,6 +2694,20 @@ function HelpPlayer({ src }) {
     return () => observer.disconnect();
   }, [status]);
 
+  useEffect(() => {
+    if (status !== 'ready') return undefined;
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== 'hidden') return;
+      const renderer = rendererRef.current;
+      if (!renderer) return;
+      wasPlayingBeforeHiddenRef.current = false;
+      userPausedRef.current = true;
+      if (!pausedRef.current) renderer.pause();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, [status]);
+
   const hideHint = () => setShowHint(false);
   const resetHint = () => setShowHint(true);
 
