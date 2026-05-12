@@ -2267,7 +2267,20 @@ body.font-cascadia-signal .identity__vector-name {
     grid-column: span 2;
   }
   .blackout-panel__phrase-map {
-    display: none;
+    display: block;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 12;
+    overflow: visible;
+  }
+  .blackout-panel__phrase-lines line {
+    stroke-width: 1.05;
+    stroke-dasharray: 3 5;
+  }
+  .blackout-panel__phrase-dot {
+    width: 0.22rem;
+    height: 0.22rem;
   }
   .identity {
     padding-bottom: 1.25rem;
