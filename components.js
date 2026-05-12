@@ -633,14 +633,13 @@ function getResumeAudioEngine() {
 }
 function AudioToggle() {
   const [enabled, setEnabled] = useState(false);
-  const [songVersion, setSongVersion] = useState(0);
   const engine = getResumeAudioEngine();
 
   useEffect(() => {
-    const refresh = () => setSongVersion((version) => version + 1);
+    const refresh = () => setEnabled(engine.enabled);
     window.addEventListener('resume-audio-change', refresh);
     return () => window.removeEventListener('resume-audio-change', refresh);
-  }, []);
+  }, [engine]);
 
   const toggle = async () => {
     const requested = !engine.enabled;
@@ -655,28 +654,110 @@ function AudioToggle() {
     }
   };
 
-  const cycleSong = (delta) => {
-    engine.setSong(delta);
-    setSongVersion((version) => version + 1);
-    window.dispatchEvent(new CustomEvent('resume-song-change'));
-  };
-
   return (
     <div className={`review-toggle review-toggle--audio ${enabled ? 'is-on' : ''}`} aria-label="Sound review">
-      <button className="review-toggle__button" type="button" onClick={() => cycleSong(-1)} aria-label="Previous song">‹</button>
       <button
-        className="review-toggle__main"
+        className="review-toggle__main review-toggle__transport"
         type="button"
         onClick={toggle}
         aria-pressed={enabled}
+        aria-label={enabled ? 'Pause site music' : 'Play site music'}
       >
-        <span className="review-toggle__kind mono">{enabled ? 'Sound On' : 'Sound Off'}</span>
-        <span className="review-toggle__status" aria-hidden="true">{enabled ? '●' : '○'}</span>
-        <span className="review-toggle__label mono">{`${engine.bpm} BPM · ${engine.session.name}${engine.chordOverride ? ` · ${engine.chordOverride}` : ''}`}</span>
+        <span className={`video-control__icon ${enabled ? 'video-control__icon--stop' : 'video-control__icon--play'}`} aria-hidden="true" />
       </button>
-      <button className="review-toggle__button" type="button" onClick={() => cycleSong(1)} aria-label="Next song">›</button>
+      <AudioScope enabled={enabled} />
     </div>
   );
+}
+
+function AudioScope({ enabled }) {
+  const canvasRef = useRef(null);
+  const pulseRef = useRef({ drum: 0, harmony: 0, melody: 0 });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+    const ctx = canvas.getContext('2d');
+    let raf = 0;
+    let phase = 0;
+    let last = performance.now();
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, Math.round(rect.width * dpr));
+      canvas.height = Math.max(1, Math.round(rect.height * dpr));
+    };
+
+    const tick = (now) => {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      resize();
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.lineWidth = 1 * dpr;
+      ctx.strokeStyle = 'rgba(26, 24, 20, 0.18)';
+      ctx.beginPath();
+      for (let x = 0; x <= w; x += 12 * dpr) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+      }
+      ctx.moveTo(0, h / 2);
+      ctx.lineTo(w, h / 2);
+      ctx.stroke();
+
+      pulseRef.current.drum *= 0.88;
+      pulseRef.current.harmony *= 0.94;
+      pulseRef.current.melody *= 0.91;
+      phase += dt * (enabled ? 5.8 : 1.2);
+      const amp = enabled
+        ? (0.18 + pulseRef.current.drum * 0.34 + pulseRef.current.harmony * 0.26 + pulseRef.current.melody * 0.22)
+        : 0.04;
+      const frequency = enabled ? 2.4 + pulseRef.current.melody * 2.2 : 1.4;
+
+      ctx.strokeStyle = enabled ? '#111' : 'rgba(26,24,20,0.36)';
+      ctx.lineWidth = 1.25 * dpr;
+      ctx.beginPath();
+      for (let x = 0; x <= w; x += 1.5 * dpr) {
+        const t = x / w;
+        const carrier = Math.sin((t * frequency + phase) * Math.PI * 2);
+        const overtone = Math.sin((t * (frequency * 2.07) - phase * 0.7) * Math.PI * 2) * 0.28;
+        const envelope = 0.52 + Math.sin(t * Math.PI) * 0.48;
+        const y = h / 2 + (carrier + overtone) * amp * envelope * h * 0.42;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      raf = window.requestAnimationFrame(tick);
+    };
+
+    const onDrum = (event) => {
+      pulseRef.current.drum = Math.min(1, pulseRef.current.drum + 0.55 * (event.detail?.strength || 1));
+    };
+    const onHarmony = () => {
+      pulseRef.current.harmony = 1;
+    };
+    const onMelody = () => {
+      pulseRef.current.melody = Math.min(1, pulseRef.current.melody + 0.48);
+    };
+
+    resize();
+    window.addEventListener('resize', resize);
+    window.addEventListener('resume-drum-hit', onDrum);
+    window.addEventListener('resume-harmony-hit', onHarmony);
+    window.addEventListener('resume-melody-note', onMelody);
+    raf = window.requestAnimationFrame(tick);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener('resize', resize);
+      window.removeEventListener('resume-drum-hit', onDrum);
+      window.removeEventListener('resume-harmony-hit', onHarmony);
+      window.removeEventListener('resume-melody-note', onMelody);
+    };
+  }, [enabled]);
+
+  return <canvas ref={canvasRef} className="review-toggle__scope" aria-hidden="true" />;
 }
 
 function ReviewToggle({ kind, options, classScope }) {
