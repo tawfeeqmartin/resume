@@ -2231,6 +2231,9 @@ function BlackoutDiagram({ type, pulse }) {
 function BlackoutPoetryPanel() {
   const [active, setActive] = useState(0);
   const [phraseSegments, setPhraseSegments] = useState([]);
+  const [isMobileLayout, setIsMobileLayout] = useState(() => (
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 700px)').matches
+  ));
   const [titleCount, setTitleCount] = useState(0);
   const [timingNonce, setTimingNonce] = useState(0);
   const [diagramPulse, setDiagramPulse] = useState({ detail: null, structure: null });
@@ -2442,6 +2445,14 @@ function BlackoutPoetryPanel() {
   }, []);
 
   useEffect(() => {
+    const query = window.matchMedia('(max-width: 700px)');
+    const update = () => setIsMobileLayout(query.matches);
+    update();
+    query.addEventListener?.('change', update);
+    return () => query.removeEventListener?.('change', update);
+  }, []);
+
+  useEffect(() => {
     setTitleCount(0);
     const id = window.setInterval(() => {
       setTitleCount((count) => {
@@ -2546,7 +2557,7 @@ function BlackoutPoetryPanel() {
           segments={phraseSegments}
           stepMs={visualTiming.stepMs}
           lineMs={lineMs}
-          visibleCount={musicVisualsActive ? revealedLineCount : phraseSegments.length}
+          visibleCount={isMobileLayout ? phraseSegments.length : (musicVisualsActive ? revealedLineCount : phraseSegments.length)}
           pulse={harmonyPulse}
         />
           <div className="blackout-panel__manual-flow" aria-hidden="true">
@@ -3378,12 +3389,10 @@ function References({ items }) {
                 <span className="refs__chip-name">{r.name}</span>
                 <span className="refs__chip-title mono dim">{r.title}</span>
               </button>
-              {i === active && (
-                <div className="refs__inline-quote">
-                  <blockquote className="refs__inline-text serif">{r.quote}</blockquote>
-                  {r.sub && <div className="refs__inline-sub mono dim">{r.sub}</div>}
-                </div>
-              )}
+              <div className={`refs__inline-quote ${i === active ? 'is-active' : ''}`}>
+                <blockquote className="refs__inline-text serif">{r.quote}</blockquote>
+                {r.sub && <div className="refs__inline-sub mono dim">{r.sub}</div>}
+              </div>
             </li>
           ))}
         </ol>
