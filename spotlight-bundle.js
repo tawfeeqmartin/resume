@@ -451,6 +451,12 @@ class SpotlightRenderer {
     if (!this.current) return;
     this.current.loaded.video.pause();
   }
+  pauseAndMute() {
+    if (!this.current) return;
+    const video = this.current.loaded.video;
+    video.muted = true;
+    video.pause();
+  }
   replayWithSound() {
     if (!this.current) return;
     const video = this.current.loaded.video;
@@ -551,8 +557,8 @@ class SpotlightRenderer {
     if (key === ' ') {
       if (this.current) {
         const video = this.current.loaded.video;
-        if (video.paused) this.play();
-        else this.pause();
+        if (video.paused) this.replayWithSound();
+        else this.pauseAndMute();
       }
       e.preventDefault();
       return;

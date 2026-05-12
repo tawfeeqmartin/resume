@@ -2004,7 +2004,7 @@ body.font-cascadia-signal .identity__vector-name {
   border: 0;
   background: transparent;
   color: #f4f0e6;
-  min-height: 56px;
+  min-height: 72px;
   padding: 0;
   border-radius: 0;
   display: inline-flex;
@@ -2017,21 +2017,21 @@ body.font-cascadia-signal .identity__vector-name {
   outline: none;
 }
 .video-control--primary {
-  width: 56px;
-  min-width: 56px;
+  width: 72px;
+  min-width: 72px;
 }
 .video-control:has(.video-control__icon--replay) {
-  width: 56px;
-  min-width: 56px;
+  width: 72px;
+  min-width: 72px;
 }
 .video-control--icon {
-  width: 56px;
+  width: 72px;
 }
 .video-control__icon {
   position: relative;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
   display: inline-block;
   color: var(--accent);
 }
@@ -2062,9 +2062,12 @@ body.font-cascadia-signal .identity__vector-name {
 .video-control__icon--replay::before {
   content: "";
   position: absolute;
-  inset: 1px;
+  inset: 0;
   background: var(--accent-blue);
   border-radius: 50%;
+}
+.video-control__icon--replay::after {
+  content: none !important;
 }
 .video-control__icon--sound-on::before,
 .video-control__icon--sound-off::before {
@@ -2418,15 +2421,15 @@ body.font-cascadia-signal .identity__vector-name {
     display: none;
   }
   .video-control {
-    min-height: 48px;
+    min-height: 60px;
   }
   .video-control--primary {
-    width: 48px;
-    min-width: 48px;
+    width: 60px;
+    min-width: 60px;
   }
   .video-control--icon {
-    min-width: 48px;
-    flex: 0 0 48px;
+    min-width: 60px;
+    flex: 0 0 60px;
   }
   .video-fullscreen-corner {
     right: 8px;
@@ -2435,13 +2438,13 @@ body.font-cascadia-signal .identity__vector-name {
     height: 36px;
   }
   .video-control:has(.video-control__icon--replay) {
-    width: 48px;
-    min-width: 48px;
+    width: 60px;
+    min-width: 60px;
   }
   .video-control__icon {
-    width: 24px;
-    height: 24px;
-    flex-basis: 24px;
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
   }
   .wasd-hint {
     display: none;

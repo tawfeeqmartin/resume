@@ -2711,7 +2711,7 @@ function HelpPlayer({ src }) {
       if (!renderer) return;
       wasPlayingBeforeHiddenRef.current = false;
       userPausedRef.current = true;
-      if (!pausedRef.current) renderer.pause();
+      if (!pausedRef.current) renderer.pauseAndMute();
     };
     document.addEventListener('visibilitychange', onVisibilityChange);
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
@@ -2729,7 +2729,7 @@ function HelpPlayer({ src }) {
     } else {
       userPausedRef.current = true;
       wasPlayingBeforeHiddenRef.current = false;
-      rendererRef.current.pause();
+      rendererRef.current.pauseAndMute();
     }
   };
   const replayWithSound = () => {
@@ -2872,6 +2872,7 @@ function VideoSlot({ src, label, fallbackPath }) {
       if (!event.detail?.userInitiated && userHeldPlaybackRef.current) return;
       userHeldPlaybackRef.current = false;
       if (window.__resumeHeldVideoSlot === slotIdRef.current) window.__resumeHeldVideoSlot = null;
+      video.muted = true;
       video.pause();
     };
     video.addEventListener('volumechange', syncAudio);
@@ -2901,7 +2902,10 @@ function VideoSlot({ src, label, fallbackPath }) {
         if (entry.isIntersecting && entry.intersectionRatio >= 0.62 && video.paused) {
           activateSlot();
         } else if (!entry.isIntersecting || entry.intersectionRatio < 0.2) {
-          if (!userHeldPlaybackRef.current) video.pause();
+          if (!userHeldPlaybackRef.current) {
+            video.muted = true;
+            video.pause();
+          }
         }
       },
       { threshold: [0, 0.2, 0.62, 1] }
@@ -2918,6 +2922,7 @@ function VideoSlot({ src, label, fallbackPath }) {
       if (document.visibilityState !== 'hidden') return;
       userHeldPlaybackRef.current = true;
       if (window.__resumeHeldVideoSlot === slotIdRef.current) window.__resumeHeldVideoSlot = null;
+      video.muted = true;
       if (!video.paused) video.pause();
     };
     document.addEventListener('visibilitychange', onVisibilityChange);
@@ -2932,7 +2937,7 @@ function VideoSlot({ src, label, fallbackPath }) {
       detail: { id: slotIdRef.current, userInitiated }
     }));
     if (restart) video.currentTime = 0;
-    if (withSound) video.muted = false;
+    video.muted = !withSound;
     if (userInitiated && !video.muted) {
       userHeldPlaybackRef.current = true;
       window.__resumeHeldVideoSlot = slotIdRef.current;
@@ -2948,6 +2953,7 @@ function VideoSlot({ src, label, fallbackPath }) {
     } else {
       userHeldPlaybackRef.current = false;
       if (window.__resumeHeldVideoSlot === slotIdRef.current) window.__resumeHeldVideoSlot = null;
+      video.muted = true;
       video.pause();
     }
   };
