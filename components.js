@@ -1030,6 +1030,38 @@ function getResumeStrudelAudioEngine() {
     setVideoDucked(Boolean(event.detail?.active));
   });
 
+  // Suspend the Strudel audio context when the tab is hidden so phones
+  // don't keep burning CPU in the background. Resume + fresh pattern
+  // evaluation on return so accumulated scheduling state gets reset.
+  let wasPlayingBeforeHidden = false;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      wasPlayingBeforeHidden = enabled && !videoDucked;
+      if (wasPlayingBeforeHidden) {
+        [...liveChordVoices.keys()].forEach((key) => releaseLiveChord(key));
+        hushCurrent(true);
+      }
+    } else if (wasPlayingBeforeHidden) {
+      wasPlayingBeforeHidden = false;
+      if (enabled && !videoDucked) {
+        playCurrent({ resetTransport: true });
+      }
+    }
+  });
+
+  // Periodic soft reset: every 90s of active play, force a transport
+  // reset so any pattern-eval accumulation in Strudel gets flushed.
+  // Aligned to a beat boundary keeps the glitch close to inaudible.
+  let lastReevalAt = 0;
+  const REEVAL_INTERVAL_MS = 90000;
+  window.setInterval(() => {
+    if (!enabled || videoDucked || document.hidden) return;
+    const now = performance.now();
+    if (now - lastReevalAt < REEVAL_INTERVAL_MS) return;
+    lastReevalAt = now;
+    playCurrent({ resetTransport: true });
+  }, 15000);
+
   const visualTimingFor = () => {
     const song = songPresets[songIndex];
     const visual = song.visual || {};
