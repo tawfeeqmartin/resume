@@ -785,25 +785,41 @@ function getResumeStrudelAudioEngine() {
   const installMasterBus = (context) => {
     if (!context || context.__resumeMasterBusInstalled) return;
     context.__resumeMasterBusInstalled = true;
+    const isMobileTarget = typeof window !== 'undefined'
+      && window.matchMedia('(max-width: 700px), (pointer: coarse)').matches;
     const now = context.currentTime;
-    const limiter = context.createDynamicsCompressor();
-    limiter.threshold.setValueAtTime(-12, now);
-    limiter.knee.setValueAtTime(8, now);
-    limiter.ratio.setValueAtTime(20, now);
-    limiter.attack.setValueAtTime(0.002, now);
-    limiter.release.setValueAtTime(0.14, now);
-    const makeup = context.createGain();
-    makeup.gain.setValueAtTime(0.78, now);
-    limiter.connect(makeup);
-    makeup.connect(context.destination);
-    // Redirect any subsequent connect(..., destination) on this context through the limiter.
+
+    // On mobile, skip the dynamics compressor — its per-sample processing
+    // can itself starve the audio thread on phones. Use a plain gain trim
+    // so we still have a single redirect target.
+    let busInput;
+    if (isMobileTarget) {
+      const trim = context.createGain();
+      trim.gain.setValueAtTime(0.62, now);
+      trim.connect(context.destination);
+      busInput = trim;
+    } else {
+      const limiter = context.createDynamicsCompressor();
+      limiter.threshold.setValueAtTime(-12, now);
+      limiter.knee.setValueAtTime(8, now);
+      limiter.ratio.setValueAtTime(20, now);
+      limiter.attack.setValueAtTime(0.002, now);
+      limiter.release.setValueAtTime(0.14, now);
+      const makeup = context.createGain();
+      makeup.gain.setValueAtTime(0.78, now);
+      limiter.connect(makeup);
+      makeup.connect(context.destination);
+      busInput = limiter;
+    }
+
+    // Redirect any subsequent connect(..., destination) on this context through the bus input.
     // Other AudioContexts are untouched thanks to the this.context === context guard.
     const origConnect = AudioNode.prototype.connect;
     AudioNode.prototype.connect = function (target, ...rest) {
       if (target === context.destination
           && this.context === context
-          && this !== limiter && this !== makeup) {
-        return origConnect.call(this, limiter, ...rest);
+          && this !== busInput) {
+        return origConnect.call(this, busInput, ...rest);
       }
       return origConnect.call(this, target, ...rest);
     };
@@ -862,18 +878,37 @@ function getResumeStrudelAudioEngine() {
     try {
       const isMobileTarget = typeof window !== 'undefined'
         && window.matchMedia('(max-width: 700px), (pointer: coarse)').matches;
-      module.resumeSetMasterGate?.(isMobileTarget ? 0.65 : 1);
-      window.__resumeStrudelSidechain = {
-        enabled: true,
-        keyOrbits: [11],
-        targetOrbits: [12],
-        floor: 1 - (1 - 0.965) * mixSettings.sidechain,
-        attack: 0.018,
-        release: 0.24,
-      };
+      module.resumeSetMasterGate?.(isMobileTarget ? 0.6 : 1);
+      window.__resumeStrudelSidechain = isMobileTarget
+        ? { enabled: false }
+        : {
+            enabled: true,
+            keyOrbits: [11],
+            targetOrbits: [12],
+            floor: 1 - (1 - 0.965) * mixSettings.sidechain,
+            attack: 0.018,
+            release: 0.24,
+          };
       console.info('Strudel play', song.name, song.bpm);
       installLaneTriggerHandlers();
-      await module.evaluate(makePattern(song, activeWASD), true);
+      let pattern = makePattern(song, activeWASD);
+      if (isMobileTarget) {
+        // Strip the most CPU-heavy effects from the pattern so mobile
+        // audio threads stop missing buffer deadlines (the popping/
+        // dragging symptom). Reverb (room/sz), distort, and large
+        // unison counts are the dominant cost per beat.
+        pattern = pattern
+          .replace(/\.room\([^)]*\)/g, '')
+          .replace(/\.sz\([^)]*\)/g, '')
+          .replace(/\.distort\([^)]*\)/g, '')
+          .replace(/\.delay\([^)]*\)/g, '')
+          .replace(/\.delaytime\([^)]*\)/g, '')
+          .replace(/\.delayfb\([^)]*\)/g, '')
+          .replace(/\.unison\(\s*[3-9]\d*\s*\)/g, '.unison(2)')
+          .replace(/\.lpf\(\s*sine\.range\([^)]*\)\.slow\([^)]*\)\s*\)/g, '.lpf(900)')
+          .replace(/\.detune\(\s*sine\.range\([^)]*\)\.slow\([^)]*\)\s*\)/g, '');
+      }
+      await module.evaluate(pattern, true);
     } catch (error) {
       console.warn('Strudel pattern failed', error);
     }
