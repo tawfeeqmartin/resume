@@ -3352,17 +3352,17 @@ function BlackoutPoetryPanel() {
     return () => window.cancelAnimationFrame(raf);
   }, [active, isMobileLayout, laidOutRows]);
 
-  // Reset the measured max when viewport changes (orientation, resize)
-  // so we re-measure against the new geometry.
+  // Reset the measured max only on real orientation changes — mobile
+  // browsers fire 'resize' constantly as the address bar hides/shows on
+  // scroll, which would nuke the lock and re-measure (potentially
+  // smaller) on the next plate change, causing the section to shrink.
   useEffect(() => {
     const reset = () => {
       measuredMaxHeightRef.current = 0;
       if (panelRef.current) panelRef.current.style.height = '';
     };
-    window.addEventListener('resize', reset);
     window.addEventListener('orientationchange', reset);
     return () => {
-      window.removeEventListener('resize', reset);
       window.removeEventListener('orientationchange', reset);
     };
   }, []);
