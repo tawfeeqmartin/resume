@@ -375,7 +375,13 @@ async function loadFromUrl(source) {
   }
 
   const video = document.createElement('video');
-  if (!inlineVideoFallback) video.crossOrigin = 'anonymous';
+  // Always set crossOrigin so the video can be uploaded as a WebGL texture
+  // without tainting the canvas. R2 sends Access-Control-Allow-Origin for
+  // tawfeeqmartin.com, so the request still succeeds. Without this, the
+  // inlineVideoFallback path threw a SecurityError on every frame
+  // (~120/sec) during texImage2D — verified via CDP heap diff to be the
+  // dominant memory leak and CPU drain on mobile.
+  video.crossOrigin = 'anonymous';
   video.src = videoUrl;
   video.loop = true;
   video.playsInline = true;
