@@ -1,5 +1,5 @@
 /* eslint-disable */
-const { useState, useEffect, useRef, useMemo } = React;
+const { useState, useEffect, useLayoutEffect, useRef, useMemo } = React;
 
 const THEME_OPTIONS = [
   { label: 'Frontier White', className: 'theme-frontier-white' },
@@ -3243,6 +3243,44 @@ function BlackoutPoetryPanel() {
   const phraseWordKeys = useMemo(() => (
     selectPhraseWordKeys(laidOutRows, activeStatement.words)
   ), [laidOutRows, activeStatement]);
+
+  const measuredMaxHeightRef = useRef(0);
+
+  // On mobile, pin the panel height to the tallest page seen so far so
+  // page swaps stop pushing the content below up and down. We track the
+  // running max in a ref and write it as inline height on the panel.
+  useLayoutEffect(() => {
+    if (!isMobileLayout || !panelRef.current) return;
+    const pageEl = panelRef.current.querySelector('.blackout-panel__page');
+    if (!pageEl) return;
+    const measure = () => {
+      const h = pageEl.scrollHeight;
+      if (h > measuredMaxHeightRef.current) {
+        measuredMaxHeightRef.current = h;
+        if (panelRef.current) {
+          panelRef.current.style.height = `${h}px`;
+        }
+      }
+    };
+    measure();
+    const raf = window.requestAnimationFrame(measure);
+    return () => window.cancelAnimationFrame(raf);
+  }, [active, isMobileLayout, laidOutRows]);
+
+  // Reset the measured max when viewport changes (orientation, resize)
+  // so we re-measure against the new geometry.
+  useEffect(() => {
+    const reset = () => {
+      measuredMaxHeightRef.current = 0;
+      if (panelRef.current) panelRef.current.style.height = '';
+    };
+    window.addEventListener('resize', reset);
+    window.addEventListener('orientationchange', reset);
+    return () => {
+      window.removeEventListener('resize', reset);
+      window.removeEventListener('orientationchange', reset);
+    };
+  }, []);
 
   const cycle = () => setActive((idx) => (idx + 1) % BLACKOUT_PAGES.length);
   const clearRevealTimers = () => {
