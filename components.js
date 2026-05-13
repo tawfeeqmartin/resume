@@ -1761,6 +1761,10 @@ function VectorNameCanvas({ text }) {
     };
 
     const draw = (now) => {
+      if (!inView || !tabVisible) {
+        raf = 0;
+        return;
+      }
       const elapsed = now - start;
       ctx.clearRect(0, 0, w, h);
       scale = Math.min(w / (totalUnits + 1), h / 8.3);
@@ -1828,11 +1832,46 @@ function VectorNameCanvas({ text }) {
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(wrap);
-    raf = requestAnimationFrame(draw);
+
+    // Only run the canvas rAF when the element is on-screen AND the tab
+    // is visible. Background canvas drawing burns CPU/battery and steals
+    // time from the audio thread on mobile.
+    let inView = true;
+    let tabVisible = !document.hidden;
+    const startLoop = () => {
+      if (raf) return;
+      if (!inView || !tabVisible) return;
+      raf = requestAnimationFrame(draw);
+    };
+    const stopLoop = () => {
+      if (!raf) return;
+      cancelAnimationFrame(raf);
+      raf = 0;
+    };
+    const observer = typeof IntersectionObserver !== 'undefined'
+      ? new IntersectionObserver(
+          ([entry]) => {
+            inView = entry.isIntersecting;
+            if (inView && tabVisible) startLoop();
+            else stopLoop();
+          },
+          { threshold: 0 }
+        )
+      : null;
+    if (observer) observer.observe(wrap);
+    const onVisibility = () => {
+      tabVisible = !document.hidden;
+      if (tabVisible && inView) startLoop();
+      else stopLoop();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    startLoop();
 
     return () => {
-      cancelAnimationFrame(raf);
+      stopLoop();
       ro.disconnect();
+      if (observer) observer.disconnect();
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [text]);
 
