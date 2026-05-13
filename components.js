@@ -1402,7 +1402,6 @@ function ReviewControls() {
   return (
     <div className="review-controls">
       <AudioToggle />
-      <MixFaders />
     </div>
   );
 }
