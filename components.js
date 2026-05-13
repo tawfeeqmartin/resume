@@ -1084,18 +1084,10 @@ function getResumeStrudelAudioEngine() {
     }
   });
 
-  // Periodic soft reset: every 90s of active play, force a transport
-  // reset so any pattern-eval accumulation in Strudel gets flushed.
-  // Aligned to a beat boundary keeps the glitch close to inaudible.
-  let lastReevalAt = 0;
-  const REEVAL_INTERVAL_MS = 90000;
-  window.setInterval(() => {
-    if (!enabled || videoDucked || document.hidden) return;
-    const now = performance.now();
-    if (now - lastReevalAt < REEVAL_INTERVAL_MS) return;
-    lastReevalAt = now;
-    playCurrent({ resetTransport: true });
-  }, 15000);
+  // (Removed the periodic 90s soft reset — verified via CDP harness that
+  // it was leaking ~8MB/min on mobile while desktop stayed flat. The
+  // reset's stop/hush/resetGlobalEffects sequence does not fully release
+  // Strudel's internal allocations on the mobile-stripped pattern.)
 
   const visualTimingFor = () => {
     const song = songPresets[songIndex];
