@@ -585,8 +585,8 @@ function getResumeStrudelAudioEngine() {
     filter.frequency.setValueAtTime(1150, now);
     filter.Q.setValueAtTime(0.7, now);
     output.gain.setValueAtTime(0.0001, now);
-    output.gain.linearRampToValueAtTime(0.045 * mixSettings.master * mixSettings.chords, now + 0.055);
-    output.gain.setTargetAtTime(0.038 * mixSettings.master * mixSettings.chords, now + 0.08, 0.35);
+    output.gain.linearRampToValueAtTime(0.028 * mixSettings.master * mixSettings.chords, now + 0.055);
+    output.gain.setTargetAtTime(0.022 * mixSettings.master * mixSettings.chords, now + 0.08, 0.35);
     filter.connect(output);
     output.connect(context.destination);
     const nodes = notes.map((frequency, index) => {
@@ -787,13 +787,13 @@ function getResumeStrudelAudioEngine() {
     context.__resumeMasterBusInstalled = true;
     const now = context.currentTime;
     const limiter = context.createDynamicsCompressor();
-    limiter.threshold.setValueAtTime(-7, now);
-    limiter.knee.setValueAtTime(6, now);
-    limiter.ratio.setValueAtTime(14, now);
-    limiter.attack.setValueAtTime(0.003, now);
-    limiter.release.setValueAtTime(0.18, now);
+    limiter.threshold.setValueAtTime(-12, now);
+    limiter.knee.setValueAtTime(8, now);
+    limiter.ratio.setValueAtTime(20, now);
+    limiter.attack.setValueAtTime(0.002, now);
+    limiter.release.setValueAtTime(0.14, now);
     const makeup = context.createGain();
-    makeup.gain.setValueAtTime(0.92, now);
+    makeup.gain.setValueAtTime(0.78, now);
     limiter.connect(makeup);
     makeup.connect(context.destination);
     // Redirect any subsequent connect(..., destination) on this context through the limiter.
@@ -860,7 +860,9 @@ function getResumeStrudelAudioEngine() {
     if (!enabled || videoDucked) return;
     const song = songPresets[songIndex];
     try {
-      module.resumeSetMasterGate?.(1);
+      const isMobileTarget = typeof window !== 'undefined'
+        && window.matchMedia('(max-width: 700px), (pointer: coarse)').matches;
+      module.resumeSetMasterGate?.(isMobileTarget ? 0.65 : 1);
       window.__resumeStrudelSidechain = {
         enabled: true,
         keyOrbits: [11],
