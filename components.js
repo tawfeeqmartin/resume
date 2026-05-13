@@ -782,6 +782,33 @@ function getResumeStrudelAudioEngine() {
     });
   };
 
+  const installMasterBus = (context) => {
+    if (!context || context.__resumeMasterBusInstalled) return;
+    context.__resumeMasterBusInstalled = true;
+    const now = context.currentTime;
+    const limiter = context.createDynamicsCompressor();
+    limiter.threshold.setValueAtTime(-7, now);
+    limiter.knee.setValueAtTime(6, now);
+    limiter.ratio.setValueAtTime(14, now);
+    limiter.attack.setValueAtTime(0.003, now);
+    limiter.release.setValueAtTime(0.18, now);
+    const makeup = context.createGain();
+    makeup.gain.setValueAtTime(0.92, now);
+    limiter.connect(makeup);
+    makeup.connect(context.destination);
+    // Redirect any subsequent connect(..., destination) on this context through the limiter.
+    // Other AudioContexts are untouched thanks to the this.context === context guard.
+    const origConnect = AudioNode.prototype.connect;
+    AudioNode.prototype.connect = function (target, ...rest) {
+      if (target === context.destination
+          && this.context === context
+          && this !== limiter && this !== makeup) {
+        return origConnect.call(this, limiter, ...rest);
+      }
+      return origConnect.call(this, target, ...rest);
+    };
+  };
+
   const ensureStrudel = async () => {
     if (strudel) return strudel;
     if (!initPromise) {
@@ -793,6 +820,11 @@ function getResumeStrudelAudioEngine() {
           });
       initPromise = initPromise.then((module) => {
         strudel = module;
+        try {
+          installMasterBus(module.getAudioContext?.());
+        } catch (error) {
+          console.warn('Master bus install failed', error);
+        }
         return module;
       });
     }
