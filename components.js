@@ -3284,6 +3284,7 @@ function BlackoutPoetryPanel() {
   // On mobile, pin the panel height to the tallest page seen so far so
   // page swaps stop pushing the content below up and down. We track the
   // running max in a ref and write it as inline height on the panel.
+  // A CSS min-height floor handles most pages without any JS growth.
   useLayoutEffect(() => {
     if (!isMobileLayout || !panelRef.current) return;
     const pageEl = panelRef.current.querySelector('.blackout-panel__page');
@@ -3299,6 +3300,16 @@ function BlackoutPoetryPanel() {
     };
     measure();
     const raf = window.requestAnimationFrame(measure);
+    // Re-measure after fonts load — they can shift content height by a
+    // few pixels and trigger a delayed pop otherwise.
+    let fontsCallback = null;
+    if (document.fonts && document.fonts.ready) {
+      fontsCallback = () => {
+        if (!panelRef.current) return;
+        window.requestAnimationFrame(measure);
+      };
+      document.fonts.ready.then(fontsCallback).catch(() => {});
+    }
     return () => window.cancelAnimationFrame(raf);
   }, [active, isMobileLayout, laidOutRows]);
 
