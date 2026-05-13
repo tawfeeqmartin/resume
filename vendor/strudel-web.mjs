@@ -4806,8 +4806,61 @@ function Es(e, t, n) {
   const r = Qt(n);
   return e.connect(r), r.connect(t), r;
 }
+let resumeSidechainBuses = /* @__PURE__ */ new Map();
+let resumeMasterGate;
+function resumeGetMasterGate() {
+  if (!resumeMasterGate) {
+    resumeMasterGate = new GainNode(Ee(), { gain: 1 });
+    qi(resumeMasterGate);
+  }
+  return resumeMasterGate;
+}
+function resumeSetMasterGate(e) {
+  const t = resumeGetMasterGate(), n = Ee().currentTime;
+  t.gain.cancelScheduledValues(n), t.gain.setValueAtTime(e, n);
+}
+function resumeSidechainConfig() {
+  const e = globalThis.__resumeStrudelSidechain;
+  return e?.enabled ? e : null;
+}
+function resumeOrbitList(e) {
+  return Array.isArray(e) ? e.map(Number) : [];
+}
+function resumeGetSidechainBus(e, t) {
+  const n = Number(t);
+  if (!resumeSidechainBuses.has(n)) {
+    const r = new GainNode(e, { gain: 1 });
+    r.connect(resumeGetMasterGate());
+    resumeSidechainBuses.set(n, r);
+  }
+  return resumeSidechainBuses.get(n);
+}
+function resumeConnectSidechainOutput(e, t, n) {
+  const r = resumeSidechainConfig();
+  if (r && resumeOrbitList(r.targetOrbits).includes(Number(n))) {
+    e.connect(resumeGetSidechainBus(Ee(), n));
+    return;
+  }
+  e.connect(resumeGetMasterGate());
+}
+function resumeTriggerSidechain(e, t) {
+  const n = resumeSidechainConfig();
+  if (!n || !resumeOrbitList(n.keyOrbits).includes(Number(e)))
+    return;
+  resumeOrbitList(n.targetOrbits).forEach((o) => resumeGetSidechainBus(Ee(), o));
+  if (!resumeSidechainBuses.size)
+    return;
+  const r = Ee(), i = Math.max(r.currentTime, Number(t) || r.currentTime), s = Math.max(0.001, Number(n.attack) || 0.006), u = Math.max(s + 0.001, Number(n.release) || 0.14), a = Math.max(0.05, Math.min(1, Number(n.floor) || 0.72));
+  resumeSidechainBuses.forEach((o) => {
+    try {
+      o.gain.cancelAndHoldAtTime ? o.gain.cancelAndHoldAtTime(i) : o.gain.cancelScheduledValues(i), o.gain.linearRampToValueAtTime(a, i + s), o.gain.setTargetAtTime(1, i + s, u);
+    } catch {
+      o.gain.setValueAtTime(1, r.currentTime);
+    }
+  });
+}
 function _C() {
-  kn = {}, Ut = {}, at = {}, jn = {};
+  kn = {}, Ut = {}, at = {}, jn = {}, resumeSidechainBuses = /* @__PURE__ */ new Map();
 }
 let Nr = /* @__PURE__ */ new Map();
 function uo(e) {
@@ -4996,7 +5049,7 @@ const Hi = async (e, t, n, r) => {
     fe.push(Me);
   }
   const pn = new GainNode(i, { gain: h });
-  fe.push(pn), qi(pn, _r);
+  fe.push(pn), resumeTriggerSidechain(_e, t), resumeConnectSidechainOutput(pn, _r, _e);
   let Ne;
   if (ut > 0 && cn > 0 && Ve > 0) {
     const Me = xC(_e, cn, Ve, t, xn);
@@ -5983,6 +6036,7 @@ const YC = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   getAudioDevices: ld,
   getCachedBuffer: pC,
   getCompressor: qp,
+  resumeSetMasterGate,
   getDefaultValue: Ke,
   getLfo: ea,
   getLoadedBuffer: mC,
@@ -16117,6 +16171,7 @@ export {
   ld as getAudioDevices,
   pC as getCachedBuffer,
   qp as getCompressor,
+  resumeSetMasterGate,
   Tu as getControlName,
   Ec as getCurrentKeyboardState,
   Ke as getDefaultValue,

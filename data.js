@@ -27,6 +27,17 @@ const RESUME = {
         "Collaborate directly with directors, DPs, and VFX supervisors to solve on-set technical challenges during live photography.",
         "Contributed to ILM StageCraft work recognized by SIGGRAPH, the Television Academy's 74th Engineering, Science & Technology Emmy, and NATAS's 75th Technology & Engineering Emmy.",
       ],
+      credits: [
+        "Obi-Wan Kenobi",
+        "Skeleton Crew",
+        "Andor Season 2",
+        "The Mandalorian Season 3",
+        "The Santa Clauses S2",
+        "The Creator",
+        "Wicked",
+        "A Big Bold Beautiful Journey",
+        "The Mandalorian & Grogu",
+      ],
     },
     {
       role: "Technology Consultant",

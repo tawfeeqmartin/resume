@@ -112,3 +112,67 @@ Open tuning notes:
 - The click/thump level must feel normalized at normal MacBook listening levels. The user should not need to max system volume.
 - Bass and melody should be subtle enough for a portfolio, but audible enough that the page feels alive.
 - Keep the musical pattern prototype in Strudel unless we replace it with rendered audio stems.
+
+## Strudel MIDI Lane Architecture
+
+Current direction: Strudel is the musical transport, and the site listens to normalized MIDI-like lane events instead of one-off DOM animation hacks. This keeps the system reusable for proof stamps, diagram reactions, phrase timing, external MIDI output, future MIDI input, and scroll-driven mix composition.
+
+Implementation notes:
+
+- `components.js` owns a scene MIDI map in `getResumeStrudelAudioEngine()`.
+- Each musical lane has a stable channel/note/group identity.
+- Strudel patterns call named handlers on `window.__resumeLaneTriggers`.
+- Those handlers close over the intended lane name and call `__resumeDrumHit`, `__resumeBassHit`, `__resumeHarmonyHit`, or `__resumeMelodyNote`.
+- The hit handlers emit a normalized `resume-midi-event` with `type`, `group`, `lane`, `channel`, `note`, `velocity`, `duration`, and timing metadata.
+- Visual systems should subscribe to `resume-midi-event` and filter by `group` or `lane`.
+- Do not add visual fallbacks that fake pulses on timers; if an animation is meant to be musical, it should be driven by a normalized lane event.
+
+Current channel map:
+
+```text
+1  kick      note 36  drums
+2  snare     note 38  drums
+3  hat       note 42  drums
+4  perc      note 39  drums
+5  bass      note 36  bass
+6  chord     note 48  harmony
+7  wasdChord note 52  harmony
+8  chop      note 72  melody
+9  lead      note 76  melody
+10 lift      note 79  melody
+11 angel     note 84  melody
+12 build     note 67  melody
+13 switch    note 71  melody
+14 ghost     note 74  melody
+15 dust      note 96  melody
+```
+
+Award/proof stamp behavior:
+
+- HELP and Blackbird award stamps listen to drum lane MIDI events.
+- Each award stamp maps to a specific drum lane rather than a generic music pulse.
+- Stamp color fills are normally transparent and snap on when their lane is active.
+- The fills use direct SVG `fill` switching, not `opacity` or `fill-opacity`, because Chrome did not reliably apply those properties on the SVG stamp paths during testing.
+- The line drawings remain visible; only the interior Byrne/Bauhaus color fills pulse between no fill and full fill.
+
+Verification performed:
+
+- Manual `window.__resumeProofStampPulse('kick')` produced visible color fills.
+- Live Strudel playback produced normalized drum events on separate channels:
+  - kick: channel 1 / note 36
+  - snare: channel 2 / note 38
+  - hat: channel 3 / note 42
+  - perc: channel 4 / note 39
+- Live stamps lit from real Strudel lane events after replacing inline anonymous trigger callbacks with the global lane trigger registry.
+
+Future scroll-composition idea:
+
+- At the top interactive demo section, play the full composition once sound is armed.
+- As the viewer scrolls down, fade or filter the mix by site section:
+  - yellow section introduces or emphasizes the yellow musical element.
+  - blue section layers in the blue musical element.
+  - red section layers in the red musical element.
+- At the bottom of the page the full composition should be present.
+- Scrolling back up should reverse the layering.
+- Returning to the top interactive demo should restore the full composition.
+- This should be implemented as section-level mix state on top of the existing lane/event system, not as a second audio engine.
