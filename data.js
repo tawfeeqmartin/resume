@@ -102,6 +102,7 @@ const RESUME = {
     { org: "The One Show", title: "Silver Pencil · Integrated Digital & Physical IP", project: "Chevrolet ‘The Human Race’", role: "TIM & Shoot Supervisor", tier: "silver" },
     { org: "SXSW", title: "Gold · AR/VR Breakthrough Innovation", project: "Mill Stitch™", role: "TIM / Product Manager", tier: "gold" },
     { org: "Webby Awards", title: "Technical Achievement · 20th Annual", project: "Justin Lin / Google ATAP / The Mill — ‘HELP’", role: "TIM & Shoot Supervisor", tier: "honor" },
+    { org: "Webby Awards", title: "Honoree · Augmented Reality · Advertising, Media & PR", project: "Oreo · Trolls World Tour AR Experience", role: "TIM & Creative Technologist", tier: "honor" },
     { org: "Technicolor", title: "Outstanding Technology Contribution", project: "Engineering Awards", role: "TIM & Product Development", tier: "honor" },
     { org: "SIGGRAPH", title: "Recognition · Virtual Production Methodology & Tooling", project: "ILM StageCraft", role: "Senior Virtual Production Engineer", tier: "honor" },
     { org: "AICP", title: "Recognition · Production Technology", project: "The Mill", role: "Technical Innovations Manager", tier: "honor" },
