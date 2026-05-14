@@ -569,40 +569,11 @@ function getResumeStrudelAudioEngine() {
     liveChordVoices.delete(key);
   };
 
-  const triggerLiveChord = async (key, chordName) => {
-    if (!enabled || videoDucked) return;
-    const module = await ensureStrudel();
-    const context = module.getAudioContext?.();
-    if (!context) return;
-    if (context.state === 'suspended') await context.resume();
-    releaseLiveChord(key);
-    const notes = LIVE_CHORD_NOTES[chordName] || [];
-    if (!notes.length) return;
-    const now = context.currentTime;
-    const output = context.createGain();
-    const filter = context.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(1150, now);
-    filter.Q.setValueAtTime(0.7, now);
-    output.gain.setValueAtTime(0.0001, now);
-    output.gain.linearRampToValueAtTime(0.15 * mixSettings.master * mixSettings.chords, now + 0.055);
-    output.gain.setTargetAtTime(0.115 * mixSettings.master * mixSettings.chords, now + 0.08, 0.35);
-    filter.connect(output);
-    output.connect(context.destination);
-    const nodes = notes.map((frequency, index) => {
-      const osc = context.createOscillator();
-      const voiceGain = context.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(frequency, now);
-      osc.detune.setValueAtTime((index - notes.length / 2) * 3.5, now);
-      voiceGain.gain.setValueAtTime(1 / Math.max(3, notes.length), now);
-      osc.connect(voiceGain);
-      voiceGain.connect(filter);
-      osc.start(now);
-      return osc;
-    });
-    liveChordVoices.set(key, { context, output, nodes });
-  };
+  // The WASD chord is now produced entirely by Strudel's chord lane —
+  // when a WASD key is pressed, evaluateCurrent re-renders the pattern
+  // with that chord active so it uses the exact same voice as the
+  // automatic chord progression. No parallel local oscillator synth.
+  const triggerLiveChord = async (/* key, chordName */) => {};
 
   const dispatchChordKey = (key, detail = {}) => {
     const normalizedKey = key && chordKeyOrder.includes(key) ? key : '';
@@ -3807,10 +3778,11 @@ function HelpPlayer({ src }) {
       const clean = String(getVideoUrl(candidate)).split('?')[0].toLowerCase();
       if (clean.endsWith('.mp4')) return probeVideo.canPlayType('video/mp4') !== '';
       if (clean.endsWith('.webm')) {
-        // Be strict: iOS Safari 17.4+ returns 'maybe' for WebM but
-        // silently fails to decode VP9. Only honour 'probably' to skip
-        // the Safari false-positive and fall through to the MP4.
-        return probeVideo.canPlayType('video/webm; codecs="vp9, opus"') === 'probably';
+        // Accept any non-empty canPlayType for WebM (covers Chrome,
+        // Firefox, Safari Mac which returns 'maybe'). The MP4 sits at
+        // the end of the desktop source chain as a last resort.
+        return probeVideo.canPlayType('video/webm; codecs="vp9, opus"') !== ''
+          || probeVideo.canPlayType('video/webm') !== '';
       }
       return true;
     };
