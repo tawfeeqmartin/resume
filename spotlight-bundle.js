@@ -310,7 +310,9 @@ function makeEquirectSphere() {
 }
 
 async function fetchProjectionBytes(url) {
-  const res = await fetch(url, { headers: { Range: 'bytes=0-5242879' } });
+  // 1 MiB is plenty for the MSHP/sv3d header — it lives right after the
+  // file header. Smaller range fetches faster on mobile networks.
+  const res = await fetch(url, { headers: { Range: 'bytes=0-1048575' } });
   if (!res.ok) throw new Error(`fetch ${url} → ${res.status}`);
   return res.arrayBuffer();
 }
@@ -347,7 +349,7 @@ async function loadFromUrl(source) {
   const isCoarsePointer = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
 
   try {
-    const buf = await withTimeout(fetchProjectionBytes(projectionUrl), isCoarsePointer ? 2200 : 7000, 'projection fetch');
+    const buf = await withTimeout(fetchProjectionBytes(projectionUrl), 9000, 'projection fetch');
     const head = new Uint8Array(buf, 0, Math.min(16, buf.byteLength));
     const isWebm = head.length >= 4 && head[0] === 0x1a && head[1] === 0x45 && head[2] === 0xdf && head[3] === 0xa3;
 
