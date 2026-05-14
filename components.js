@@ -585,8 +585,8 @@ function getResumeStrudelAudioEngine() {
     filter.frequency.setValueAtTime(1150, now);
     filter.Q.setValueAtTime(0.7, now);
     output.gain.setValueAtTime(0.0001, now);
-    output.gain.linearRampToValueAtTime(0.028 * mixSettings.master * mixSettings.chords, now + 0.055);
-    output.gain.setTargetAtTime(0.022 * mixSettings.master * mixSettings.chords, now + 0.08, 0.35);
+    output.gain.linearRampToValueAtTime(0.05 * mixSettings.master * mixSettings.chords, now + 0.055);
+    output.gain.setTargetAtTime(0.042 * mixSettings.master * mixSettings.chords, now + 0.08, 0.35);
     filter.connect(output);
     output.connect(context.destination);
     const nodes = notes.map((frequency, index) => {
@@ -785,32 +785,23 @@ function getResumeStrudelAudioEngine() {
   const installMasterBus = (context) => {
     if (!context || context.__resumeMasterBusInstalled) return;
     context.__resumeMasterBusInstalled = true;
-    const isMobileTarget = typeof window !== 'undefined'
-      && window.matchMedia('(max-width: 700px), (pointer: coarse)').matches;
     const now = context.currentTime;
 
-    // On mobile, skip the dynamics compressor — its per-sample processing
-    // can itself starve the audio thread on phones. Use a plain gain trim
-    // so we still have a single redirect target.
-    let busInput;
-    if (isMobileTarget) {
-      const trim = context.createGain();
-      trim.gain.setValueAtTime(0.62, now);
-      trim.connect(context.destination);
-      busInput = trim;
-    } else {
-      const limiter = context.createDynamicsCompressor();
-      limiter.threshold.setValueAtTime(-12, now);
-      limiter.knee.setValueAtTime(8, now);
-      limiter.ratio.setValueAtTime(20, now);
-      limiter.attack.setValueAtTime(0.002, now);
-      limiter.release.setValueAtTime(0.14, now);
-      const makeup = context.createGain();
-      makeup.gain.setValueAtTime(0.78, now);
-      limiter.connect(makeup);
-      makeup.connect(context.destination);
-      busInput = limiter;
-    }
+    // Unified compressor + makeup gain on both desktop and mobile. The
+    // CPU concern that drove the mobile bypass was the CORS texture
+    // leak, now resolved. The limiter clamps peaks so we can boost
+    // makeup gain for perceived loudness without clipping.
+    const limiter = context.createDynamicsCompressor();
+    limiter.threshold.setValueAtTime(-12, now);
+    limiter.knee.setValueAtTime(8, now);
+    limiter.ratio.setValueAtTime(20, now);
+    limiter.attack.setValueAtTime(0.002, now);
+    limiter.release.setValueAtTime(0.14, now);
+    const makeup = context.createGain();
+    makeup.gain.setValueAtTime(1.55, now);
+    limiter.connect(makeup);
+    makeup.connect(context.destination);
+    const busInput = limiter;
 
     // Redirect any subsequent connect(..., destination) on this context through the bus input.
     // Other AudioContexts are untouched thanks to the this.context === context guard.
@@ -878,7 +869,7 @@ function getResumeStrudelAudioEngine() {
     try {
       const isMobileTarget = typeof window !== 'undefined'
         && window.matchMedia('(max-width: 700px), (pointer: coarse)').matches;
-      module.resumeSetMasterGate?.(isMobileTarget ? 0.6 : 1);
+      module.resumeSetMasterGate?.(1);
       window.__resumeStrudelSidechain = isMobileTarget
         ? { enabled: false }
         : {
