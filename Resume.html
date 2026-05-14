@@ -2914,15 +2914,22 @@ const mediaUrl = (path) => {
   return `${PRODUCTION_MEDIA_ORIGIN}/${path.replace(/^media\//, '')}`;
 };
 const IS_MOBILE_MEDIA_TARGET = window.matchMedia('(max-width: 900px), (pointer: coarse)').matches;
-const HELP_MOBILE_MP4 = {
-  // Re-use the same mesh-laid-out WebM for both the playable video and
-  // projection metadata. The MP4 was a flat mobile-inline encoding whose
-  // pixels don't align with the mesh UVs, so projecting it gave the
-  // garbled-but-correct-content rendering. The 57MB WebM streams fine on
-  // mobile via Range requests, and iOS Safari 14.5+/Chrome Android play
-  // VP9/Opus WebM natively.
+// First mobile choice: mesh WebM. Frames are authored to align with the
+// mesh UVs so projection renders correctly. Chrome Android plays VP9
+// fine; iOS Safari's WebM/VP9 support is unreliable, so this source
+// fails canPlayType() on iOS and we fall through to the MP4.
+const HELP_MOBILE_WEBM = {
   videoUrl: mediaUrl("media/help-720-mesh.webm"),
   projectionUrl: mediaUrl("media/help-720-mesh.webm"),
+};
+// iOS Safari fallback: the MP4 frames don't align with the mesh UVs so
+// projection looks wrong on it. Show it inline (raw) so the user at
+// least sees the video content while we work out a properly mesh-laid
+// MP4 source.
+const HELP_MOBILE_MP4 = {
+  videoUrl: mediaUrl("media/help-720-mobile.mp4"),
+  projectionUrl: mediaUrl("media/help-720-mesh.webm"),
+  inlineVideoFallback: true,
 };
 const HELP_DESKTOP_WEBM = [
   mediaUrl("media/help_full.webm"),
@@ -2930,8 +2937,8 @@ const HELP_DESKTOP_WEBM = [
   mediaUrl("media/help.f338.webm")
 ];
 const HELP_VIDEO_URLS = IS_MOBILE_MEDIA_TARGET
-  ? [HELP_MOBILE_MP4, ...HELP_DESKTOP_WEBM]
-  : [...HELP_DESKTOP_WEBM, HELP_MOBILE_MP4];
+  ? [HELP_MOBILE_WEBM, HELP_MOBILE_MP4]
+  : [...HELP_DESKTOP_WEBM, HELP_MOBILE_WEBM, HELP_MOBILE_MP4];
 const BLACKBIRD_INNOVATION_VIDEO_URL = mediaUrl("media/blackbird-innovation.mp4");
 const BLACKBIRD_VIDEO_URL = mediaUrl("media/blackbird.mp4");
 
