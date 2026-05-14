@@ -585,8 +585,8 @@ function getResumeStrudelAudioEngine() {
     filter.frequency.setValueAtTime(1150, now);
     filter.Q.setValueAtTime(0.7, now);
     output.gain.setValueAtTime(0.0001, now);
-    output.gain.linearRampToValueAtTime(0.05 * mixSettings.master * mixSettings.chords, now + 0.055);
-    output.gain.setTargetAtTime(0.042 * mixSettings.master * mixSettings.chords, now + 0.08, 0.35);
+    output.gain.linearRampToValueAtTime(0.15 * mixSettings.master * mixSettings.chords, now + 0.055);
+    output.gain.setTargetAtTime(0.115 * mixSettings.master * mixSettings.chords, now + 0.08, 0.35);
     filter.connect(output);
     output.connect(context.destination);
     const nodes = notes.map((frequency, index) => {
