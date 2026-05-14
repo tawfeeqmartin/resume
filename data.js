@@ -57,7 +57,7 @@ const RESUME = {
         "Led R&D and technical innovation across The Mill's most recognized projects — from concept through production and post.",
         "Led 0-to-1 product development on Mill Stitch™: identified the problem (no way for a director to view 360° action in real time on set), defined the solution, built the pipeline, shipped it on a live production, and saw it through to Cannes Gold, SXSW Gold, and a Webby Award.",
         "Defined technical product strategy and led execution on The Mill Blackbird — co-invented the adjustable CG car rig and delivered a three-year R&D arc from concept to awarded product.",
-        "Produced and supervised REEPS ONE: ‘Does Not Exist’ — the first immersive music video of its kind; owned creative and technical direction end to end.",
+        "Technical Product Manager and filmed REEPS ONE: ‘Does Not Exist’ — the first immersive music video of its kind.",
         "Served on the Technicolor Fellowship network; instrumental in building the Technicolor Experience Center for emerging technologies.",
       ],
     },
