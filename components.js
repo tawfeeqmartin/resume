@@ -3815,7 +3815,12 @@ function HelpPlayer({ src }) {
     const canPlaySource = (candidate) => {
       const clean = String(getVideoUrl(candidate)).split('?')[0].toLowerCase();
       if (clean.endsWith('.mp4')) return probeVideo.canPlayType('video/mp4') !== '';
-      if (clean.endsWith('.webm')) return probeVideo.canPlayType('video/webm; codecs="vp9, opus"') !== '' || probeVideo.canPlayType('video/webm') !== '';
+      if (clean.endsWith('.webm')) {
+        // Be strict: iOS Safari 17.4+ returns 'maybe' for WebM but
+        // silently fails to decode VP9. Only honour 'probably' to skip
+        // the Safari false-positive and fall through to the MP4.
+        return probeVideo.canPlayType('video/webm; codecs="vp9, opus"') === 'probably';
+      }
       return true;
     };
     async function go() {
