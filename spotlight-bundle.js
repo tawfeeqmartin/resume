@@ -410,7 +410,7 @@ class SpotlightRenderer {
     this.renderer.setSize(host.clientWidth, host.clientHeight, false);
     this.host.style.position ||= 'relative';
     host.appendChild(this.renderer.domElement);
-    this.renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;cursor:grab;';
+    this.renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none;';
     this.renderer.domElement.tabIndex = 0;
     this.renderer.domElement.setAttribute('aria-label', 'Interactive 360 video viewer');
     this.yaw = 0;

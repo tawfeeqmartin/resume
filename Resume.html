@@ -2915,7 +2915,13 @@ const mediaUrl = (path) => {
 };
 const IS_MOBILE_MEDIA_TARGET = window.matchMedia('(max-width: 900px), (pointer: coarse)').matches;
 const HELP_MOBILE_MP4 = {
-  videoUrl: mediaUrl("media/help-720-mobile.mp4"),
+  // Re-use the same mesh-laid-out WebM for both the playable video and
+  // projection metadata. The MP4 was a flat mobile-inline encoding whose
+  // pixels don't align with the mesh UVs, so projecting it gave the
+  // garbled-but-correct-content rendering. The 57MB WebM streams fine on
+  // mobile via Range requests, and iOS Safari 14.5+/Chrome Android play
+  // VP9/Opus WebM natively.
+  videoUrl: mediaUrl("media/help-720-mesh.webm"),
   projectionUrl: mediaUrl("media/help-720-mesh.webm"),
 };
 const HELP_DESKTOP_WEBM = [
