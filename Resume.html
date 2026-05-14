@@ -2931,14 +2931,18 @@ const HELP_MOBILE_MP4 = {
   projectionUrl: mediaUrl("media/help-720-mesh.webm"),
   inlineVideoFallback: true,
 };
-const HELP_DESKTOP_WEBM = [
+// Desktop sources — full mesh-laid-out WebMs as they always were.
+const HELP_DESKTOP_SOURCES = [
   mediaUrl("media/help_full.webm"),
   mediaUrl("media/help-720-mesh.webm"),
-  mediaUrl("media/help.f338.webm")
+  mediaUrl("media/help.f338.webm"),
 ];
+// Mobile sources — kept entirely separate from desktop so changes to
+// one path can't bleed into the other.
+const HELP_MOBILE_SOURCES = [HELP_MOBILE_WEBM, HELP_MOBILE_MP4];
 const HELP_VIDEO_URLS = IS_MOBILE_MEDIA_TARGET
-  ? [HELP_MOBILE_WEBM, HELP_MOBILE_MP4]
-  : [...HELP_DESKTOP_WEBM, HELP_MOBILE_WEBM, HELP_MOBILE_MP4];
+  ? HELP_MOBILE_SOURCES
+  : HELP_DESKTOP_SOURCES;
 const BLACKBIRD_INNOVATION_VIDEO_URL = mediaUrl("media/blackbird-innovation.mp4");
 const BLACKBIRD_VIDEO_URL = mediaUrl("media/blackbird.mp4");
 
