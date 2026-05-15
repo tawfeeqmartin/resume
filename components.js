@@ -1369,15 +1369,16 @@ function AudioScope({ enabled }) {
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.globalAlpha = baseAlpha;
-        const headX = w * 0.16;
-        const headSize = Math.min(h * 0.38, w * 0.08);
-        // Chevron head pointing left
+        // Chevron tip sits right against the left edge of the canvas
+        // (the canvas border-left = the line between scope and stems),
+        // so the arrow visually "bumps up against" the stem buttons.
+        const headX = 2 * dpr;
+        const headSize = Math.min(h * 0.44, w * 0.16);
         ctx.beginPath();
         ctx.moveTo(headX + headSize, h / 2 - headSize);
         ctx.lineTo(headX,             h / 2);
         ctx.lineTo(headX + headSize, h / 2 + headSize);
         ctx.stroke();
-        // Horizontal tail extending rightward — the shaft of the arrow.
         ctx.beginPath();
         ctx.moveTo(headX,            h / 2);
         ctx.lineTo(w - 4 * dpr,      h / 2);
