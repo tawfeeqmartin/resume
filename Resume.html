@@ -1203,10 +1203,13 @@ button.review-toggle {
   to { stroke-dashoffset: 0; }
 }
 @keyframes phrase-line-harmony {
-  0% { stroke: #2f8d4f; opacity: 1; }
-  46% { stroke: #2f8d4f; opacity: 1; }
-  47% { stroke: var(--ink); opacity: 0.88; }
-  100% { stroke: var(--ink); opacity: 0.88; }
+  /* On harmony hit, the connecting lines flash Byrne yellow, then snap
+     back to Byrne red (the base phrase-line colour). Two-tone palette
+     swap synced to the music. */
+  0%   { stroke: #fac22b; opacity: 1; }
+  46%  { stroke: #fac22b; opacity: 1; }
+  47%  { stroke: #d42a20; opacity: 1; }
+  100% { stroke: #d42a20; opacity: 1; }
 }
 .blackout-panel__line {
   padding: 0.03rem 0;
@@ -3235,7 +3238,7 @@ window.__resumeStrudelReady = initStrudel()
 <script type="module">
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260513-mobile-projection');
 </script>
-<script type="text/babel" src="components.js?v=20260514-plate-behind"></script>
+<script type="text/babel" src="components.js?v=20260514-harmony-byrne"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
