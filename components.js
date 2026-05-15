@@ -1355,32 +1355,35 @@ function AudioScope({ enabled }) {
       ctx.clearRect(0, 0, w, h);
 
       if (!enabled) {
-        // Audio off — smaller, faster arrow that jabs into the left
-        // edge of the scope. Tip stays inside the canvas (no clipping)
-        // and the cycle is short (560ms) so the gesture reads as urgent
-        // tapping rather than a calm wave.
-        const period = 560;
+        // Audio off — smaller, faster, sharper-contrast arrow that jabs
+        // into the left edge of the scope. The chevron is sized to clear
+        // the round-cap stroke and stays fully inside the canvas through
+        // the entire jab cycle. Sharp alpha swing (0.28 → 1.0) carries
+        // most of the urgency.
+        const period = 460;
         const t = ((now % period) + period) % period / period;
-        const jabDistance = 5 * dpr;
+        const lw = 1.4 * dpr;
+        const jabDistance = 3 * dpr;
+        const restHeadX = (lw / 2) + 1 * dpr;
         let offset, alpha;
-        if (t < 0.18) {
-          const r = t / 0.18;
+        if (t < 0.16) {
+          const r = t / 0.16;
           const s = r * r * (3 - 2 * r);
           offset = -jabDistance * s;
-          alpha = 0.45 + 0.5 * s;
+          alpha = 0.28 + 0.72 * s;
         } else {
-          const r = (t - 0.18) / 0.82;
+          const r = (t - 0.16) / 0.84;
           const k = 1 - r;
           offset = -jabDistance * k * k;
-          alpha = 0.95 - 0.5 * r;
+          alpha = 1.0 - 0.72 * r;
         }
         ctx.strokeStyle = '#111';
-        ctx.lineWidth = 1.6 * dpr;
+        ctx.lineWidth = lw;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.globalAlpha = alpha;
-        const headX = 3 * dpr + offset;
-        const headSize = Math.min(h * 0.30, w * 0.13);
+        const headX = Math.max(lw / 2, restHeadX + offset);
+        const headSize = Math.min(h * 0.26, w * 0.11);
         ctx.beginPath();
         ctx.moveTo(headX + headSize, h / 2 - headSize);
         ctx.lineTo(headX,             h / 2);
