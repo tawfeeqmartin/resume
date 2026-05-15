@@ -1269,9 +1269,9 @@ function getResumeStrudelAudioEngine() {
 function getResumeAudioEngine() {
   return getResumeStrudelAudioEngine();
 }
-function AudioToggle() {
-  const [enabled, setEnabled] = useState(false);
+function MusicStation() {
   const engine = getResumeAudioEngine();
+  const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
     const refresh = () => setEnabled(engine.enabled);
@@ -1292,18 +1292,37 @@ function AudioToggle() {
     }
   };
 
+  const handleOuterClick = (event) => {
+    // Don't toggle master when the click came from a stem-mute button.
+    if (event.target.closest('.stem-mute')) return;
+    toggle();
+  };
+
   return (
-    <div className={`review-toggle review-toggle--audio ${enabled ? 'is-on' : ''}`} aria-label="Sound review">
-      <button
-        className="review-toggle__main review-toggle__transport"
-        type="button"
-        onClick={toggle}
-        aria-pressed={enabled}
-        aria-label={enabled ? 'Pause site music' : 'Play site music'}
-      >
-        <span className={`video-control__icon ${enabled ? 'video-control__icon--stop' : 'video-control__icon--play'}`} aria-hidden="true" />
-      </button>
+    <div
+      className={`music-station ${enabled ? 'is-on' : 'is-muted'}`}
+      onClick={handleOuterClick}
+      role="button"
+      tabIndex={0}
+      aria-pressed={enabled}
+      aria-label={enabled ? 'Pause site music' : 'Play site music'}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggle();
+        }
+      }}
+    >
+      <StemMuteControls />
       <AudioScope enabled={enabled} />
+      <svg
+        className="music-station__cursor"
+        viewBox="0 0 52 36"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path d="M26 4 L26 30 M16 22 L26 32 L36 22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
     </div>
   );
 }
@@ -1424,8 +1443,7 @@ function ReviewToggle({ kind, options, classScope }) {
 function ReviewControls() {
   return (
     <div className="review-controls">
-      <AudioToggle />
-      <StemMuteControls />
+      <MusicStation />
     </div>
   );
 }
