@@ -1680,23 +1680,12 @@ body.font-cascadia-signal .identity__vector-name {
   margin: 0;
 }
 .job__tag {
-  background: var(--accent-red);
-  color: #fffef5;
-  padding: 0.18rem 0.55rem;
-  border-radius: 0;
+  background: var(--accent);
+  color: var(--ink);
+  padding: 0.15rem 0.55rem;
+  border-radius: 2px;
   font-size: 0.65rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  font-weight: 600;
-}
-.job__tag::before {
-  content: "";
-  display: inline-block;
-  width: 0.42rem;
-  height: 0.42rem;
-  margin-right: 0.4rem;
-  background: var(--accent-yellow);
-  vertical-align: -0.04em;
+  letter-spacing: 0.15em;
 }
 .job__meta {
   margin-top: 0.35rem;
@@ -1817,13 +1806,10 @@ body.font-cascadia-signal .identity__vector-name {
   display: flex; flex-wrap: wrap; gap: 0.5rem;
 }
 .help-feature__chips li {
-  border: 1px solid color-mix(in oklch, var(--accent-red), transparent 35%);
-  background: color-mix(in oklch, var(--accent-yellow), transparent 78%);
-  color: var(--ink);
+  border: 1px solid var(--rule);
   padding: 0.3rem 0.6rem;
-  border-radius: 0;
+  border-radius: 999px;
   font-size: 0.65rem;
-  letter-spacing: 0.04em;
 }
 .help-hero {
   display: grid;
@@ -2273,13 +2259,10 @@ html.has-pseudo-fullscreen body {
 .project__body { margin: 0.75rem 0 1rem; color: var(--ink-2); text-wrap: pretty; }
 .project__stack { list-style: none; padding: 0; margin: 0; display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .project__stack li {
-  border: 1px solid color-mix(in oklch, var(--accent-blue), transparent 30%);
-  background: color-mix(in oklch, var(--accent-yellow), transparent 80%);
-  color: var(--ink);
+  border: 1px solid var(--rule);
   padding: 0.25rem 0.55rem;
-  border-radius: 0;
+  border-radius: 2px;
   font-size: 0.65rem;
-  letter-spacing: 0.04em;
 }
 
 /* ── awards ──────────────────────────────────────────── */
@@ -2287,8 +2270,8 @@ html.has-pseudo-fullscreen body {
 .awards__filter {
   font-family: var(--mono); font-size: 0.7rem;
   background: transparent; border: 1px solid var(--rule);
-  color: var(--ink-2); padding: 0.35rem 0.75rem;
-  border-radius: 999px; cursor: pointer; letter-spacing: 0.1em;
+  color: var(--ink-2); padding: 0.32rem 0.7rem;
+  border-radius: 2px; cursor: pointer; letter-spacing: 0.1em;
   text-transform: uppercase;
   transition: all 0.15s;
 }
@@ -3066,7 +3049,7 @@ window.__resumeStrudelReady = initStrudel()
 <script type="module">
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260513-mobile-projection');
 </script>
-<script type="text/babel" src="components.js?v=20260514-shape-key"></script>
+<script type="text/babel" src="components.js?v=20260514-chips-quieter"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
