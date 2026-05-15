@@ -1362,10 +1362,32 @@ button.review-toggle {
   }
 }
 .identity__top {
-  display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;
-  font-size: 0.7rem; letter-spacing: 0.12em;
+  display: flex; gap: 0.85rem; align-items: center; flex-wrap: wrap;
+  font-size: 0.72rem; letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--accent-yellow);
+  border-bottom: 1px solid var(--accent-yellow);
   transform: translateX(calc(-1.245rem + 2px));
+  position: relative;
 }
+.identity__top::before,
+.identity__top::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  height: 5px;
+  width: 1px;
+  background: var(--accent-yellow);
+}
+.identity__top::before { top: -3px; }
+.identity__top::after  { bottom: -3px; }
+.identity__top > span:first-child,
+.identity__top a {
+  color: var(--ink);
+}
+.identity__top a:hover { color: var(--accent-red); }
 .identity__top-dot,
 .page-footer .dot {
   display: inline-block;
@@ -1530,29 +1552,37 @@ button.review-toggle {
   opacity: 0.85;
 }
 
-/* Music station — inline with the identity topline. The whole pill is
-   the master play/pause toggle. Solid 2px ink border when playing;
-   dashed when muted (matches is-scroll-muted on individual stems).
-   Stems and scope sit horizontally side by side inside the button. */
+/* Music station — inline with the identity topline. No heavy box; the
+   master play/pause state is communicated by a yellow Byrne underline
+   that goes dashed when muted, solid when playing. Hovering lifts the
+   underline to red so the affordance is obvious. */
 .music-station {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.22rem 0.5rem;
-  border: 2px solid var(--ink);
-  background: color-mix(in oklch, var(--paper-2), transparent 14%);
-  border-radius: 2px;
+  gap: 0.6rem;
+  padding: 0.18rem 0.5rem 0.32rem;
+  border: 0;
+  background: transparent;
   cursor: pointer;
   color: var(--ink);
-  margin-left: 0.55rem;
+  margin-left: 0.35rem;
   vertical-align: -0.18em;
 }
-.music-station.is-muted {
-  border-style: dashed;
+.music-station::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-bottom: 1.6px solid var(--accent-yellow);
+  pointer-events: none;
 }
-.music-station:hover {
-  border-color: var(--accent-red);
+.music-station.is-muted::after {
+  border-bottom-style: dashed;
+}
+.music-station:hover::after {
+  border-bottom-color: var(--accent-red);
 }
 .music-station:focus-visible {
   outline: 1px solid var(--ink);
@@ -1586,30 +1616,6 @@ button.review-toggle {
   border-left: 1px solid color-mix(in oklch, var(--ink), transparent 78%);
   padding-left: 0.45rem;
   display: block;
-}
-/* Byrne-style cursor pointing at the button — visible when muted,
-   fades when playing. */
-.music-station__cursor {
-  position: absolute;
-  width: 36px;
-  height: 24px;
-  left: 50%;
-  top: -28px;
-  transform: translateX(-50%);
-  color: var(--ink);
-  pointer-events: none;
-  transition: opacity 220ms ease;
-}
-.music-station.is-on .music-station__cursor {
-  opacity: 0;
-}
-.music-station.is-muted .music-station__cursor {
-  opacity: 0.85;
-  animation: music-station-arrow 1.4s ease-in-out infinite;
-}
-@keyframes music-station-arrow {
-  0%, 100% { transform: translate(-50%, 0); }
-  50%      { transform: translate(-50%, 3px); }
 }
 .stem-mute__label {
   position: absolute;
@@ -3167,7 +3173,7 @@ window.__resumeStrudelReady = initStrudel()
 <script type="module">
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260513-mobile-projection');
 </script>
-<script type="text/babel" src="components.js?v=20260514-footer-mirror2"></script>
+<script type="text/babel" src="components.js?v=20260514-strip-refresh"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);

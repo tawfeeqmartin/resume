@@ -1315,14 +1315,6 @@ function MusicStation() {
     >
       <StemMuteControls />
       <AudioScope enabled={enabled} />
-      <svg
-        className="music-station__cursor"
-        viewBox="0 0 52 36"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <path d="M26 4 L26 30 M16 22 L26 32 L36 22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
     </div>
   );
 }
