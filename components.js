@@ -6024,8 +6024,8 @@ function References({ items }) {
 function Footer({ data }) {
   return (
     <footer className="page-footer mono dim">
-      {/* Identity strip mirroring the topline — name, role, location,
-          LinkedIn, then a closing Q.E.D. square. Bookend to the page. */}
+      {/* Identity strip + music station — a full mirror of the topline.
+          Bookend bottom for the page. */}
       <div className="identity__top page-footer__identity">
         <span>{data.name}</span>
         <span className="identity__top-dot" aria-hidden="true"></span>
@@ -6034,7 +6034,7 @@ function Footer({ data }) {
         <span>{data.location}</span>
         <span className="identity__top-dot identity__top-dot--square" aria-hidden="true"></span>
         <a href="https://www.linkedin.com/in/tawfeeq-martin-82991a14/" target="_blank" rel="noreferrer">LinkedIn</a>
-        <span className="page-footer__qed" aria-hidden="true" title="Q.E.D." />
+        <MusicStation />
       </div>
     </footer>
   );
