@@ -3873,19 +3873,14 @@ function ElementsNeuralDiagram() {
         d="M642 318 L630 326 L642 334 M394 354 L382 360 L394 366"
         style={{ stroke: '#0e638e', fill: 'none', strokeWidth: 1.6 }}
       />
-      {/* Layer labels at the top of each rule */}
+      {/* Layer labels at the top of each rule — plain text, no
+          marker dots, because the figure already has plenty of dots */}
       {layers.map((layer, i) => (
-        <ElementPoint
-          key={`lbl-${i}`}
-          x={layer.x}
-          y={ruleTop}
-          label={layer.label}
-          note={(i + 2) % 6}
-          dy={-12}
-        />
+        <ByrneLabel key={`lbl-${i}`} x={layer.x} y={ruleTop - 12}>
+          {layer.label}
+        </ByrneLabel>
       ))}
-      {/* Y* label */}
-      <ElementPoint x="880" y="230" label="Y*" note={3} dy={-26} />
+      <ByrneLabel x="880" y="208">Y*</ByrneLabel>
     </>
   );
 }
