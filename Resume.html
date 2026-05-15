@@ -349,13 +349,13 @@ button.review-toggle {
 }
 .blackout-panel {
   --blackout-copy-font: var(--serif);
-  --blackout-diagram-font: var(--sans);
+  --blackout-diagram-font: var(--serif);
   --blackout-code-font: var(--mono);
   --blackout-copy-size: clamp(0.6rem, 0.76vw, 0.78rem);
   --blackout-code-size: clamp(0.54rem, 0.68vw, 0.7rem);
-  --blackout-diagram-size: 14px;
-  --blackout-diagram-label-size: 28px;
-  --blackout-figure-height: 45%;
+  --blackout-diagram-size: 15px;
+  --blackout-diagram-label-size: 32px;
+  --blackout-figure-height: 50%;
   --blackout-col-gap: clamp(0.38rem, 1vw, 0.75rem);
   --blackout-panel-inset: clamp(0.35rem, 0.9vw, 0.72rem);
   position: relative;
@@ -391,6 +391,9 @@ button.review-toggle {
   opacity: 1;
   pointer-events: none;
   mix-blend-mode: normal;
+  overflow: visible;
+  transform: scale(1.1);
+  transform-origin: 50% 53%;
 }
 .blackout-panel__figure {
   float: none;
@@ -452,7 +455,9 @@ button.review-toggle {
 .diagram-node {
   fill: none;
   stroke: #111;
-  stroke-width: 1.1;
+  stroke-width: 1.35;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
   stroke-dasharray: 900;
   stroke-dashoffset: 900;
@@ -461,39 +466,65 @@ button.review-toggle {
 }
 .diagram-line--soft {
   stroke: #111;
-  stroke-width: 1.2;
+  stroke-width: 1.45;
+}
+.diagram-line--strong {
+  stroke-width: 1.85;
 }
 .diagram-line--thin {
   stroke: color-mix(in srgb, #111, transparent 20%);
-  stroke-width: 0.65;
+  stroke-width: 0.85;
   stroke-dasharray: none;
   stroke-dashoffset: 0;
   animation: none;
 }
+.diagram-line--construction {
+  stroke: color-mix(in srgb, #111, transparent 34%);
+  stroke-width: 0.7;
+  stroke-dasharray: 5 6;
+  stroke-linecap: butt;
+  stroke-dashoffset: 0;
+  animation: none;
+}
+.diagram-line.diagram-line--red { stroke: #d42a20; }
+.diagram-line.diagram-line--blue { stroke: #0e638e; }
+.diagram-line.diagram-line--yellow { stroke: #fac22b; }
+.diagram-line.diagram-line--dotted {
+  stroke-dasharray: 4 5;
+  stroke-linecap: butt;
+}
 .diagram-dot {
-  fill: #e31b23;
+  fill: #000;
   stroke: #111;
+  stroke-width: 0.8;
 }
 .diagram-circle {
   stroke: #111;
   stroke-dasharray: none;
 }
+.diagram-circle.diagram-circle--red { stroke: #d42a20; }
+.diagram-circle.diagram-circle--blue { stroke: #0e638e; }
+.diagram-circle.diagram-circle--yellow { stroke: #fac22b; }
 .diagram-node {
-  fill: #f7d117;
-  stroke: #111;
+  fill: #fac22b;
+  stroke: none;
 }
 .diagram-prism {
-  fill: #f7d117;
-  stroke: #111;
-  stroke-width: 1.1;
+  fill: #fac22b;
+  stroke: none;
+  stroke-width: 0;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   animation: blackout-page-in calc(var(--diagram-draw-ms, 1.25s) * 0.64) ease both;
 }
 .diagram-plane,
 .diagram-fill {
   display: block;
   opacity: 1;
-  stroke: #111;
-  stroke-width: 1.1;
+  stroke: none;
+  stroke-width: 0;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
   shape-rendering: geometricPrecision;
   animation: blackout-page-in calc(var(--diagram-draw-ms, 1.25s) * 0.64) ease both;
@@ -501,16 +532,41 @@ button.review-toggle {
 .diagram-plane {
   display: none;
 }
-.diagram-plane--yellow { fill: #f7d117; }
-.diagram-plane--blue { fill: #005bbb; }
-.diagram-plane--red { fill: #e31b23; }
-.diagram-fill--yellow { fill: #f7d117; }
-.diagram-fill--blue { fill: #005bbb; }
-.diagram-fill--red { fill: #e31b23; }
+.diagram-plane--yellow { fill: #fac22b; }
+.diagram-plane--blue { fill: #0e638e; }
+.diagram-plane--red { fill: #d42a20; }
+.diagram-fill--yellow { fill: #fac22b; }
+.diagram-fill--blue { fill: #0e638e; }
+.diagram-fill--red { fill: #d42a20; }
+.diagram-fill--black { fill: #000; }
+.diagram-fill--white { fill: var(--paper-2); }
 .diagram-line--axis {
   stroke: #111;
-  stroke-width: 0.85;
+  stroke-width: 1.1;
   stroke-dasharray: none;
+}
+.diagram-label--byrne {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+.diagram-text--byrne-label {
+  font-family: var(--blackout-diagram-font);
+  font-size: calc(var(--blackout-diagram-size) * 0.86);
+  font-weight: 400;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+.diagram-text--byrne-formula {
+  font-family: var(--blackout-code-font);
+  font-size: calc(var(--blackout-diagram-size) * 0.9);
+  fill: #111;
+  letter-spacing: 0;
+}
+.blackout-panel .diagram-label--byrne,
+.blackout-panel .diagram-text--byrne-label,
+.blackout-panel .diagram-text--byrne-formula {
+  display: none;
 }
 .blackout-panel__diagram:not(.blackout-panel__diagram--network):not(.blackout-panel__diagram--neural).is-melody-accent--0.is-melody-tick-a .diagram-node:not(.diagram-note-target),
 .blackout-panel__diagram.is-melody-accent--0.is-melody-tick-a .diagram-dot:not(.diagram-note-target) {
@@ -595,9 +651,7 @@ button.review-toggle {
 .blackout-panel__diagram:is(.is-harmony-diagram-hit-a, .is-harmony-diagram-hit-b) .diagram-harmony-plane {
   animation: diagram-harmony-plane var(--harmony-diagram-ms, 920ms) ease-out both;
 }
-.blackout-panel__diagram:is(.is-high-melody-fill-a, .is-high-melody-fill-b) .diagram-fill,
-.blackout-panel__diagram:is(.is-high-melody-fill-a, .is-high-melody-fill-b) .diagram-plane,
-.blackout-panel__diagram:is(.is-high-melody-fill-a, .is-high-melody-fill-b) .diagram-prism {
+.blackout-panel__diagram:is(.is-high-melody-fill-a, .is-high-melody-fill-b) .diagram-high-fill {
   animation: diagram-high-melody-fill var(--high-melody-fill-ms, 420ms) steps(1, end);
 }
 .blackout-panel__diagram.is-detail-accent--0.is-detail-tick-a .diagram-ray.diagram-note--0,
@@ -803,7 +857,7 @@ button.review-toggle {
 .blackout-panel__manual-row--c1,
 .blackout-panel__manual-row--c2,
 .blackout-panel__manual-row--c3 {
-  transform: translateY(clamp(10rem, 17vw, 15rem));
+  transform: translateY(clamp(11.2rem, 18.5vw, 16.4rem));
 }
 .blackout-panel__manual-row {
   margin: 0;
@@ -1294,6 +1348,7 @@ button.review-toggle {
   .diagram-node,
   .diagram-prism {
     animation: none;
+    stroke-dashoffset: 0;
   }
 }
 @media (max-width: 800px) {
@@ -2616,8 +2671,8 @@ html.has-pseudo-fullscreen body {
     display: block;
     width: 100%;
     transform: none;
-    height: auto;
-    min-height: 60rem;
+    height: clamp(39rem, 168vw, 52rem);
+    min-height: 0;
     aspect-ratio: auto;
     margin: 0.85rem 0 0.7rem;
     padding: 0;
@@ -2627,19 +2682,20 @@ html.has-pseudo-fullscreen body {
     --blackout-panel-inset: 0.62rem;
     --blackout-copy-size: clamp(0.54rem, 2.18vw, 0.66rem);
     --blackout-code-size: clamp(0.48rem, 1.95vw, 0.58rem);
-    --blackout-diagram-size: clamp(0.78rem, 3.35vw, 1rem);
-    --blackout-diagram-label-size: clamp(0.58rem, 2.45vw, 0.78rem);
+    --blackout-diagram-size: 13px;
+    --blackout-diagram-label-size: 24px;
+    --blackout-mobile-figure-height: clamp(17.25rem, 66vw, 21.75rem);
   }
   .blackout-panel::before {
     opacity: 0.28;
   }
   .blackout-panel__page {
-    position: relative;
+    position: absolute;
+    inset: var(--blackout-panel-inset);
     min-height: 0;
     height: auto;
     padding: 0;
-    display: grid;
-    grid-template-rows: minmax(12.5rem, 52vw) auto;
+    display: block;
   }
   .blackout-panel__figure,
   .blackout-panel__page--proof .blackout-panel__figure,
@@ -2656,24 +2712,35 @@ html.has-pseudo-fullscreen body {
   .blackout-panel__page--formula .blackout-panel__figure,
   .blackout-panel__page--margin .blackout-panel__figure,
   .blackout-panel__page--manual .blackout-panel__figure {
-    position: relative;
-    inset: auto;
-    grid-row: 1;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: auto;
+    left: 0;
     width: 100%;
-    height: 100%;
-    padding: 0.5rem 0.58rem 0.2rem;
+    height: var(--blackout-mobile-figure-height);
+    padding: 0;
     z-index: 4;
   }
+  .blackout-panel__diagram {
+    width: 180%;
+    max-width: none;
+    margin-left: -40%;
+    transform: scale(1.02);
+    transform-origin: 50% 53%;
+  }
   .blackout-panel__manual-flow {
-    position: relative;
-    inset: auto;
-    grid-row: 2;
+    position: absolute;
+    top: calc(var(--blackout-mobile-figure-height) + 0.7rem);
+    right: 0;
+    bottom: 0;
+    left: 0;
     z-index: 6;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.12rem 0.5rem;
     align-content: start;
-    padding: 0.12rem 0.62rem 0.62rem;
+    padding: 0;
     font-size: var(--blackout-copy-size);
     line-height: 1.22;
     min-height: 0;
@@ -2698,6 +2765,11 @@ html.has-pseudo-fullscreen body {
   .blackout-panel__manual-row--spec {
     margin-top: 0.22rem;
     grid-column: span 2;
+  }
+  .blackout-panel .diagram-label--byrne,
+  .blackout-panel .diagram-text--byrne-label,
+  .blackout-panel .diagram-text--byrne-formula {
+    display: none;
   }
   .blackout-panel__phrase-map {
     display: block;
@@ -2905,7 +2977,7 @@ window.__resumeStrudelReady = initStrudel()
 <script type="module">
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260513-mobile-projection');
 </script>
-<script type="text/babel" src="components.js?v=20260514-restore"></script>
+<script type="text/babel" src="components.js?v=20260514-byrne-redesign"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);

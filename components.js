@@ -2839,6 +2839,830 @@ function diagramNote(index, voice = (index % 2 === 0 ? "call" : "answer")) {
   return `diagram-note-target diagram-note--${index} diagram-voice--${voice}`;
 }
 
+function ByrneTitle({ children }) {
+  return (
+    <g className="diagram-title-block">
+      <text className="diagram-label diagram-label--byrne" x="56" y="34">{children}</text>
+    </g>
+  );
+}
+
+function ByrneLabel({ x, y, children, anchor = "middle", className = "" }) {
+  return (
+    <text className={`diagram-text diagram-text--byrne-label ${className}`} x={x} y={y} textAnchor={anchor}>
+      {children}
+    </text>
+  );
+}
+
+function ByrneFormula({ x, y, children, anchor = "start" }) {
+  return <text className="diagram-text diagram-text--byrne-formula" x={x} y={y} textAnchor={anchor}>{children}</text>;
+}
+
+function ByrnePoint({ x, y, label, anchor = "middle", dy = -18, note = 0 }) {
+  const labelY = Number.isFinite(Number(y)) ? Number(y) + dy : y;
+  return (
+    <>
+      <circle className={`diagram-dot ${diagramNote(note)}`} cx={x} cy={y} r="5.5" />
+      <ByrneLabel x={x} y={labelY} anchor={anchor} className="diagram-point-label">{label}</ByrneLabel>
+    </>
+  );
+}
+
+function ByrneEuclidDiagram() {
+  const ax = 276;
+  const bx = 536;
+  const baseY = 310;
+  const cx = 406;
+  const cy = 102.15;
+  const r = 240;
+  return (
+    <>
+      <ByrneTitle>EQUILATERAL TRIANGLE ON AB</ByrneTitle>
+      <circle className={`diagram-circle diagram-circle--blue ${diagramNote(1, "call")}`} cx={ax} cy={baseY} r={r} />
+      <circle className={`diagram-circle diagram-circle--red ${diagramNote(2, "answer")}`} cx={bx} cy={baseY} r={r} />
+      <path className={`diagram-fill diagram-fill--yellow diagram-high-fill ${diagramNote(3, "call")}`} d={`M${ax} ${baseY} L${cx} ${cy} L${cx} ${baseY} Z`} />
+      <path className={`diagram-fill diagram-fill--blue diagram-high-fill ${diagramNote(4, "answer")}`} d={`M${cx} ${cy} L${bx} ${baseY} L${cx} ${baseY} Z`} />
+      <path className={`diagram-line diagram-line--red diagram-line--strong ${diagramNote(0, "call")}`} d={`M${ax} ${baseY} H${bx}`} />
+      <path className={`diagram-line diagram-line--yellow diagram-line--strong ${diagramNote(5, "answer")}`} d={`M${ax} ${baseY} L${cx} ${cy}`} />
+      <path className={`diagram-line diagram-line--red diagram-line--strong ${diagramNote(4, "answer")}`} d={`M${cx} ${cy} L${bx} ${baseY}`} />
+      <path className="diagram-line diagram-line--construction" d={`M${cx} ${cy} V${baseY} M${ax} ${baseY} L${cx} ${baseY} L${bx} ${baseY}`} />
+      <ByrnePoint x={ax} y={baseY} label="A" note={0} dy={24} />
+      <ByrnePoint x={bx} y={baseY} label="B" note={1} dy={24} />
+      <ByrnePoint x={cx} y={cy} label="C" note={2} dy={-20} />
+      <ByrneLabel x="736" y="126">circle A, radius AB</ByrneLabel>
+      <ByrneLabel x="742" y="176">circle B, radius AB</ByrneLabel>
+      <ByrneFormula x="704" y="328">AB = AC = BC</ByrneFormula>
+      <ByrneLabel x="704" y="360" anchor="start">Postulate III + common notion I.</ByrneLabel>
+    </>
+  );
+}
+
+function ByrnePythagorasDiagram() {
+  return (
+    <>
+      <ByrneTitle>SQUARES ON A RIGHT TRIANGLE</ByrneTitle>
+      <path className="diagram-fill diagram-fill--yellow diagram-high-fill" d="M270 220 L270 330 L160 330 L160 220 Z" />
+      <path className="diagram-fill diagram-fill--blue diagram-high-fill" d="M270 330 L430 330 L430 390 L270 390 Z" />
+      <path className="diagram-fill diagram-fill--red diagram-high-fill" d="M270 220 L430 330 L540 170 L380 60 Z" />
+      <path className={`diagram-line diagram-line--yellow diagram-line--strong ${diagramNote(0, "call")}`} d="M270 330 L270 220" />
+      <path className={`diagram-line diagram-line--blue diagram-line--strong ${diagramNote(1, "answer")}`} d="M270 330 L430 330" />
+      <path className={`diagram-line diagram-line--red diagram-line--strong ${diagramNote(2, "call")}`} d="M270 220 L430 330" />
+      <path className={`diagram-line ${diagramNote(1, "answer")}`} d="M270 220 L270 330 L160 330 L160 220 Z M270 330 L430 330 L430 390 L270 390 Z M270 220 L430 330 L540 170 L380 60 Z" />
+      <path className="diagram-line diagram-line--construction" d="M292 308 V330 H270 M270 220 L380 60 M430 330 L540 170" />
+      <ByrnePoint x="270" y="330" label="A" note={0} dy={22} />
+      <ByrnePoint x="270" y="220" label="B" note={1} dy={-20} />
+      <ByrnePoint x="430" y="330" label="C" note={2} dy={22} />
+      <ByrneLabel x="144" y="198" anchor="start">square on AB</ByrneLabel>
+      <ByrneLabel x="280" y="406" anchor="start">square on AC</ByrneLabel>
+      <ByrneLabel x="508" y="122" anchor="start">square on BC</ByrneLabel>
+      <ByrneFormula x="664" y="210">AB² + AC² = BC²</ByrneFormula>
+      <ByrneLabel x="664" y="246" anchor="start">Euclid I.47.</ByrneLabel>
+    </>
+  );
+}
+
+function ByrneCalculusDiagram() {
+  return (
+    <>
+      <ByrneTitle>TANGENT, LIMIT, AREA</ByrneTitle>
+      <path className="diagram-fill diagram-fill--yellow diagram-high-fill" d="M132 340 L132 304 C230 284 314 226 398 174 C488 118 590 120 680 178 C762 230 834 266 900 276 L900 340 Z" />
+      <path className={`diagram-line diagram-line--axis ${diagramNote(0, "call")}`} d="M104 340 H928 M132 366 V78" />
+      <path className={`diagram-line diagram-line--blue diagram-line--strong ${diagramNote(1, "answer")}`} d="M132 304 C230 284 314 226 398 174 C488 118 590 120 680 178 C762 230 834 266 900 276" />
+      <path className={`diagram-line diagram-line--red diagram-line--strong ${diagramNote(2, "call")}`} d="M398 174 L700 112" />
+      <path className="diagram-line diagram-line--construction" d="M398 174 V340 M700 112 V340 M240 340 V268 M350 340 V202 M460 340 V138 M570 340 V130 M680 340 V178 M790 340 V246" />
+      <ByrnePoint x="398" y="174" label="x" note={2} dy={-22} />
+      <ByrneLabel x="914" y="360">x</ByrneLabel>
+      <ByrneLabel x="112" y="84">y</ByrneLabel>
+      <ByrneLabel x="548" y="102">tangent line</ByrneLabel>
+      <ByrneLabel x="510" y="382">Riemann sum approaches area.</ByrneLabel>
+      <ByrneFormula x="642" y="178">f'(x)=lim Δy/Δx</ByrneFormula>
+      <ByrneFormula x="642" y="220">∫ f(x) dx</ByrneFormula>
+    </>
+  );
+}
+
+function ByrnePrismDiagram() {
+  return (
+    <>
+      <ByrneTitle>PRISM DISPERSION</ByrneTitle>
+      <path className={`diagram-line diagram-line--red diagram-line--strong ${diagramNote(0, "call")}`} d="M86 212 L380 170" />
+      <path className="diagram-fill diagram-fill--yellow diagram-high-fill" d="M380 132 L380 292 L520 212 Z" />
+      <path className={`diagram-line diagram-line--strong ${diagramNote(1, "answer")}`} d="M380 132 L380 292 L520 212 Z" />
+      <path className="diagram-line diagram-line--construction" d="M380 82 V342 M520 118 V306 M350 212 H548" />
+      <path className={`diagram-line diagram-ray diagram-line--red ${diagramNote(2, "call")}`} d="M520 212 L888 94" />
+      <path className={`diagram-line diagram-ray diagram-line--yellow ${diagramNote(3, "answer")}`} d="M520 212 L910 176" />
+      <path className={`diagram-line diagram-ray diagram-line--blue ${diagramNote(4, "call")}`} d="M520 212 L888 332" />
+      <path className="diagram-line diagram-line--construction" d="M300 188 A84 84 0 0 1 302 236 M602 166 A98 98 0 0 1 606 260" />
+      <ByrneLabel x="146" y="178">incident ray</ByrneLabel>
+      <ByrneLabel x="320" y="156">normal</ByrneLabel>
+      <ByrneLabel x="726" y="86">red</ByrneLabel>
+      <ByrneLabel x="760" y="174">yellow</ByrneLabel>
+      <ByrneLabel x="724" y="342">blue</ByrneLabel>
+      <ByrneFormula x="610" y="390">n₁ sin θ₁ = n₂ sin θ₂</ByrneFormula>
+    </>
+  );
+}
+
+function ByrnePerspectiveDiagram() {
+  return (
+    <>
+      <ByrneTitle>PICTURE PLANE AND VANISHING POINT</ByrneTitle>
+      <rect className="diagram-fill diagram-fill--yellow diagram-high-fill" x="392" y="88" width="34" height="264" />
+      <path className="diagram-fill diagram-fill--blue diagram-high-fill" d="M502 190 L646 148 L646 272 L502 236 Z" />
+      <path className="diagram-fill diagram-fill--red diagram-high-fill" d="M648 148 L812 122 L812 300 L648 272 Z" />
+      <path className={`diagram-line diagram-line--axis ${diagramNote(0, "call")}`} d="M120 210 H914" />
+      <circle className={`diagram-circle diagram-circle--blue ${diagramNote(1, "answer")}`} cx="178" cy="210" r="26" />
+      <path className={`diagram-line diagram-line--soft ${diagramNote(2, "call")}`} d="M178 210 L852 86 M178 210 L852 334 M178 210 L642 210 M178 210 L502 190 M178 210 L502 236" />
+      <path className={`diagram-line diagram-line--strong ${diagramNote(3, "answer")}`} d="M392 88 V352 M426 88 V352 M502 190 L646 148 L646 272 L502 236 Z M648 148 L812 122 L812 300 L648 272 Z" />
+      <circle className={`diagram-dot ${diagramNote(4, "call")}`} cx="642" cy="210" r="6" />
+      <ByrneLabel x="178" y="166">eye</ByrneLabel>
+      <ByrneLabel x="410" y="66">picture plane</ByrneLabel>
+      <ByrneLabel x="642" y="230">VP</ByrneLabel>
+      <ByrneLabel x="824" y="104">object plane</ByrneLabel>
+      <ByrneFormula x="604" y="382">x′ = f x / z</ByrneFormula>
+    </>
+  );
+}
+
+function ByrneComputationDiagram() {
+  const cells = ["1", "0", "1", "□", "1", "0"];
+  return (
+    <>
+      <ByrneTitle>TURING TAPE AND STATE</ByrneTitle>
+      <rect className="diagram-fill diagram-fill--yellow diagram-high-fill" x="144" y="246" width="576" height="72" />
+      {cells.map((value, index) => (
+        <g key={`cell-${index}`}>
+          <rect className={`diagram-line ${diagramNote(index % 6, index % 2 ? "answer" : "call")}`} x={144 + index * 96} y="246" width="96" height="72" />
+          <ByrneLabel x={192 + index * 96} y="282">{value}</ByrneLabel>
+        </g>
+      ))}
+      <rect className="diagram-fill diagram-fill--blue diagram-high-fill" x="376" y="92" width="184" height="82" />
+      <path className={`diagram-line diagram-line--red diagram-line--strong ${diagramNote(2, "call")}`} d="M468 174 V246 M426 206 H510 L468 246 Z" />
+      <path className="diagram-line diagram-line--construction" d="M250 332 H620 M620 332 l-24 -14 M620 332 l-24 14" />
+      <ByrneLabel x="468" y="74">finite control</ByrneLabel>
+      <ByrneLabel x="468" y="132">state q₀</ByrneLabel>
+      <ByrneLabel x="830" y="272">read / write / move</ByrneLabel>
+      <ByrneFormula x="746" y="314">δ(q, symbol) → (q′, write, move)</ByrneFormula>
+    </>
+  );
+}
+
+function ByrneNetworkDiagram() {
+  return (
+    <>
+      <ByrneTitle>HUMAN-MACHINE SYMBIOSIS</ByrneTitle>
+      <circle className={`diagram-fill diagram-fill--yellow diagram-high-fill ${diagramNote(0, "call")}`} cx="202" cy="214" r="68" />
+      <rect className={`diagram-fill diagram-fill--red diagram-high-fill ${diagramNote(1, "answer")}`} x="424" y="160" width="152" height="108" />
+      <circle className={`diagram-fill diagram-fill--blue diagram-high-fill ${diagramNote(2, "call")}`} cx="802" cy="214" r="68" />
+      <path className={`diagram-line diagram-line--strong ${diagramNote(3, "answer")}`} d="M270 214 H424 M576 214 H734" />
+      <path className={`diagram-line diagram-line--soft ${diagramNote(4, "call")}`} d="M250 156 C364 68 640 68 756 156 M756 272 C640 358 364 358 250 272" />
+      <path className="diagram-line diagram-line--construction" d="M424 196 H576 M424 232 H576 M318 214 l26 -14 v28 Z M686 214 l-26 -14 v28 Z" />
+      <ByrneLabel x="202" y="120">human</ByrneLabel>
+      <ByrneLabel x="500" y="138">interactive display</ByrneLabel>
+      <ByrneLabel x="802" y="120">machine</ByrneLabel>
+      <ByrneLabel x="502" y="342">request, search, suggestion, judgement.</ByrneLabel>
+    </>
+  );
+}
+
+function ByrneRenderingDiagram() {
+  return (
+    <>
+      <ByrneTitle>RENDERING EQUATION</ByrneTitle>
+      <path className="diagram-fill diagram-fill--yellow diagram-high-fill" d="M146 324 C260 260 400 252 552 318 L552 352 L146 352 Z" />
+      <circle className={`diagram-fill diagram-fill--blue diagram-high-fill ${diagramNote(0, "call")}`} cx="184" cy="120" r="32" />
+      <circle className={`diagram-fill diagram-fill--red diagram-high-fill ${diagramNote(1, "answer")}`} cx="836" cy="164" r="28" />
+      <circle className={`diagram-dot ${diagramNote(2, "call")}`} cx="384" cy="300" r="7" />
+      <path className={`diagram-line diagram-line--strong ${diagramNote(3, "answer")}`} d="M146 324 C260 260 400 252 552 318" />
+      <path className={`diagram-line diagram-line--blue ${diagramNote(4, "call")}`} d="M384 300 L184 120" />
+      <path className={`diagram-line diagram-line--red ${diagramNote(5, "answer")}`} d="M384 300 L836 164" />
+      <path className="diagram-line diagram-line--construction" d="M384 300 V196 M384 300 C426 244 486 214 560 210 M384 300 L664 92 M384 300 L700 324" />
+      <ByrneLabel x="184" y="74">camera ray ωₒ</ByrneLabel>
+      <ByrneLabel x="836" y="112">incoming light Lᵢ</ByrneLabel>
+      <ByrneLabel x="384" y="326">surface point x</ByrneLabel>
+      <ByrneLabel x="424" y="198">normal n</ByrneLabel>
+      <ByrneFormula x="588" y="366">Lₒ(x,ωₒ)=Lₑ+∫Ω fᵣ Lᵢ(ωᵢ·n)dωᵢ</ByrneFormula>
+    </>
+  );
+}
+
+function ByrneLightFieldDiagram() {
+  return (
+    <>
+      <ByrneTitle>TWO-PLANE LIGHT FIELD</ByrneTitle>
+      <path className="diagram-fill diagram-fill--blue diagram-high-fill" d="M190 100 L806 132 L806 178 L190 146 Z" />
+      <path className="diagram-fill diagram-fill--red diagram-high-fill" d="M190 286 L806 252 L806 298 L190 332 Z" />
+      <path className={`diagram-line diagram-line--strong ${diagramNote(0, "call")}`} d="M190 100 L806 132 L806 178 L190 146 Z M190 286 L806 252 L806 298 L190 332 Z" />
+      <path className={`diagram-line diagram-line--blue ${diagramNote(1, "answer")}`} d="M246 122 L742 280 M358 128 L630 274 M470 134 L518 268 M582 140 L406 262 M694 146 L294 256" />
+      <path className="diagram-line diagram-line--construction" d="M246 122 V306 M358 128 V296 M470 134 V286 M582 140 V276 M694 146 V266" />
+      <ByrneLabel x="190" y="78" anchor="start">camera plane (u,v)</ByrneLabel>
+      <ByrneLabel x="190" y="364" anchor="start">image plane (s,t)</ByrneLabel>
+      <ByrneLabel x="818" y="164" anchor="start">sampled aperture</ByrneLabel>
+      <ByrneFormula x="654" y="364">L(u,v,s,t)</ByrneFormula>
+    </>
+  );
+}
+
+function ByrneSketchpadDiagram() {
+  return (
+    <>
+      <ByrneTitle>SKETCHPAD CONSTRAINT LOOP</ByrneTitle>
+      <rect className="diagram-fill diagram-fill--blue diagram-high-fill" x="174" y="92" width="516" height="260" />
+      <circle className={`diagram-fill diagram-fill--yellow diagram-high-fill ${diagramNote(0, "call")}`} cx="418" cy="226" r="76" />
+      <path className={`diagram-line diagram-line--strong ${diagramNote(1, "answer")}`} d="M174 92 H690 V352 H174 Z M342 226 H494 M418 150 V302 M358 170 L478 282 M358 282 L478 170" />
+      <circle className={`diagram-circle ${diagramNote(2, "call")}`} cx="418" cy="226" r="76" />
+      <path className={`diagram-fill diagram-fill--red diagram-high-fill ${diagramNote(3, "answer")}`} d="M596 296 L846 362 L834 396 L584 330 Z" />
+      <path className="diagram-line diagram-line--construction" d="M596 296 L548 252 M846 362 L834 396 L584 330" />
+      <ByrneLabel x="420" y="70">CRT display</ByrneLabel>
+      <ByrneLabel x="418" y="330">constrained circle + axes</ByrneLabel>
+      <ByrneLabel x="794" y="340">light pen</ByrneLabel>
+      <ByrneFormula x="696" y="122">state = reducer(state, gesture)</ByrneFormula>
+    </>
+  );
+}
+
+function ByrneStageDiagram() {
+  return (
+    <>
+      <ByrneTitle>PEPPER'S GHOST SIGHTLINE</ByrneTitle>
+      <rect className="diagram-fill diagram-fill--red diagram-high-fill" x="118" y="304" width="760" height="42" />
+      <rect className="diagram-fill diagram-fill--blue diagram-high-fill" x="666" y="116" width="150" height="110" />
+      <path className="diagram-fill diagram-fill--yellow diagram-high-fill" d="M330 116 L518 304 L466 304 L278 116 Z" />
+      <path className={`diagram-line diagram-line--strong ${diagramNote(0, "call")}`} d="M118 304 H878 M330 116 L518 304 M278 116 L466 304 M666 116 H816 V226 H666 Z" />
+      <path className={`diagram-line diagram-line--blue ${diagramNote(1, "answer")}`} d="M214 326 L398 210 L742 172" />
+      <path className={`diagram-line diagram-line--red ${diagramNote(2, "call")}`} d="M742 172 L492 304" />
+      <path className="diagram-line diagram-line--construction" d="M398 210 V304 M214 326 H308 M492 304 h78" />
+      <ByrneLabel x="214" y="366">viewer</ByrneLabel>
+      <ByrneLabel x="396" y="96">angled glass</ByrneLabel>
+      <ByrneLabel x="742" y="94">hidden stage</ByrneLabel>
+      <ByrneLabel x="502" y="332">virtual image</ByrneLabel>
+    </>
+  );
+}
+
+function ByrneVolumeDiagram() {
+  return (
+    <>
+      <ByrneTitle>TRACKED CAMERA IN LED VOLUME</ByrneTitle>
+      <path className="diagram-fill diagram-fill--blue diagram-high-fill" d="M492 112 H806 L900 200 V334 H492 Z" />
+      <path className="diagram-fill diagram-fill--yellow diagram-high-fill" d="M232 304 H806 L900 334 H334 Z" />
+      <path className="diagram-fill diagram-fill--red diagram-high-fill" d="M492 112 H806 V304 H492 Z" />
+      <path className={`diagram-line diagram-line--strong ${diagramNote(0, "call")}`} d="M492 112 H806 L900 200 V334 H492 Z M806 112 V304 L900 334 M492 304 H806" />
+      <path className={`diagram-line diagram-line--blue ${diagramNote(1, "answer")}`} d="M132 256 L492 112 M132 256 L806 112 M132 256 L806 304 M132 256 L492 304" />
+      <path className="diagram-line diagram-line--construction" d="M492 112 V304 M806 112 V304 M232 304 L492 112 M334 334 L806 304" />
+      <path className={`diagram-line diagram-line--red diagram-line--strong ${diagramNote(2, "call")}`} d="M102 236 H146 V276 H102 Z M146 246 L182 228 V284 L146 266 Z" />
+      <circle className={`diagram-dot ${diagramNote(3, "answer")}`} cx="132" cy="256" r="7" />
+      <ByrneLabel x="134" y="214">tracked camera</ByrneLabel>
+      <ByrneLabel x="390" y="118">view frustum</ByrneLabel>
+      <ByrneLabel x="638" y="88">active LED wall</ByrneLabel>
+      <ByrneLabel x="792" y="362">LED floor</ByrneLabel>
+      <ByrneFormula x="520" y="392">genlock + lens metadata + color calibration.</ByrneFormula>
+    </>
+  );
+}
+
+function ByrnePrototypeDiagram() {
+  return (
+    <>
+      <ByrneTitle>PROTOTYPE EVIDENCE LOOP</ByrneTitle>
+      <path className={`diagram-line diagram-line--construction ${diagramNote(0, "call")}`} d="M242 226 C296 104 446 92 500 206 C554 92 704 104 758 226 C688 334 552 338 500 250 C448 338 312 334 242 226 Z" />
+      <rect className="diagram-fill diagram-fill--yellow diagram-high-fill" x="122" y="150" width="220" height="96" />
+      <rect className="diagram-fill diagram-fill--blue diagram-high-fill" x="390" y="106" width="220" height="96" />
+      <rect className="diagram-fill diagram-fill--red diagram-high-fill" x="658" y="194" width="220" height="96" />
+      <path className={`diagram-line diagram-line--strong ${diagramNote(1, "answer")}`} d="M122 150 H342 V246 H122 Z M390 106 H610 V202 H390 Z M658 194 H878 V290 H658 Z" />
+      <path className={`diagram-line diagram-line--blue ${diagramNote(2, "call")}`} d="M342 198 H390 M610 154 C646 154 646 242 658 242 M232 246 V330 H768 V290" />
+      <path className="diagram-line diagram-line--construction" d="M158 178 H306 M426 134 H574 M694 222 H842" />
+      <ByrneLabel x="232" y="132">prototype</ByrneLabel>
+      <ByrneLabel x="500" y="88">test</ByrneLabel>
+      <ByrneLabel x="768" y="176">handoff</ByrneLabel>
+      <ByrneLabel x="500" y="366">unknown → experiment → evidence → system.</ByrneLabel>
+    </>
+  );
+}
+
+function ByrneNeuralDiagram() {
+  const inputs = [126, 222, 318];
+  const hiddenA = [94, 194, 294];
+  const hiddenB = [148, 268];
+  return (
+    <>
+      <ByrneTitle>BACKPROPAGATION NETWORK</ByrneTitle>
+      <path className={`diagram-line diagram-line--construction ${diagramNote(0, "call")}`} d="M174 126 L382 94 M174 126 L382 194 M174 126 L382 294 M174 222 L382 94 M174 222 L382 194 M174 222 L382 294 M174 318 L382 94 M174 318 L382 194 M174 318 L382 294 M382 94 L592 148 M382 194 L592 148 M382 294 L592 148 M382 94 L592 268 M382 194 L592 268 M382 294 L592 268 M592 148 L810 208 M592 268 L810 208" />
+      {inputs.map((y, index) => <circle key={`input-${y}`} className={`diagram-fill diagram-fill--yellow diagram-high-fill ${diagramNote(index, "call")}`} cx="174" cy={y} r="20" />)}
+      {hiddenA.map((y, index) => <circle key={`hidden-a-${y}`} className={`diagram-fill diagram-fill--blue diagram-high-fill ${diagramNote(index + 1, "answer")}`} cx="382" cy={y} r="20" />)}
+      {hiddenB.map((y, index) => <circle key={`hidden-b-${y}`} className={`diagram-fill diagram-fill--red diagram-high-fill ${diagramNote(index + 3, "call")}`} cx="592" cy={y} r="20" />)}
+      <circle className={`diagram-fill diagram-fill--blue diagram-high-fill ${diagramNote(5, "answer")}`} cx="810" cy="208" r="22" />
+      <path className={`diagram-line diagram-line--red diagram-line--strong ${diagramNote(4, "answer")}`} d="M810 208 C706 364 344 364 174 318" />
+      <ByrneLabel x="174" y="74">input</ByrneLabel>
+      <ByrneLabel x="382" y="54">hidden layer</ByrneLabel>
+      <ByrneLabel x="592" y="108">hidden layer</ByrneLabel>
+      <ByrneLabel x="810" y="170">output</ByrneLabel>
+      <ByrneFormula x="526" y="386">weights ← weights - η ∂loss/∂w</ByrneFormula>
+    </>
+  );
+}
+
+function ByrneAttentionDiagram() {
+  return (
+    <>
+      <ByrneTitle>SCALED DOT-PRODUCT ATTENTION</ByrneTitle>
+      <rect className="diagram-fill diagram-fill--blue diagram-high-fill" x="116" y="82" width="230" height="54" />
+      <rect className="diagram-fill diagram-fill--yellow diagram-high-fill" x="116" y="184" width="230" height="54" />
+      <rect className="diagram-fill diagram-fill--red diagram-high-fill" x="116" y="286" width="230" height="54" />
+      <rect className="diagram-fill diagram-fill--yellow diagram-high-fill" x="458" y="126" width="160" height="160" />
+      <rect className="diagram-fill diagram-fill--blue diagram-high-fill" x="746" y="184" width="150" height="82" />
+      <path className={`diagram-line diagram-line--strong ${diagramNote(0, "call")}`} d="M116 82 H346 V136 H116 Z M116 184 H346 V238 H116 Z M116 286 H346 V340 H116 Z M458 126 H618 V286 H458 Z M746 184 H896 V266 H746 Z" />
+      <path className={`diagram-line diagram-line--blue ${diagramNote(1, "answer")}`} d="M346 109 L458 166 M346 211 L458 206 M346 313 L458 246 M618 206 H746" />
+      <path className="diagram-line diagram-line--construction" d="M498 126 V286 M538 126 V286 M578 126 V286 M458 166 H618 M458 206 H618 M458 246 H618" />
+      <ByrneLabel x="74" y="110" anchor="start">Q</ByrneLabel>
+      <ByrneLabel x="74" y="212" anchor="start">K</ByrneLabel>
+      <ByrneLabel x="74" y="314" anchor="start">V</ByrneLabel>
+      <ByrneLabel x="538" y="104">attention matrix</ByrneLabel>
+      <ByrneLabel x="822" y="164">context</ByrneLabel>
+      <ByrneFormula x="566" y="364">softmax(QKᵀ / √dₖ)V</ByrneFormula>
+    </>
+  );
+}
+
+function ByrneStoryDiagram() {
+  return (
+    <>
+      <ByrneTitle>STORY SYSTEMS LOOP</ByrneTitle>
+      <circle className={`diagram-fill diagram-fill--yellow diagram-high-fill ${diagramNote(0, "call")}`} cx="136" cy="300" r="28" />
+      <circle className={`diagram-fill diagram-fill--blue diagram-high-fill ${diagramNote(1, "answer")}`} cx="330" cy="138" r="28" />
+      <circle className={`diagram-fill diagram-fill--red diagram-high-fill ${diagramNote(2, "call")}`} cx="534" cy="270" r="28" />
+      <circle className={`diagram-fill diagram-fill--blue diagram-high-fill ${diagramNote(3, "answer")}`} cx="730" cy="126" r="28" />
+      <circle className={`diagram-fill diagram-fill--yellow diagram-high-fill ${diagramNote(4, "call")}`} cx="874" cy="300" r="28" />
+      <path className={`diagram-line diagram-line--strong ${diagramNote(5, "answer")}`} d="M136 300 L330 138 L534 270 L730 126 L874 300" />
+      <path className="diagram-line diagram-line--construction" d="M136 300 C300 364 708 364 874 300 M330 138 C426 74 628 74 730 126 M534 270 V110" />
+      <ByrneLabel x="136" y="350">geometry</ByrneLabel>
+      <ByrneLabel x="330" y="92">light</ByrneLabel>
+      <ByrneLabel x="534" y="312">code</ByrneLabel>
+      <ByrneLabel x="730" y="82">AI</ByrneLabel>
+      <ByrneLabel x="874" y="350">story</ByrneLabel>
+      <ByrneFormula x="392" y="394">shot = solve(story, geometry, light, code, crew)</ByrneFormula>
+    </>
+  );
+}
+
+function elementPoint(cx, cy, radius, deg) {
+  const centerX = Number(cx);
+  const centerY = Number(cy);
+  const r = Number(radius);
+  const rad = (deg - 90) * Math.PI / 180;
+  return [centerX + Math.cos(rad) * r, centerY + Math.sin(rad) * r];
+}
+
+function elementWedgePath(cx, cy, radius, startDeg, endDeg) {
+  const centerX = Number(cx);
+  const centerY = Number(cy);
+  const r = Number(radius);
+  const [sx, sy] = elementPoint(cx, cy, radius, startDeg);
+  const [ex, ey] = elementPoint(cx, cy, radius, endDeg);
+  const largeArc = Math.abs(endDeg - startDeg) > 180 ? 1 : 0;
+  return `M${centerX} ${centerY} L${sx.toFixed(2)} ${sy.toFixed(2)} A${r} ${r} 0 ${largeArc} 1 ${ex.toFixed(2)} ${ey.toFixed(2)} Z`;
+}
+
+function ElementLine({ x1, y1, x2, y2, color = "", note = 0, dotted = false, strong = false }) {
+  return (
+    <line
+      className={`diagram-line ${color ? `diagram-line--${color}` : ""} ${dotted ? "diagram-line--dotted" : ""} ${strong ? "diagram-line--strong" : ""} ${diagramNote(note)}`}
+      x1={x1}
+      y1={y1}
+      x2={x2}
+      y2={y2}
+    />
+  );
+}
+
+function ElementCircle({ cx, cy, r, color = "", note = 0, dotted = false }) {
+  return (
+    <circle
+      className={`diagram-circle ${color ? `diagram-circle--${color}` : ""} ${dotted ? "diagram-line--dotted" : ""} ${diagramNote(note)}`}
+      cx={cx}
+      cy={cy}
+      r={r}
+    />
+  );
+}
+
+function ElementWedge({ cx, cy, r, start, end, fill = "yellow", note = 0 }) {
+  return <path className={`diagram-fill diagram-fill--${fill} diagram-high-fill ${diagramNote(note)}`} d={elementWedgePath(cx, cy, r, start, end)} />;
+}
+
+function ElementPoly({ points, fill = "yellow", note = 0 }) {
+  return <polygon className={`diagram-fill diagram-fill--${fill} diagram-high-fill ${diagramNote(note)}`} points={points} />;
+}
+
+function ElementPoint({ x, y, label, note = 0, dy = -14 }) {
+  return <ByrnePoint x={x} y={y} label={label} note={note} dy={dy} />;
+}
+
+function ElementsEuclidDiagram() {
+  // Euclid I.1 — proper construction circles of radius AB centered at A
+  // and B intersect at C, forming the equilateral triangle. Filled
+  // triangle interior + tinted vesica piscis for Byrne-style colour.
+  // A=(302,294), B=(524,294); AB = 222 → apex C=(413, 101.74).
+  // Lens (intersection of both circles) is bounded by two 60° arcs.
+  return (
+    <>
+      <ByrneTitle>EQUILATERAL TRIANGLE ON AB</ByrneTitle>
+      {/* Vesica piscis — lens where the two circles intersect */}
+      <path className={`diagram-fill diagram-fill--yellow diagram-high-fill ${diagramNote(0)}`} d="M413 101.74 A222 222 0 0 1 413 516.26 A222 222 0 0 1 413 101.74 Z" />
+      {/* Equilateral triangle interior */}
+      <ElementPoly points="302,294 524,294 413,101.74" fill="blue" note={1} />
+      {/* Construction circles with radius = AB */}
+      <ElementCircle cx="302" cy="294" r="222" color="red" note={2} />
+      <ElementCircle cx="524" cy="294" r="222" color="yellow" note={3} />
+      {/* Triangle sides */}
+      <ElementLine x1="302" y1="294" x2="524" y2="294" color="black" note={4} strong />
+      <ElementLine x1="302" y1="294" x2="413" y2="101.74" color="red" note={5} strong />
+      <ElementLine x1="524" y1="294" x2="413" y2="101.74" color="yellow" note={0} strong />
+      {/* Altitude (construction) */}
+      <ElementLine x1="413" y1="101.74" x2="413" y2="294" dotted note={1} />
+      {/* Vertex labels */}
+      <ElementPoint x="302" y="294" label="A" note={2} dy={22} />
+      <ElementPoint x="524" y="294" label="B" note={3} dy={22} />
+      <ElementPoint x="413" y="101.74" label="C" note={4} dy={-18} />
+    </>
+  );
+}
+
+function ElementsPythagorasDiagram() {
+  return (
+    <>
+      <ByrneTitle>SQUARES ON A RIGHT TRIANGLE</ByrneTitle>
+      <ElementPoly points="275,175 370,175 370,270 275,270" fill="yellow" note={0} />
+      <ElementPoly points="370,270 505,270 505,405 370,405" fill="blue" note={1} />
+      <ElementPoly points="370,175 505,270 600,135 465,40" fill="red" note={2} />
+      <ElementLine x1="370" y1="270" x2="370" y2="175" color="yellow" note={3} />
+      <ElementLine x1="370" y1="270" x2="505" y2="270" color="blue" note={4} />
+      <ElementLine x1="370" y1="175" x2="505" y2="270" color="red" note={5} />
+      <ElementLine x1="465" y1="40" x2="600" y2="135" dotted note={0} />
+      <ElementLine x1="505" y1="270" x2="600" y2="135" dotted note={1} />
+      <path className="diagram-line diagram-line--thin" d="M370 252 H388 V270" />
+      <ElementPoint x="370" y="270" label="A" note={2} dy={22} />
+      <ElementPoint x="370" y="175" label="B" note={3} dy={-18} />
+      <ElementPoint x="505" y="270" label="C" note={4} dy={22} />
+    </>
+  );
+}
+
+function ElementsCalculusDiagram() {
+  return (
+    <>
+      <ByrneTitle>LIMIT BY ANGLE AND AREA</ByrneTitle>
+      <ElementLine x1="184" y1="286" x2="828" y2="286" color="red" note={0} />
+      <ElementLine x1="456" y1="88" x2="456" y2="364" note={1} />
+      <ElementLine x1="244" y1="342" x2="716" y2="124" color="yellow" note={2} />
+      <ElementLine x1="244" y1="342" x2="732" y2="342" dotted note={3} />
+      <ElementWedge cx="456" cy="286" r="108" start={270} end={338} fill="yellow" note={4} />
+      <ElementWedge cx="456" cy="286" r="76" start={180} end={270} fill="blue" note={5} />
+      <ElementWedge cx="456" cy="286" r="48" start={338} end={90} fill="red" note={0} />
+      <ElementLine x1="456" y1="286" x2="640" y2="202" color="yellow" note={1} />
+      <ElementPoint x="456" y="286" label="O" note={2} dy={22} />
+      <ElementPoint x="640" y="202" label="P" note={3} dy={-18} />
+    </>
+  );
+}
+
+function ElementsPrismDiagram() {
+  return (
+    <>
+      <ByrneTitle>LIGHT BROKEN BY A TRIANGLE</ByrneTitle>
+      <ElementPoly points="398,126 398,300 548,214" fill="yellow" note={0} />
+      <ElementLine x1="96" y1="214" x2="398" y2="214" color="red" note={1} strong />
+      <ElementLine x1="398" y1="126" x2="398" y2="300" note={2} />
+      <ElementLine x1="398" y1="126" x2="548" y2="214" color="yellow" note={3} />
+      <ElementLine x1="398" y1="300" x2="548" y2="214" color="blue" note={4} />
+      <ElementLine x1="548" y1="214" x2="878" y2="102" color="red" note={0} />
+      <ElementLine x1="548" y1="214" x2="890" y2="214" color="yellow" note={1} />
+      <ElementLine x1="548" y1="214" x2="878" y2="326" color="blue" note={2} />
+      <ElementLine x1="330" y1="92" x2="330" y2="336" dotted note={5} />
+      <ElementPoint x="548" y="214" label="A" note={3} dy={22} />
+    </>
+  );
+}
+
+function ElementsPerspectiveDiagram() {
+  return (
+    <>
+      <ByrneTitle>PERSPECTIVE FROM A POINT</ByrneTitle>
+      <ElementCircle cx="178" cy="214" r="24" color="blue" note={0} />
+      <ElementLine x1="178" y1="214" x2="874" y2="96" note={1} />
+      <ElementLine x1="178" y1="214" x2="874" y2="332" note={2} />
+      <ElementLine x1="178" y1="214" x2="874" y2="214" note={3} />
+      <ElementLine x1="404" y1="104" x2="404" y2="324" color="yellow" note={4} strong />
+      <ElementPoly points="528,176 670,154 670,274 528,252" fill="blue" note={0} />
+      <ElementPoly points="670,154 846,126 846,304 670,274" fill="red" note={1} />
+      <ElementLine x1="528" y1="176" x2="846" y2="126" color="blue" note={2} />
+      <ElementLine x1="528" y1="252" x2="846" y2="304" color="red" note={3} />
+      <ElementPoint x="178" y="214" label="E" note={4} dy={-22} />
+    </>
+  );
+}
+
+function ElementsComputationDiagram() {
+  return (
+    <>
+      <ByrneTitle>FINITE SYMBOL MACHINE</ByrneTitle>
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <ElementPoly key={`cell-${i}`} points={`${206 + i * 86},246 ${286 + i * 86},246 ${286 + i * 86},300 ${206 + i * 86},300`} fill={i % 3 === 0 ? "yellow" : i % 3 === 1 ? "blue" : "red"} note={i} />
+      ))}
+      <ElementLine x1="206" y1="246" x2="722" y2="246" note={0} />
+      <ElementLine x1="206" y1="300" x2="722" y2="300" note={1} />
+      <ElementLine x1="464" y1="126" x2="464" y2="246" color="red" note={2} />
+      <ElementPoly points="414,86 514,86 514,126 414,126" fill="blue" note={3} />
+      <ElementLine x1="414" y1="126" x2="464" y2="174" color="red" note={4} />
+      <ElementLine x1="514" y1="126" x2="464" y2="174" color="red" note={5} />
+      <ElementLine x1="248" y1="334" x2="680" y2="334" dotted note={0} />
+    </>
+  );
+}
+
+function ElementsNetworkDiagram() {
+  // Mean proportional between two given lines (Euclid VI.13).
+  // Baseline AC with B dividing it. Semicircle on AC. Perpendicular at
+  // B meets the semicircle at D; BD² = AB · BC. The "third" emerging
+  // from the partnership of two — Licklider's symbiosis as geometry.
+  // A=(230,296), B=(590,296), C=(770,296). AB=360, BC=180.
+  // BD = √(360·180) = √64800 ≈ 254.55. D = (590, 41.45).
+  // Semicircle center = (500,296), radius = 270.
+  return (
+    <>
+      <ByrneTitle>MEAN PROPORTIONAL BETWEEN TWO LINES</ByrneTitle>
+      {/* The two similar sub-triangles formed by the altitude */}
+      <ElementPoly points="230,296 590,296 590,41.45" fill="yellow" note={0} />
+      <ElementPoly points="590,296 770,296 590,41.45" fill="blue" note={1} />
+      {/* Semicircle on AC (the locus of right angles at D) */}
+      <path className={`diagram-line diagram-line--soft ${diagramNote(2)}`} d="M230 296 A270 270 0 0 1 770 296" />
+      {/* Hypotenuses AD and DC of the two sub-triangles */}
+      <ElementLine x1="230" y1="296" x2="590" y2="41.45" color="red" note={3} />
+      <ElementLine x1="590" y1="41.45" x2="770" y2="296" color="red" note={4} />
+      {/* Baseline segments AB and BC */}
+      <ElementLine x1="230" y1="296" x2="590" y2="296" color="black" note={5} strong />
+      <ElementLine x1="590" y1="296" x2="770" y2="296" color="black" note={0} strong />
+      {/* Altitude BD — the mean proportional */}
+      <ElementLine x1="590" y1="296" x2="590" y2="41.45" color="red" note={1} strong />
+      {/* Right-angle marker at B */}
+      <path className="diagram-line diagram-line--thin" d="M590 278 H572 V296" />
+      {/* Tick marks on the baseline halves */}
+      <path className="diagram-line diagram-line--thin" d="M408 290 V302 M680 290 V302" />
+      {/* Vertex labels */}
+      <ElementPoint x="230" y="296" label="A" note={2} dy={22} />
+      <ElementPoint x="590" y="296" label="B" note={3} dy={22} />
+      <ElementPoint x="770" y="296" label="C" note={4} dy={22} />
+      <ElementPoint x="590" y="41.45" label="D" note={5} dy={-14} />
+    </>
+  );
+}
+
+function ElementsRenderingDiagram() {
+  // Hemisphere of directions over a surface point P (Kajiya's rendering
+  // equation as a Euclidean figure). Baseline = surface; semicircle =
+  // sky of incoming directions; sampled rays converge at P; one
+  // outgoing ray V points to the viewer. Normal N is the vertical.
+  // P=(500,296), semicircle r=220 → top of arc (500,76).
+  const L1 = { x: 344.4, y: 140.4 };  // angle ~135° from +x
+  const L2 = { x: 424.7, y: 89.3 };   // angle ~110°
+  const L3 = { x: 575.3, y: 89.3 };   // angle ~70°
+  const V  = { x: 655.6, y: 140.4 };  // angle ~45° (outgoing)
+  return (
+    <>
+      <ByrneTitle>HEMISPHERE OF DIRECTIONS AT A POINT</ByrneTitle>
+      {/* Two flanking surface "patches" framing the point */}
+      <ElementPoly points="140,296 500,296 500,316 140,316" fill="yellow" note={0} />
+      <ElementPoly points="500,296 860,296 860,316 500,316" fill="blue" note={1} />
+      {/* Semicircle outline = locus of unit directions */}
+      <path className={`diagram-line diagram-line--soft ${diagramNote(2)}`} d="M280 296 A220 220 0 0 1 720 296" />
+      {/* Normal N — vertical from P */}
+      <ElementLine x1="500" y1="296" x2="500" y2="76" dotted note={3} />
+      {/* Three incoming rays — yellow */}
+      <ElementLine x1={L1.x} y1={L1.y} x2="500" y2="296" color="yellow" note={4} />
+      <ElementLine x1={L2.x} y1={L2.y} x2="500" y2="296" color="yellow" note={5} />
+      <ElementLine x1={L3.x} y1={L3.y} x2="500" y2="296" color="yellow" note={0} />
+      {/* Outgoing ray V — red, strong */}
+      <ElementLine x1="500" y1="296" x2={V.x} y2={V.y} color="red" note={1} strong />
+      {/* Light-source marker on the dominant incoming direction */}
+      <circle className={`diagram-fill diagram-fill--yellow diagram-high-fill ${diagramNote(2)}`} cx={L2.x} cy={L2.y} r="18" />
+      {/* Viewer marker on the outgoing direction */}
+      <circle className={`diagram-fill diagram-fill--red diagram-high-fill ${diagramNote(3)}`} cx={V.x} cy={V.y} r="18" />
+      {/* Angle arcs at P — incidence and view angles around the normal */}
+      <path className="diagram-line diagram-line--thin" d="M500 252 A44 44 0 0 0 469 264" />
+      <path className="diagram-line diagram-line--thin" d="M500 252 A44 44 0 0 1 531 264" />
+      {/* Baseline (surface) */}
+      <ElementLine x1="140" y1="296" x2="860" y2="296" color="black" note={4} strong />
+      {/* Point P at the surface */}
+      <circle className={`diagram-dot ${diagramNote(5)}`} cx="500" cy="296" r="7" />
+      {/* Labels */}
+      <ElementPoint x="500" y="296" label="P" note={0} dy={28} />
+      <ElementPoint x="500" y="76" label="N" note={1} dy={-14} />
+      <ElementPoint x={L2.x} y={L2.y} label="L" note={2} dy={-22} />
+      <ElementPoint x={V.x} y={V.y} label="V" note={3} dy={-22} />
+    </>
+  );
+}
+
+function ElementsLightFieldDiagram() {
+  // Two parallel planes parameterize a four-dimensional field of rays.
+  // Each ray = a (u, v) pair on the top plane + a (s, t) pair on the
+  // bottom plane. Three named points per plane, rays connecting them,
+  // one ray emphasised in red as the chosen sample (the resampling op).
+  const yTop = 120;
+  const yBot = 320;
+  const cols = [
+    { x: 260, top: 'A', bot: "A'" },
+    { x: 420, top: 'B', bot: "B'" },
+    { x: 580, top: 'C', bot: "C'" },
+    { x: 740, top: 'D', bot: "D'" },
+  ];
+  return (
+    <>
+      <ByrneTitle>TWO PARALLELS PARAMETERIZE A FIELD OF RAYS</ByrneTitle>
+      {/* Plane bars */}
+      <ElementPoly points={`160,${yTop - 6} 840,${yTop - 6} 840,${yTop + 6} 160,${yTop + 6}`} fill="blue" note={0} />
+      <ElementPoly points={`160,${yBot - 6} 840,${yBot - 6} 840,${yBot + 6} 160,${yBot + 6}`} fill="yellow" note={1} />
+      {/* Plane outlines */}
+      <ElementLine x1="160" y1={yTop} x2="840" y2={yTop} color="black" note={2} strong />
+      <ElementLine x1="160" y1={yBot} x2="840" y2={yBot} color="black" note={3} strong />
+      {/* Vertical alignment guides through each column */}
+      {cols.map((c, i) => (
+        <ElementLine key={`g-${i}`} x1={c.x} y1={yTop - 24} x2={c.x} y2={yBot + 24} dotted note={i % 6} />
+      ))}
+      {/* Yellow rays — three diagonal samples */}
+      <ElementLine x1={cols[0].x} y1={yTop} x2={cols[3].x} y2={yBot} color="yellow" note={4} />
+      <ElementLine x1={cols[1].x} y1={yTop} x2={cols[0].x} y2={yBot} color="yellow" note={5} />
+      <ElementLine x1={cols[3].x} y1={yTop} x2={cols[1].x} y2={yBot} color="yellow" note={0} />
+      {/* Blue rays */}
+      <ElementLine x1={cols[2].x} y1={yTop} x2={cols[3].x} y2={yBot} color="blue" note={1} />
+      <ElementLine x1={cols[0].x} y1={yTop} x2={cols[2].x} y2={yBot} color="blue" note={2} />
+      {/* The chosen ray — red, strong */}
+      <ElementLine x1={cols[1].x} y1={yTop} x2={cols[2].x} y2={yBot} color="red" note={3} strong />
+      {/* Dot markers at every plane / column intersection */}
+      {cols.map((c, i) => (
+        <g key={`d-${i}`}>
+          <circle className={`diagram-dot ${diagramNote(i)}`} cx={c.x} cy={yTop} r="6" />
+          <circle className={`diagram-dot ${diagramNote((i + 3) % 6)}`} cx={c.x} cy={yBot} r="6" />
+        </g>
+      ))}
+      {/* Labels above the top plane and below the bottom plane */}
+      {cols.map((c, i) => (
+        <g key={`l-${i}`}>
+          <ElementPoint x={c.x} y={yTop} label={c.top} note={i % 6} dy={-22} />
+          <ElementPoint x={c.x} y={yBot} label={c.bot} note={(i + 2) % 6} dy={30} />
+        </g>
+      ))}
+    </>
+  );
+}
+
+function ElementsInterfaceDiagram() {
+  return (
+    <>
+      <ByrneTitle>DIAGRAM AS INSTRUMENT</ByrneTitle>
+      <ElementCircle cx="430" cy="222" r="128" color="blue" note={0} />
+      <ElementLine x1="302" y1="222" x2="558" y2="222" color="red" note={1} />
+      <ElementLine x1="430" y1="94" x2="430" y2="350" color="yellow" note={2} />
+      <ElementWedge cx="430" cy="222" r="88" start={0} end={45} fill="yellow" note={3} />
+      <ElementWedge cx="430" cy="222" r="88" start={45} end={90} fill="blue" note={4} />
+      <ElementWedge cx="430" cy="222" r="88" start={90} end={135} fill="red" note={5} />
+      <ElementLine x1="588" y1="288" x2="820" y2="352" color="red" note={0} strong />
+      <ElementLine x1="588" y1="288" x2="522" y2="250" dotted note={1} />
+    </>
+  );
+}
+
+function ElementsStageDiagram() {
+  return (
+    <>
+      <ByrneTitle>ILLUSION BY REFLECTION</ByrneTitle>
+      <ElementLine x1="150" y1="310" x2="850" y2="310" color="red" note={0} strong />
+      <ElementLine x1="384" y1="106" x2="548" y2="310" color="yellow" note={1} strong />
+      <ElementLine x1="220" y1="310" x2="456" y2="202" color="blue" note={2} />
+      <ElementLine x1="456" y1="202" x2="742" y2="154" color="blue" note={3} />
+      <ElementLine x1="742" y1="154" x2="548" y2="310" color="red" note={4} />
+      <ElementPoly points="684,110 806,110 806,198 684,198" fill="blue" note={5} />
+      <ElementWedge cx="456" cy="202" r="54" start={200} end={300} fill="yellow" note={0} />
+      <ElementPoint x="220" y="310" label="E" note={1} dy={24} />
+    </>
+  );
+}
+
+function ElementsVolumeDiagram() {
+  return (
+    <>
+      <ByrneTitle>FRUSTUM IN A COLORED VOLUME</ByrneTitle>
+      <ElementPoly points="516,96 772,96 884,190 626,190" fill="red" note={0} />
+      <ElementPoly points="626,190 884,190 884,332 626,332" fill="blue" note={1} />
+      <ElementPoly points="292,332 626,332 884,332 548,368" fill="yellow" note={2} />
+      <ElementLine x1="136" y1="254" x2="516" y2="96" color="blue" note={3} />
+      <ElementLine x1="136" y1="254" x2="772" y2="96" color="blue" note={4} />
+      <ElementLine x1="136" y1="254" x2="626" y2="332" color="red" note={5} />
+      <ElementLine x1="136" y1="254" x2="884" y2="332" color="red" note={0} />
+      <ElementPoly points="104,236 150,236 150,272 104,272" fill="white" note={1} />
+      <ElementLine x1="104" y1="236" x2="150" y2="272" color="red" note={2} />
+    </>
+  );
+}
+
+function ElementsPrototypeDiagram() {
+  return (
+    <>
+      <ByrneTitle>PROTOTYPE AS CONSTRUCTION</ByrneTitle>
+      <ElementPoly points="188,250 308,86 428,250" fill="yellow" note={0} />
+      <ElementPoly points="428,250 548,86 668,250" fill="blue" note={1} />
+      <ElementPoly points="668,250 788,86 908,250" fill="red" note={2} />
+      <ElementLine x1="188" y1="250" x2="908" y2="250" note={3} />
+      <ElementLine x1="308" y1="86" x2="788" y2="86" dotted note={4} />
+      <ElementLine x1="308" y1="86" x2="548" y2="250" color="red" note={5} />
+      <ElementLine x1="548" y1="86" x2="788" y2="250" color="yellow" note={0} />
+      <ElementLine x1="256" y1="330" x2="824" y2="330" color="blue" note={1} />
+    </>
+  );
+}
+
+function ElementsNeuralDiagram() {
+  const layers = [
+    { x: 220, ys: [132, 222, 312], fill: "yellow" },
+    { x: 430, ys: [112, 222, 332], fill: "blue" },
+    { x: 640, ys: [160, 284], fill: "red" },
+    { x: 822, ys: [222], fill: "blue" },
+  ];
+  return (
+    <>
+      <ByrneTitle>LEARNING AS CORRECTION</ByrneTitle>
+      <path className={`diagram-line diagram-line--dotted ${diagramNote(0)}`} d="M220 132 L430 112 L640 160 L822 222 M220 222 L430 222 L640 160 M220 312 L430 332 L640 284 L822 222 M430 112 L640 284 M430 332 L640 160" />
+      {layers.flatMap((layer, li) => layer.ys.map((y, yi) => (
+        <circle key={`${li}-${yi}`} className={`diagram-fill diagram-fill--${layer.fill} diagram-high-fill ${diagramNote((li + yi) % 6)}`} cx={layer.x} cy={y} r="18" />
+      )))}
+      <ElementLine x1="220" y1="312" x2="822" y2="222" color="red" note={5} />
+    </>
+  );
+}
+
+function ElementsAttentionDiagram() {
+  return (
+    <>
+      <ByrneTitle>ATTENTION AS CORRESPONDENCE</ByrneTitle>
+      <ElementPoly points="154,114 332,114 332,164 154,164" fill="blue" note={0} />
+      <ElementPoly points="154,204 332,204 332,254 154,254" fill="yellow" note={1} />
+      <ElementPoly points="154,294 332,294 332,344 154,344" fill="red" note={2} />
+      <ElementPoly points="470,118 626,118 626,274 470,274" fill="yellow" note={3} />
+      <ElementPoly points="754,196 878,196 878,272 754,272" fill="blue" note={4} />
+      <ElementLine x1="332" y1="139" x2="470" y2="164" color="blue" note={0} />
+      <ElementLine x1="332" y1="229" x2="470" y2="196" color="yellow" note={1} />
+      <ElementLine x1="332" y1="319" x2="470" y2="238" color="red" note={2} />
+      <ElementLine x1="626" y1="196" x2="754" y2="234" note={3} />
+      <path className="diagram-line diagram-line--dotted" d="M510 118 V274 M550 118 V274 M590 118 V274 M470 158 H626 M470 198 H626 M470 238 H626" />
+    </>
+  );
+}
+
+function ElementsStoryDiagram() {
+  // Extreme and Mean Ratio — Euclid VI.30. Cut AB at C so that the
+  // whole is to the greater as the greater is to the lesser; the line
+  // encodes its own proportion. The through-line of the work: one
+  // figure containing its own ratio.
+  // AB from (260,300) to (740,300), length 480. BD = AB/2 = 240
+  // perpendicular at B. AD = √(480² + 240²) ≈ 536.66.
+  // E on AD with DE = DB = 240 → E ≈ (525.34, 167.33).
+  // C on AB with AC = AE ≈ 296.66 → C ≈ (556.66, 300).
+  // Check: AC / CB = 296.66 / 183.34 ≈ 1.618 (φ).
+  return (
+    <>
+      <ByrneTitle>EXTREME AND MEAN RATIO ON AB</ByrneTitle>
+      {/* Construction triangle ABD shaded faintly */}
+      <ElementPoly points="260,300 740,300 740,60" fill="yellow" note={0} />
+      {/* Highlight the smaller similar triangle AEB' (visualised by
+          taking E above AB and dropping to C) using red. This is the
+          "extreme" portion that fits the golden ratio. */}
+      <ElementPoly points="260,300 556.66,300 525.34,167.33" fill="red" note={1} />
+      {/* Arc from D centered at B (radius DB) — the construction step
+          that locates E on AD. Quarter arc from B straight up to D. */}
+      <path className={`diagram-line diagram-line--soft ${diagramNote(2)}`} d="M740 60 A240 240 0 0 1 500 300" />
+      {/* Arc from A centered at A (radius AE) — locates C on AB. */}
+      <path className={`diagram-line diagram-line--soft ${diagramNote(3)}`} d="M556.66 300 A296.66 296.66 0 0 0 525.34 167.33" />
+      {/* Construction lines: BD vertical, AD hypotenuse */}
+      <ElementLine x1="740" y1="300" x2="740" y2="60" dotted note={4} />
+      <ElementLine x1="260" y1="300" x2="740" y2="60" dotted note={5} />
+      {/* Baseline AC (greater) blue, CB (lesser) red */}
+      <ElementLine x1="260" y1="300" x2="556.66" y2="300" color="blue" note={0} strong />
+      <ElementLine x1="556.66" y1="300" x2="740" y2="300" color="red" note={1} strong />
+      {/* AE — segment of the hypotenuse equal to AC */}
+      <ElementLine x1="260" y1="300" x2="525.34" y2="167.33" color="blue" note={2} />
+      {/* Right-angle marker at B */}
+      <path className="diagram-line diagram-line--thin" d="M740 282 H722 V300" />
+      {/* Vertex labels */}
+      <ElementPoint x="260" y="300" label="A" note={3} dy={22} />
+      <ElementPoint x="556.66" y="300" label="C" note={4} dy={22} />
+      <ElementPoint x="740" y="300" label="B" note={5} dy={22} />
+      <ElementPoint x="740" y="60" label="D" note={0} dy={-14} />
+      <ElementPoint x="525.34" y="167.33" label="E" note={1} dy={-14} />
+    </>
+  );
+}
+
 function GeometryDiagram({ variant = "euclid" }) {
   return (
     <>
@@ -2966,18 +3790,28 @@ function BlackoutDiagram({ type, pulse }) {
   const harmonyDuration = pulse?.harmony?.duration || 0;
   const fillDuration = pulse?.highFill?.duration || 0;
   const archetypes = {
-    euclid: <GeometryDiagram variant="euclid" />,
-    light: <OpticsDiagram />,
-    computation: <ComputationDiagram />,
-    graphics: <GraphicsDiagram />,
-    neural: <NeuralDiagram />,
-    story: <SystemsDiagram />,
+    euclid: <ElementsEuclidDiagram />,
+    pythagoras: <ElementsPythagorasDiagram />,
+    calculus: <ElementsCalculusDiagram />,
+    light: <ElementsPrismDiagram />,
+    perspective: <ElementsPerspectiveDiagram />,
+    computation: <ElementsComputationDiagram />,
+    network: <ElementsNetworkDiagram />,
+    graphics: <ElementsRenderingDiagram />,
+    lightfield: <ElementsLightFieldDiagram />,
+    interface: <ElementsInterfaceDiagram />,
+    stage: <ElementsStageDiagram />,
+    volume: <ElementsVolumeDiagram />,
+    prototype: <ElementsPrototypeDiagram />,
+    neural: <ElementsNeuralDiagram />,
+    ai: <ElementsAttentionDiagram />,
+    story: <ElementsStoryDiagram />,
   };
   if (archetypes[type]) {
     return (
       <svg
         className={`blackout-panel__diagram blackout-panel__diagram--${type} ${pulseClass}`}
-        viewBox="0 0 1000 420"
+        viewBox="0 20 1000 385"
         aria-hidden="true"
         style={{
           ...(pulseDuration ? { '--melody-pulse-ms': `${pulseDuration}ms` } : {}),
@@ -3274,37 +4108,17 @@ function BlackoutPoetryPanel() {
 
   const measuredMaxHeightRef = useRef(0);
 
-  // On mobile, pin the panel height to the tallest page seen so far so
-  // page swaps stop pushing the content below up and down. We track the
-  // running max in a ref and write it as inline height on the panel.
-  // A CSS min-height floor handles most pages without any JS growth.
+  // Mobile now uses a fixed CSS frame. Clear any previous inline height
+  // lock from older builds so plate changes cannot move the sections below.
   useLayoutEffect(() => {
-    if (!isMobileLayout || !panelRef.current) return;
-    const pageEl = panelRef.current.querySelector('.blackout-panel__page');
-    if (!pageEl) return;
-    const measure = () => {
-      const h = pageEl.scrollHeight;
-      if (h > measuredMaxHeightRef.current) {
-        measuredMaxHeightRef.current = h;
-        if (panelRef.current) {
-          panelRef.current.style.height = `${h}px`;
-        }
-      }
-    };
-    measure();
-    const raf = window.requestAnimationFrame(measure);
-    // Re-measure after fonts load — they can shift content height by a
-    // few pixels and trigger a delayed pop otherwise.
-    let fontsCallback = null;
-    if (document.fonts && document.fonts.ready) {
-      fontsCallback = () => {
-        if (!panelRef.current) return;
-        window.requestAnimationFrame(measure);
-      };
-      document.fonts.ready.then(fontsCallback).catch(() => {});
+    if (!panelRef.current) return;
+    if (!isMobileLayout) {
+      panelRef.current.style.height = '';
+      return;
     }
-    return () => window.cancelAnimationFrame(raf);
-  }, [active, isMobileLayout, laidOutRows]);
+    measuredMaxHeightRef.current = 0;
+    panelRef.current.style.height = '';
+  }, [isMobileLayout]);
 
   // Reset the measured max only on real orientation changes — mobile
   // browsers fire 'resize' constantly as the address bar hides/shows on
