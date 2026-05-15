@@ -1355,34 +1355,32 @@ function AudioScope({ enabled }) {
       ctx.clearRect(0, 0, w, h);
 
       if (!enabled) {
-        // Audio off — the arrow knocks against the left edge of the
-        // scope (the line that separates it from the stem buttons).
-        // Quick jab in, slow retreat, repeat — physically reads as
-        // "tap these, right here" rather than as decorative motion.
-        const period = 900;
+        // Audio off — smaller, faster arrow that jabs into the left
+        // edge of the scope. Tip stays inside the canvas (no clipping)
+        // and the cycle is short (560ms) so the gesture reads as urgent
+        // tapping rather than a calm wave.
+        const period = 560;
         const t = ((now % period) + period) % period / period;
-        const jabDistance = 9 * dpr;
+        const jabDistance = 5 * dpr;
         let offset, alpha;
-        if (t < 0.22) {
-          // Fast push into the edge (smoothstep ease-in-out)
-          const r = t / 0.22;
+        if (t < 0.18) {
+          const r = t / 0.18;
           const s = r * r * (3 - 2 * r);
           offset = -jabDistance * s;
           alpha = 0.45 + 0.5 * s;
         } else {
-          // Slow retreat (ease-out quadratic)
-          const r = (t - 0.22) / 0.78;
+          const r = (t - 0.18) / 0.82;
           const k = 1 - r;
           offset = -jabDistance * k * k;
           alpha = 0.95 - 0.5 * r;
         }
         ctx.strokeStyle = '#111';
-        ctx.lineWidth = 2 * dpr;
+        ctx.lineWidth = 1.6 * dpr;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.globalAlpha = alpha;
-        const headX = 2 * dpr + offset;
-        const headSize = Math.min(h * 0.44, w * 0.16);
+        const headX = 3 * dpr + offset;
+        const headSize = Math.min(h * 0.30, w * 0.13);
         ctx.beginPath();
         ctx.moveTo(headX + headSize, h / 2 - headSize);
         ctx.lineTo(headX,             h / 2);
@@ -1390,7 +1388,7 @@ function AudioScope({ enabled }) {
         ctx.stroke();
         ctx.beginPath();
         ctx.moveTo(headX,            h / 2);
-        ctx.lineTo(w - 4 * dpr,      h / 2);
+        ctx.lineTo(w - 6 * dpr,      h / 2);
         ctx.stroke();
         ctx.globalAlpha = 1;
         raf = window.requestAnimationFrame(tick);
