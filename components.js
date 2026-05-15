@@ -3777,49 +3777,113 @@ function ElementsPrototypeDiagram() {
 }
 
 function ElementsNeuralDiagram() {
-  // Feed-forward network. Four layers across, dotted edges connecting
-  // each layer fully; one forward path in red strong; dotted blue loss
-  // return arc beneath. Layer brackets and labels under each column.
+  // Forward pass and back-propagation. Four vertical layer rules with
+  // their nodes; one forward path emphasised in red; a dotted blue
+  // return curve below the rules carries the correction back. A target
+  // Y* sits next to Y so the loss has a referent.
   const layers = [
-    { x: 160, ys: [130, 230, 330], fill: 'yellow', label: 'X' },
-    { x: 380, ys: [110, 230, 350], fill: 'blue', label: 'H₁' },
-    { x: 600, ys: [160, 290], fill: 'red', label: 'H₂' },
-    { x: 840, ys: [230], fill: 'blue', label: 'Y' },
+    { x: 200, ys: [140, 230, 320], fill: 'yellow', label: 'X' },
+    { x: 400, ys: [120, 230, 340], fill: 'blue', label: 'H₁' },
+    { x: 600, ys: [170, 290], fill: 'red', label: 'H₂' },
+    { x: 800, ys: [230], fill: 'blue', label: 'Y' },
   ];
-  // Build the dotted edge list programmatically (fully connected).
-  const edges = [];
-  for (let l = 0; l < layers.length - 1; l++) {
-    for (const yA of layers[l].ys) {
-      for (const yB of layers[l + 1].ys) {
-        edges.push(`M${layers[l].x} ${yA} L${layers[l + 1].x} ${yB}`);
-      }
-    }
-  }
+  const ruleTop = 90;
+  const ruleBot = 360;
+  // Forward path: pick one path through the network.
+  const forward = [
+    { x: layers[0].x, y: layers[0].ys[2] },
+    { x: layers[1].x, y: layers[1].ys[1] },
+    { x: layers[2].x, y: layers[2].ys[0] },
+    { x: layers[3].x, y: layers[3].ys[0] },
+  ];
   return (
     <>
-      <ByrneTitle>LEARNING AS CORRECTION</ByrneTitle>
-      <path className={`diagram-line diagram-line--dotted ${diagramNote(0)}`} d={edges.join(' ')} />
-      <ElementLine x1={layers[0].x} y1={layers[0].ys[2]} x2={layers[1].x} y2={layers[1].ys[1]} color="red" note={1} strong />
-      <ElementLine x1={layers[1].x} y1={layers[1].ys[1]} x2={layers[2].x} y2={layers[2].ys[0]} color="red" note={2} strong />
-      <ElementLine x1={layers[2].x} y1={layers[2].ys[0]} x2={layers[3].x} y2={layers[3].ys[0]} color="red" note={3} strong />
+      <ByrneTitle>FORWARD PASS AND CORRECTION</ByrneTitle>
+      {/* Vertical layer rules — thin construction guides */}
+      {layers.map((layer, i) => (
+        <ElementLine
+          key={`rule-${i}`}
+          x1={layer.x}
+          y1={ruleTop}
+          x2={layer.x}
+          y2={ruleBot}
+          dotted
+          note={i % 6}
+        />
+      ))}
+      {/* Sparse forward connections — only the relevant edges so the
+          figure reads as a path rather than a graph mesh */}
+      {layers.slice(0, -1).flatMap((layer, li) =>
+        layer.ys.map((yA, yi) =>
+          layers[li + 1].ys.map((yB, yj) => (
+            <line
+              key={`e-${li}-${yi}-${yj}`}
+              className={`diagram-line diagram-line--thin ${diagramNote((li + yi + yj) % 6)}`}
+              x1={layer.x}
+              y1={yA}
+              x2={layers[li + 1].x}
+              y2={yB}
+              style={{ opacity: 0.32 }}
+            />
+          ))
+        )
+      )}
+      {/* Forward path — strong red */}
+      {forward.slice(0, -1).map((p, i) => (
+        <ElementLine
+          key={`fwd-${i}`}
+          x1={p.x}
+          y1={p.y}
+          x2={forward[i + 1].x}
+          y2={forward[i + 1].y}
+          color="red"
+          note={i + 1}
+          strong
+        />
+      ))}
+      {/* Nodes — filled colored circles per layer */}
       {layers.flatMap((layer, li) =>
         layer.ys.map((y, yi) => (
           <circle
-            key={`${li}-${yi}`}
+            key={`n-${li}-${yi}`}
             className={`diagram-fill diagram-fill--${layer.fill} diagram-high-fill ${diagramNote((li + yi) % 6)}`}
             cx={layer.x}
             cy={y}
-            r="22"
+            r="20"
           />
         ))
       )}
+      {/* Target Y* — outlined circle to the right of Y, dotted lines
+          to show "what Y should have been" */}
+      <ElementCircle cx="880" cy="230" r="18" color="red" dotted note={0} />
+      <ElementLine x1="820" y1="230" x2="862" y2="230" dotted note={1} />
+      {/* Correction return path — blue dotted curve from Y back to X
+          along the bottom, with little chevrons at the layer rules to
+          indicate flow direction */}
       <path
-        className={`diagram-line diagram-line--dotted ${diagramNote(4)}`}
-        d={`M${layers[3].x} 260 Q ${(layers[0].x + layers[3].x) / 2} 410 ${layers[0].x} 360`}
+        className={`diagram-line diagram-line--dotted ${diagramNote(2)}`}
+        d="M820 250 Q 720 408 600 392 Q 480 380 400 392 Q 320 402 200 360"
+        style={{ stroke: '#0e638e', strokeWidth: 1.8 }}
       />
+      {/* Chevron arrowheads on the return path */}
+      <path
+        className="diagram-line diagram-line--thin"
+        d="M610 396 L596 388 M610 396 L596 404 M410 396 L396 388 M410 396 L396 404"
+        style={{ stroke: '#0e638e', fill: 'none' }}
+      />
+      {/* Layer labels at the top of each rule */}
       {layers.map((layer, i) => (
-        <ElementPoint key={`lbl-${i}`} x={layer.x} y={388} label={layer.label} note={(i + 2) % 6} dy={6} />
+        <ElementPoint
+          key={`lbl-${i}`}
+          x={layer.x}
+          y={ruleTop}
+          label={layer.label}
+          note={(i + 2) % 6}
+          dy={-12}
+        />
       ))}
+      {/* Y* label */}
+      <ElementPoint x="880" y="230" label="Y*" note={3} dy={-26} />
     </>
   );
 }
