@@ -1383,10 +1383,24 @@ button.review-toggle {
   width: 0.52rem;
   height: 0.46rem;
   border: 0;
-  background: currentColor;
+  background: var(--accent-red);
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M6 1 L11 9 L1 9 Z' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M6 1 L11 9 L1 9 Z' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
   clip-path: none;
+}
+.identity__top-dot--circle {
+  background: var(--accent-yellow);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='5' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='5' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  width: 0.5rem;
+  height: 0.5rem;
+}
+.identity__top-dot--square {
+  background: var(--accent-blue);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Crect x='1' y='1' width='10' height='10' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Crect x='1' y='1' width='10' height='10' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  width: 0.46rem;
+  height: 0.46rem;
 }
 .identity__top a { border: none; }
 .identity__poetry-title {
@@ -1586,6 +1600,15 @@ body.font-cascadia-signal .identity__vector-name {
 .section__label {
   font-size: 0.72rem; color: var(--ink-2); letter-spacing: 0.18em;
 }
+.section__label-num {
+  color: var(--accent);
+  font-weight: 600;
+  letter-spacing: 0.22em;
+}
+.section__label-sep {
+  color: var(--accent);
+  opacity: 0.7;
+}
 .section__body {}
 
 /* ── intro ───────────────────────────────────────────── */
@@ -1655,8 +1678,23 @@ body.font-cascadia-signal .identity__vector-name {
   margin: 0;
 }
 .job__tag {
-  background: var(--accent); color: var(--ink); padding: 0.15rem 0.55rem;
-  border-radius: 2px; font-size: 0.65rem; letter-spacing: 0.15em;
+  background: var(--accent-red);
+  color: #fffef5;
+  padding: 0.18rem 0.55rem;
+  border-radius: 0;
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.job__tag::before {
+  content: "";
+  display: inline-block;
+  width: 0.42rem;
+  height: 0.42rem;
+  margin-right: 0.4rem;
+  background: var(--accent-yellow);
+  vertical-align: -0.04em;
 }
 .job__meta {
   margin-top: 0.35rem;
@@ -1777,9 +1815,13 @@ body.font-cascadia-signal .identity__vector-name {
   display: flex; flex-wrap: wrap; gap: 0.5rem;
 }
 .help-feature__chips li {
-  border: 1px solid var(--rule);
-  padding: 0.3rem 0.6rem; border-radius: 999px;
+  border: 1px solid color-mix(in oklch, var(--accent-red), transparent 35%);
+  background: color-mix(in oklch, var(--accent-yellow), transparent 78%);
+  color: var(--ink);
+  padding: 0.3rem 0.6rem;
+  border-radius: 0;
   font-size: 0.65rem;
+  letter-spacing: 0.04em;
 }
 .help-hero {
   display: grid;
@@ -2229,8 +2271,13 @@ html.has-pseudo-fullscreen body {
 .project__body { margin: 0.75rem 0 1rem; color: var(--ink-2); text-wrap: pretty; }
 .project__stack { list-style: none; padding: 0; margin: 0; display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .project__stack li {
-  border: 1px solid var(--rule); padding: 0.25rem 0.55rem;
-  border-radius: 2px; font-size: 0.65rem;
+  border: 1px solid color-mix(in oklch, var(--accent-blue), transparent 30%);
+  background: color-mix(in oklch, var(--accent-yellow), transparent 80%);
+  color: var(--ink);
+  padding: 0.25rem 0.55rem;
+  border-radius: 0;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
 }
 
 /* ── awards ──────────────────────────────────────────── */
@@ -2326,7 +2373,34 @@ html.has-pseudo-fullscreen body {
   font-variation-settings: "opsz" 18;
 }
 .refs__attribution { margin-top: 1.5rem; padding-left: 1rem; }
-.refs__name { font-family: var(--serif); font-size: 1.2rem; font-weight: 500; }
+.refs__name {
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.55rem;
+}
+.refs__mark {
+  display: inline-block;
+  width: 0.66rem;
+  height: 0.66rem;
+  vertical-align: 0.02em;
+  flex: 0 0 auto;
+  background: var(--accent-red);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M6 1 L11 9 L1 9 Z' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M6 1 L11 9 L1 9 Z' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+.refs__mark--circle {
+  background: var(--accent-yellow);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='5' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='5' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+.refs__mark--square {
+  background: var(--accent-blue);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Crect x='1' y='1' width='10' height='10' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Crect x='1' y='1' width='10' height='10' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
 .refs__title { font-size: 0.7rem; margin-top: 0.15rem; }
 .refs__sub { font-size: 0.65rem; margin-top: 0.15rem; }
 
@@ -2378,6 +2452,14 @@ html.has-pseudo-fullscreen body {
 }
 .page-footer .dot { margin: 0 0.55rem; }
 .page-footer a { border: none; }
+.page-footer__qed {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-left: 0.55rem;
+  background: var(--accent-red);
+  vertical-align: -0.04em;
+}
 
 /* ── flat video slot (Blackbird) ─────────────────────── */
 .video-slot {
@@ -2980,7 +3062,7 @@ window.__resumeStrudelReady = initStrudel()
 <script type="module">
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260513-mobile-projection');
 </script>
-<script type="text/babel" src="components.js?v=20260514-byrne-palette"></script>
+<script type="text/babel" src="components.js?v=20260514-byrne-trim"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);

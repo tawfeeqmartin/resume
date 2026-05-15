@@ -5553,12 +5553,25 @@ function getSectionShape(id) {
 
 function Section({ id, label, children, dense }) {
   const shape = getSectionShape(id);
+  // Split labels like "02 · EXPERIENCE" into a coloured number prefix and
+  // a neutral title so each section reads at-a-glance from its key colour.
+  const numberMatch = typeof label === 'string' ? label.match(/^(\d+)\s*·\s*(.*)$/) : null;
   return (
     <section id={id} className={`section section--${shape} ${dense ? 'section--dense' : ''}`}>
       <header className="section__header">
         <span className="section__mark" aria-hidden="true" />
         <span className="section__rule" />
-        <span className="section__label mono">{label}</span>
+        <span className="section__label mono">
+          {numberMatch ? (
+            <>
+              <span className="section__label-num">{numberMatch[1]}</span>
+              <span className="section__label-sep" aria-hidden="true"> · </span>
+              <span className="section__label-title">{numberMatch[2]}</span>
+            </>
+          ) : (
+            label
+          )}
+        </span>
       </header>
       <div className="section__body">{children}</div>
     </section>
@@ -5574,11 +5587,11 @@ function Identity({ data }) {
     <header className="identity">
       <div className="identity__top mono dim">
         <span>{data.name}</span>
-        <span className="identity__top-dot">●</span>
+        <span className="identity__top-dot" aria-hidden="true"></span>
         <span>Creative Technologist</span>
-        <span className="identity__top-dot">●</span>
+        <span className="identity__top-dot identity__top-dot--circle" aria-hidden="true"></span>
         <span>{data.location}</span>
-        <span className="identity__top-dot">●</span>
+        <span className="identity__top-dot identity__top-dot--square" aria-hidden="true"></span>
         <a href="https://www.linkedin.com/in/tawfeeq-martin-82991a14/" target="_blank" rel="noreferrer">LinkedIn</a>
       </div>
       <BlackoutPoetryPanel />
@@ -5792,6 +5805,7 @@ function Education({ items }) {
 
 function References({ items }) {
   const [active, setActive] = useState(0);
+  const refShapes = ['triangle', 'circle', 'square'];
   return (
     <Section id="refs" label="09 · REFERENCES">
       <div className="refs">
@@ -5801,7 +5815,10 @@ function References({ items }) {
             {items[active].quote}
           </blockquote>
           <div className="refs__attribution">
-            <div className="refs__name serif">{items[active].name}</div>
+            <div className="refs__name serif">
+              <span className={`refs__mark refs__mark--${refShapes[active % 3]}`} aria-hidden="true" />
+              {items[active].name}
+            </div>
             <div className="refs__title mono">{items[active].title}</div>
             {items[active].sub && <div className="refs__sub mono dim">{items[active].sub}</div>}
           </div>
@@ -5838,6 +5855,7 @@ function Footer({ data }) {
     <footer className="page-footer mono dim">
       <div className="page-footer__build">
         rev · 2026.05 · built with three.js + a parser for google's mesh projection + strudel.cc audio
+        <span className="page-footer__qed" aria-hidden="true" title="Q.E.D." />
       </div>
     </footer>
   );
