@@ -6024,9 +6024,8 @@ function References({ items }) {
 function Footer({ data }) {
   return (
     <footer className="page-footer mono dim">
-      {/* Identity strip mirroring the topline — same name/role/location/
-          LinkedIn flow with the same triangle/circle/square Byrne marks.
-          Closes the page where it opened. */}
+      {/* Identity strip mirroring the topline — name, role, location,
+          LinkedIn, then a closing Q.E.D. square. Bookend to the page. */}
       <div className="identity__top page-footer__identity">
         <span>{data.name}</span>
         <span className="identity__top-dot" aria-hidden="true"></span>
@@ -6035,9 +6034,6 @@ function Footer({ data }) {
         <span>{data.location}</span>
         <span className="identity__top-dot identity__top-dot--square" aria-hidden="true"></span>
         <a href="https://www.linkedin.com/in/tawfeeq-martin-82991a14/" target="_blank" rel="noreferrer">LinkedIn</a>
-      </div>
-      <div className="page-footer__build">
-        rev · 2026.05 · built with three.js + a parser for google's mesh projection + strudel.cc audio
         <span className="page-footer__qed" aria-hidden="true" title="Q.E.D." />
       </div>
     </footer>
