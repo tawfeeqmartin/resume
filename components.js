@@ -1615,6 +1615,12 @@ function StemMuteControls() {
   }, [engine]);
 
   const toggle = (stem) => {
+    // If audio is off, the first click in the music station should
+    // start the music — not mute a stem that nobody can hear yet.
+    if (!engine.enabled) {
+      engine.setEnabled(true).catch(() => {});
+      return;
+    }
     const mutes = engine.toggleStemMute(stem);
     setState((prev) => ({
       ...prev,
