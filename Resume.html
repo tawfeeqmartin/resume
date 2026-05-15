@@ -1306,15 +1306,15 @@ button.review-toggle {
   text-shadow: none;
 }
 .blackout-panel__page span.is-active::before {
-  /* Byrne "labeled point" treatment — thin confident ink-black outline
-     instead of the previous heavy red border, with a quiet yellow wash
-     behind the word so it reads as an identified element in the proof
-     rather than as a highlight. */
+  /* Solid Byrne yellow plate behind each revealed word — same value
+     (#fac22b) as the diagram fills, no border. Each revealed word reads
+     as a labelled element on a yellow plane, matching the Byrne edition
+     vocabulary. */
   content: "";
   position: absolute;
-  inset: calc(-0.05em - 1.5px) calc(-0.12em - 1.5px) calc(-0.07em - 1.5px);
-  border: 1.5px solid var(--ink);
-  background: rgba(250, 194, 43, 0.16);
+  inset: calc(-0.06em) calc(-0.14em) calc(-0.08em);
+  border: 0;
+  background: #fac22b;
   pointer-events: none;
   opacity: 0;
   animation: poetry-word-box-in 0.18s ease forwards;
@@ -3234,7 +3234,7 @@ window.__resumeStrudelReady = initStrudel()
 <script type="module">
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260513-mobile-projection');
 </script>
-<script type="text/babel" src="components.js?v=20260514-byrne-reveal"></script>
+<script type="text/babel" src="components.js?v=20260514-yellow-plate"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
