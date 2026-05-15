@@ -1353,6 +1353,40 @@ function AudioScope({ enabled }) {
       const w = canvas.width;
       const h = canvas.height;
       ctx.clearRect(0, 0, w, h);
+
+      if (!enabled) {
+        // Audio off — render a gestural arrow: three chevrons sliding
+        // leftward toward the stem icons, inviting the user to click.
+        const period = 1400;
+        const t = ((now % period) + period) % period / period;
+        const chevW = h * 0.42;
+        const chevH = h * 0.32;
+        const count = 3;
+        const stride = (w + chevW * 2) / count;
+        ctx.strokeStyle = '#111';
+        ctx.lineWidth = 2 * dpr;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        for (let i = 0; i < count; i++) {
+          let cx = w - chevW - (i * stride) + t * stride;
+          cx = ((cx + stride * count) % (stride * count));
+          if (cx > w + chevW) cx -= stride * count;
+          const fadeIn  = Math.max(0, Math.min(1, (cx + chevW)            / (chevW * 1.6)));
+          const fadeOut = Math.max(0, Math.min(1, (w - cx)                / (chevW * 1.6)));
+          const alpha = 0.62 * Math.min(fadeIn, fadeOut);
+          if (alpha <= 0) continue;
+          ctx.globalAlpha = alpha;
+          ctx.beginPath();
+          ctx.moveTo(cx + chevW, h / 2 - chevH);
+          ctx.lineTo(cx,         h / 2);
+          ctx.lineTo(cx + chevW, h / 2 + chevH);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        raf = window.requestAnimationFrame(tick);
+        return;
+      }
+
       ctx.lineWidth = 1 * dpr;
       ctx.strokeStyle = 'rgba(26, 24, 20, 0.18)';
       ctx.beginPath();
@@ -1367,13 +1401,11 @@ function AudioScope({ enabled }) {
       pulseRef.current.drum *= 0.88;
       pulseRef.current.harmony *= 0.94;
       pulseRef.current.melody *= 0.91;
-      phase += dt * (enabled ? 5.8 : 1.2);
-      const amp = enabled
-        ? (0.18 + pulseRef.current.drum * 0.34 + pulseRef.current.harmony * 0.26 + pulseRef.current.melody * 0.22)
-        : 0.04;
-      const frequency = enabled ? 2.4 + pulseRef.current.melody * 2.2 : 1.4;
+      phase += dt * 5.8;
+      const amp = 0.18 + pulseRef.current.drum * 0.34 + pulseRef.current.harmony * 0.26 + pulseRef.current.melody * 0.22;
+      const frequency = 2.4 + pulseRef.current.melody * 2.2;
 
-      ctx.strokeStyle = enabled ? '#111' : 'rgba(26,24,20,0.36)';
+      ctx.strokeStyle = '#111';
       ctx.lineWidth = 1.25 * dpr;
       ctx.beginPath();
       for (let x = 0; x <= w; x += 1.5 * dpr) {
