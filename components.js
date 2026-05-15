@@ -6033,7 +6033,7 @@ function LiveSystemFeature() {
 
 function ProjectCard({ data }) {
   return (
-    <Section id="project" label="06 · INDEPENDENT · 2025">
+    <Section id="project" label="05 · INDEPENDENT · 2025">
       <div className="project">
         <div className="project__head">
           <h3 className="serif">{data.name}</h3>
@@ -6060,7 +6060,7 @@ function Awards({ items }) {
   }, [items]);
   const filtered = filter === 'all' ? items : items.filter(a => a.project.startsWith(filter));
   return (
-    <Section id="awards" label="07 · AWARDS & RECOGNITION">
+    <Section id="awards" label="06 · AWARDS & RECOGNITION">
       <div className="awards__filters mono">
         {['all','gold','silver','honor'].map(t => (
           <button
@@ -6096,7 +6096,7 @@ function Awards({ items }) {
 
 function Skills({ groups }) {
   return (
-    <Section id="skills" label="08 · TECHNICAL">
+    <Section id="skills" label="07 · TECHNICAL">
       <div className="skills">
         {groups.map((g,i) => (
           <div key={i} className="skill-group">
@@ -6117,7 +6117,7 @@ function Skills({ groups }) {
 
 function Education({ items }) {
   return (
-    <Section id="edu" label="09 · EDUCATION">
+    <Section id="edu" label="08 · EDUCATION">
       <ul className="edu">
         {items.map((e,i) => (
           <li key={i} className="edu__row">
@@ -6138,7 +6138,7 @@ function References({ items }) {
   const [active, setActive] = useState(0);
   const refShapes = ['triangle', 'circle', 'square'];
   return (
-    <Section id="refs" label="10 · REFERENCES">
+    <Section id="refs" label="09 · REFERENCES">
       <div className="refs">
         <div className="refs__quote">
           <div className="refs__qmark serif">“</div>
