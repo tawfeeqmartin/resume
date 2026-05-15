@@ -191,7 +191,7 @@ a:hover { color: var(--accent); }
   background: color-mix(in oklch, var(--paper-2), transparent 14%);
   color: var(--ink);
   backdrop-filter: blur(12px);
-  border-radius: 999px;
+  border-radius: 2px;
   padding: 0.45rem 0.72rem;
   box-shadow: 0 14px 34px rgba(0,0,0,0.12);
 }
@@ -233,7 +233,8 @@ button.review-toggle {
   flex-basis: 24px;
 }
 .review-toggle__transport .video-control__icon--play::before {
-  inset: 1px 0 1px 2px;
+  inset: 3px 4px 3px 6px;
+  background: var(--ink);
 }
 .review-toggle__transport .video-control__icon--stop::before,
 .review-toggle__transport .video-control__icon--stop::after {
@@ -1539,7 +1540,7 @@ button.review-toggle {
   border: 1px solid color-mix(in oklch, var(--rule), transparent 12%);
   background: color-mix(in oklch, var(--paper-2), transparent 14%);
   backdrop-filter: blur(12px);
-  border-radius: 999px;
+  border-radius: 2px;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.12);
 }
 .review-controls .stem-mute {
@@ -3110,7 +3111,7 @@ window.__resumeStrudelReady = initStrudel()
 <script type="module">
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260513-mobile-projection');
 </script>
-<script type="text/babel" src="components.js?v=20260514-sticky-music"></script>
+<script type="text/babel" src="components.js?v=20260514-sharp-corners"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
