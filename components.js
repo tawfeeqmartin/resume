@@ -1425,6 +1425,7 @@ function ReviewControls() {
   return (
     <div className="review-controls">
       <AudioToggle />
+      <StemMuteControls />
     </div>
   );
 }
@@ -1578,6 +1579,7 @@ function StemMuteControls() {
     enabled: engine.enabled,
     mutes: engine.stemMutes,
     visual: engine.visualTiming,
+    scrollLayers: engine.scrollLayers,
   });
   const stems = [
     { id: 'drums', label: 'Drums', shape: 'triangle' },
@@ -1590,22 +1592,26 @@ function StemMuteControls() {
       enabled: engine.enabled,
       mutes: engine.stemMutes,
       visual: engine.visualTiming,
+      scrollLayers: engine.scrollLayers,
     });
     window.addEventListener('resume-audio-change', refresh);
     window.addEventListener('resume-song-change', refresh);
+    window.addEventListener('resume-scroll-layers-change', refresh);
     return () => {
       window.removeEventListener('resume-audio-change', refresh);
       window.removeEventListener('resume-song-change', refresh);
+      window.removeEventListener('resume-scroll-layers-change', refresh);
     };
   }, [engine]);
 
   const toggle = (stem) => {
     const mutes = engine.toggleStemMute(stem);
-    setState({
+    setState((prev) => ({
+      ...prev,
       enabled: engine.enabled,
       mutes,
       visual: engine.visualTiming,
-    });
+    }));
   };
 
   return (
@@ -1615,16 +1621,27 @@ function StemMuteControls() {
       style={{ '--stem-pulse-ms': `${state.visual.stemPulseMs}ms` }}
     >
       {stems.map((stem) => {
-        const muted = Boolean(state.mutes[stem.id]);
+        const userMuted = Boolean(state.mutes[stem.id]);
+        const scrollLevel = state.scrollLayers?.[stem.id] ?? 1;
+        const scrollSilenced = !userMuted && scrollLevel <= 0.01;
+        let modifier;
+        if (userMuted) modifier = 'is-muted';
+        else if (scrollSilenced) modifier = 'is-scroll-muted';
+        else modifier = 'is-on';
+        const title = userMuted
+          ? `Unmute ${stem.label}`
+          : scrollSilenced
+            ? `${stem.label} — quieted by current section (click to mute manually)`
+            : `Mute ${stem.label}`;
         return (
           <button
             key={stem.id}
             type="button"
-            className={`stem-mute stem-mute--${stem.shape} ${muted ? 'is-muted' : 'is-on'}`}
+            className={`stem-mute stem-mute--${stem.shape} ${modifier}`}
             onClick={() => toggle(stem.id)}
-            aria-pressed={!muted}
-            aria-label={`${muted ? 'Unmute' : 'Mute'} ${stem.label}`}
-            title={`${muted ? 'Unmute' : 'Mute'} ${stem.label}`}
+            aria-pressed={!userMuted}
+            aria-label={title}
+            title={title}
           >
             <span className="stem-mute__shape" aria-hidden="true" />
             <span className="stem-mute__label mono">{stem.label}</span>
@@ -4908,7 +4925,6 @@ function BlackoutPoetryPanel() {
         </div>
       </div>
     </div>
-    <StemMuteControls />
     </>
   );
 }
