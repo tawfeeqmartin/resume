@@ -3360,28 +3360,27 @@ function ElementPoint({ x, y, label, note = 0, dy = -14 }) {
 
 function ElementsEuclidDiagram() {
   // Euclid I.1 — circles of radius AB centred at A and B intersect at
-  // C; the equilateral triangle is constructed. AB=200, apex height
-  // = AB·√3/2 = 173.2. Baseline at y=240, apex C at y=66.8.
-  // Circles radius 200 → top y=40, bottom y=440 (some lower clipping).
-  // Sized smaller and lifted up from a previous AB=228 at y=252 so
-  // the figure has more breathing room around the surrounding text.
+  // C; the equilateral triangle is constructed. AB=170, apex height
+  // = AB·√3/2 = 147.22. Baseline at y=220, centre shifted left to
+  // x=470 so the figure sits in the upper-left of the figure slot
+  // with more breathing room around the surrounding text.
   return (
     <>
       <ByrneTitle>EQUILATERAL TRIANGLE ON AB</ByrneTitle>
       <path
         className={`diagram-fill diagram-fill--yellow diagram-high-fill ${diagramNote(0)}`}
-        d="M500 66.8 A200 200 0 0 1 500 413.2 A200 200 0 0 1 500 66.8 Z"
+        d="M470 72.78 A170 170 0 0 1 470 367.22 A170 170 0 0 1 470 72.78 Z"
       />
-      <ElementPoly points="400,240 600,240 500,66.8" fill="blue" note={1} />
-      <ElementCircle cx="400" cy="240" r="200" color="red" note={2} />
-      <ElementCircle cx="600" cy="240" r="200" color="yellow" note={3} />
-      <ElementLine x1="400" y1="240" x2="600" y2="240" color="black" note={4} strong />
-      <ElementLine x1="400" y1="240" x2="500" y2="66.8" color="red" note={5} strong />
-      <ElementLine x1="600" y1="240" x2="500" y2="66.8" color="yellow" note={0} strong />
-      <ElementLine x1="500" y1="66.8" x2="500" y2="240" dotted note={1} />
-      <ElementPoint x="400" y="240" label="A" note={2} dy={24} />
-      <ElementPoint x="600" y="240" label="B" note={3} dy={24} />
-      <ElementPoint x="500" y="66.8" label="C" note={4} dy={-16} />
+      <ElementPoly points="385,220 555,220 470,72.78" fill="blue" note={1} />
+      <ElementCircle cx="385" cy="220" r="170" color="red" note={2} />
+      <ElementCircle cx="555" cy="220" r="170" color="yellow" note={3} />
+      <ElementLine x1="385" y1="220" x2="555" y2="220" color="black" note={4} strong />
+      <ElementLine x1="385" y1="220" x2="470" y2="72.78" color="red" note={5} strong />
+      <ElementLine x1="555" y1="220" x2="470" y2="72.78" color="yellow" note={0} strong />
+      <ElementLine x1="470" y1="72.78" x2="470" y2="220" dotted note={1} />
+      <ElementPoint x="385" y="220" label="A" note={2} dy={24} />
+      <ElementPoint x="555" y="220" label="B" note={3} dy={24} />
+      <ElementPoint x="470" y="72.78" label="C" note={4} dy={-16} />
     </>
   );
 }
