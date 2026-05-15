@@ -1355,49 +1355,50 @@ function AudioScope({ enabled }) {
       ctx.clearRect(0, 0, w, h);
 
       if (!enabled) {
-        // Audio off — physically-eased "bump against the wall" arrow.
-        // Two-phase cycle: a cubic ease-in that accelerates the
-        // arrowhead leftward INTO the canvas edge, then a damped sine
-        // oscillation that bounces the tip back through zero, overshoots
-        // a touch, and settles. The tip clipping past the left edge is
-        // the gesture — a finger pressing against glass.
+        // Audio off — filled pointer-cursor arrow that bumps against
+        // the left edge of the scope. Two-phase ease: cubic
+        // acceleration in, damped-sine oscillation back to rest. The
+        // filled arrowhead reads as a cursor pointing at the stem
+        // buttons rather than a HUD chevron.
         const period = 880;
         const t = ((now % period) + period) % period / period;
-        const lw = 1.6 * dpr;
         const jabDistance = 9 * dpr;
         const restHeadX = 4 * dpr;
         const phase1 = 0.16;
         let offset, alpha;
         if (t < phase1) {
-          // Ease-in: cubic acceleration toward the wall.
           const r = t / phase1;
           const e = r * r * r;
           offset = -jabDistance * e;
           alpha = 0.32 + 0.68 * e;
         } else {
-          // Damped sine — wobble back to rest.
           const r = (t - phase1) / (1 - phase1);
           const decay = Math.exp(-r * 3.4);
           const wobble = Math.cos(r * Math.PI * 2.2);
           offset = -jabDistance * decay * wobble;
           alpha = 1.0 - 0.68 * r;
         }
-        ctx.strokeStyle = '#111';
-        ctx.lineWidth = lw;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.fillStyle = '#111';
         ctx.globalAlpha = alpha;
         const headX = restHeadX + offset;
-        const headSize = Math.min(h * 0.32, w * 0.13);
+        const headLen = Math.min(h * 0.55, w * 0.18);  // length of the arrowhead
+        const headH  = Math.min(h * 0.34, w * 0.12);   // half-height of the back of the head
+        const shaftH = Math.max(1.4 * dpr, headH * 0.30); // half-height of the shaft
+        const cy = h / 2;
+        // Arrowhead: filled triangle pointing left.
         ctx.beginPath();
-        ctx.moveTo(headX + headSize, h / 2 - headSize);
-        ctx.lineTo(headX,             h / 2);
-        ctx.lineTo(headX + headSize, h / 2 + headSize);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(headX,            h / 2);
-        ctx.lineTo(w - 6 * dpr,      h / 2);
-        ctx.stroke();
+        ctx.moveTo(headX,           cy);
+        ctx.lineTo(headX + headLen, cy - headH);
+        ctx.lineTo(headX + headLen, cy + headH);
+        ctx.closePath();
+        ctx.fill();
+        // Shaft: thin filled rectangle from the back of the head out
+        // to the right edge of the canvas.
+        const shaftStart = headX + headLen;
+        const shaftEnd   = w - 6 * dpr;
+        if (shaftEnd > shaftStart) {
+          ctx.fillRect(shaftStart, cy - shaftH, shaftEnd - shaftStart, shaftH * 2);
+        }
         ctx.globalAlpha = 1;
         raf = window.requestAnimationFrame(tick);
         return;
