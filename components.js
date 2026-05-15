@@ -3327,31 +3327,52 @@ function ElementsPythagorasDiagram() {
 }
 
 function ElementsCalculusDiagram() {
-  // Limit by squeeze — sin θ / θ → 1. The inner triangle OAP < sector
-  // OAP < outer triangle OAT. As θ → 0 the three areas converge.
-  // O=(280,330), r=240, A=(520,330), P on arc at 40°.
-  // P = (280 + 240·cos40°, 330 - 240·sin40°) = (463.85, 175.71).
-  // T = (520, 330 - 240·tan40°) = (520, 330 - 201.42) = (520, 128.58).
+  // Limit by squeeze — sin θ / θ → 1. Three nested shapes share a
+  // common left edge OA: inner triangle OAP ⊂ circular sector OAP ⊂
+  // outer triangle OAT. As θ → 0 the three areas converge.
+  // Centered with the quarter circle taking the full middle of the slot.
+  // O=(380,320), r=220, A=(600,320). Angle θ=42°.
+  // sin42°=0.6691, cos42°=0.7431, tan42°=0.9004.
+  // P = (380 + 220·0.7431, 320 - 220·0.6691) = (543.48, 172.80).
+  // T = (600, 320 - 220·0.9004) = (600, 121.91).
   return (
     <>
       <ByrneTitle>SECANT BECOMING TANGENT</ByrneTitle>
-      <ElementWedge cx="280" cy="330" r="240" start={0} end={-40} fill="yellow" note={0} />
-      <ElementPoly points="280,330 520,330 463.85,175.71" fill="red" note={1} />
+      {/* Outer triangle OAT — filled yellow, the largest of the three */}
+      <ElementPoly points="380,320 600,320 600,121.91" fill="yellow" note={0} />
+      {/* Sector OAP — filled red, sits inside the outer triangle */}
       <path
-        className={`diagram-line diagram-line--soft ${diagramNote(2)}`}
-        d="M520 330 A240 240 0 0 0 280 90"
+        className={`diagram-fill diagram-fill--red diagram-high-fill ${diagramNote(1)}`}
+        d="M380 320 L600 320 A220 220 0 0 0 543.48 172.80 Z"
       />
-      <ElementLine x1="120" y1="330" x2="800" y2="330" color="black" note={3} strong />
-      <ElementLine x1="280" y1="380" x2="280" y2="70" color="black" note={4} strong />
-      <ElementLine x1="520" y1="330" x2="520" y2="90" color="blue" note={5} strong />
-      <ElementLine x1="280" y1="330" x2="463.85" y2="175.71" color="yellow" note={0} strong />
-      <ElementLine x1="520" y1="330" x2="463.85" y2="175.71" dotted note={1} />
-      <ElementLine x1="280" y1="330" x2="520" y2="128.58" dotted note={2} />
-      <path className="diagram-line diagram-line--thin" d="M520 312 H502 V330" />
-      <ElementPoint x="280" y="330" label="O" note={3} dy={26} />
-      <ElementPoint x="520" y="330" label="A" note={4} dy={26} />
-      <ElementPoint x="463.85" y="175.71" label="P" note={5} dy={-14} />
-      <ElementPoint x="520" y="128.58" label="T" note={0} dy={-14} />
+      {/* Inner triangle OAP — filled blue, smallest, sits inside sector */}
+      <ElementPoly points="380,320 600,320 543.48,172.80" fill="blue" note={2} />
+      {/* Quarter arc from A around to the top of the y-axis */}
+      <path
+        className={`diagram-line diagram-line--soft ${diagramNote(3)}`}
+        d="M600 320 A220 220 0 0 0 380 100"
+      />
+      {/* x-axis: full stage of the figure */}
+      <ElementLine x1="200" y1="320" x2="780" y2="320" color="black" note={4} strong />
+      {/* y-axis at O */}
+      <ElementLine x1="380" y1="370" x2="380" y2="80" color="black" note={5} strong />
+      {/* Tangent AT — vertical, blue strong, touching the circle at A */}
+      <ElementLine x1="600" y1="320" x2="600" y2="100" color="blue" note={0} strong />
+      {/* Radius OP — yellow strong, the angular ray */}
+      <ElementLine x1="380" y1="320" x2="543.48" y2="172.80" color="yellow" note={1} strong />
+      {/* Secant OT — dotted hypotenuse of the outer triangle */}
+      <ElementLine x1="380" y1="320" x2="600" y2="121.91" dotted note={2} />
+      {/* Chord AP — dotted edge of the inner triangle */}
+      <ElementLine x1="600" y1="320" x2="543.48" y2="172.80" dotted note={3} />
+      {/* Angle θ arc at O between OA and OP */}
+      <path className={`diagram-line diagram-line--thin ${diagramNote(4)}`} d="M460 320 A80 80 0 0 0 439.48 266.92" />
+      {/* Right-angle marker at A (radius perpendicular to tangent) */}
+      <path className="diagram-line diagram-line--thin" d="M600 302 H582 V320" />
+      {/* Labels */}
+      <ElementPoint x="380" y="320" label="O" note={5} dy={26} />
+      <ElementPoint x="600" y="320" label="A" note={0} dy={26} />
+      <ElementPoint x="543.48" y="172.80" label="P" note={1} dy={-14} />
+      <ElementPoint x="600" y="121.91" label="T" note={2} dy={-14} />
     </>
   );
 }
@@ -3639,40 +3660,55 @@ function ElementsInterfaceDiagram() {
 }
 
 function ElementsStageDiagram() {
-  // Angle of incidence equals angle of reflection. Object O at floor
-  // left, viewer V at floor right, mirror M at the centre (tilted),
-  // apparent image O' behind the mirror on the dotted sightline.
-  // Floor at y=350. Mirror from (430,90) to (520,350). M=(475,220).
-  // Normal at M perpendicular to mirror direction (-90, 260).
-  // Normalised normal × 110 length toward upper-right.
+  // Stage technology: a lamp L at upper-left throws a cone of light
+  // onto centre stage where an actor A stands; the audience E watches
+  // from lower-right. The yellow cone is the apparatus, the red figure
+  // is the story, the dotted blue sightline is what the eye actually
+  // sees — "the trick is the moment the audience stops seeing the
+  // machine". The construction normal at the actor's feet is the
+  // common reference of stage and lighting.
+  // L=(200,100). Cone hits floor at (420,340) left and (560,340) right.
+  // Actor A: small filled red figure centred at x=490..510, y=270..340.
+  // Audience eye E=(820,290).
   return (
     <>
-      <ByrneTitle>EQUAL ANGLES AT A MIRROR</ByrneTitle>
-      <ElementLine x1="120" y1="350" x2="880" y2="350" color="black" note={0} strong />
-      <ElementLine x1="430" y1="90" x2="520" y2="350" color="yellow" note={1} strong />
+      <ByrneTitle>LIGHT, FIGURE, AUDIENCE</ByrneTitle>
+      {/* Yellow cone of light from lamp L down to stage */}
+      <ElementPoly points="200,100 420,340 560,340" fill="yellow" note={0} />
+      {/* Lit patch of stage floor — strong yellow strip under the cone */}
+      <ElementPoly points="420,340 560,340 560,360 420,360" fill="yellow" note={1} />
+      {/* Lamp body — red disk emitting */}
       <circle
         className={`diagram-fill diagram-fill--red diagram-high-fill ${diagramNote(2)}`}
-        cx="170"
-        cy="330"
-        r="18"
+        cx="200"
+        cy="100"
+        r="22"
       />
+      {/* Cone edges as colored construction lines */}
+      <ElementLine x1="200" y1="100" x2="420" y2="340" color="yellow" note={3} strong />
+      <ElementLine x1="200" y1="100" x2="560" y2="340" color="yellow" note={4} strong />
+      {/* Stage floor — strong black, full width */}
+      <ElementLine x1="120" y1="340" x2="880" y2="340" color="black" note={5} strong />
+      {/* Actor A — a filled blue figure standing on the stage */}
+      <ElementPoly points="480,260 520,260 520,340 480,340" fill="blue" note={0} />
+      {/* Audience eye E — blue disk at the audience position */}
       <circle
-        className={`diagram-fill diagram-fill--blue diagram-high-fill ${diagramNote(3)}`}
+        className={`diagram-fill diagram-fill--blue diagram-high-fill ${diagramNote(1)}`}
         cx="820"
-        cy="330"
-        r="18"
+        cy="290"
+        r="22"
       />
-      <ElementLine x1="170" y1="330" x2="475" y2="220" color="blue" note={4} strong />
-      <ElementLine x1="475" y1="220" x2="820" y2="330" color="red" note={5} strong />
-      <ElementLine x1="475" y1="220" x2="582" y2="183" dotted note={0} />
-      <ElementLine x1="820" y1="330" x2="170" y2="116" dotted note={1} />
-      <ElementCircle cx="170" cy="116" r="16" color="red" dotted note={2} />
-      <path className="diagram-line diagram-line--thin" d="M438 222 A40 40 0 0 0 472 182" />
-      <path className="diagram-line diagram-line--thin" d="M478 182 A40 40 0 0 0 512 222" />
-      <ElementPoint x="170" y="330" label="O" note={3} dy={26} />
-      <ElementPoint x="820" y="330" label="V" note={4} dy={26} />
-      <ElementPoint x="475" y="220" label="M" note={5} dy={28} />
-      <ElementPoint x="170" y="116" label="O'" note={0} dy={-14} />
+      {/* Sightline — dotted red ray from E up to A */}
+      <ElementLine x1="820" y1="290" x2="500" y2="260" dotted note={2} />
+      {/* Normal at the actor's mark — dotted vertical from stage up */}
+      <ElementLine x1="500" y1="340" x2="500" y2="220" dotted note={3} />
+      {/* Stage-edge tick marks at the wings */}
+      <path className="diagram-line diagram-line--thin" d="M120 334 V346 M880 334 V346" />
+      {/* Labels */}
+      <ElementPoint x="200" y="100" label="L" note={4} dy={-22} />
+      <ElementPoint x="500" y="260" label="A" note={5} dy={-14} />
+      <ElementPoint x="820" y="290" label="E" note={0} dy={-22} />
+      <ElementPoint x="500" y="340" label="S" note={1} dy={26} />
     </>
   );
 }
