@@ -3886,34 +3886,109 @@ function ElementsNeuralDiagram() {
 }
 
 function ElementsAttentionDiagram() {
-  // Scaled dot-product attention as correspondence. Three input vectors
-  // Q, K, V at left feed into attention matrix A; the weighted V emerges
-  // as context vector C at right. Centered vertically and horizontally.
+  // Scaled dot-product attention as a matrix correspondence.
+  //   Q × Kᵀ → A,  A · V → C.
+  // Three-token toy example: Q column on the left, Kᵀ row across the
+  // top, the 3×3 attention matrix A in the middle (cell fills act as a
+  // miniature heat-map of softmax weights), V column to the right of
+  // A, and the context output C as the rightmost column. Diagonal
+  // dominance with one off-diagonal cell shows the pattern reads
+  // "each query attends mostly to its own key, with some bleed".
+  // Cells are 90 wide × 56 tall.
+  const cw = 90;
+  const ch = 56;
+  const aLeft = 314;
+  const aTop = 130;
+  const A = [
+    [1.00, 0.18, 0.18],
+    [0.18, 1.00, 0.45],
+    [0.18, 0.18, 1.00],
+  ];
+  const Q_x = 200;
+  const K_y = 70;
+  const V_x = aLeft + 3 * cw + 24; // 608
+  const C_x = V_x + cw + 24;       // 722
+  const c_w = 70;
+  const cellY = (i) => aTop + i * ch;
+  const cellX = (j) => aLeft + j * cw;
   return (
     <>
-      <ByrneTitle>ATTENTION AS CORRESPONDENCE</ByrneTitle>
-      <ElementPoly points="140,110 320,110 320,168 140,168" fill="blue" note={0} />
-      <ElementPoly points="140,210 320,210 320,268 140,268" fill="yellow" note={1} />
-      <ElementPoly points="140,310 320,310 320,368 140,368" fill="red" note={2} />
-      <ElementPoly points="450,110 630,110 630,330 450,330" fill="yellow" note={3} />
-      <ElementPoly points="760,200 880,200 880,278 760,278" fill="blue" note={4} />
-      <ElementLine x1="320" y1="139" x2="450" y2="156" color="blue" note={0} strong />
-      <ElementLine x1="320" y1="239" x2="450" y2="220" color="yellow" note={1} strong />
-      <ElementLine x1="320" y1="339" x2="450" y2="284" color="red" note={2} strong />
-      <ElementLine x1="630" y1="220" x2="760" y2="240" color="red" note={3} strong />
+      <ByrneTitle>ATTENTION — Q × Kᵀ → A, A · V → C</ByrneTitle>
+      {/* Kᵀ row across the top of A */}
+      {[0, 1, 2].map((j) => (
+        <ElementPoly
+          key={`k-${j}`}
+          points={`${cellX(j)},${K_y} ${cellX(j) + cw},${K_y} ${cellX(j) + cw},${K_y + ch} ${cellX(j)},${K_y + ch}`}
+          fill="red"
+          note={j}
+        />
+      ))}
+      {/* Q column at the left of A */}
+      {[0, 1, 2].map((i) => (
+        <ElementPoly
+          key={`q-${i}`}
+          points={`${Q_x},${cellY(i)} ${Q_x + cw},${cellY(i)} ${Q_x + cw},${cellY(i) + ch} ${Q_x},${cellY(i) + ch}`}
+          fill="blue"
+          note={i + 1}
+        />
+      ))}
+      {/* V column to the right of A */}
+      {[0, 1, 2].map((i) => (
+        <ElementPoly
+          key={`v-${i}`}
+          points={`${V_x},${cellY(i)} ${V_x + cw},${cellY(i)} ${V_x + cw},${cellY(i) + ch} ${V_x},${cellY(i) + ch}`}
+          fill="yellow"
+          note={i + 2}
+        />
+      ))}
+      {/* Attention matrix A — cell fills proportional to attention */}
+      {A.map((row, i) =>
+        row.map((w, j) => (
+          <rect
+            key={`a-${i}-${j}`}
+            x={cellX(j)}
+            y={cellY(i)}
+            width={cw}
+            height={ch}
+            fill="#fac22b"
+            fillOpacity={w}
+            stroke="#111"
+            strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
+          />
+        ))
+      )}
+      {/* Context output C — single column on the right, blue (matches
+          the Q palette since C aligns to query positions) */}
+      {[0, 1, 2].map((i) => (
+        <ElementPoly
+          key={`c-${i}`}
+          points={`${C_x},${cellY(i)} ${C_x + c_w},${cellY(i)} ${C_x + c_w},${cellY(i) + ch} ${C_x},${cellY(i) + ch}`}
+          fill="blue"
+          note={i + 3}
+        />
+      ))}
+      {/* Strong outlines on the four matrices */}
+      <ElementLine x1={Q_x} y1={aTop} x2={Q_x + cw} y2={aTop} color="black" note={0} />
+      <ElementLine x1={Q_x} y1={aTop + 3 * ch} x2={Q_x + cw} y2={aTop + 3 * ch} color="black" note={1} />
+      <ElementLine x1={aLeft} y1={K_y} x2={aLeft + 3 * cw} y2={K_y} color="black" note={2} />
+      <ElementLine x1={aLeft} y1={K_y + ch} x2={aLeft + 3 * cw} y2={K_y + ch} color="black" note={3} />
+      {/* Dotted alignment guides — vertical drop from Kᵀ to A columns
+          and horizontal extension from Q rows into A rows */}
       <path
         className="diagram-line diagram-line--dotted"
-        d="M495 110 V330 M540 110 V330 M585 110 V330 M450 156 H630 M450 220 H630 M450 284 H630"
+        d={`M${cellX(0)} ${K_y + ch} V${aTop} M${cellX(1)} ${K_y + ch} V${aTop} M${cellX(2)} ${K_y + ch} V${aTop} M${cellX(3)} ${K_y + ch} V${aTop} M${Q_x + cw} ${aTop + ch} H${aLeft} M${Q_x + cw} ${aTop + 2 * ch} H${aLeft}`}
       />
-      <ElementLine x1="140" y1="110" x2="320" y2="110" color="black" note={4} />
-      <ElementLine x1="140" y1="368" x2="320" y2="368" color="black" note={5} />
-      <ElementLine x1="450" y1="110" x2="630" y2="110" color="black" note={0} />
-      <ElementLine x1="450" y1="330" x2="630" y2="330" color="black" note={1} />
-      <ElementPoint x="230" y="139" label="Q" note={2} dy={6} />
-      <ElementPoint x="230" y="239" label="K" note={3} dy={6} />
-      <ElementPoint x="230" y="339" label="V" note={4} dy={6} />
-      <ElementPoint x="540" y="220" label="A" note={5} dy={6} />
-      <ElementPoint x="820" y="239" label="C" note={0} dy={6} />
+      {/* Operator marks — × between Q and Kᵀ; · between A and V; → into C */}
+      <ByrneLabel x={(Q_x + cw + aLeft) / 2} y={aTop + 1.5 * ch + 6}>×</ByrneLabel>
+      <ByrneLabel x={(aLeft + 3 * cw + V_x) / 2} y={aTop + 1.5 * ch + 6}>·</ByrneLabel>
+      <ByrneLabel x={(V_x + cw + C_x) / 2} y={aTop + 1.5 * ch + 6}>=</ByrneLabel>
+      {/* Labels — single letter per matrix in its own colour group */}
+      <ByrneLabel x={Q_x + cw / 2} y={aTop + 3 * ch + 26}>Q</ByrneLabel>
+      <ByrneLabel x={aLeft + 1.5 * cw} y={K_y - 8}>Kᵀ</ByrneLabel>
+      <ByrneLabel x={aLeft + 1.5 * cw} y={aTop + 3 * ch + 26}>A</ByrneLabel>
+      <ByrneLabel x={V_x + cw / 2} y={aTop + 3 * ch + 26}>V</ByrneLabel>
+      <ByrneLabel x={C_x + c_w / 2} y={aTop + 3 * ch + 26}>C</ByrneLabel>
     </>
   );
 }
