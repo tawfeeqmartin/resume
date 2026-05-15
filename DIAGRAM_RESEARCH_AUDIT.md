@@ -37,6 +37,7 @@ Status: local working note. Do not treat color fills as decoration unless the re
 
 ## Drawing Checklist
 
+- 2026-05-14 Byrne pass: the hero diagrams now use a shared 1000x420 SVG frame, Caslon-style labels, black construction strokes, rounded joins/caps, and the Oliver Byrne red/yellow/blue fill language. Labels are intentionally placed outside filled regions where practical so the color carries geometry/system meaning instead of becoming decoration.
 - `euclid`: Shows segment AB, equal-radius circles centered at A and B, intersection C, and triangle ABC. Coordinates satisfy AB = AC = BC.
 - `pythagoras`: Shows a right triangle and three squares constructed on its sides. Square coordinates match the leg and hypotenuse vectors.
 - `calculus`: Shows axes, continuous curve, tangent/secant slope, sample strips, and area under the curve.

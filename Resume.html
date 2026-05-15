@@ -1427,29 +1427,40 @@ button.review-toggle {
 }
 .identity__top a { border: none; }
 .identity__poetry-title {
-  margin: 1.15rem 0 -0.22rem;
-  font-family: var(--serif);
-  font-size: clamp(1.45rem, 2.45vw, 2.25rem);
+  margin: 1.05rem 0 0.18rem;
+  font-family: var(--mono);
+  font-size: clamp(0.72rem, 1.05vw, 0.95rem);
   font-weight: 500;
-  line-height: 1;
+  line-height: 1.25;
   letter-spacing: 0;
-  color: var(--ink);
-  font-variation-settings: "opsz" 48;
+  color: #d7f5d5;
+  font-variation-settings: normal;
   transform: translateX(calc(-1.245rem + 2px));
 }
 .identity__poetry-type {
   display: inline-flex;
-  align-items: baseline;
-  gap: 0.04em;
+  align-items: center;
+  gap: 0.55em;
+  min-width: min(100%, 32rem);
+  min-height: 2.18rem;
+  padding: 0.46rem 0.68rem 0.44rem;
   white-space: nowrap;
+  background: #141715;
+  box-shadow: inset 2px 0 0 var(--accent-blue), 0 0 0 1px rgba(20, 23, 21, 0.16);
   transform-origin: left 58%;
+}
+.identity__poetry-prompt {
+  color: #75d17b;
+}
+.identity__poetry-command {
+  color: #d7f5d5;
 }
 .identity__poetry-cursor {
   display: inline-block;
-  width: 0.42em;
-  height: 0.88em;
-  background: #000;
-  transform: translateY(0.08em);
+  width: 0.58em;
+  height: 1.08em;
+  background: #d7f5d5;
+  transform: translateY(0.02em);
   animation: poetry-cursor-pulse var(--cursor-ms, 0.58s) steps(1, end) infinite;
 }
 @keyframes poetry-cursor-pulse {
@@ -2889,13 +2900,23 @@ html.has-pseudo-fullscreen body {
     height: 0.38rem;
   }
   .identity__poetry-title {
-    margin-top: 0.9rem;
-    font-size: clamp(1.55rem, 9vw, 2.2rem);
+    margin: 0.85rem 0 0.25rem;
+    font-size: clamp(0.62rem, 2.65vw, 0.78rem);
     white-space: normal;
-    min-height: 2.4em;
+    min-height: 0;
   }
   .identity__poetry-type {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 2rem;
+    padding: 0.42rem 0.54rem 0.4rem;
+    flex-wrap: wrap;
+    align-items: flex-start;
     white-space: normal;
+  }
+  .identity__poetry-command {
+    overflow-wrap: anywhere;
   }
   .stem-mutes {
     margin: 0.2rem 0 0.55rem;

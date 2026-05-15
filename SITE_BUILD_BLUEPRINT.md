@@ -89,6 +89,7 @@ Drawing rules:
 - Use fills only where they clarify the construction.
 - Use labels outside shapes whenever possible.
 - Keep formulas tied to the actual concept being drawn.
+- Current implementation uses authored 1000x420 SVG diagrams with a shared Byrne-inspired title/label system, black construction strokes, rounded joins/caps, and Byrne-reference fills (`#fac22b`, `#0e638e`, `#d42a20`). Mobile uses a fixed-height panel frame so page turns do not shift the resume content below.
 
 Reference details live in `BLACKOUT_RESEARCH_NOTES.md` and `DIAGRAM_RESEARCH_AUDIT.md`.
 
