@@ -3857,19 +3857,21 @@ function ElementsNeuralDiagram() {
           to show "what Y should have been" */}
       <ElementCircle cx="880" cy="230" r="18" color="red" dotted note={0} />
       <ElementLine x1="820" y1="230" x2="862" y2="230" dotted note={1} />
-      {/* Correction return path — blue dotted curve from Y back to X
-          along the bottom, with little chevrons at the layer rules to
-          indicate flow direction */}
+      {/* Correction return path — single clean blue arc from Y back to
+          X, bottoming out at the layer-rule line so it sits in the same
+          frame as the rest of the figure. */}
       <path
         className={`diagram-line diagram-line--dotted ${diagramNote(2)}`}
-        d="M820 250 Q 720 408 600 392 Q 480 380 400 392 Q 320 402 200 360"
+        d="M820 252 Q 500 410 200 336"
         style={{ stroke: '#0e638e', strokeWidth: 1.8 }}
       />
-      {/* Chevron arrowheads on the return path */}
+      {/* Two chevron arrowheads tracking the curve's tangent direction
+          (leftward / back-toward-the-input) at the H₂ and H₁ rule
+          crossings */}
       <path
         className="diagram-line diagram-line--thin"
-        d="M610 396 L596 388 M610 396 L596 404 M410 396 L396 388 M410 396 L396 404"
-        style={{ stroke: '#0e638e', fill: 'none' }}
+        d="M642 318 L630 326 L642 334 M394 354 L382 360 L394 366"
+        style={{ stroke: '#0e638e', fill: 'none', strokeWidth: 1.6 }}
       />
       {/* Layer labels at the top of each rule */}
       {layers.map((layer, i) => (
