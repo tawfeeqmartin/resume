@@ -3260,352 +3260,345 @@ function ElementPoint({ x, y, label, note = 0, dy = -14 }) {
 }
 
 function ElementsEuclidDiagram() {
-  // Euclid I.1 — proper construction circles of radius AB centered at A
-  // and B intersect at C, forming the equilateral triangle. Filled
-  // triangle interior + tinted vesica piscis for Byrne-style colour.
-  // A=(302,294), B=(524,294); AB = 222 → apex C=(413, 101.74).
-  // Lens (intersection of both circles) is bounded by two 60° arcs.
+  // Euclid I.1 — circles of radius AB centered at A and B intersect at
+  // C; the equilateral triangle is constructed. Centered in the slot
+  // with AB at y=310 and C apex at y=83 (height 197 ≈ AB·√3/2 = 197.
+  // for AB=228). A=(386,310), B=(614,310), C=(500,112).
+  // Circle radius = AB = 228. Top of circles at y=82, bottom at y=538
+  // (clipped — that lower-half overflow reads as construction extending
+  // below the figure, classic Byrne).
   return (
     <>
       <ByrneTitle>EQUILATERAL TRIANGLE ON AB</ByrneTitle>
-      {/* Vesica piscis — lens where the two circles intersect */}
-      <path className={`diagram-fill diagram-fill--yellow diagram-high-fill ${diagramNote(0)}`} d="M413 101.74 A222 222 0 0 1 413 516.26 A222 222 0 0 1 413 101.74 Z" />
-      {/* Equilateral triangle interior */}
-      <ElementPoly points="302,294 524,294 413,101.74" fill="blue" note={1} />
-      {/* Construction circles with radius = AB */}
-      <ElementCircle cx="302" cy="294" r="222" color="red" note={2} />
-      <ElementCircle cx="524" cy="294" r="222" color="yellow" note={3} />
-      {/* Triangle sides */}
-      <ElementLine x1="302" y1="294" x2="524" y2="294" color="black" note={4} strong />
-      <ElementLine x1="302" y1="294" x2="413" y2="101.74" color="red" note={5} strong />
-      <ElementLine x1="524" y1="294" x2="413" y2="101.74" color="yellow" note={0} strong />
-      {/* Altitude (construction) */}
-      <ElementLine x1="413" y1="101.74" x2="413" y2="294" dotted note={1} />
-      {/* Vertex labels */}
-      <ElementPoint x="302" y="294" label="A" note={2} dy={22} />
-      <ElementPoint x="524" y="294" label="B" note={3} dy={22} />
-      <ElementPoint x="413" y="101.74" label="C" note={4} dy={-18} />
+      <path
+        className={`diagram-fill diagram-fill--yellow diagram-high-fill ${diagramNote(0)}`}
+        d="M500 112 A228 228 0 0 1 500 508 A228 228 0 0 1 500 112 Z"
+      />
+      <ElementPoly points="386,310 614,310 500,112" fill="blue" note={1} />
+      <ElementCircle cx="386" cy="310" r="228" color="red" note={2} />
+      <ElementCircle cx="614" cy="310" r="228" color="yellow" note={3} />
+      <ElementLine x1="386" y1="310" x2="614" y2="310" color="black" note={4} strong />
+      <ElementLine x1="386" y1="310" x2="500" y2="112" color="red" note={5} strong />
+      <ElementLine x1="614" y1="310" x2="500" y2="112" color="yellow" note={0} strong />
+      <ElementLine x1="500" y1="112" x2="500" y2="310" dotted note={1} />
+      <ElementPoint x="386" y="310" label="A" note={2} dy={24} />
+      <ElementPoint x="614" y="310" label="B" note={3} dy={24} />
+      <ElementPoint x="500" y="112" label="C" note={4} dy={-16} />
     </>
   );
 }
 
 function ElementsPythagorasDiagram() {
-  // Euclid I.47 — squares on the sides of a right triangle. Square on
-  // hypotenuse equals the sum of squares on the legs. Right angle at A;
-  // legs AB (yellow) and AC (blue); hypotenuse BC (red).
+  // Euclid I.47 — squares on a right triangle. Legs AB=90 (yellow) and
+  // AC=120 (blue); hypotenuse BC=150 (red). Centered with the right
+  // angle at A=(440,265). Yellow square sits up-and-left of A; blue
+  // square sits down-and-right; red square is the tilted hypotenuse
+  // square reaching up to its top corners D and E.
+  // A=(440,265). B=(440,175). C=(560,265).
+  // BC vector = (120, 90), |BC| = 150. Outward normal (perpendicular
+  // pointing away from A) for the red square: rotate (120,90) by -90°
+  // → (90,-120). Normalised × 150 = (90,-120) already length 150.
+  // D = B + outward = (440+90, 175-120) = (530, 55).
+  // E = C + outward = (560+90, 265-120) = (650, 145).
   return (
     <>
       <ByrneTitle>SQUARES ON A RIGHT TRIANGLE — I.47</ByrneTitle>
-      {/* Square on leg AB (yellow) */}
-      <ElementPoly points="275,175 370,175 370,270 275,270" fill="yellow" note={0} />
-      {/* Square on leg AC (blue) */}
-      <ElementPoly points="370,270 505,270 505,405 370,405" fill="blue" note={1} />
-      {/* Square on hypotenuse BC (red, tilted) */}
-      <ElementPoly points="370,175 505,270 600,135 465,40" fill="red" note={2} />
-      {/* Construction circle around the right triangle */}
-      <path className={`diagram-line diagram-line--soft ${diagramNote(3)}`} d="M275 270 A150 150 0 0 1 505 405" />
-      {/* Triangle sides */}
-      <ElementLine x1="370" y1="270" x2="370" y2="175" color="yellow" note={4} strong />
-      <ElementLine x1="370" y1="270" x2="505" y2="270" color="blue" note={5} strong />
-      <ElementLine x1="370" y1="175" x2="505" y2="270" color="red" note={0} strong />
-      {/* Square-on-hypotenuse construction lines */}
-      <ElementLine x1="465" y1="40" x2="600" y2="135" dotted note={1} />
-      <ElementLine x1="505" y1="270" x2="600" y2="135" dotted note={2} />
-      <ElementLine x1="370" y1="175" x2="465" y2="40" dotted note={3} />
-      {/* Right-angle marker at A */}
-      <path className="diagram-line diagram-line--thin" d="M370 252 H388 V270" />
-      {/* Vertex labels */}
-      <ElementPoint x="370" y="270" label="A" note={4} dy={22} />
-      <ElementPoint x="370" y="175" label="B" note={5} dy={-18} />
-      <ElementPoint x="505" y="270" label="C" note={0} dy={22} />
-      <ElementPoint x="465" y="40" label="D" note={1} dy={-14} />
-      <ElementPoint x="600" y="135" label="E" note={2} dy={-14} />
+      <ElementPoly points="350,175 440,175 440,265 350,265" fill="yellow" note={0} />
+      <ElementPoly points="440,265 560,265 560,385 440,385" fill="blue" note={1} />
+      <ElementPoly points="440,175 560,265 650,145 530,55" fill="red" note={2} />
+      <path
+        className={`diagram-line diagram-line--soft ${diagramNote(3)}`}
+        d="M350 265 A150 150 0 0 1 560 385"
+      />
+      <ElementLine x1="440" y1="265" x2="440" y2="175" color="yellow" note={4} strong />
+      <ElementLine x1="440" y1="265" x2="560" y2="265" color="blue" note={5} strong />
+      <ElementLine x1="440" y1="175" x2="560" y2="265" color="red" note={0} strong />
+      <ElementLine x1="530" y1="55" x2="650" y2="145" dotted note={1} />
+      <ElementLine x1="560" y1="265" x2="650" y2="145" dotted note={2} />
+      <ElementLine x1="440" y1="175" x2="530" y2="55" dotted note={3} />
+      <path className="diagram-line diagram-line--thin" d="M440 247 H458 V265" />
+      <ElementPoint x="440" y="265" label="A" note={4} dy={24} />
+      <ElementPoint x="440" y="175" label="B" note={5} dy={-16} />
+      <ElementPoint x="560" y="265" label="C" note={0} dy={24} />
+      <ElementPoint x="530" y="55" label="D" note={1} dy={-14} />
+      <ElementPoint x="650" y="145" label="E" note={2} dy={-14} />
     </>
   );
 }
 
 function ElementsCalculusDiagram() {
-  // Limit by squeeze — sin θ / θ → 1. Inside a quarter-circle of radius
-  // r, the triangle OAP < sector OAP < triangle OAT. As θ → 0, the
-  // three areas converge. Classical geometric proof that the secant
-  // becomes the tangent.
-  // O=(280,300). r=180. A=(460,300), top of quarter T=(280,120).
-  // P on arc at θ≈40°: P = (280 + 180·cos40°, 300 - 180·sin40°)
-  //                       = (280 + 137.9, 300 - 115.7) = (417.9, 184.3)
+  // Limit by squeeze — sin θ / θ → 1. The inner triangle OAP < sector
+  // OAP < outer triangle OAT. As θ → 0 the three areas converge.
+  // O=(280,330), r=240, A=(520,330), P on arc at 40°.
+  // P = (280 + 240·cos40°, 330 - 240·sin40°) = (463.85, 175.71).
+  // T = (520, 330 - 240·tan40°) = (520, 330 - 201.42) = (520, 128.58).
   return (
     <>
       <ByrneTitle>SECANT BECOMING TANGENT</ByrneTitle>
-      {/* The angular sector OAP — pie wedge */}
-      <ElementWedge cx="280" cy="300" r="180" start={0} end={-40} fill="yellow" note={0} />
-      {/* Inner triangle OAP — strict subset of the sector */}
-      <ElementPoly points="280,300 460,300 417.9,184.3" fill="red" note={1} />
-      {/* Quarter-circle arc */}
-      <path className={`diagram-line diagram-line--soft ${diagramNote(2)}`} d="M460 300 A180 180 0 0 0 280 120" />
-      {/* Axes */}
-      <ElementLine x1="100" y1="300" x2="640" y2="300" color="black" note={3} strong />
-      <ElementLine x1="280" y1="370" x2="280" y2="100" color="black" note={4} strong />
-      {/* Tangent at A — vertical line touching circle at (r, 0) extended up */}
-      <ElementLine x1="460" y1="300" x2="460" y2="100" color="blue" note={5} strong />
-      {/* Radius OP and chord AP */}
-      <ElementLine x1="280" y1="300" x2="417.9" y2="184.3" color="yellow" note={0} />
-      <ElementLine x1="460" y1="300" x2="417.9" y2="184.3" dotted note={1} />
-      {/* Tangent extension OT — for the outer triangle inequality */}
-      <ElementLine x1="280" y1="300" x2="460" y2="124" dotted note={2} />
-      {/* Right-angle marker at A (radius perpendicular to tangent) */}
-      <path className="diagram-line diagram-line--thin" d="M460 282 H442 V300" />
-      {/* Labels */}
-      <ElementPoint x="280" y="300" label="O" note={3} dy={26} />
-      <ElementPoint x="460" y="300" label="A" note={4} dy={26} />
-      <ElementPoint x="417.9" y="184.3" label="P" note={5} dy={-14} />
-      <ElementPoint x="460" y="124" label="T" note={0} dy={-14} />
+      <ElementWedge cx="280" cy="330" r="240" start={0} end={-40} fill="yellow" note={0} />
+      <ElementPoly points="280,330 520,330 463.85,175.71" fill="red" note={1} />
+      <path
+        className={`diagram-line diagram-line--soft ${diagramNote(2)}`}
+        d="M520 330 A240 240 0 0 0 280 90"
+      />
+      <ElementLine x1="120" y1="330" x2="800" y2="330" color="black" note={3} strong />
+      <ElementLine x1="280" y1="380" x2="280" y2="70" color="black" note={4} strong />
+      <ElementLine x1="520" y1="330" x2="520" y2="90" color="blue" note={5} strong />
+      <ElementLine x1="280" y1="330" x2="463.85" y2="175.71" color="yellow" note={0} strong />
+      <ElementLine x1="520" y1="330" x2="463.85" y2="175.71" dotted note={1} />
+      <ElementLine x1="280" y1="330" x2="520" y2="128.58" dotted note={2} />
+      <path className="diagram-line diagram-line--thin" d="M520 312 H502 V330" />
+      <ElementPoint x="280" y="330" label="O" note={3} dy={26} />
+      <ElementPoint x="520" y="330" label="A" note={4} dy={26} />
+      <ElementPoint x="463.85" y="175.71" label="P" note={5} dy={-14} />
+      <ElementPoint x="520" y="128.58" label="T" note={0} dy={-14} />
     </>
   );
 }
 
 function ElementsPrismDiagram() {
-  // White light enters a triangular prism at A, disperses inside, and
-  // exits at B as a spectrum. The construction: an incoming ray strikes
-  // the prism face at A, refracts to B on the exit face, then fans into
-  // three coloured rays. Dotted normals at the boundary points.
+  // White ray from source S strikes prism at A, refracts inside to B,
+  // and fans into a spectrum at the exit face. Prism vertices form an
+  // equilateral-ish triangle centred horizontally in the slot.
+  // Prism: top (440,80), bottom (440,340), right tip (620,210).
+  // S=(120,210) light source. Spectrum endpoints: (880,82), (920,210),
+  // (880,338).
   return (
     <>
       <ByrneTitle>LIGHT BROKEN BY A TRIANGLE</ByrneTitle>
-      {/* The prism — a yellow triangle */}
-      <ElementPoly points="398,126 398,300 548,214" fill="yellow" note={0} />
-      {/* Light-source disk at left */}
-      <circle className={`diagram-fill diagram-fill--red diagram-high-fill ${diagramNote(1)}`} cx="106" cy="214" r="22" />
-      {/* Incoming white-light ray (red, strong) striking the prism at A */}
-      <ElementLine x1="106" y1="214" x2="398" y2="214" color="red" note={2} strong />
-      {/* Prism edges */}
-      <ElementLine x1="398" y1="126" x2="398" y2="300" color="black" note={3} strong />
-      <ElementLine x1="398" y1="126" x2="548" y2="214" color="yellow" note={4} strong />
-      <ElementLine x1="398" y1="300" x2="548" y2="214" color="blue" note={5} strong />
-      {/* Refracted ray inside the prism (A → B), red */}
-      <ElementLine x1="398" y1="214" x2="548" y2="214" color="red" note={0} />
-      {/* Spectrum fan out of B */}
-      <ElementLine x1="548" y1="214" x2="878" y2="102" color="red" note={1} strong />
-      <ElementLine x1="548" y1="214" x2="890" y2="214" color="yellow" note={2} strong />
-      <ElementLine x1="548" y1="214" x2="878" y2="326" color="blue" note={3} strong />
-      {/* Normals at the boundary points — dotted construction */}
-      <ElementLine x1="398" y1="180" x2="398" y2="248" dotted note={4} />
-      <ElementLine x1="494" y1="160" x2="602" y2="268" dotted note={5} />
-      {/* Vertical reference line at the source */}
-      <ElementLine x1="106" y1="92" x2="106" y2="336" dotted note={0} />
-      {/* Labels: A = entry point on prism, B = exit, S = source */}
-      <ElementPoint x="106" y="214" label="S" note={1} dy={-18} />
-      <ElementPoint x="398" y="214" label="A" note={2} dy={26} />
-      <ElementPoint x="548" y="214" label="B" note={3} dy={26} />
+      <ElementPoly points="440,80 440,340 620,210" fill="yellow" note={0} />
+      <circle
+        className={`diagram-fill diagram-fill--red diagram-high-fill ${diagramNote(1)}`}
+        cx="120"
+        cy="210"
+        r="24"
+      />
+      <ElementLine x1="120" y1="210" x2="440" y2="210" color="red" note={2} strong />
+      <ElementLine x1="440" y1="80" x2="440" y2="340" color="black" note={3} strong />
+      <ElementLine x1="440" y1="80" x2="620" y2="210" color="yellow" note={4} strong />
+      <ElementLine x1="440" y1="340" x2="620" y2="210" color="blue" note={5} strong />
+      <ElementLine x1="440" y1="210" x2="620" y2="210" color="red" note={0} />
+      <ElementLine x1="620" y1="210" x2="880" y2="82" color="red" note={1} strong />
+      <ElementLine x1="620" y1="210" x2="920" y2="210" color="yellow" note={2} strong />
+      <ElementLine x1="620" y1="210" x2="880" y2="338" color="blue" note={3} strong />
+      <ElementLine x1="440" y1="166" x2="440" y2="254" dotted note={4} />
+      <ElementLine x1="560" y1="138" x2="680" y2="282" dotted note={5} />
+      <ElementLine x1="120" y1="78" x2="120" y2="342" dotted note={0} />
+      <ElementPoint x="120" y="210" label="S" note={1} dy={-22} />
+      <ElementPoint x="440" y="210" label="A" note={2} dy={28} />
+      <ElementPoint x="620" y="210" label="B" note={3} dy={28} />
     </>
   );
 }
 
 function ElementsPerspectiveDiagram() {
-  // Linear perspective. Eye E at left. Picture plane PP (vertical
-  // yellow line) at the canvas. The horizon line through E projects
-  // forward to a vanishing point V on the far ground. Two receding
-  // quads (blue + red) show parallels converging at V.
+  // Linear perspective from a single point. Eye E at left, picture
+  // plane PP (yellow vertical) at the canvas, horizon line dotted to
+  // the vanishing point V on the far right. Two receding quads (blue,
+  // red) show parallels converging at V.
+  // E=(140,215). PP at x=380, y=90..340. V=(900,215).
   return (
     <>
       <ByrneTitle>PERSPECTIVE FROM A POINT</ByrneTitle>
-      {/* Eye disk */}
-      <ElementCircle cx="178" cy="214" r="24" color="blue" note={0} />
-      {/* Sight rays from E to the canvas / vanishing point */}
-      <ElementLine x1="178" y1="214" x2="874" y2="96" note={1} />
-      <ElementLine x1="178" y1="214" x2="874" y2="332" note={2} />
-      <ElementLine x1="178" y1="214" x2="874" y2="214" color="red" note={3} strong />
-      {/* Picture plane PP — strong yellow vertical at the canvas */}
-      <ElementLine x1="404" y1="104" x2="404" y2="324" color="yellow" note={4} strong />
-      {/* Receding quads converging at V */}
-      <ElementPoly points="528,176 670,154 670,274 528,252" fill="blue" note={0} />
-      <ElementPoly points="670,154 846,126 846,304 670,274" fill="red" note={1} />
-      <ElementLine x1="528" y1="176" x2="846" y2="126" color="blue" note={2} />
-      <ElementLine x1="528" y1="252" x2="846" y2="304" color="red" note={3} />
-      {/* Horizon line — dotted construction */}
-      <ElementLine x1="404" y1="214" x2="874" y2="214" dotted note={5} />
-      {/* Vanishing point marker at V (on the horizon, far right) */}
-      <circle className={`diagram-fill diagram-fill--red diagram-high-fill ${diagramNote(0)}`} cx="874" cy="214" r="9" />
-      {/* Right-angle marker on the picture plane */}
-      <path className="diagram-line diagram-line--thin" d="M404 232 H386 V214" />
-      {/* Labels */}
-      <ElementPoint x="178" y="214" label="E" note={1} dy={-22} />
-      <ElementPoint x="404" y="104" label="P" note={2} dy={-14} />
-      <ElementPoint x="404" y="324" label="P'" note={3} dy={26} />
-      <ElementPoint x="874" y="214" label="V" note={4} dy={-18} />
+      <ElementCircle cx="140" cy="215" r="26" color="blue" note={0} />
+      <ElementLine x1="140" y1="215" x2="900" y2="80" note={1} />
+      <ElementLine x1="140" y1="215" x2="900" y2="350" note={2} />
+      <ElementLine x1="140" y1="215" x2="900" y2="215" color="red" note={3} strong />
+      <ElementLine x1="380" y1="90" x2="380" y2="340" color="yellow" note={4} strong />
+      <ElementPoly points="510,170 670,148 670,282 510,260" fill="blue" note={0} />
+      <ElementPoly points="670,148 870,126 870,304 670,282" fill="red" note={1} />
+      <ElementLine x1="510" y1="170" x2="870" y2="126" color="blue" note={2} />
+      <ElementLine x1="510" y1="260" x2="870" y2="304" color="red" note={3} />
+      <ElementLine x1="380" y1="215" x2="900" y2="215" dotted note={5} />
+      <circle
+        className={`diagram-fill diagram-fill--red diagram-high-fill ${diagramNote(0)}`}
+        cx="900"
+        cy="215"
+        r="10"
+      />
+      <path className="diagram-line diagram-line--thin" d="M380 233 H362 V215" />
+      <ElementPoint x="140" y="215" label="E" note={1} dy={-26} />
+      <ElementPoint x="380" y="90" label="P" note={2} dy={-14} />
+      <ElementPoint x="380" y="340" label="P'" note={3} dy={26} />
+      <ElementPoint x="900" y="215" label="V" note={4} dy={-20} />
     </>
   );
 }
 
 function ElementsComputationDiagram() {
-  // Turing's symbol machine — a tape of six cells, a state box S above
-  // (blue), and a read/write head H (red triangle) pointing at the
-  // active cell. Dotted construction shows the tape extending in both
-  // directions and the head's line of sight onto its current cell.
-  const labels = ['a', 'b', 'c', 'd', 'e', 'f'];
+  // Turing's symbol machine — a tape of six cells centred horizontally;
+  // a state box S above the active cell; a read/write head H pointing
+  // down onto it. Tape extends dotted to either side; execution thread
+  // dotted below.
+  // Cell width 100, six cells from x=200..800, y=270..330. State box
+  // and head sit above x=450..550.
   return (
     <>
       <ByrneTitle>FINITE SYMBOL MACHINE</ByrneTitle>
-      {/* Tape cells */}
       {[0, 1, 2, 3, 4, 5].map((i) => (
         <ElementPoly
           key={`cell-${i}`}
-          points={`${206 + i * 86},246 ${286 + i * 86},246 ${286 + i * 86},300 ${206 + i * 86},300`}
+          points={`${200 + i * 100},270 ${300 + i * 100},270 ${300 + i * 100},330 ${200 + i * 100},330`}
           fill={i % 3 === 0 ? 'yellow' : i % 3 === 1 ? 'blue' : 'red'}
           note={i}
         />
       ))}
-      {/* Tape rails */}
-      <ElementLine x1="206" y1="246" x2="722" y2="246" color="black" note={0} strong />
-      <ElementLine x1="206" y1="300" x2="722" y2="300" color="black" note={1} strong />
-      {/* Head line of sight (red) coming down onto the active cell */}
-      <ElementLine x1="464" y1="126" x2="464" y2="246" color="red" note={2} strong />
-      {/* State box S above the tape */}
-      <ElementPoly points="414,86 514,86 514,126 414,126" fill="blue" note={3} />
-      {/* Head H — read/write pointer triangle */}
-      <ElementPoly points="414,126 514,126 464,174" fill="red" note={4} />
-      {/* Tape extending dotted in both directions */}
-      <ElementLine x1="156" y1="273" x2="206" y2="273" dotted note={5} />
-      <ElementLine x1="722" y1="273" x2="772" y2="273" dotted note={0} />
-      {/* Trace beneath — execution thread */}
-      <ElementLine x1="248" y1="334" x2="680" y2="334" dotted note={1} />
-      {/* Labels: A on first cell, ω on last; S on state box, H on head */}
-      <ElementPoint x="246" y="273" label="α" note={2} dy={6} />
-      <ElementPoint x="676" y="273" label="ω" note={3} dy={6} />
-      <ElementPoint x="464" y="273" label="x" note={4} dy={6} />
-      <ElementPoint x="464" y="106" label="S" note={5} dy={6} />
+      <ElementLine x1="200" y1="270" x2="800" y2="270" color="black" note={0} strong />
+      <ElementLine x1="200" y1="330" x2="800" y2="330" color="black" note={1} strong />
+      <ElementLine x1="500" y1="148" x2="500" y2="270" color="red" note={2} strong />
+      <ElementPoly points="440,98 560,98 560,148 440,148" fill="blue" note={3} />
+      <ElementPoly points="440,148 560,148 500,202" fill="red" note={4} />
+      <ElementLine x1="140" y1="300" x2="200" y2="300" dotted note={5} />
+      <ElementLine x1="800" y1="300" x2="860" y2="300" dotted note={0} />
+      <ElementLine x1="240" y1="358" x2="760" y2="358" dotted note={1} />
+      <ElementPoint x="250" y="300" label="α" note={2} dy={6} />
+      <ElementPoint x="750" y="300" label="ω" note={3} dy={6} />
+      <ElementPoint x="500" y="300" label="x" note={4} dy={6} />
+      <ElementPoint x="500" y="123" label="S" note={5} dy={6} />
     </>
   );
 }
 
 function ElementsNetworkDiagram() {
-  // Mean proportional between two given lines (Euclid VI.13).
-  // Baseline AC with B dividing it. Semicircle on AC. Perpendicular at
-  // B meets the semicircle at D; BD² = AB · BC. The "third" emerging
-  // from the partnership of two — Licklider's symbiosis as geometry.
-  // A=(230,296), B=(590,296), C=(770,296). AB=360, BC=180.
-  // BD = √(360·180) = √64800 ≈ 254.55. D = (590, 41.45).
-  // Semicircle center = (500,296), radius = 270.
+  // Mean proportional (Euclid VI.13). Baseline AC with B dividing it;
+  // semicircle on AC; perpendicular at B meets the semicircle at D so
+  // BD² = AB · BC. Centered horizontally.
+  // A=(140,330), C=(860,330). AC=720. B=(620,330). AB=480, BC=240.
+  // BD = √(480·240) = √115200 ≈ 339.41. But viewBox height 385 with top
+  // y=20 → D at y=330-339 = -9 (out of frame). Need to scale down.
+  // Use AB=360, BC=180. BD = √64800 ≈ 254.55. AC=540.
+  // A=(230,330), B=(590,330), C=(770,330). D=(590, 75.45).
+  // Semicircle radius = 270, center (500,330). Top at y=60.
   return (
     <>
       <ByrneTitle>MEAN PROPORTIONAL BETWEEN TWO LINES</ByrneTitle>
-      {/* The two similar sub-triangles formed by the altitude */}
-      <ElementPoly points="230,296 590,296 590,41.45" fill="yellow" note={0} />
-      <ElementPoly points="590,296 770,296 590,41.45" fill="blue" note={1} />
-      {/* Semicircle on AC (the locus of right angles at D) */}
-      <path className={`diagram-line diagram-line--soft ${diagramNote(2)}`} d="M230 296 A270 270 0 0 1 770 296" />
-      {/* Hypotenuses AD and DC of the two sub-triangles */}
-      <ElementLine x1="230" y1="296" x2="590" y2="41.45" color="red" note={3} />
-      <ElementLine x1="590" y1="41.45" x2="770" y2="296" color="red" note={4} />
-      {/* Baseline segments AB and BC */}
-      <ElementLine x1="230" y1="296" x2="590" y2="296" color="black" note={5} strong />
-      <ElementLine x1="590" y1="296" x2="770" y2="296" color="black" note={0} strong />
-      {/* Altitude BD — the mean proportional */}
-      <ElementLine x1="590" y1="296" x2="590" y2="41.45" color="red" note={1} strong />
-      {/* Right-angle marker at B */}
-      <path className="diagram-line diagram-line--thin" d="M590 278 H572 V296" />
-      {/* Tick marks on the baseline halves */}
-      <path className="diagram-line diagram-line--thin" d="M408 290 V302 M680 290 V302" />
-      {/* Vertex labels */}
-      <ElementPoint x="230" y="296" label="A" note={2} dy={22} />
-      <ElementPoint x="590" y="296" label="B" note={3} dy={22} />
-      <ElementPoint x="770" y="296" label="C" note={4} dy={22} />
-      <ElementPoint x="590" y="41.45" label="D" note={5} dy={-14} />
+      <ElementPoly points="230,330 590,330 590,75.45" fill="yellow" note={0} />
+      <ElementPoly points="590,330 770,330 590,75.45" fill="blue" note={1} />
+      <path
+        className={`diagram-line diagram-line--soft ${diagramNote(2)}`}
+        d="M230 330 A270 270 0 0 1 770 330"
+      />
+      <ElementLine x1="230" y1="330" x2="590" y2="75.45" color="red" note={3} />
+      <ElementLine x1="590" y1="75.45" x2="770" y2="330" color="red" note={4} />
+      <ElementLine x1="230" y1="330" x2="590" y2="330" color="black" note={5} strong />
+      <ElementLine x1="590" y1="330" x2="770" y2="330" color="black" note={0} strong />
+      <ElementLine x1="590" y1="330" x2="590" y2="75.45" color="red" note={1} strong />
+      <path className="diagram-line diagram-line--thin" d="M590 312 H572 V330" />
+      <path className="diagram-line diagram-line--thin" d="M408 324 V336 M680 324 V336" />
+      <ElementPoint x="230" y="330" label="A" note={2} dy={24} />
+      <ElementPoint x="590" y="330" label="B" note={3} dy={24} />
+      <ElementPoint x="770" y="330" label="C" note={4} dy={24} />
+      <ElementPoint x="590" y="75.45" label="D" note={5} dy={-14} />
     </>
   );
 }
 
 function ElementsRenderingDiagram() {
-  // Hemisphere of directions over a surface point P (Kajiya's rendering
-  // equation as a Euclidean figure). Baseline = surface; semicircle =
-  // sky of incoming directions; sampled rays converge at P; one
-  // outgoing ray V points to the viewer. Normal N is the vertical.
-  // P=(500,296), semicircle r=220 → top of arc (500,76).
-  const L1 = { x: 344.4, y: 140.4 };  // angle ~135° from +x
-  const L2 = { x: 424.7, y: 89.3 };   // angle ~110°
-  const L3 = { x: 575.3, y: 89.3 };   // angle ~70°
-  const V  = { x: 655.6, y: 140.4 };  // angle ~45° (outgoing)
+  // Hemisphere of directions at a surface point. Baseline = surface;
+  // semicircle = hemisphere of incoming directions. Centered: P at
+  // (500, 330), hemisphere radius 240 → top y=90.
+  const P = { x: 500, y: 330 };
+  const r = 240;
+  const dir = (deg) => ({
+    x: P.x + r * Math.cos((deg * Math.PI) / 180),
+    y: P.y - r * Math.sin((deg * Math.PI) / 180),
+  });
+  const L1 = dir(135);
+  const L2 = dir(110);
+  const L3 = dir(70);
+  const V = dir(45);
+  const f = (n) => n.toFixed(2);
   return (
     <>
       <ByrneTitle>HEMISPHERE OF DIRECTIONS AT A POINT</ByrneTitle>
-      {/* Two flanking surface "patches" framing the point */}
-      <ElementPoly points="140,296 500,296 500,316 140,316" fill="yellow" note={0} />
-      <ElementPoly points="500,296 860,296 860,316 500,316" fill="blue" note={1} />
-      {/* Semicircle outline = locus of unit directions */}
-      <path className={`diagram-line diagram-line--soft ${diagramNote(2)}`} d="M280 296 A220 220 0 0 1 720 296" />
-      {/* Normal N — vertical from P */}
-      <ElementLine x1="500" y1="296" x2="500" y2="76" dotted note={3} />
-      {/* Three incoming rays — yellow */}
-      <ElementLine x1={L1.x} y1={L1.y} x2="500" y2="296" color="yellow" note={4} />
-      <ElementLine x1={L2.x} y1={L2.y} x2="500" y2="296" color="yellow" note={5} />
-      <ElementLine x1={L3.x} y1={L3.y} x2="500" y2="296" color="yellow" note={0} />
-      {/* Outgoing ray V — red, strong */}
-      <ElementLine x1="500" y1="296" x2={V.x} y2={V.y} color="red" note={1} strong />
-      {/* Light-source marker on the dominant incoming direction */}
-      <circle className={`diagram-fill diagram-fill--yellow diagram-high-fill ${diagramNote(2)}`} cx={L2.x} cy={L2.y} r="18" />
-      {/* Viewer marker on the outgoing direction */}
-      <circle className={`diagram-fill diagram-fill--red diagram-high-fill ${diagramNote(3)}`} cx={V.x} cy={V.y} r="18" />
-      {/* Angle arcs at P — incidence and view angles around the normal */}
-      <path className="diagram-line diagram-line--thin" d="M500 252 A44 44 0 0 0 469 264" />
-      <path className="diagram-line diagram-line--thin" d="M500 252 A44 44 0 0 1 531 264" />
-      {/* Baseline (surface) */}
-      <ElementLine x1="140" y1="296" x2="860" y2="296" color="black" note={4} strong />
-      {/* Point P at the surface */}
-      <circle className={`diagram-dot ${diagramNote(5)}`} cx="500" cy="296" r="7" />
-      {/* Labels */}
-      <ElementPoint x="500" y="296" label="P" note={0} dy={28} />
-      <ElementPoint x="500" y="76" label="N" note={1} dy={-14} />
-      <ElementPoint x={L2.x} y={L2.y} label="L" note={2} dy={-22} />
-      <ElementPoint x={V.x} y={V.y} label="V" note={3} dy={-22} />
+      <ElementPoly points={`120,${P.y} ${P.x},${P.y} ${P.x},${P.y + 18} 120,${P.y + 18}`} fill="yellow" note={0} />
+      <ElementPoly points={`${P.x},${P.y} 880,${P.y} 880,${P.y + 18} ${P.x},${P.y + 18}`} fill="blue" note={1} />
+      <path
+        className={`diagram-line diagram-line--soft ${diagramNote(2)}`}
+        d={`M${P.x - r} ${P.y} A${r} ${r} 0 0 1 ${P.x + r} ${P.y}`}
+      />
+      <ElementLine x1={P.x} y1={P.y} x2={P.x} y2={P.y - r} dotted note={3} />
+      <ElementLine x1={f(L1.x)} y1={f(L1.y)} x2={P.x} y2={P.y} color="yellow" note={4} />
+      <ElementLine x1={f(L2.x)} y1={f(L2.y)} x2={P.x} y2={P.y} color="yellow" note={5} />
+      <ElementLine x1={f(L3.x)} y1={f(L3.y)} x2={P.x} y2={P.y} color="yellow" note={0} />
+      <ElementLine x1={P.x} y1={P.y} x2={f(V.x)} y2={f(V.y)} color="red" note={1} strong />
+      <circle
+        className={`diagram-fill diagram-fill--yellow diagram-high-fill ${diagramNote(2)}`}
+        cx={f(L2.x)}
+        cy={f(L2.y)}
+        r="20"
+      />
+      <circle
+        className={`diagram-fill diagram-fill--red diagram-high-fill ${diagramNote(3)}`}
+        cx={f(V.x)}
+        cy={f(V.y)}
+        r="20"
+      />
+      <path className="diagram-line diagram-line--thin" d={`M${P.x} ${P.y - 48} A48 48 0 0 0 ${P.x - 34} ${P.y - 34}`} />
+      <path className="diagram-line diagram-line--thin" d={`M${P.x} ${P.y - 48} A48 48 0 0 1 ${P.x + 34} ${P.y - 34}`} />
+      <ElementLine x1="120" y1={P.y} x2="880" y2={P.y} color="black" note={4} strong />
+      <circle className={`diagram-dot ${diagramNote(5)}`} cx={P.x} cy={P.y} r="7" />
+      <ElementPoint x={P.x} y={P.y} label="P" note={0} dy={32} />
+      <ElementPoint x={P.x} y={P.y - r} label="N" note={1} dy={-14} />
+      <ElementPoint x={f(L2.x)} y={f(L2.y)} label="L" note={2} dy={-26} />
+      <ElementPoint x={f(V.x)} y={f(V.y)} label="V" note={3} dy={-26} />
     </>
   );
 }
 
 function ElementsLightFieldDiagram() {
-  // Two parallel planes parameterize a four-dimensional field of rays.
-  // Each ray = a (u, v) pair on the top plane + a (s, t) pair on the
-  // bottom plane. Three named points per plane, rays connecting them,
-  // one ray emphasised in red as the chosen sample (the resampling op).
-  const yTop = 120;
-  const yBot = 320;
+  // Two parallel planes parameterize a 4D field of rays. Centered with
+  // both planes spanning x=120..880, top plane at y=110, bottom at 350.
+  const yTop = 110;
+  const yBot = 350;
   const cols = [
-    { x: 260, top: 'A', bot: "A'" },
-    { x: 420, top: 'B', bot: "B'" },
-    { x: 580, top: 'C', bot: "C'" },
-    { x: 740, top: 'D', bot: "D'" },
+    { x: 240, top: 'A', bot: "A'" },
+    { x: 413, top: 'B', bot: "B'" },
+    { x: 587, top: 'C', bot: "C'" },
+    { x: 760, top: 'D', bot: "D'" },
   ];
   return (
     <>
       <ByrneTitle>TWO PARALLELS PARAMETERIZE A FIELD OF RAYS</ByrneTitle>
-      {/* Plane bars */}
-      <ElementPoly points={`160,${yTop - 6} 840,${yTop - 6} 840,${yTop + 6} 160,${yTop + 6}`} fill="blue" note={0} />
-      <ElementPoly points={`160,${yBot - 6} 840,${yBot - 6} 840,${yBot + 6} 160,${yBot + 6}`} fill="yellow" note={1} />
-      {/* Plane outlines */}
-      <ElementLine x1="160" y1={yTop} x2="840" y2={yTop} color="black" note={2} strong />
-      <ElementLine x1="160" y1={yBot} x2="840" y2={yBot} color="black" note={3} strong />
-      {/* Vertical alignment guides through each column */}
+      <ElementPoly
+        points={`120,${yTop - 7} 880,${yTop - 7} 880,${yTop + 7} 120,${yTop + 7}`}
+        fill="blue"
+        note={0}
+      />
+      <ElementPoly
+        points={`120,${yBot - 7} 880,${yBot - 7} 880,${yBot + 7} 120,${yBot + 7}`}
+        fill="yellow"
+        note={1}
+      />
+      <ElementLine x1="120" y1={yTop} x2="880" y2={yTop} color="black" note={2} strong />
+      <ElementLine x1="120" y1={yBot} x2="880" y2={yBot} color="black" note={3} strong />
       {cols.map((c, i) => (
-        <ElementLine key={`g-${i}`} x1={c.x} y1={yTop - 24} x2={c.x} y2={yBot + 24} dotted note={i % 6} />
+        <ElementLine
+          key={`g-${i}`}
+          x1={c.x}
+          y1={yTop - 28}
+          x2={c.x}
+          y2={yBot + 28}
+          dotted
+          note={i % 6}
+        />
       ))}
-      {/* Yellow rays — three diagonal samples */}
       <ElementLine x1={cols[0].x} y1={yTop} x2={cols[3].x} y2={yBot} color="yellow" note={4} />
       <ElementLine x1={cols[1].x} y1={yTop} x2={cols[0].x} y2={yBot} color="yellow" note={5} />
       <ElementLine x1={cols[3].x} y1={yTop} x2={cols[1].x} y2={yBot} color="yellow" note={0} />
-      {/* Blue rays */}
       <ElementLine x1={cols[2].x} y1={yTop} x2={cols[3].x} y2={yBot} color="blue" note={1} />
       <ElementLine x1={cols[0].x} y1={yTop} x2={cols[2].x} y2={yBot} color="blue" note={2} />
-      {/* The chosen ray — red, strong */}
       <ElementLine x1={cols[1].x} y1={yTop} x2={cols[2].x} y2={yBot} color="red" note={3} strong />
-      {/* Dot markers at every plane / column intersection */}
       {cols.map((c, i) => (
         <g key={`d-${i}`}>
           <circle className={`diagram-dot ${diagramNote(i)}`} cx={c.x} cy={yTop} r="6" />
           <circle className={`diagram-dot ${diagramNote((i + 3) % 6)}`} cx={c.x} cy={yBot} r="6" />
         </g>
       ))}
-      {/* Labels above the top plane and below the bottom plane */}
       {cols.map((c, i) => (
         <g key={`l-${i}`}>
-          <ElementPoint x={c.x} y={yTop} label={c.top} note={i % 6} dy={-22} />
-          <ElementPoint x={c.x} y={yBot} label={c.bot} note={(i + 2) % 6} dy={30} />
+          <ElementPoint x={c.x} y={yTop} label={c.top} note={i % 6} dy={-26} />
+          <ElementPoint x={c.x} y={yBot} label={c.bot} note={(i + 2) % 6} dy={32} />
         </g>
       ))}
     </>
@@ -3614,185 +3607,165 @@ function ElementsLightFieldDiagram() {
 
 function ElementsInterfaceDiagram() {
   // A diagram becomes an instrument when the hand can test the idea.
-  // A control disc at O is sectored into three regions (yellow/blue/
-  // red), each governing one parameter. A pointer arm OP swings out
-  // through the regions; a gesture vector PG shows the user's drag.
-  // O=(430,222), r=128. P at 30° on outer circle ≈ (430+128·cos30°,
-  // 222-128·sin30°) = (430+110.85, 222-64) = (540.85, 158).
+  // Control disc at O with three sectors (red/yellow/blue) covering
+  // the upper hemisphere; pointer OP swung up-right; gesture vector
+  // PG continues outward to G. Centered on the slot.
+  // O=(440,260), r=150. P at 30°: (440+130, 260-75) = (570, 185).
+  // G further out at 30°: (440+260·cos30°, 260-260·sin30°)
+  //                     = (440+225.17, 260-130) = (665.17, 130).
   return (
     <>
       <ByrneTitle>DIAGRAM AS INSTRUMENT</ByrneTitle>
-      {/* Three control sectors covering the upper hemisphere */}
-      <ElementWedge cx="430" cy="222" r="128" start={180} end={240} fill="red" note={0} />
-      <ElementWedge cx="430" cy="222" r="128" start={240} end={300} fill="yellow" note={1} />
-      <ElementWedge cx="430" cy="222" r="128" start={300} end={360} fill="blue" note={2} />
-      {/* Sector dividers — dotted construction radii */}
-      <ElementLine x1="430" y1="222" x2="302" y2="222" dotted note={3} />
-      <ElementLine x1="430" y1="222" x2="366" y2="111.13" dotted note={4} />
-      <ElementLine x1="430" y1="222" x2="494" y2="111.13" dotted note={5} />
-      <ElementLine x1="430" y1="222" x2="558" y2="222" dotted note={0} />
-      {/* Outer control circle */}
-      <ElementCircle cx="430" cy="222" r="128" color="black" note={1} />
-      {/* Pointer arm OP — strong yellow line at 30° */}
-      <ElementLine x1="430" y1="222" x2="540.85" y2="158" color="yellow" note={2} strong />
-      {/* Gesture vector — pointer being dragged outward to G */}
-      <ElementLine x1="540.85" y1="158" x2="708" y2="62" color="red" note={3} strong />
-      {/* Trace of the gesture's path — dotted arc echoing the swing */}
-      <path className={`diagram-line diagram-line--soft ${diagramNote(4)}`} d="M540.85 158 Q628 86 708 62" />
-      {/* Origin marker */}
-      <circle className={`diagram-dot ${diagramNote(5)}`} cx="430" cy="222" r="7" />
-      {/* Labels */}
-      <ElementPoint x="430" y="222" label="O" note={0} dy={26} />
-      <ElementPoint x="540.85" y="158" label="P" note={1} dy={-14} />
-      <ElementPoint x="708" y="62" label="G" note={2} dy={-14} />
+      <ElementWedge cx="440" cy="260" r="150" start={180} end={240} fill="red" note={0} />
+      <ElementWedge cx="440" cy="260" r="150" start={240} end={300} fill="yellow" note={1} />
+      <ElementWedge cx="440" cy="260" r="150" start={300} end={360} fill="blue" note={2} />
+      <ElementLine x1="440" y1="260" x2="290" y2="260" dotted note={3} />
+      <ElementLine x1="440" y1="260" x2="365" y2="130.10" dotted note={4} />
+      <ElementLine x1="440" y1="260" x2="515" y2="130.10" dotted note={5} />
+      <ElementLine x1="440" y1="260" x2="590" y2="260" dotted note={0} />
+      <ElementCircle cx="440" cy="260" r="150" color="black" note={1} />
+      <ElementLine x1="440" y1="260" x2="570" y2="185" color="yellow" note={2} strong />
+      <ElementLine x1="570" y1="185" x2="780" y2="64" color="red" note={3} strong />
+      <path
+        className={`diagram-line diagram-line--soft ${diagramNote(4)}`}
+        d="M570 185 Q680 100 780 64"
+      />
+      <circle className={`diagram-dot ${diagramNote(5)}`} cx="440" cy="260" r="7" />
+      <ElementPoint x="440" y="260" label="O" note={0} dy={26} />
+      <ElementPoint x="570" y="185" label="P" note={1} dy={-14} />
+      <ElementPoint x="780" y="64" label="G" note={2} dy={-14} />
     </>
   );
 }
 
 function ElementsStageDiagram() {
-  // Angle of incidence equals angle of reflection — Euclid's catoptrics.
-  // An object at O, a mirror surface (yellow) tilted in the world, a
-  // viewer at V. The ray O → M → V bounces off the mirror at M with
-  // equal angles to the normal. Behind the mirror, the dotted apparent
-  // image I sits on the extended sightline.
-  // Floor at y=310. Mirror tilted from (340,82) to (560,310). M=(450,196).
-  // Normal at M perpendicular to mirror. O=(170,290). V=(820,290).
-  // Apparent image I behind the mirror — dotted construction.
+  // Angle of incidence equals angle of reflection. Object O at floor
+  // left, viewer V at floor right, mirror M at the centre (tilted),
+  // apparent image O' behind the mirror on the dotted sightline.
+  // Floor at y=350. Mirror from (430,90) to (520,350). M=(475,220).
+  // Normal at M perpendicular to mirror direction (-90, 260).
+  // Normalised normal × 110 length toward upper-right.
   return (
     <>
       <ByrneTitle>EQUAL ANGLES AT A MIRROR</ByrneTitle>
-      {/* Stage floor */}
-      <ElementLine x1="120" y1="310" x2="880" y2="310" color="black" note={0} strong />
-      {/* Mirror — strong yellow, tilted */}
-      <ElementLine x1="340" y1="82" x2="560" y2="310" color="yellow" note={1} strong />
-      {/* Object O — small red disk */}
-      <circle className={`diagram-fill diagram-fill--red diagram-high-fill ${diagramNote(2)}`} cx="170" cy="290" r="16" />
-      {/* Viewer eye V — small blue disk */}
-      <circle className={`diagram-fill diagram-fill--blue diagram-high-fill ${diagramNote(3)}`} cx="820" cy="290" r="16" />
-      {/* Incident ray O → M (blue) */}
-      <ElementLine x1="170" y1="290" x2="450" y2="196" color="blue" note={4} strong />
-      {/* Reflected ray M → V (red) */}
-      <ElementLine x1="450" y1="196" x2="820" y2="290" color="red" note={5} strong />
-      {/* Normal at M — perpendicular to mirror surface */}
-      <ElementLine x1="450" y1="196" x2="555" y2="148" dotted note={0} />
-      {/* Apparent image I behind the mirror — dotted construction line
-          from V through M extending out the back */}
-      <ElementLine x1="820" y1="290" x2="170" y2="102" dotted note={1} />
-      {/* Image O' marker — small dotted circle (apparent) */}
-      <ElementCircle cx="170" cy="102" r="14" color="red" dotted note={2} />
-      {/* Equal-angle arcs at M */}
-      <path className="diagram-line diagram-line--thin" d="M412 196 A38 38 0 0 0 449 158" />
-      <path className="diagram-line diagram-line--thin" d="M450 158 A38 38 0 0 0 488 196" />
-      {/* Labels */}
-      <ElementPoint x="170" y="290" label="O" note={3} dy={24} />
-      <ElementPoint x="820" y="290" label="V" note={4} dy={24} />
-      <ElementPoint x="450" y="196" label="M" note={5} dy={26} />
-      <ElementPoint x="170" y="102" label="O'" note={0} dy={-14} />
+      <ElementLine x1="120" y1="350" x2="880" y2="350" color="black" note={0} strong />
+      <ElementLine x1="430" y1="90" x2="520" y2="350" color="yellow" note={1} strong />
+      <circle
+        className={`diagram-fill diagram-fill--red diagram-high-fill ${diagramNote(2)}`}
+        cx="170"
+        cy="330"
+        r="18"
+      />
+      <circle
+        className={`diagram-fill diagram-fill--blue diagram-high-fill ${diagramNote(3)}`}
+        cx="820"
+        cy="330"
+        r="18"
+      />
+      <ElementLine x1="170" y1="330" x2="475" y2="220" color="blue" note={4} strong />
+      <ElementLine x1="475" y1="220" x2="820" y2="330" color="red" note={5} strong />
+      <ElementLine x1="475" y1="220" x2="582" y2="183" dotted note={0} />
+      <ElementLine x1="820" y1="330" x2="170" y2="116" dotted note={1} />
+      <ElementCircle cx="170" cy="116" r="16" color="red" dotted note={2} />
+      <path className="diagram-line diagram-line--thin" d="M438 222 A40 40 0 0 0 472 182" />
+      <path className="diagram-line diagram-line--thin" d="M478 182 A40 40 0 0 0 512 222" />
+      <ElementPoint x="170" y="330" label="O" note={3} dy={26} />
+      <ElementPoint x="820" y="330" label="V" note={4} dy={26} />
+      <ElementPoint x="475" y="220" label="M" note={5} dy={28} />
+      <ElementPoint x="170" y="116" label="O'" note={0} dy={-14} />
     </>
   );
 }
 
 function ElementsVolumeDiagram() {
-  // The frustum of vision — a virtual production volume. Camera at C
-  // (left), four sight rays defining the viewing frustum out to a
-  // distant face DEFG; the volume itself is the truncated pyramid.
-  // Top face (red), back face (blue), bottom face (yellow).
+  // Frustum of a viewing volume — a truncated pyramid extending from
+  // camera C at left out to the distant face. Top face red, back face
+  // blue, bottom face yellow. Sight rays from C through the four near
+  // corners continuing to the four far corners.
   return (
     <>
       <ByrneTitle>FRUSTUM OF A VIEWING VOLUME</ByrneTitle>
-      {/* Frustum faces */}
-      <ElementPoly points="516,96 772,96 884,190 626,190" fill="red" note={0} />
-      <ElementPoly points="626,190 884,190 884,332 626,332" fill="blue" note={1} />
-      <ElementPoly points="292,332 626,332 884,332 548,368" fill="yellow" note={2} />
-      {/* Frustum outline (strong edges) */}
-      <ElementLine x1="516" y1="96" x2="772" y2="96" color="black" note={3} strong />
-      <ElementLine x1="772" y1="96" x2="884" y2="190" color="black" note={4} strong />
-      <ElementLine x1="884" y1="190" x2="884" y2="332" color="black" note={5} strong />
-      <ElementLine x1="626" y1="332" x2="884" y2="332" color="black" note={0} strong />
-      <ElementLine x1="516" y1="96" x2="626" y2="190" color="black" note={1} strong />
-      <ElementLine x1="626" y1="190" x2="626" y2="332" color="black" note={2} strong />
-      {/* Sight rays from camera C through frustum corners */}
-      <ElementLine x1="136" y1="254" x2="516" y2="96" color="blue" note={3} />
-      <ElementLine x1="136" y1="254" x2="772" y2="96" color="blue" note={4} dotted />
-      <ElementLine x1="136" y1="254" x2="884" y2="332" color="red" note={5} />
-      <ElementLine x1="136" y1="254" x2="292" y2="332" color="red" note={0} />
-      {/* Near plane — dotted construction near the camera */}
-      <ElementLine x1="376" y1="184" x2="376" y2="298" dotted note={1} />
-      {/* Camera body */}
-      <ElementPoly points="104,236 150,236 150,272 104,272" fill="black" note={2} />
-      <ElementLine x1="104" y1="236" x2="150" y2="272" color="red" note={3} strong />
-      {/* Labels */}
-      <ElementPoint x="136" y="254" label="C" note={4} dy={28} />
-      <ElementPoint x="516" y="96" label="A" note={5} dy={-14} />
-      <ElementPoint x="884" y="190" label="B" note={0} dy={-14} />
-      <ElementPoint x="884" y="332" label="C'" note={1} dy={26} />
-      <ElementPoint x="292" y="332" label="D" note={2} dy={26} />
+      <ElementPoly points="500,90 740,90 860,200 600,200" fill="red" note={0} />
+      <ElementPoly points="600,200 860,200 860,340 600,340" fill="blue" note={1} />
+      <ElementPoly points="320,340 600,340 860,340 540,370" fill="yellow" note={2} />
+      <ElementLine x1="500" y1="90" x2="740" y2="90" color="black" note={3} strong />
+      <ElementLine x1="740" y1="90" x2="860" y2="200" color="black" note={4} strong />
+      <ElementLine x1="860" y1="200" x2="860" y2="340" color="black" note={5} strong />
+      <ElementLine x1="600" y1="340" x2="860" y2="340" color="black" note={0} strong />
+      <ElementLine x1="500" y1="90" x2="600" y2="200" color="black" note={1} strong />
+      <ElementLine x1="600" y1="200" x2="600" y2="340" color="black" note={2} strong />
+      <ElementLine x1="160" y1="240" x2="500" y2="90" color="blue" note={3} />
+      <ElementLine x1="160" y1="240" x2="740" y2="90" color="blue" note={4} dotted />
+      <ElementLine x1="160" y1="240" x2="860" y2="340" color="red" note={5} />
+      <ElementLine x1="160" y1="240" x2="320" y2="340" color="red" note={0} />
+      <ElementLine x1="400" y1="180" x2="400" y2="296" dotted note={1} />
+      <ElementPoly points="120,218 170,218 170,262 120,262" fill="black" note={2} />
+      <ElementLine x1="120" y1="218" x2="170" y2="262" color="red" note={3} strong />
+      <ElementPoint x="160" y="240" label="C" note={4} dy={28} />
+      <ElementPoint x="500" y="90" label="A" note={5} dy={-14} />
+      <ElementPoint x="860" y="200" label="B" note={0} dy={-14} />
+      <ElementPoint x="860" y="340" label="C'" note={1} dy={26} />
+      <ElementPoint x="320" y="340" label="D" note={2} dy={26} />
     </>
   );
 }
 
 function ElementsPrototypeDiagram() {
-  // Three similar triangles in a row — iteration as construction.
-  // Each triangle shares its base with the next; the apexes line up
-  // on a horizontal proof line. Diagonal red and yellow lines from
-  // apex to apex show the through-step from version to version.
-  // Apexes A, B, C on the same parallel — Euclid VI.1 (triangles
-  // between same parallels with same base have proportional areas).
+  // Three similar triangles between parallels — Euclid VI.1. Three
+  // iterations on a shared baseline with apexes on a shared upper
+  // parallel. Diagonal through-line connects A → B → C.
   return (
     <>
       <ByrneTitle>PROTOTYPE AS CONSTRUCTION — VI.1</ByrneTitle>
-      {/* Three similar triangles, alternating colours */}
-      <ElementPoly points="188,250 308,86 428,250" fill="yellow" note={0} />
-      <ElementPoly points="428,250 548,86 668,250" fill="blue" note={1} />
-      <ElementPoly points="668,250 788,86 908,250" fill="red" note={2} />
-      {/* Base (the timeline) — strong black */}
-      <ElementLine x1="188" y1="250" x2="908" y2="250" color="black" note={3} strong />
-      {/* Parallel through the apexes — dotted construction */}
-      <ElementLine x1="288" y1="86" x2="808" y2="86" dotted note={4} />
-      {/* Through-line: apex-to-apex diagonals */}
-      <ElementLine x1="308" y1="86" x2="548" y2="86" color="red" note={5} strong />
-      <ElementLine x1="548" y1="86" x2="788" y2="86" color="red" note={0} strong />
-      {/* Altitudes from each apex down to the base — dotted */}
-      <ElementLine x1="308" y1="86" x2="308" y2="250" dotted note={1} />
-      <ElementLine x1="548" y1="86" x2="548" y2="250" dotted note={2} />
-      <ElementLine x1="788" y1="86" x2="788" y2="250" dotted note={3} />
-      {/* Right-angle markers at each foot */}
-      <path className="diagram-line diagram-line--thin" d="M308 232 H326 V250 M548 232 H566 V250 M788 232 H806 V250" />
-      {/* Footers — version stamp baseline */}
-      <ElementLine x1="256" y1="330" x2="824" y2="330" color="blue" note={4} dotted />
-      {/* Labels at each apex (V1 → V2 → V3 via A B C) */}
-      <ElementPoint x="308" y="86" label="A" note={5} dy={-14} />
-      <ElementPoint x="548" y="86" label="B" note={0} dy={-14} />
-      <ElementPoint x="788" y="86" label="C" note={1} dy={-14} />
-      <ElementPoint x="188" y="250" label="0" note={2} dy={26} />
-      <ElementPoint x="908" y="250" label="n" note={3} dy={26} />
+      <ElementPoly points="140,310 260,110 380,310" fill="yellow" note={0} />
+      <ElementPoly points="380,310 500,110 620,310" fill="blue" note={1} />
+      <ElementPoly points="620,310 740,110 860,310" fill="red" note={2} />
+      <ElementLine x1="140" y1="310" x2="860" y2="310" color="black" note={3} strong />
+      <ElementLine x1="240" y1="110" x2="760" y2="110" dotted note={4} />
+      <ElementLine x1="260" y1="110" x2="500" y2="110" color="red" note={5} strong />
+      <ElementLine x1="500" y1="110" x2="740" y2="110" color="red" note={0} strong />
+      <ElementLine x1="260" y1="110" x2="260" y2="310" dotted note={1} />
+      <ElementLine x1="500" y1="110" x2="500" y2="310" dotted note={2} />
+      <ElementLine x1="740" y1="110" x2="740" y2="310" dotted note={3} />
+      <path
+        className="diagram-line diagram-line--thin"
+        d="M260 292 H278 V310 M500 292 H518 V310 M740 292 H758 V310"
+      />
+      <ElementPoint x="260" y="110" label="A" note={5} dy={-14} />
+      <ElementPoint x="500" y="110" label="B" note={0} dy={-14} />
+      <ElementPoint x="740" y="110" label="C" note={1} dy={-14} />
+      <ElementPoint x="140" y="310" label="0" note={2} dy={26} />
+      <ElementPoint x="860" y="310" label="n" note={3} dy={26} />
     </>
   );
 }
 
 function ElementsNeuralDiagram() {
-  // Feed-forward network — three layers of nodes connected by edges.
-  // Input layer (yellow) X, hidden layers (blue), output (red) Y.
-  // One forward path is drawn in red, strong — the active pass.
+  // Feed-forward network. Four layers across, dotted edges connecting
+  // each layer fully; one forward path in red strong; dotted blue loss
+  // return arc beneath. Layer brackets and labels under each column.
   const layers = [
-    { x: 220, ys: [132, 222, 312], fill: 'yellow', label: 'X' },
-    { x: 430, ys: [112, 222, 332], fill: 'blue', label: 'H₁' },
-    { x: 640, ys: [160, 284], fill: 'red', label: 'H₂' },
-    { x: 822, ys: [222], fill: 'blue', label: 'Y' },
+    { x: 160, ys: [130, 230, 330], fill: 'yellow', label: 'X' },
+    { x: 380, ys: [110, 230, 350], fill: 'blue', label: 'H₁' },
+    { x: 600, ys: [160, 290], fill: 'red', label: 'H₂' },
+    { x: 840, ys: [230], fill: 'blue', label: 'Y' },
   ];
+  // Build the dotted edge list programmatically (fully connected).
+  const edges = [];
+  for (let l = 0; l < layers.length - 1; l++) {
+    for (const yA of layers[l].ys) {
+      for (const yB of layers[l + 1].ys) {
+        edges.push(`M${layers[l].x} ${yA} L${layers[l + 1].x} ${yB}`);
+      }
+    }
+  }
   return (
     <>
       <ByrneTitle>LEARNING AS CORRECTION</ByrneTitle>
-      {/* All edges as dotted construction lines */}
-      <path
-        className={`diagram-line diagram-line--dotted ${diagramNote(0)}`}
-        d="M220 132 L430 112 L640 160 L822 222 M220 222 L430 222 L640 160 M220 312 L430 332 L640 284 L822 222 M220 132 L430 222 M220 132 L430 332 M220 222 L430 112 M220 222 L430 332 M220 312 L430 112 M220 312 L430 222 M430 112 L640 284 M430 222 L640 160 M430 222 L640 284 M430 332 L640 160 M640 160 L822 222 M640 284 L822 222"
-      />
-      {/* Active forward path — red strong */}
-      <ElementLine x1="220" y1="312" x2="430" y2="222" color="red" note={1} strong />
-      <ElementLine x1="430" y1="222" x2="640" y2="160" color="red" note={2} strong />
-      <ElementLine x1="640" y1="160" x2="822" y2="222" color="red" note={3} strong />
-      {/* Nodes */}
+      <path className={`diagram-line diagram-line--dotted ${diagramNote(0)}`} d={edges.join(' ')} />
+      <ElementLine x1={layers[0].x} y1={layers[0].ys[2]} x2={layers[1].x} y2={layers[1].ys[1]} color="red" note={1} strong />
+      <ElementLine x1={layers[1].x} y1={layers[1].ys[1]} x2={layers[2].x} y2={layers[2].ys[0]} color="red" note={2} strong />
+      <ElementLine x1={layers[2].x} y1={layers[2].ys[0]} x2={layers[3].x} y2={layers[3].ys[0]} color="red" note={3} strong />
       {layers.flatMap((layer, li) =>
         layer.ys.map((y, yi) => (
           <circle
@@ -3800,114 +3773,88 @@ function ElementsNeuralDiagram() {
             className={`diagram-fill diagram-fill--${layer.fill} diagram-high-fill ${diagramNote((li + yi) % 6)}`}
             cx={layer.x}
             cy={y}
-            r="20"
+            r="22"
           />
         ))
       )}
-      {/* Loss / correction return path — dotted blue arrow back */}
-      <path className={`diagram-line diagram-line--dotted ${diagramNote(4)}`} d="M822 240 Q620 380 220 330" />
-      {/* Layer brackets — light parallel guides under each layer */}
+      <path
+        className={`diagram-line diagram-line--dotted ${diagramNote(4)}`}
+        d={`M${layers[3].x} 260 Q ${(layers[0].x + layers[3].x) / 2} 410 ${layers[0].x} 360`}
+      />
       {layers.map((layer, i) => (
-        <ElementLine
-          key={`bar-${i}`}
-          x1={layer.x - 28}
-          y1={392}
-          x2={layer.x + 28}
-          y2={392}
-          color="black"
-          note={i % 6}
-        />
-      ))}
-      {/* Layer labels */}
-      {layers.map((layer, i) => (
-        <ElementPoint key={`lbl-${i}`} x={layer.x} y={392} label={layer.label} note={(i + 2) % 6} dy={22} />
+        <ElementPoint key={`lbl-${i}`} x={layer.x} y={388} label={layer.label} note={(i + 2) % 6} dy={6} />
       ))}
     </>
   );
 }
 
 function ElementsAttentionDiagram() {
-  // Scaled dot-product attention as a Euclidean correspondence. Three
-  // input vectors Q, K, V on the left feed into a middle matrix A
-  // (queries × keys → weights); the weighted V emerges on the right
-  // as the context vector C. The grid in A is the dot-product table.
+  // Scaled dot-product attention as correspondence. Three input vectors
+  // Q, K, V at left feed into attention matrix A; the weighted V emerges
+  // as context vector C at right. Centered vertically and horizontally.
   return (
     <>
       <ByrneTitle>ATTENTION AS CORRESPONDENCE</ByrneTitle>
-      {/* Three input vectors */}
-      <ElementPoly points="154,114 332,114 332,164 154,164" fill="blue" note={0} />
-      <ElementPoly points="154,204 332,204 332,254 154,254" fill="yellow" note={1} />
-      <ElementPoly points="154,294 332,294 332,344 154,344" fill="red" note={2} />
-      {/* Attention matrix A — central yellow grid */}
-      <ElementPoly points="470,118 626,118 626,274 470,274" fill="yellow" note={3} />
-      {/* Context vector output C */}
-      <ElementPoly points="754,196 878,196 878,272 754,272" fill="blue" note={4} />
-      {/* Lines from each input vector into A */}
-      <ElementLine x1="332" y1="139" x2="470" y2="164" color="blue" note={0} strong />
-      <ElementLine x1="332" y1="229" x2="470" y2="196" color="yellow" note={1} strong />
-      <ElementLine x1="332" y1="319" x2="470" y2="238" color="red" note={2} strong />
-      {/* Line from A to context output — strong red, the chosen path */}
-      <ElementLine x1="626" y1="196" x2="754" y2="234" color="red" note={3} strong />
-      {/* Internal grid of A — dotted construction (rows × cols) */}
+      <ElementPoly points="140,110 320,110 320,168 140,168" fill="blue" note={0} />
+      <ElementPoly points="140,210 320,210 320,268 140,268" fill="yellow" note={1} />
+      <ElementPoly points="140,310 320,310 320,368 140,368" fill="red" note={2} />
+      <ElementPoly points="450,110 630,110 630,330 450,330" fill="yellow" note={3} />
+      <ElementPoly points="760,200 880,200 880,278 760,278" fill="blue" note={4} />
+      <ElementLine x1="320" y1="139" x2="450" y2="156" color="blue" note={0} strong />
+      <ElementLine x1="320" y1="239" x2="450" y2="220" color="yellow" note={1} strong />
+      <ElementLine x1="320" y1="339" x2="450" y2="284" color="red" note={2} strong />
+      <ElementLine x1="630" y1="220" x2="760" y2="240" color="red" note={3} strong />
       <path
         className="diagram-line diagram-line--dotted"
-        d="M510 118 V274 M550 118 V274 M590 118 V274 M470 158 H626 M470 196 H626 M470 234 H626"
+        d="M495 110 V330 M540 110 V330 M585 110 V330 M450 156 H630 M450 220 H630 M450 284 H630"
       />
-      {/* Outline boxes (so the strong edges of each block read clearly) */}
-      <ElementLine x1="154" y1="114" x2="332" y2="114" color="black" note={4} />
-      <ElementLine x1="154" y1="164" x2="332" y2="164" color="black" note={5} />
-      <ElementLine x1="470" y1="118" x2="626" y2="118" color="black" note={0} />
-      <ElementLine x1="470" y1="274" x2="626" y2="274" color="black" note={1} />
-      {/* Labels: Q, K, V on inputs; A on matrix; C on context */}
-      <ElementPoint x="243" y="139" label="Q" note={2} dy={6} />
-      <ElementPoint x="243" y="229" label="K" note={3} dy={6} />
-      <ElementPoint x="243" y="319" label="V" note={4} dy={6} />
-      <ElementPoint x="548" y="196" label="A" note={5} dy={6} />
-      <ElementPoint x="816" y="234" label="C" note={0} dy={6} />
+      <ElementLine x1="140" y1="110" x2="320" y2="110" color="black" note={4} />
+      <ElementLine x1="140" y1="368" x2="320" y2="368" color="black" note={5} />
+      <ElementLine x1="450" y1="110" x2="630" y2="110" color="black" note={0} />
+      <ElementLine x1="450" y1="330" x2="630" y2="330" color="black" note={1} />
+      <ElementPoint x="230" y="139" label="Q" note={2} dy={6} />
+      <ElementPoint x="230" y="239" label="K" note={3} dy={6} />
+      <ElementPoint x="230" y="339" label="V" note={4} dy={6} />
+      <ElementPoint x="540" y="220" label="A" note={5} dy={6} />
+      <ElementPoint x="820" y="239" label="C" note={0} dy={6} />
     </>
   );
 }
 
 function ElementsStoryDiagram() {
-  // Extreme and Mean Ratio — Euclid VI.30. Cut AB at C so that the
-  // whole is to the greater as the greater is to the lesser; the line
-  // encodes its own proportion. The through-line of the work: one
-  // figure containing its own ratio.
-  // AB from (260,300) to (740,300), length 480. BD = AB/2 = 240
-  // perpendicular at B. AD = √(480² + 240²) ≈ 536.66.
-  // E on AD with DE = DB = 240 → E ≈ (525.34, 167.33).
-  // C on AB with AC = AE ≈ 296.66 → C ≈ (556.66, 300).
-  // Check: AC / CB = 296.66 / 183.34 ≈ 1.618 (φ).
+  // Extreme and Mean Ratio — Euclid VI.30. AB centred on the slot, cut
+  // at C so AB : AC = AC : CB (golden section).
+  // A=(180,340), B=(780,340). AB = 600. BD = AB/2 = 300 perpendicular
+  // at B → D=(780,40). AD = √(600² + 300²) ≈ 670.82.
+  // DE = DB = 300 along AD from D toward A. Unit vector D→A:
+  //   ((180-780)/670.82, (340-40)/670.82) = (-0.8944, 0.4472).
+  // E = D + 300 × unit = (780 - 268.33, 40 + 134.16) = (511.67, 174.16).
+  // AE = AD - DE = 370.82. C = A + AE × (1,0) = (550.82, 340).
+  // Check: AC = 370.82, CB = 780 - 550.82 = 229.18. φ = 1.618. ✓
   return (
     <>
       <ByrneTitle>EXTREME AND MEAN RATIO ON AB</ByrneTitle>
-      {/* Construction triangle ABD shaded faintly */}
-      <ElementPoly points="260,300 740,300 740,60" fill="yellow" note={0} />
-      {/* Highlight the smaller similar triangle AEB' (visualised by
-          taking E above AB and dropping to C) using red. This is the
-          "extreme" portion that fits the golden ratio. */}
-      <ElementPoly points="260,300 556.66,300 525.34,167.33" fill="red" note={1} />
-      {/* Arc from D centered at B (radius DB) — the construction step
-          that locates E on AD. Quarter arc from B straight up to D. */}
-      <path className={`diagram-line diagram-line--soft ${diagramNote(2)}`} d="M740 60 A240 240 0 0 1 500 300" />
-      {/* Arc from A centered at A (radius AE) — locates C on AB. */}
-      <path className={`diagram-line diagram-line--soft ${diagramNote(3)}`} d="M556.66 300 A296.66 296.66 0 0 0 525.34 167.33" />
-      {/* Construction lines: BD vertical, AD hypotenuse */}
-      <ElementLine x1="740" y1="300" x2="740" y2="60" dotted note={4} />
-      <ElementLine x1="260" y1="300" x2="740" y2="60" dotted note={5} />
-      {/* Baseline AC (greater) blue, CB (lesser) red */}
-      <ElementLine x1="260" y1="300" x2="556.66" y2="300" color="blue" note={0} strong />
-      <ElementLine x1="556.66" y1="300" x2="740" y2="300" color="red" note={1} strong />
-      {/* AE — segment of the hypotenuse equal to AC */}
-      <ElementLine x1="260" y1="300" x2="525.34" y2="167.33" color="blue" note={2} />
-      {/* Right-angle marker at B */}
-      <path className="diagram-line diagram-line--thin" d="M740 282 H722 V300" />
-      {/* Vertex labels */}
-      <ElementPoint x="260" y="300" label="A" note={3} dy={22} />
-      <ElementPoint x="556.66" y="300" label="C" note={4} dy={22} />
-      <ElementPoint x="740" y="300" label="B" note={5} dy={22} />
-      <ElementPoint x="740" y="60" label="D" note={0} dy={-14} />
-      <ElementPoint x="525.34" y="167.33" label="E" note={1} dy={-14} />
+      <ElementPoly points="180,340 780,340 780,40" fill="yellow" note={0} />
+      <ElementPoly points="180,340 550.82,340 511.67,174.16" fill="red" note={1} />
+      <path
+        className={`diagram-line diagram-line--soft ${diagramNote(2)}`}
+        d="M780 40 A300 300 0 0 1 480 340"
+      />
+      <path
+        className={`diagram-line diagram-line--soft ${diagramNote(3)}`}
+        d="M550.82 340 A370.82 370.82 0 0 0 511.67 174.16"
+      />
+      <ElementLine x1="780" y1="340" x2="780" y2="40" dotted note={4} />
+      <ElementLine x1="180" y1="340" x2="780" y2="40" dotted note={5} />
+      <ElementLine x1="180" y1="340" x2="550.82" y2="340" color="blue" note={0} strong />
+      <ElementLine x1="550.82" y1="340" x2="780" y2="340" color="red" note={1} strong />
+      <ElementLine x1="180" y1="340" x2="511.67" y2="174.16" color="blue" note={2} />
+      <path className="diagram-line diagram-line--thin" d="M780 322 H762 V340" />
+      <ElementPoint x="180" y="340" label="A" note={3} dy={24} />
+      <ElementPoint x="550.82" y="340" label="C" note={4} dy={24} />
+      <ElementPoint x="780" y="340" label="B" note={5} dy={24} />
+      <ElementPoint x="780" y="40" label="D" note={0} dy={-14} />
+      <ElementPoint x="511.67" y="174.16" label="E" note={1} dy={-14} />
     </>
   );
 }
