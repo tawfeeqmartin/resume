@@ -1281,6 +1281,14 @@ function MusicStation() {
 
   const toggle = async () => {
     const requested = !engine.enabled;
+    if (requested) {
+      // Audio is off and the user clicked the oscillator / gap — they're
+      // asking for the full mix. Unmute any stems that were muted from
+      // a previous solo before starting playback.
+      ['drums', 'harmony', 'melody'].forEach((s) => {
+        if (engine.stemMutes[s]) engine.toggleStemMute(s);
+      });
+    }
     setEnabled(requested);
     try {
       const next = await engine.setEnabled(requested);
@@ -1615,9 +1623,15 @@ function StemMuteControls() {
   }, [engine]);
 
   const toggle = (stem) => {
-    // If audio is off, the first click in the music station should
-    // start the music — not mute a stem that nobody can hear yet.
+    // Audio off → solo this stem. Mute the other two so the user hears
+    // just the section they tapped on. Audio on → normal per-stem toggle.
     if (!engine.enabled) {
+      ['drums', 'harmony', 'melody'].forEach((s) => {
+        const shouldMute = s !== stem;
+        if (Boolean(engine.stemMutes[s]) !== shouldMute) {
+          engine.toggleStemMute(s);
+        }
+      });
       engine.setEnabled(true).catch(() => {});
       return;
     }
@@ -1641,14 +1655,17 @@ function StemMuteControls() {
         const scrollLevel = state.scrollLayers?.[stem.id] ?? 1;
         const scrollSilenced = !userMuted && scrollLevel <= 0.01;
         let modifier;
-        if (userMuted) modifier = 'is-muted';
+        if (!state.enabled) modifier = 'is-muted';
+        else if (userMuted) modifier = 'is-muted';
         else if (scrollSilenced) modifier = 'is-scroll-muted';
         else modifier = 'is-on';
-        const title = userMuted
-          ? `Unmute ${stem.label}`
-          : scrollSilenced
-            ? `${stem.label} — quieted by current section (click to mute manually)`
-            : `Mute ${stem.label}`;
+        const title = !state.enabled
+          ? `Solo ${stem.label} (starts music with just this layer)`
+          : userMuted
+            ? `Unmute ${stem.label}`
+            : scrollSilenced
+              ? `${stem.label} — quieted by current section (click to mute manually)`
+              : `Mute ${stem.label}`;
         return (
           <button
             key={stem.id}
