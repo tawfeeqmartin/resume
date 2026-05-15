@@ -1355,35 +1355,40 @@ function AudioScope({ enabled }) {
       ctx.clearRect(0, 0, w, h);
 
       if (!enabled) {
-        // Audio off — smaller, faster, sharper-contrast arrow that jabs
-        // into the left edge of the scope. The chevron is sized to clear
-        // the round-cap stroke and stays fully inside the canvas through
-        // the entire jab cycle. Sharp alpha swing (0.28 → 1.0) carries
-        // most of the urgency.
-        const period = 460;
+        // Audio off — physically-eased "bump against the wall" arrow.
+        // Two-phase cycle: a cubic ease-in that accelerates the
+        // arrowhead leftward INTO the canvas edge, then a damped sine
+        // oscillation that bounces the tip back through zero, overshoots
+        // a touch, and settles. The tip clipping past the left edge is
+        // the gesture — a finger pressing against glass.
+        const period = 880;
         const t = ((now % period) + period) % period / period;
-        const lw = 1.4 * dpr;
-        const jabDistance = 3 * dpr;
-        const restHeadX = (lw / 2) + 1 * dpr;
+        const lw = 1.6 * dpr;
+        const jabDistance = 9 * dpr;
+        const restHeadX = 4 * dpr;
+        const phase1 = 0.16;
         let offset, alpha;
-        if (t < 0.16) {
-          const r = t / 0.16;
-          const s = r * r * (3 - 2 * r);
-          offset = -jabDistance * s;
-          alpha = 0.28 + 0.72 * s;
+        if (t < phase1) {
+          // Ease-in: cubic acceleration toward the wall.
+          const r = t / phase1;
+          const e = r * r * r;
+          offset = -jabDistance * e;
+          alpha = 0.32 + 0.68 * e;
         } else {
-          const r = (t - 0.16) / 0.84;
-          const k = 1 - r;
-          offset = -jabDistance * k * k;
-          alpha = 1.0 - 0.72 * r;
+          // Damped sine — wobble back to rest.
+          const r = (t - phase1) / (1 - phase1);
+          const decay = Math.exp(-r * 3.4);
+          const wobble = Math.cos(r * Math.PI * 2.2);
+          offset = -jabDistance * decay * wobble;
+          alpha = 1.0 - 0.68 * r;
         }
         ctx.strokeStyle = '#111';
         ctx.lineWidth = lw;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.globalAlpha = alpha;
-        const headX = Math.max(lw / 2, restHeadX + offset);
-        const headSize = Math.min(h * 0.26, w * 0.11);
+        const headX = restHeadX + offset;
+        const headSize = Math.min(h * 0.32, w * 0.13);
         ctx.beginPath();
         ctx.moveTo(headX + headSize, h / 2 - headSize);
         ctx.lineTo(headX,             h / 2);
