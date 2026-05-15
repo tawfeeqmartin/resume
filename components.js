@@ -1355,24 +1355,33 @@ function AudioScope({ enabled }) {
       ctx.clearRect(0, 0, w, h);
 
       if (!enabled) {
-        // Audio off — render a single static "click here" arrow pointing
-        // at the stem icons (which sit to the left of this canvas).
-        // Opacity breathes on a 1.6s sine for attention; no horizontal
-        // motion, which read as "escaping the frame" in the moving
-        // version. iOS-style anchored pointer.
-        const period = 1600;
+        // Audio off — the arrow knocks against the left edge of the
+        // scope (the line that separates it from the stem buttons).
+        // Quick jab in, slow retreat, repeat — physically reads as
+        // "tap these, right here" rather than as decorative motion.
+        const period = 900;
         const t = ((now % period) + period) % period / period;
-        const pulse = 0.5 + 0.5 * Math.sin(t * Math.PI * 2);
-        const baseAlpha = 0.42 + 0.45 * pulse;
+        const jabDistance = 9 * dpr;
+        let offset, alpha;
+        if (t < 0.22) {
+          // Fast push into the edge (smoothstep ease-in-out)
+          const r = t / 0.22;
+          const s = r * r * (3 - 2 * r);
+          offset = -jabDistance * s;
+          alpha = 0.45 + 0.5 * s;
+        } else {
+          // Slow retreat (ease-out quadratic)
+          const r = (t - 0.22) / 0.78;
+          const k = 1 - r;
+          offset = -jabDistance * k * k;
+          alpha = 0.95 - 0.5 * r;
+        }
         ctx.strokeStyle = '#111';
         ctx.lineWidth = 2 * dpr;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        ctx.globalAlpha = baseAlpha;
-        // Chevron tip sits right against the left edge of the canvas
-        // (the canvas border-left = the line between scope and stems),
-        // so the arrow visually "bumps up against" the stem buttons.
-        const headX = 2 * dpr;
+        ctx.globalAlpha = alpha;
+        const headX = 2 * dpr + offset;
         const headSize = Math.min(h * 0.44, w * 0.16);
         ctx.beginPath();
         ctx.moveTo(headX + headSize, h / 2 - headSize);
