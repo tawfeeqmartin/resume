@@ -1355,33 +1355,33 @@ function AudioScope({ enabled }) {
       ctx.clearRect(0, 0, w, h);
 
       if (!enabled) {
-        // Audio off — render a gestural arrow: three chevrons sliding
-        // leftward toward the stem icons, inviting the user to click.
-        const period = 1400;
+        // Audio off — render a single static "click here" arrow pointing
+        // at the stem icons (which sit to the left of this canvas).
+        // Opacity breathes on a 1.6s sine for attention; no horizontal
+        // motion, which read as "escaping the frame" in the moving
+        // version. iOS-style anchored pointer.
+        const period = 1600;
         const t = ((now % period) + period) % period / period;
-        const chevW = h * 0.42;
-        const chevH = h * 0.32;
-        const count = 3;
-        const stride = (w + chevW * 2) / count;
+        const pulse = 0.5 + 0.5 * Math.sin(t * Math.PI * 2);
+        const baseAlpha = 0.42 + 0.45 * pulse;
         ctx.strokeStyle = '#111';
         ctx.lineWidth = 2 * dpr;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        for (let i = 0; i < count; i++) {
-          let cx = w - chevW - (i * stride) + t * stride;
-          cx = ((cx + stride * count) % (stride * count));
-          if (cx > w + chevW) cx -= stride * count;
-          const fadeIn  = Math.max(0, Math.min(1, (cx + chevW)            / (chevW * 1.6)));
-          const fadeOut = Math.max(0, Math.min(1, (w - cx)                / (chevW * 1.6)));
-          const alpha = 0.62 * Math.min(fadeIn, fadeOut);
-          if (alpha <= 0) continue;
-          ctx.globalAlpha = alpha;
-          ctx.beginPath();
-          ctx.moveTo(cx + chevW, h / 2 - chevH);
-          ctx.lineTo(cx,         h / 2);
-          ctx.lineTo(cx + chevW, h / 2 + chevH);
-          ctx.stroke();
-        }
+        ctx.globalAlpha = baseAlpha;
+        const headX = w * 0.16;
+        const headSize = Math.min(h * 0.38, w * 0.08);
+        // Chevron head pointing left
+        ctx.beginPath();
+        ctx.moveTo(headX + headSize, h / 2 - headSize);
+        ctx.lineTo(headX,             h / 2);
+        ctx.lineTo(headX + headSize, h / 2 + headSize);
+        ctx.stroke();
+        // Horizontal tail extending rightward — the shaft of the arrow.
+        ctx.beginPath();
+        ctx.moveTo(headX,            h / 2);
+        ctx.lineTo(w - 4 * dpr,      h / 2);
+        ctx.stroke();
         ctx.globalAlpha = 1;
         raf = window.requestAnimationFrame(tick);
         return;
