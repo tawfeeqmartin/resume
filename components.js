@@ -5863,15 +5863,13 @@ function HelpFeature({ src }) {
 //  Live system — Poetry in Proof
 // ────────────────────────────────────────────────────────────────────
 
-function SystemJamSession() {
+function FourChordsFigure() {
   const engine = getResumeAudioEngine();
-  const [activeKey, setActiveKey] = useState('');
+  const [active, setActive] = useState('');
   const [audioOn, setAudioOn] = useState(engine.enabled);
 
   useEffect(() => {
-    const onChord = (event) => {
-      setActiveKey((event.detail?.key || '').toUpperCase());
-    };
+    const onChord = (event) => setActive((event.detail?.key || '').toUpperCase());
     const onAudio = () => setAudioOn(engine.enabled);
     window.addEventListener('resume-chord-key', onChord);
     window.addEventListener('resume-audio-change', onAudio);
@@ -5881,95 +5879,149 @@ function SystemJamSession() {
     };
   }, [engine]);
 
-  // Re-use the engine's existing keyboard handler by dispatching synthetic
-  // keydown / keyup events to window — same code path as a real key press.
-  const dispatchKey = (type, key) => {
+  const dispatchKey = (type, key) =>
     window.dispatchEvent(new KeyboardEvent(type, { key: key.toLowerCase(), bubbles: true }));
-  };
-  const onPress = (key) => (e) => {
+  const press = (key) => (e) => {
     e.preventDefault();
-    if (!audioOn) {
-      engine.setEnabled(true).catch(() => {});
-    }
+    if (!audioOn) engine.setEnabled(true).catch(() => {});
     dispatchKey('keydown', key);
   };
-  const onRelease = (key) => (e) => {
+  const release = (key) => (e) => {
     e.preventDefault();
     dispatchKey('keyup', key);
   };
 
-  const keys = [
-    { id: 'W', dir: '↑' },
-    { id: 'A', dir: '←' },
-    { id: 'S', dir: '↓' },
-    { id: 'D', dir: '→' },
+  // Four stations along the baseline. The Byrne shape/colour convention
+  // only covers three (triangle yellow, circle blue, square red); the
+  // fourth station closes the cycle with an inverted triangle in red.
+  const stations = [
+    { id: 'W', x: 220, shape: 'triangle', color: 'yellow' },
+    { id: 'A', x: 420, shape: 'circle',   color: 'blue'   },
+    { id: 'S', x: 620, shape: 'square',   color: 'red'    },
+    { id: 'D', x: 820, shape: 'tri-inv',  color: 'red'    },
   ];
+  const baselineY = 296;
+  const shapeY = 168;
+  const r = 36; // visual radius for hit area + shapes
+
+  const renderShape = (s) => {
+    const fillClass = `system-jam-figure__fill system-jam-figure__fill--${s.color}`;
+    if (s.shape === 'circle') {
+      return <circle className={fillClass} cx={s.x} cy={shapeY} r={r - 2} />;
+    }
+    if (s.shape === 'square') {
+      return (
+        <rect
+          className={fillClass}
+          x={s.x - (r - 4)}
+          y={shapeY - (r - 4)}
+          width={(r - 4) * 2}
+          height={(r - 4) * 2}
+        />
+      );
+    }
+    if (s.shape === 'tri-inv') {
+      return (
+        <polygon
+          className={fillClass}
+          points={`${s.x - r},${shapeY - (r - 4)} ${s.x + r},${shapeY - (r - 4)} ${s.x},${shapeY + (r - 2)}`}
+        />
+      );
+    }
+    // upward triangle
+    return (
+      <polygon
+        className={fillClass}
+        points={`${s.x},${shapeY - (r - 2)} ${s.x + r},${shapeY + (r - 4)} ${s.x - r},${shapeY + (r - 4)}`}
+      />
+    );
+  };
 
   return (
-    <div className={`system-jam ${audioOn ? 'is-audio-on' : ''}`}>
-      <div className="system-jam__wasd" role="group" aria-label="WASD chord pad">
-        {keys.map((k) => (
-          <button
-            key={k.id}
-            type="button"
-            className={`system-jam__key ${activeKey === k.id ? 'is-active' : ''}`}
-            onMouseDown={onPress(k.id)}
-            onMouseUp={onRelease(k.id)}
-            onMouseLeave={onRelease(k.id)}
-            onTouchStart={onPress(k.id)}
-            onTouchEnd={onRelease(k.id)}
-            aria-pressed={activeKey === k.id}
-            aria-label={`Trigger chord ${k.id}`}
+    <svg
+      className="system-jam-figure"
+      viewBox="0 20 1000 385"
+      role="group"
+      aria-label="Four-chord pad — click any chord to override the progression"
+    >
+      <ByrneTitle>FOUR CHORDS ON A LINE</ByrneTitle>
+      {/* Baseline — strong black */}
+      <line className="diagram-line diagram-line--strong" x1="120" y1={baselineY} x2="880" y2={baselineY} />
+      {/* End ticks on the baseline */}
+      <path className="diagram-line diagram-line--thin" d={`M120 ${baselineY - 8} V${baselineY + 8} M880 ${baselineY - 8} V${baselineY + 8}`} />
+      {/* Cycle-return arc above — dotted, going D → W (right to left) */}
+      <path
+        className="diagram-line diagram-line--dotted"
+        d="M820 130 Q 520 32 220 130"
+      />
+      <path
+        className="diagram-line diagram-line--thin"
+        d="M232 124 L220 132 L228 144"
+      />
+      {/* Four stations */}
+      {stations.map((s) => {
+        const isOn = active === s.id;
+        return (
+          <g
+            key={s.id}
+            className={`system-jam-figure__station ${isOn ? 'is-active' : ''}`}
+            onMouseDown={press(s.id)}
+            onMouseUp={release(s.id)}
+            onMouseLeave={release(s.id)}
+            onTouchStart={press(s.id)}
+            onTouchEnd={release(s.id)}
+            tabIndex={0}
+            role="button"
+            aria-pressed={isOn}
+            aria-label={`Chord ${s.id}`}
           >
-            <b>{k.id}</b>
-            <i aria-hidden="true">{k.dir}</i>
-          </button>
-        ))}
-      </div>
-      <div className="system-jam__hint mono dim">
-        Press W A S D — or click — to override the chord progression. Scroll
-        the page to fold instrument layers in and out. Click any plate above
-        to cycle the proof figures.
-      </div>
-    </div>
+            {/* Dotted construction line from baseline up to the shape */}
+            <line
+              className="diagram-line diagram-line--dotted"
+              x1={s.x}
+              y1={baselineY}
+              x2={s.x}
+              y2={shapeY + (r - 4)}
+            />
+            {renderShape(s)}
+            {/* Station marker dot on the baseline */}
+            <circle className="diagram-dot" cx={s.x} cy={baselineY} r="6" />
+            {/* Letter label below the baseline */}
+            <text className="diagram-text diagram-text--byrne-label" x={s.x} y={baselineY + 28} textAnchor="middle">
+              {s.id}
+            </text>
+            {/* Generous transparent click target */}
+            <rect
+              x={s.x - 70}
+              y={shapeY - 60}
+              width={140}
+              height={baselineY - shapeY + 100}
+              fill="transparent"
+              style={{ cursor: 'pointer' }}
+            />
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 
 function LiveSystemFeature() {
   return (
     <Section id="system" label="05 · LIVE · POETRY IN PROOF">
-      <div className="help-hero">
-        <div className="help-hero__intro">
-          <h3 className="serif">A proof-figure interface that plays itself.</h3>
-          <p>
-            Sixteen hand-built plates in the <em>Byrne / Euclid Book&nbsp;VI</em>
-            idiom — each a small geometric construction paired with a phrase
-            that reveals across the page. A real-time generative music engine
-            plays underneath: Strudel.cc piped through a custom WebAudio mix
-            bus, with stem layers folding in and out as you scroll the
-            sections.
-          </p>
-        </div>
-        <div className="help-hero__player help-hero__player--system">
-          <SystemJamSession />
-        </div>
-        <div className="help-hero__details">
-          <p>
-            Built end-to-end: the 16 SVG diagrams hand-drawn in coordinate
-            space, the WASD chord triggers, scroll-driven stem mixing, the
-            blackout-poetry word reveal that runs across the manual-flow rows,
-            Three.js for the HELP MESH player, and a master limiter / scope
-            on the audio bus. The plate cycle and the music are the same
-            instrument — you're inside the demo right now.
-          </p>
-          <ul className="help-feature__chips">
-            <li>Strudel.cc</li>
-            <li>Three.js</li>
-            <li>Custom WebAudio bus</li>
-            <li>SVG Byrne diagrams</li>
-            <li>Cloudflare Pages + R2</li>
-          </ul>
-        </div>
+      <div className="system-section">
+        <p className="system-section__lede serif">
+          The page is the demo. A proof-figure interface in the Byrne / Euclid
+          idiom, paired with a real-time generative music engine — sixteen
+          plates, four chords, three stem layers that fold in and out as you
+          scroll.
+        </p>
+        <FourChordsFigure />
+        <p className="system-section__detail mono">
+          Click any chord above to override the progression. Press <b>W A S D</b>
+          to do the same from the keyboard. Scroll the page to fold instrument
+          layers in and out. Click any plate at the top to cycle the figures.
+        </p>
       </div>
     </Section>
   );

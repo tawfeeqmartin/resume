@@ -1949,75 +1949,72 @@ body.font-cascadia-signal .identity__vector-name {
   height: auto;
   min-height: 0;
 }
-.help-hero__player--system {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2.4rem 1.6rem;
-  background: color-mix(in oklch, var(--paper-2), transparent 22%);
-  border: 1px solid color-mix(in oklch, var(--rule), transparent 30%);
-  border-top: 2px solid var(--accent-blue);
-  border-bottom: 2px solid var(--accent-blue);
-}
-.system-jam {
+/* Poetry-in-Proof live section — composed as a Byrne plate, not as a
+   generic LIVE feature block. Single column: lede serif paragraph,
+   the proof figure (four chords on a line, interactive), a closing
+   mono caption. No heavy borders — only the figure's own construction
+   lines and the section's accent rule do visual work. */
+.system-section {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
-  align-items: center;
-  width: 100%;
-  max-width: 30rem;
+  align-items: stretch;
+  gap: 1.25rem;
 }
-.system-jam__wasd {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.55rem;
-  width: 100%;
+.system-section__lede {
+  font-size: clamp(1.05rem, 1.55vw, 1.3rem);
+  line-height: 1.45;
+  color: var(--ink-2);
+  max-width: 60ch;
+  text-wrap: pretty;
 }
-.system-jam__key {
-  appearance: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.18rem;
-  padding: 0.85rem 0;
-  border: 2px solid var(--ink);
-  background: transparent;
-  color: var(--ink);
-  cursor: pointer;
-  user-select: none;
-  border-radius: 2px;
-  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
-}
-.system-jam__key b {
-  font-family: var(--mono);
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-}
-.system-jam__key i {
-  font-style: normal;
-  font-family: var(--mono);
-  font-size: 0.6rem;
-  color: color-mix(in oklch, var(--ink), transparent 50%);
-}
-.system-jam__key:hover {
-  border-color: var(--accent-red);
-}
-.system-jam__key.is-active {
-  background: var(--accent-yellow);
-  border-color: var(--accent-red);
-  color: var(--ink);
-}
-.system-jam__key.is-active i {
-  color: var(--accent-red);
-}
-.system-jam__hint {
-  text-align: center;
-  font-size: 0.7rem;
-  letter-spacing: 0.04em;
+.system-section__detail {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
   line-height: 1.6;
-  max-width: 28rem;
+  max-width: 60ch;
+}
+.system-section__detail b {
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: 0.14em;
+}
+.system-jam-figure {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 880px;
+  margin: 0.5rem auto;
+}
+.system-jam-figure__fill--yellow { fill: var(--accent-yellow); }
+.system-jam-figure__fill--blue   { fill: var(--accent-blue); }
+.system-jam-figure__fill--red    { fill: var(--accent-red); }
+.system-jam-figure__station {
+  cursor: pointer;
+  transition: transform 120ms ease;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.system-jam-figure__station:hover .system-jam-figure__fill--yellow,
+.system-jam-figure__station:hover .system-jam-figure__fill--blue,
+.system-jam-figure__station:hover .system-jam-figure__fill--red {
+  filter: brightness(1.06);
+}
+.system-jam-figure__station:focus-visible {
+  outline: 2px solid var(--accent-red);
+  outline-offset: 4px;
+}
+.system-jam-figure__station.is-active .system-jam-figure__fill--yellow,
+.system-jam-figure__station.is-active .system-jam-figure__fill--blue,
+.system-jam-figure__station.is-active .system-jam-figure__fill--red {
+  filter: drop-shadow(0 0 6px color-mix(in oklch, currentColor, transparent 60%));
+}
+.system-jam-figure__station.is-active {
+  animation: system-station-pulse 320ms ease-out;
+}
+@keyframes system-station-pulse {
+  0%   { transform: scale(1.06); }
+  100% { transform: scale(1); }
 }
 .help-hero__details {
   grid-area: details;
@@ -3244,7 +3241,7 @@ window.__resumeStrudelReady = initStrudel()
 <script type="module">
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260513-mobile-projection');
 </script>
-<script type="text/babel" src="components.js?v=20260514-poetry-in-proof"></script>
+<script type="text/babel" src="components.js?v=20260514-four-chords"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
