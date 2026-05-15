@@ -2536,11 +2536,18 @@ html.has-pseudo-fullscreen body {
 .page-footer {
   margin-top: 5rem; padding: 2rem 0;
   border-top: 1px solid var(--rule);
-  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+  display: flex; flex-direction: column;
+  align-items: flex-start; gap: 0.85rem;
   font-size: 0.65rem;
 }
 .page-footer .dot { margin: 0 0.55rem; }
 .page-footer a { border: none; }
+.page-footer__identity {
+  /* Inherits from .identity__top — only differences here are footer
+     context (no music station, font matches build line). */
+  font-size: inherit;
+  letter-spacing: 0.04em;
+}
 .page-footer__qed {
   display: inline-block;
   width: 0.55rem;
@@ -3168,7 +3175,7 @@ window.__resumeStrudelReady = initStrudel()
 <script type="module">
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260513-mobile-projection');
 </script>
-<script type="text/babel" src="components.js?v=20260514-music-inline"></script>
+<script type="text/babel" src="components.js?v=20260514-footer-mirror"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
