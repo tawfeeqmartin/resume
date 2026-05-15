@@ -1380,23 +1380,25 @@ button.review-toggle {
   vertical-align: 0.02em;
 }
 .identity__top-dot {
+  /* default shape is triangle = yellow per the site's shape-colour
+     convention (mirrors .stem-mute--triangle/--circle/--square). */
   width: 0.52rem;
   height: 0.46rem;
   border: 0;
-  background: var(--accent-red);
+  background: var(--accent-yellow);
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M6 1 L11 9 L1 9 Z' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M6 1 L11 9 L1 9 Z' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
   clip-path: none;
 }
 .identity__top-dot--circle {
-  background: var(--accent-yellow);
+  background: var(--accent-blue);
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='5' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='5' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
   width: 0.5rem;
   height: 0.5rem;
 }
 .identity__top-dot--square {
-  background: var(--accent-blue);
+  background: var(--accent-red);
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Crect x='1' y='1' width='10' height='10' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Crect x='1' y='1' width='10' height='10' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
   width: 0.46rem;
@@ -2382,22 +2384,24 @@ html.has-pseudo-fullscreen body {
   gap: 0.55rem;
 }
 .refs__mark {
+  /* triangle (default) = yellow, circle = blue, square = red,
+     matching the site's shape-colour convention */
   display: inline-block;
   width: 0.66rem;
   height: 0.66rem;
   vertical-align: 0.02em;
   flex: 0 0 auto;
-  background: var(--accent-red);
+  background: var(--accent-yellow);
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M6 1 L11 9 L1 9 Z' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M6 1 L11 9 L1 9 Z' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
 }
 .refs__mark--circle {
-  background: var(--accent-yellow);
+  background: var(--accent-blue);
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='5' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='5' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
 }
 .refs__mark--square {
-  background: var(--accent-blue);
+  background: var(--accent-red);
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Crect x='1' y='1' width='10' height='10' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Crect x='1' y='1' width='10' height='10' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
 }
@@ -3062,7 +3066,7 @@ window.__resumeStrudelReady = initStrudel()
 <script type="module">
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260513-mobile-projection');
 </script>
-<script type="text/babel" src="components.js?v=20260514-byrne-trim"></script>
+<script type="text/babel" src="components.js?v=20260514-shape-key"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
