@@ -1160,23 +1160,23 @@ button.review-toggle {
 }
 .blackout-panel__phrase-lines line {
   fill: none;
-  stroke: var(--ink);
-  stroke-width: 1.25;
-  opacity: 0.88;
+  stroke: #d42a20;
+  stroke-width: 2;
+  opacity: 0.95;
   stroke-linecap: round;
-  stroke-dasharray: 1 3.2;
-  stroke-dashoffset: 24;
+  stroke-dasharray: 3 5;
+  stroke-dashoffset: 28;
   vector-effect: non-scaling-stroke;
   animation: phrase-line-draw var(--phrase-line-ms, 0.625s) ease forwards;
 }
 .blackout-panel__phrase-lines .blackout-panel__phrase-arrow {
-  fill: var(--ink);
+  fill: #d42a20;
   stroke: none;
   animation: blackout-page-in calc(var(--phrase-line-ms, 0.625s) * 0.28) ease both;
 }
 .blackout-panel__phrase-lines .blackout-panel__phrase-dot {
   display: none;
-  fill: var(--ink);
+  fill: #d42a20;
   stroke: var(--paper-2);
   stroke-width: 0.32;
   rx: 0;
@@ -1301,7 +1301,8 @@ button.review-toggle {
   content: "";
   position: absolute;
   inset: calc(-0.07em - 2px) calc(-0.14em - 2px) calc(-0.09em - 2px);
-  border: 2px solid var(--accent-red);
+  border: 2px solid #d42a20;
+  background: rgba(250, 194, 43, 0.28);
   pointer-events: none;
   opacity: 0;
   animation: poetry-word-box-in 0.18s ease forwards;
@@ -2780,10 +2781,10 @@ html.has-pseudo-fullscreen body {
     overflow: visible;
   }
   .blackout-panel__phrase-lines line {
-    stroke: #000;
-    stroke-width: 1.65;
-    opacity: 0.92;
-    stroke-dasharray: 2 4;
+    stroke: #d42a20;
+    stroke-width: 2;
+    opacity: 0.95;
+    stroke-dasharray: 3 5;
   }
   .blackout-panel__phrase-dot {
     width: 0.22rem;
