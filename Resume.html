@@ -148,6 +148,7 @@ a:hover { color: var(--accent); }
 
 #help,
 #blackbird,
+#system,
 #project {
   --accent: var(--accent-blue);
   --accent-2: var(--accent-blue-2);
@@ -1948,6 +1949,76 @@ body.font-cascadia-signal .identity__vector-name {
   height: auto;
   min-height: 0;
 }
+.help-hero__player--system {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.4rem 1.6rem;
+  background: color-mix(in oklch, var(--paper-2), transparent 22%);
+  border: 1px solid color-mix(in oklch, var(--rule), transparent 30%);
+  border-top: 2px solid var(--accent-blue);
+  border-bottom: 2px solid var(--accent-blue);
+}
+.system-jam {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  align-items: center;
+  width: 100%;
+  max-width: 30rem;
+}
+.system-jam__wasd {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.55rem;
+  width: 100%;
+}
+.system-jam__key {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.18rem;
+  padding: 0.85rem 0;
+  border: 2px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+  border-radius: 2px;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.system-jam__key b {
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+.system-jam__key i {
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: color-mix(in oklch, var(--ink), transparent 50%);
+}
+.system-jam__key:hover {
+  border-color: var(--accent-red);
+}
+.system-jam__key.is-active {
+  background: var(--accent-yellow);
+  border-color: var(--accent-red);
+  color: var(--ink);
+}
+.system-jam__key.is-active i {
+  color: var(--accent-red);
+}
+.system-jam__hint {
+  text-align: center;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+  max-width: 28rem;
+}
 .help-hero__details {
   grid-area: details;
   display: grid;
@@ -3173,7 +3244,7 @@ window.__resumeStrudelReady = initStrudel()
 <script type="module">
 window.__spotlightBundlePromise = import('./spotlight-bundle.js?v=20260513-mobile-projection');
 </script>
-<script type="text/babel" src="components.js?v=20260514-strip-refresh"></script>
+<script type="text/babel" src="components.js?v=20260514-poetry-in-proof"></script>
 <script type="text/babel">
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
@@ -3227,6 +3298,7 @@ function App() {
         <Experience items={RESUME.experience} />
         <HelpFeature src={HELP_VIDEO_URLS} />
         <BlackbirdFeature innovationSrc={BLACKBIRD_INNOVATION_VIDEO_URL} behindScenesSrc={BLACKBIRD_VIDEO_URL} />
+        <LiveSystemFeature />
         <ProjectCard data={RESUME.project} />
         <Awards items={RESUME.awards} />
         <Skills groups={RESUME.skills} />

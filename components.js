@@ -1455,7 +1455,7 @@ function ScrollAudioLayers() {
     };
     const sectionState = (id) => {
       if (id === 'summary' || id === 'experience') return 'yellow';
-      if (id === 'help' || id === 'blackbird' || id === 'project') return 'blue';
+      if (id === 'help' || id === 'blackbird' || id === 'system' || id === 'project') return 'blue';
       if (id === 'awards' || id === 'skills' || id === 'edu' || id === 'refs') return 'red';
       return 'hero';
     };
@@ -5709,7 +5709,7 @@ function BlackbirdFeature({ innovationSrc, behindScenesSrc }) {
 
 function getSectionShape(id) {
   if (['summary', 'experience'].includes(id)) return 'triangle';
-  if (['help', 'blackbird', 'project'].includes(id)) return 'circle';
+  if (['help', 'blackbird', 'system', 'project'].includes(id)) return 'circle';
   return 'square';
 }
 
@@ -5860,12 +5860,128 @@ function HelpFeature({ src }) {
 }
 
 // ────────────────────────────────────────────────────────────────────
+//  Live system — Poetry in Proof
+// ────────────────────────────────────────────────────────────────────
+
+function SystemJamSession() {
+  const engine = getResumeAudioEngine();
+  const [activeKey, setActiveKey] = useState('');
+  const [audioOn, setAudioOn] = useState(engine.enabled);
+
+  useEffect(() => {
+    const onChord = (event) => {
+      setActiveKey((event.detail?.key || '').toUpperCase());
+    };
+    const onAudio = () => setAudioOn(engine.enabled);
+    window.addEventListener('resume-chord-key', onChord);
+    window.addEventListener('resume-audio-change', onAudio);
+    return () => {
+      window.removeEventListener('resume-chord-key', onChord);
+      window.removeEventListener('resume-audio-change', onAudio);
+    };
+  }, [engine]);
+
+  // Re-use the engine's existing keyboard handler by dispatching synthetic
+  // keydown / keyup events to window — same code path as a real key press.
+  const dispatchKey = (type, key) => {
+    window.dispatchEvent(new KeyboardEvent(type, { key: key.toLowerCase(), bubbles: true }));
+  };
+  const onPress = (key) => (e) => {
+    e.preventDefault();
+    if (!audioOn) {
+      engine.setEnabled(true).catch(() => {});
+    }
+    dispatchKey('keydown', key);
+  };
+  const onRelease = (key) => (e) => {
+    e.preventDefault();
+    dispatchKey('keyup', key);
+  };
+
+  const keys = [
+    { id: 'W', dir: '↑' },
+    { id: 'A', dir: '←' },
+    { id: 'S', dir: '↓' },
+    { id: 'D', dir: '→' },
+  ];
+
+  return (
+    <div className={`system-jam ${audioOn ? 'is-audio-on' : ''}`}>
+      <div className="system-jam__wasd" role="group" aria-label="WASD chord pad">
+        {keys.map((k) => (
+          <button
+            key={k.id}
+            type="button"
+            className={`system-jam__key ${activeKey === k.id ? 'is-active' : ''}`}
+            onMouseDown={onPress(k.id)}
+            onMouseUp={onRelease(k.id)}
+            onMouseLeave={onRelease(k.id)}
+            onTouchStart={onPress(k.id)}
+            onTouchEnd={onRelease(k.id)}
+            aria-pressed={activeKey === k.id}
+            aria-label={`Trigger chord ${k.id}`}
+          >
+            <b>{k.id}</b>
+            <i aria-hidden="true">{k.dir}</i>
+          </button>
+        ))}
+      </div>
+      <div className="system-jam__hint mono dim">
+        Press W A S D — or click — to override the chord progression. Scroll
+        the page to fold instrument layers in and out. Click any plate above
+        to cycle the proof figures.
+      </div>
+    </div>
+  );
+}
+
+function LiveSystemFeature() {
+  return (
+    <Section id="system" label="05 · LIVE · POETRY IN PROOF">
+      <div className="help-hero">
+        <div className="help-hero__intro">
+          <h3 className="serif">A proof-figure interface that plays itself.</h3>
+          <p>
+            Sixteen hand-built plates in the <em>Byrne / Euclid Book&nbsp;VI</em>
+            idiom — each a small geometric construction paired with a phrase
+            that reveals across the page. A real-time generative music engine
+            plays underneath: Strudel.cc piped through a custom WebAudio mix
+            bus, with stem layers folding in and out as you scroll the
+            sections.
+          </p>
+        </div>
+        <div className="help-hero__player help-hero__player--system">
+          <SystemJamSession />
+        </div>
+        <div className="help-hero__details">
+          <p>
+            Built end-to-end: the 16 SVG diagrams hand-drawn in coordinate
+            space, the WASD chord triggers, scroll-driven stem mixing, the
+            blackout-poetry word reveal that runs across the manual-flow rows,
+            Three.js for the HELP MESH player, and a master limiter / scope
+            on the audio bus. The plate cycle and the music are the same
+            instrument — you're inside the demo right now.
+          </p>
+          <ul className="help-feature__chips">
+            <li>Strudel.cc</li>
+            <li>Three.js</li>
+            <li>Custom WebAudio bus</li>
+            <li>SVG Byrne diagrams</li>
+            <li>Cloudflare Pages + R2</li>
+          </ul>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────
 //  Project (agiftoftime)
 // ────────────────────────────────────────────────────────────────────
 
 function ProjectCard({ data }) {
   return (
-    <Section id="project" label="05 · INDEPENDENT · 2025">
+    <Section id="project" label="06 · INDEPENDENT · 2025">
       <div className="project">
         <div className="project__head">
           <h3 className="serif">{data.name}</h3>
@@ -5892,7 +6008,7 @@ function Awards({ items }) {
   }, [items]);
   const filtered = filter === 'all' ? items : items.filter(a => a.project.startsWith(filter));
   return (
-    <Section id="awards" label="06 · AWARDS & RECOGNITION">
+    <Section id="awards" label="07 · AWARDS & RECOGNITION">
       <div className="awards__filters mono">
         {['all','gold','silver','honor'].map(t => (
           <button
@@ -5928,7 +6044,7 @@ function Awards({ items }) {
 
 function Skills({ groups }) {
   return (
-    <Section id="skills" label="07 · TECHNICAL">
+    <Section id="skills" label="08 · TECHNICAL">
       <div className="skills">
         {groups.map((g,i) => (
           <div key={i} className="skill-group">
@@ -5949,7 +6065,7 @@ function Skills({ groups }) {
 
 function Education({ items }) {
   return (
-    <Section id="edu" label="08 · EDUCATION">
+    <Section id="edu" label="09 · EDUCATION">
       <ul className="edu">
         {items.map((e,i) => (
           <li key={i} className="edu__row">
@@ -5970,7 +6086,7 @@ function References({ items }) {
   const [active, setActive] = useState(0);
   const refShapes = ['triangle', 'circle', 'square'];
   return (
-    <Section id="refs" label="09 · REFERENCES">
+    <Section id="refs" label="10 · REFERENCES">
       <div className="refs">
         <div className="refs__quote">
           <div className="refs__qmark serif">“</div>
@@ -6034,6 +6150,6 @@ function Footer({ data }) {
 
 Object.assign(window, {
   HelpPlayer, HelpFeature, Identity, Summary,
-  Experience, ProjectCard, Awards, Skills, Education, References, Footer,
+  Experience, ProjectCard, LiveSystemFeature, Awards, Skills, Education, References, Footer,
   VideoSlot, BlackbirdFeature, ScrollAudioLayers
 });
