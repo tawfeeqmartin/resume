@@ -4549,7 +4549,7 @@ function BlackoutPoetryPanel() {
   const activePage = BLACKOUT_PAGES[active];
   const activeStatement = activePage.phrase;
   const visualTiming = getResumeAudioEngine().visualTiming;
-  const typeMs = Math.min(visualTiming.typeMs, 72);
+  const typeMs = visualTiming.typeMs;
   const cursorMs = visualTiming.cursorMs;
   const wordMs = visualTiming.wordMs;
   const lineMs = visualTiming.lineMs;
@@ -4558,8 +4558,7 @@ function BlackoutPoetryPanel() {
   const revealStepMs = Math.max(115, Math.min(wordMs, lineMs) * 0.58);
   const phraseRevealMs = Math.max(0, activeStatement.words.length * 2 - 1) * revealStepMs;
   const pageDurationMs = Math.max(pageMs, phraseRevealMs + Math.max(900, lineMs * 2.4));
-  const title = 'grep -R "poetry" ./proof';
-  const terminalPrompt = "$";
+  const title = "poetry in proof";
   const markMode = activePage.mark || "highlight";
   const phraseBridgeLines = EMPTY_BLACKOUT_BRIDGES;
   const pageLines = useMemo(() => [
@@ -4817,24 +4816,14 @@ function BlackoutPoetryPanel() {
   useEffect(() => {
     setTitleCount(0);
     if (musicVisualsActive && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      const titleDrumLanes = new Set(['kick', 'snare', 'hat', 'perc']);
-      const minTitleStepMs = Math.max(42, visualTiming.stepMs * 0.45);
-      const charsPerStep = Math.max(1, Math.ceil(title.length / TITLE_BEATS));
-      let lastStepAt = -Infinity;
-      let lastScheduledKey = null;
+      let lastStepAt = 0;
       const onMidiEvent = (event) => {
         const detail = event.detail || {};
-        if (detail.type !== 'noteon' || detail.group !== 'drums' || !titleDrumLanes.has(detail.lane)) return;
-        const scheduledKey = Number.isFinite(detail.scheduledTime)
-          ? Math.round(detail.scheduledTime * 1000)
-          : null;
-        if (scheduledKey !== null && scheduledKey === lastScheduledKey) return;
+        if (detail.type !== 'noteon' || detail.group !== 'drums' || detail.lane !== 'hat') return;
         const now = performance.now();
-        const clockAt = scheduledKey ?? now;
-        if (clockAt - lastStepAt < minTitleStepMs) return;
-        lastScheduledKey = scheduledKey;
-        lastStepAt = clockAt;
-        setTitleCount((count) => Math.min(title.length, count + charsPerStep));
+        if (now - lastStepAt < 34) return;
+        lastStepAt = now;
+        setTitleCount((count) => Math.min(title.length, count + 1));
       };
       window.addEventListener('resume-midi-event', onMidiEvent);
       return () => window.removeEventListener('resume-midi-event', onMidiEvent);
@@ -4940,7 +4929,7 @@ function BlackoutPoetryPanel() {
     <>
     <h1
       className="identity__poetry-title"
-      aria-label={`${terminalPrompt} ${title}`}
+      aria-label={title}
       style={{ '--cursor-ms': `${cursorMs}ms` }}
     >
       <span
@@ -4948,8 +4937,7 @@ function BlackoutPoetryPanel() {
         className="identity__poetry-type"
         aria-hidden="true"
       >
-        <span className="identity__poetry-prompt">{terminalPrompt}</span>
-        <span className="identity__poetry-command">{title.slice(0, titleCount)}</span>
+        {title.slice(0, titleCount)}
         <span className="identity__poetry-cursor" />
       </span>
     </h1>
@@ -5289,7 +5277,7 @@ function HelpPlayer({ src }) {
             <div className="hud-pill mono">
               <span className="hud-dot" /> projection · {projection || 'mesh'}
             </div>
-            <div className="hud-pill mono dim">Drag or use WASD to look around.</div>
+            <div className="hud-pill mono dim">drag / swipe / wasd</div>
           </div>
           <div className="wasd-hint" aria-hidden="true">
             <div className="wasd-hint__grid mono">
