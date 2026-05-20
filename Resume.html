@@ -2628,15 +2628,20 @@ html.has-pseudo-fullscreen body {
     background: transparent;
   }
   .refs__inline-quote {
-    margin: 0.55rem 0 1.35rem 4.7rem;
+    margin: 0.55rem 0 1.35rem 0;
   }
   .refs__inline-quote .refs__message {
-    display: block;
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 0.85rem;
+    align-items: end;
   }
-  .refs__inline-quote .refs__avatar,
   .refs__inline-quote .refs__sender,
   .refs__inline-quote .refs__credential {
     display: none;
+  }
+  .refs__inline-quote .refs__avatar {
+    display: inline-flex;
   }
   .refs__inline-quote .refs__bubble {
     width: 100%;
