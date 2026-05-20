@@ -4596,15 +4596,21 @@ function TvHero({ sources = [], children }) {
 
       const frameModel = (box) => {
         const sphere = box.getBoundingSphere(new THREE.Sphere());
+        const isMobileFrame = window.matchMedia('(max-width: 760px)').matches;
         const target = sphere.center.clone();
-        target.y += sphere.radius * 0.02;
+        target.y += sphere.radius * (isMobileFrame ? 0.06 : 0.02);
+        if (isMobileFrame) target.x -= sphere.radius * 0.46;
         const verticalFov = THREE.MathUtils.degToRad(camera.fov);
         const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * camera.aspect);
         const fitHeightDistance = sphere.radius / Math.sin(verticalFov / 2);
         const fitWidthDistance = sphere.radius / Math.sin(horizontalFov / 2);
         // Pull camera ~30% closer so the Mac fills more of the canvas.
-        const distance = Math.max(fitHeightDistance, fitWidthDistance) * 0.89;
-        const viewDirection = new THREE.Vector3(0.32, 0.14, 1).normalize();
+        const distance = Math.max(fitHeightDistance, fitWidthDistance) * (isMobileFrame ? 1.18 : 0.89);
+        const viewDirection = new THREE.Vector3(
+          isMobileFrame ? 0.08 : 0.32,
+          isMobileFrame ? 0.12 : 0.14,
+          1,
+        ).normalize();
         camera.position.copy(target).add(viewDirection.multiplyScalar(distance));
         camera.near = Math.max(0.01, distance - sphere.radius * 3.0);
         camera.far = distance + sphere.radius * 4.0;
@@ -5424,7 +5430,7 @@ function ReferenceAvatar({ item, index, shapes }) {
   return (
     <span className={`refs__avatar refs__avatar--${shape}`} aria-hidden="true">
       {src ? (
-        <img src={src} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} />
+        <img src={src} alt="" loading="eager" decoding="async" onError={() => setFailed(true)} />
       ) : (
         <span>{getInitials(item.name)}</span>
       )}

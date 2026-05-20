@@ -243,16 +243,18 @@ function App() {
       <div className="page">
         <TopStrip data={RESUME} />
         <div className="hero-stack">
-          <div className="hero-stack__flow">
+          <div className="hero-stack__intro">
             <h1 className="hero-lead">
               <span className="hero-lead__name">Tawfeeq Martin.</span>
             </h1>
-            <Summary text={RESUME.summary} />
-            <Experience items={RESUME.experience} />
           </div>
           <aside className="hero-stack__sticky">
             <TvHero sources={TV_VIDEO_SOURCES} />
           </aside>
+          <div className="hero-stack__flow">
+            <Summary text={RESUME.summary} />
+            <Experience items={RESUME.experience} />
+          </div>
         </div>
         <HelpFeature src={HELP_VIDEO_URLS} />
         <BlackbirdFeature innovationSrc={BLACKBIRD_INNOVATION_VIDEO_URL} behindScenesSrc={BLACKBIRD_VIDEO_URL} />

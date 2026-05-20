@@ -1263,7 +1263,8 @@ html.has-pseudo-fullscreen body {
      left; the sticky TV inside it bleeds out to the viewport right edge
      AND overlaps left into the text column. */
   grid-template-columns: minmax(0, 56ch) minmax(0, 1fr);
-  gap: 1.5rem;
+  column-gap: 1.5rem;
+  row-gap: 0;
   align-items: start;
   margin: 0;
   overflow: visible;
@@ -1295,6 +1296,12 @@ html.has-pseudo-fullscreen body {
   position: relative;
   z-index: 1;
 }
+.hero-stack__intro {
+  grid-column: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
 .hero-stack__flow::after {
   content: "";
   display: block;
@@ -1305,6 +1312,7 @@ html.has-pseudo-fullscreen body {
 }
 .hero-stack__sticky {
   grid-column: 2;
+  grid-row: 1 / span 2;
   position: sticky;
   top: 0;
   align-self: start;
@@ -1359,9 +1367,51 @@ html.has-pseudo-fullscreen body {
 .tv-hero__controls .pp-audio-toggle { color: #f4f0e6; padding: 0; }
 .tv-hero__controls .pp-audio-toggle:hover { color: #ffd840; }
 @media (max-width: 760px) {
+  .hero-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .hero-lead {
+    margin-bottom: 1.4rem;
+  }
   .hero-stack + #help { margin-top: 2.4rem; }
+  .hero-stack__intro {
+    order: 0;
+  }
+  .hero-stack__sticky {
+    order: 1;
+    position: relative;
+    top: auto;
+    z-index: 2;
+    height: min(74vw, 22rem);
+    min-height: 17rem;
+    margin: -1.25rem calc(var(--pad) * -1) 0.6rem;
+    overflow: visible;
+    pointer-events: auto;
+  }
+  .hero-stack__flow {
+    order: 2;
+  }
   .hero-stack__flow::after { display: none; }
-  .tv-hero { margin-right: 0; }
+  .tv-hero {
+    margin-right: 0;
+    overflow: visible;
+    transform: translateX(3.8rem);
+  }
+  .tv-hero__canvas {
+    top: -7rem;
+    left: 50%;
+    right: auto;
+    width: min(138vw, 42rem);
+    height: calc(100% + 9rem);
+    min-height: 0;
+    transform: translateX(-50%);
+  }
+  .tv-hero__controls {
+    right: max(1rem, var(--pad));
+    bottom: 1rem;
+  }
 }
 /* ── Strudel REPL: flat editor inside a MacBook frame ─────────── */
 .strudel-repl.help-feature {
