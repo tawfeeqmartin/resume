@@ -20,10 +20,22 @@ rsync -a \
   --exclude 'deploy.sh' \
   --exclude 'tweaks-panel.jsx' \
   --exclude 'cloudflare' \
+  --exclude 'review' \
+  --exclude 'archive' \
+  --exclude 'models' \
   --exclude '*.md' \
   --exclude 'media' \
   --exclude '.DS_Store' \
   ./ "$STAGE_DIR/"
+
+echo "→ adding whitelisted runtime media"
+mkdir -p \
+  "$STAGE_DIR/media/3d" \
+  "$STAGE_DIR/media/demo" \
+  "$STAGE_DIR/media/imessage/generated"
+cp media/3d/apple_macintosh.glb "$STAGE_DIR/media/3d/"
+cp media/demo/mac4.jpg "$STAGE_DIR/media/demo/"
+cp media/imessage/generated/*-avatar-v4.png "$STAGE_DIR/media/imessage/generated/"
 
 COMMIT_HASH="$(git rev-parse HEAD)"
 COMMIT_SHORT="$(git rev-parse --short HEAD)"
