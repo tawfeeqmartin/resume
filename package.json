@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "build": "node scripts/build-app.mjs",
+    "watch": "node scripts/build-app.mjs --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0"
+  }
+}

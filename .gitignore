@@ -8,3 +8,39 @@ media/help_full.webm
 
 # Local scratch output
 *.log
+node_modules/
+
+# Local asset quarantine for source images, alternate renders, and review-only media
+review/
+
+# Local-only prototypes and archived experiments
+archive/
+models/
+3d-test.html
+Resume-classic.html
+hero-prototype*.html
+
+# Source downloads, inactive cuts, and local video caches
+media/cleared/
+media/tv-clips/
+media/tv-clips-color/
+media/help-720-mobile.mp4
+media/help-full-mobile.mp4
+media/3d/sony_trinitron.glb
+media/euclid-*.jpg
+media/midi-llm-trap-test.mid
+media/obi-wan-kenobi-stills-*_dv_*.jpeg
+media/pearl*.png
+media/pretext01.mp4
+
+# Demo/reference images: keep only the current Macbook comp plate in git.
+media/demo/*
+!media/demo/
+!media/demo/mac4.jpg
+
+# Reference source portraits: keep only generated avatar deliverables.
+media/imessage/*
+!media/imessage/
+!media/imessage/generated/
+media/imessage/generated/*
+!media/imessage/generated/*-avatar-v4.png

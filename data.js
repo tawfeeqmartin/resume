@@ -4,7 +4,7 @@ const RESUME = {
   title: "Creative Technologist · Senior Virtual Production Engineer",
   location: "Los Angeles, CA",
   site: "tawfeeqmartin.com",
-  summary: "Award-winning creative technologist with 20+ years defining and shipping products at the intersection of emerging technology and cinematic storytelling. Core engineering team at ILM StageCraft. Previously Technical Innovations Manager at The Mill, where I led 0-to-1 product development on landmark projects including Google Spotlight Stories ‘HELP’ (dir. Justin Lin) — a double Gold Cannes Lion–winning immersive 360° film — and was one of the inventors of Mill Stitch™ and the Mill Blackbird car rig. Independent developer of AI tools, devotional software, and generative creative systems.",
+  summary: "Award-winning creative technologist with 20+ years defining and shipping products at the intersection of emerging technology and cinematic storytelling. Core engineering team at ILM StageCraft. Previously Technical Innovations Manager at The Mill, where I led 0-to-1 product development on landmark projects including Google Spotlight Stories ‘HELP’ (dir. Justin Lin) — a double Gold Cannes Lion–winning immersive 360° film — and was one of the inventors of Mill Stitch™ and the Mill Blackbird car rig. Independent developer of AI tools and generative creative systems.",
 
   intro: [
     "I've spent 20+ years at the intersection of emerging technology and storytelling — at Waterfront Studios, The Mill, ILM StageCraft, and in my own independent work. What draws me to this role is that it describes something I've actually been doing: taking capabilities that don't have a product shape yet and finding one.",
@@ -127,42 +127,49 @@ const RESUME = {
   references: [
     {
       name: "Regina Dugan",
+      avatar: "media/imessage/generated/regina-avatar-v4.png",
       title: "CEO, Wellcome Leap",
       sub: "fmr. VP Building 8 (Facebook) · VP Engineering, ATAP (Google) · Director, DARPA",
       quote: "Tawfeeq is an exceptional architect of new technologies for storytelling. He led the technology team responsible for building the only Hollywood-scale film pipeline and custom toolset including Mill Stitch — tools that enabled director Justin Lin to view the 360-degree action of ‘HELP’ as it was shot, in real time. ‘HELP’ went on to win Cannes Gold for Innovative Use of Technology, Cannes Gold for Virtual Reality, the WEBBY for technical achievement in VR, and the SXSW AR/VR breakthrough innovation award.",
     },
     {
       name: "Usman Shakeel",
+      avatar: "media/imessage/generated/usman-avatar-v4.png",
       title: "Director of Engineering, Amazon AGI Infrastructure",
       sub: "fmr. Worldwide Technology Leader, M&E — AWS",
       quote: "Tawfeeq is very technology savvy and one of the smartest people I have worked with. Well spoken and trustworthy. It is always a treat to discuss the latest tech with him — I learn a thing or two during every meeting.",
     },
     {
       name: "Virginia ‘Ginny’ Galloway",
+      avatar: "media/imessage/generated/ginny-avatar-v4.png",
       title: "Co-Founder, WildVentureXR",
       sub: "fmr. Executive Producer, Marshmallow Laser Feast",
       quote: "Tawfeeq was instrumental in bringing REEPS ONE: ‘Does Not Exist’ to life. An ambitious, original concept that faced many challenges — and Tawfeeq was there at every turn with creative and technical solutions. He went way above and beyond. A 5-star master of his craft.",
     },
     {
       name: "Daniell Phillips",
+      avatar: "media/imessage/generated/dan-avatar-v4.png",
       title: "Director, Brand Partnerships — Residence",
       sub: "fmr. The Mill",
       quote: "Brings real depth of technical and creative knowledge to a broad range of content, film-making and experiential production. Across virtual production, real-time character executions, AR applications and CG pipeline plug-ins, Tawfeeq always brought rigour alongside a real problem-solving approach. An asset to any team.",
     },
     {
       name: "Chris Harlowe",
+      avatar: "media/imessage/generated/chris-avatar-v4.png",
       title: "Executive Producer, Emerging Tech — The Mill",
       sub: "",
       quote: "Often assigned tasks with mission-impossible status, Tawfeeq is fearless in his pursuit of solutions. Creative and open-minded about resolving technical challenges, and passionate about new technology.",
     },
     {
       name: "Gaël Seydoux",
+      avatar: "media/imessage/generated/gael-avatar-v4.png",
       title: "Co-Founder & CEO, Emova",
       sub: "fmr. Technicolor",
       quote: "Tawfeeq brings a technology vision that uplifts the debate and ensures projects are on track and challenged. Strong background in computer graphics, tremendous experience, always seeks excellence.",
     },
     {
       name: "Matthew Rolston",
+      avatar: "media/imessage/generated/matthew-avatar-v4.png",
       title: "Acclaimed Artist, Photographer, Creative Director",
       sub: "",
       quote: "An intuitive grasp of working collaboratively. The VR gallery experience was a great success amongst my colleagues and friends. The hard work — both creative and technical — that went into its creation is what makes the work come alive.",

@@ -263,6 +263,42 @@ Performance rule:
 
 The HELP player should stream media. It should not fetch the entire full-quality file into memory just to start playback.
 
+### CRT TV Clip Sampler
+
+Used for the sticky Sony Trinitron hero.
+
+Purpose:
+
+- Treat the TV as a music-synced montage surface.
+- Cut or channel-flip clips on normalized Strudel/MIDI lane events.
+- Keep trailer/work-footage sourcing manifest-driven so cleared files can be swapped without rewriting the component.
+
+Current behavior:
+
+- `TvHero` accepts `sources` with `kind: "image"` or `kind: "video"`.
+- Active trailer snippets and inactive local work clips live in `media/tv-clips/`.
+- Current CRT rotation is trailer-only; Blackbird and HELP snippets are kept on disk but not included in `TV_VIDEO_SOURCES`.
+- Cleared trailer snippets are normalized to a consistent 960x540 file with a fixed 2.39:1 active image and no added titles.
+- Cleared media is split into two pools:
+  - Visual pool: silent, image-first trailer cuts for normal TV rotation.
+  - Vocal-hook pool: audio-bearing cuts gated to a future explicit `vocal` lane.
+- Current active pool sizes are 36 visual clips and 25 vocal-hook clips.
+- Winter Olympics and Santa Clauses derivatives are kept on disk but inactive for now.
+- Obi-Wan contributes extra Vader-heavy takes and is weighted higher in the TV pool.
+- Rights-cleared trailer import slots live in `media/cleared/`.
+- Optional cleared trailer sources are probed with `HEAD` on load. Missing files are skipped quietly.
+- The TV emits `resume-tv-clip-cue` when a video clip mounts, carrying `project`, `cue`, `sampleKey`, and `lane`.
+- Bass lane hits drive CRT tracking/noise.
+- Snare/clap lane hits drive full static channel flips and choose a new trailer clip from the cleared video pool.
+- Clap/snare flips use extreme CRT tracking tears with a lighter noise layer rather than a full-screen static card; the clip that lands afterward returns to the normalized cinematic matte.
+
+Rules:
+
+- Do not rip YouTube/IP trailers directly into the repo.
+- Use user-provided or licensed downloadable files for any trailer samples.
+- Keep TV clips muted by default; Strudel owns the site score and future vocal-sample layer.
+- For now, keep the CRT montage video-only. Trailer vocal chops can come back later as explicit Strudel sample lanes once the composition is stable.
+
 ## Media And Hosting
 
 Static site:
