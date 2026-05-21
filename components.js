@@ -91,10 +91,10 @@ const breakdown  = stack(padBreak, leadBreak, outroBass);
 
 arrange(
   [4,  intro],
-  [16, chorus],
+  [8, chorus],
   [8,  verse],
   [4,  preChorus],
-  [16, chorus],
+  [8, chorus],
   [8,  breakdown]
 )`;
 
