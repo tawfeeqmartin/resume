@@ -6,6 +6,7 @@ const mediaUrl = (path) => {
 };
 const withCacheKey = (url, key) => `${url}${url.includes('?') ? '&' : '?'}v=${key}`;
 const TV_CLIP_CACHE_KEY = '20260520-bw-preprocessed';
+const SITE_MODE_STORAGE_KEY = 'resume.desktop.mode';
 const IS_MOBILE_MEDIA_TARGET = window.matchMedia('(max-width: 900px), (pointer: coarse)').matches;
 // First mobile choice: mesh WebM. Frames are authored to align with the
 // mesh UVs so projection renders correctly. Chrome Android plays VP9
@@ -174,6 +175,56 @@ function useMobileResumeMode() {
     };
   }, []);
   return mobile;
+}
+
+function getStoredDesktopMode() {
+  try {
+    const stored = window.localStorage?.getItem(SITE_MODE_STORAGE_KEY);
+    return stored === 'read-only' ? 'read-only' : 'more-than-words';
+  } catch (_) {
+    return 'more-than-words';
+  }
+}
+
+function useDesktopMode() {
+  const [mode, setModeState] = useState(getStoredDesktopMode);
+  const setMode = React.useCallback((nextMode) => {
+    const normalized = nextMode === 'read-only' ? 'read-only' : 'more-than-words';
+    setModeState(normalized);
+    try {
+      window.localStorage?.setItem(SITE_MODE_STORAGE_KEY, normalized);
+    } catch (_) {}
+  }, []);
+  return [mode, setMode];
+}
+
+function DesktopModeToggle({ mode, onModeChange }) {
+  const switchMode = (nextMode) => {
+    if (nextMode === mode || !onModeChange) return;
+    onModeChange(nextMode);
+  };
+  return (
+    <div className="site-mode-toggle mono" role="group" aria-label="Desktop site mode">
+      <button
+        type="button"
+        className={mode === 'read-only' ? 'is-active' : ''}
+        aria-pressed={mode === 'read-only'}
+        onClick={() => switchMode('read-only')}
+      >
+        <span className="site-mode-toggle__mark site-mode-toggle__mark--triangle" aria-hidden="true"></span>
+        read-only
+      </button>
+      <button
+        type="button"
+        className={mode === 'more-than-words' ? 'is-active' : ''}
+        aria-pressed={mode === 'more-than-words'}
+        onClick={() => switchMode('more-than-words')}
+      >
+        <span className="site-mode-toggle__mark site-mode-toggle__mark--square" aria-hidden="true"></span>
+        more-than-words
+      </button>
+    </div>
+  );
 }
 
 // Compact top strip for the current resume shell.
@@ -406,6 +457,7 @@ function MobileReferences({ items }) {
             <div>
               <div className="mobile-reference__name">{item.name}</div>
               <div className="mobile-reference__title mono">{item.title}</div>
+              {item.sub && <div className="mobile-reference__sub mono">{item.sub}</div>}
               <blockquote className="mobile-reference__quote serif">{item.quote}</blockquote>
             </div>
           </li>
@@ -441,15 +493,64 @@ function MobileResume() {
   );
 }
 
+function ReadOnlyResume({ mode, onModeChange }) {
+  useEffect(() => {
+    const engine = getResumeAudioEngine?.();
+    if (engine?.enabled) engine.setEnabled(false).catch(() => {});
+  }, []);
+
+  return (
+    <div className="page page--read-only-resume">
+      <TopStrip data={RESUME} />
+      <div className="site-mode-toggle-row">
+        <DesktopModeToggle mode={mode} onModeChange={onModeChange} />
+      </div>
+      <header className="read-only-hero">
+        <h1>Tawfeeq Martin.</h1>
+        <p className="read-only-hero__title mono">{RESUME.title}</p>
+      </header>
+      <MobileResumeSection label="Summary" tone="yellow">
+        <p className="mobile-summary serif">{RESUME.summary}</p>
+      </MobileResumeSection>
+      <MobileExperience items={RESUME.experience} />
+      <MobileProjects project={RESUME.project} />
+      <MobileAwards items={RESUME.awards} />
+      <MobileSkills groups={RESUME.skills} />
+      <MobileEducation items={RESUME.education} />
+      <MobileReferences items={RESUME.references} />
+    </div>
+  );
+}
+
 function App() {
   const mobileResume = useMobileResumeMode();
+  const [desktopMode, setDesktopMode] = useDesktopMode();
+
+  useEffect(() => {
+    const switchToPrintResume = () => {
+      if (mobileResume) return;
+      const apply = () => setDesktopMode('read-only');
+      if (ReactDOM.flushSync) ReactDOM.flushSync(apply);
+      else apply();
+    };
+    window.addEventListener('beforeprint', switchToPrintResume);
+    return () => window.removeEventListener('beforeprint', switchToPrintResume);
+  }, [mobileResume, setDesktopMode]);
+
   if (mobileResume) return <MobileResume />;
+  if (desktopMode === 'read-only') {
+    return <ReadOnlyResume mode={desktopMode} onModeChange={setDesktopMode} />;
+  }
 
   return (
     <>
       <ScrollAudioLayers />
+      <DoomOverlay />
       <div className="page">
         <TopStrip data={RESUME} />
+        <div className="site-mode-toggle-row">
+          <DesktopModeToggle mode={desktopMode} onModeChange={setDesktopMode} />
+        </div>
         <div className="hero-stack">
           <div className="hero-stack__intro">
             <h1 className="hero-lead">

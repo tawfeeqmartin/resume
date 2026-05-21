@@ -1424,6 +1424,7 @@ function getResumeStrudelAudioEngine() {
       return Object.fromEntries(Object.entries(SCENE_MIDI_MAP).filter(([, value]) => value.group === 'drums'));
     },
     get midiOutputEnabled() { return midiOutputEnabled; },
+    get midiOutputId() { return midiOutput?.id || ''; },
     get midiOutputName() { return midiOutput?.name || ''; },
     async requestMidiAccess() {
       if (!navigator.requestMIDIAccess) {
@@ -1448,15 +1449,15 @@ function getResumeStrudelAudioEngine() {
       midiOutput = outputs.find((output) => output.id === outputIdOrName || output.name === outputIdOrName) || outputs[0] || null;
       midiOutputEnabled = Boolean(midiOutput);
       window.dispatchEvent(new CustomEvent('resume-midi-output-change', {
-        detail: { enabled: midiOutputEnabled, name: midiOutput?.name || '' },
+        detail: { enabled: midiOutputEnabled, id: midiOutput?.id || '', name: midiOutput?.name || '' },
       }));
-      return { enabled: midiOutputEnabled, name: midiOutput?.name || '' };
+      return { enabled: midiOutputEnabled, id: midiOutput?.id || '', name: midiOutput?.name || '' };
     },
     disableMidiOut() {
       midiOutputEnabled = false;
       midiOutput = null;
       window.dispatchEvent(new CustomEvent('resume-midi-output-change', {
-        detail: { enabled: false, name: '' },
+        detail: { enabled: false, id: '', name: '' },
       }));
     },
     async enableMidiIn(inputIdOrName = '') {
@@ -3232,6 +3233,203 @@ function MidiBusMonitor({ compact = false } = {}) {
   );
 }
 
+const MIDI_OUT_PREF_STORAGE_KEY = 'resume-midi-out-preference-v1';
+
+function readMidiOutputPreference() {
+  try {
+    return window.localStorage?.getItem(MIDI_OUT_PREF_STORAGE_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+function writeMidiOutputPreference(value) {
+  try {
+    if (value) window.localStorage?.setItem(MIDI_OUT_PREF_STORAGE_KEY, value);
+  } catch {}
+}
+
+function MidiOutputPanel({ compact = false } = {}) {
+  const [supported, setSupported] = React.useState(() => (
+    typeof navigator !== 'undefined' && typeof navigator.requestMIDIAccess === 'function'
+  ));
+  const [outputs, setOutputs] = React.useState([]);
+  const [selectedId, setSelectedId] = React.useState(() => readMidiOutputPreference());
+  const [enabled, setEnabled] = React.useState(() => Boolean(window.__resumeStrudelAudioEngine?.midiOutputEnabled));
+  const [outputName, setOutputName] = React.useState(() => window.__resumeStrudelAudioEngine?.midiOutputName || '');
+  const [status, setStatus] = React.useState(() => (supported ? 'off' : 'unsupported'));
+  const [error, setError] = React.useState('');
+
+  const preferOutput = React.useCallback((list) => {
+    const stored = readMidiOutputPreference();
+    return list.find((output) => output.id === selectedId)
+      || list.find((output) => output.id === stored)
+      || list.find((output) => /iac/i.test(output.name || ''))
+      || list.find((output) => /network|session/i.test(output.name || ''))
+      || list[0]
+      || null;
+  }, [selectedId]);
+
+  const loadOutputs = React.useCallback(async () => {
+    setError('');
+    const engine = getResumeAudioEngine();
+    if (!supported || !engine?.listMidiOutputs) {
+      setSupported(false);
+      setStatus('unsupported');
+      return [];
+    }
+    setStatus('scanning');
+    try {
+      const list = await engine.listMidiOutputs();
+      setOutputs(list);
+      const preferred = preferOutput(list);
+      if (preferred) {
+        setSelectedId((current) => current || preferred.id);
+        writeMidiOutputPreference(preferred.id);
+      }
+      setStatus(list.length ? (engine.midiOutputEnabled ? 'on' : 'ready') : 'none');
+      return list;
+    } catch (err) {
+      setStatus('error');
+      setError(err?.message || String(err));
+      return [];
+    }
+  }, [preferOutput, supported]);
+
+  React.useEffect(() => {
+    const onOutputChange = (event) => {
+      const nextEnabled = Boolean(event.detail?.enabled);
+      const nextId = event.detail?.id || '';
+      setEnabled(nextEnabled);
+      setOutputName(event.detail?.name || '');
+      if (nextId) {
+        setSelectedId(nextId);
+        writeMidiOutputPreference(nextId);
+      }
+      setStatus(nextEnabled ? 'on' : 'off');
+    };
+    const engine = window.__resumeStrudelAudioEngine;
+    setEnabled(Boolean(engine?.midiOutputEnabled));
+    setOutputName(engine?.midiOutputName || '');
+    if (engine?.midiOutputId) setSelectedId(engine.midiOutputId);
+    window.addEventListener('resume-midi-output-change', onOutputChange);
+    return () => window.removeEventListener('resume-midi-output-change', onOutputChange);
+  }, []);
+
+  const enable = React.useCallback(async () => {
+    setError('');
+    const engine = getResumeAudioEngine();
+    const list = outputs.length ? outputs : await loadOutputs();
+    const preferred = preferOutput(list);
+    if (!preferred) {
+      setStatus('none');
+      setError('No MIDI outputs found. Enable IAC Driver or a Network MIDI session in Audio MIDI Setup, then scan again.');
+      return;
+    }
+    setStatus('enabling');
+    try {
+      const result = await engine.enableMidiOut(preferred.id);
+      setEnabled(Boolean(result.enabled));
+      setOutputName(result.name || '');
+      setSelectedId(result.id || preferred.id);
+      writeMidiOutputPreference(result.id || preferred.id);
+      setStatus(result.enabled ? 'on' : 'none');
+    } catch (err) {
+      setStatus('error');
+      setError(err?.message || String(err));
+    }
+  }, [loadOutputs, outputs, preferOutput]);
+
+  const disable = React.useCallback(() => {
+    window.__resumeStrudelAudioEngine?.disableMidiOut?.();
+    setEnabled(false);
+    setOutputName('');
+    setStatus('off');
+  }, []);
+
+  const onToggle = React.useCallback(() => {
+    if (enabled) disable();
+    else enable();
+  }, [disable, enable, enabled]);
+
+  const onSelect = React.useCallback(async (event) => {
+    const id = event.target.value;
+    setSelectedId(id);
+    writeMidiOutputPreference(id);
+    if (!id || !enabled) return;
+    try {
+      setStatus('enabling');
+      const result = await getResumeAudioEngine().enableMidiOut(id);
+      setOutputName(result.name || '');
+      setEnabled(Boolean(result.enabled));
+      setStatus(result.enabled ? 'on' : 'none');
+    } catch (err) {
+      setStatus('error');
+      setError(err?.message || String(err));
+    }
+  }, [enabled]);
+
+  const statusText = !supported
+    ? 'Web MIDI unavailable'
+    : enabled
+      ? `sending ${outputName || 'MIDI'}`
+      : status === 'none'
+        ? 'no outputs found'
+        : status === 'scanning'
+          ? 'scanning outputs'
+          : status === 'enabling'
+            ? 'opening output'
+            : 'select IAC / network';
+
+  return (
+    <div className={`midi-out mono ${compact ? 'midi-out--compact' : ''}`} aria-label="MIDI output">
+      <div className="midi-out__head">
+        <span>MIDI OUT</span>
+        <button
+          type="button"
+          className={`midi-out__toggle ${enabled ? 'is-on' : ''}`}
+          onClick={onToggle}
+          aria-pressed={enabled}
+          disabled={!supported}
+        >
+          {enabled ? 'ON' : 'OFF'}
+        </button>
+      </div>
+      <div className="midi-out__row">
+        <select
+          className="midi-out__select"
+          value={selectedId}
+          onFocus={loadOutputs}
+          onMouseDown={loadOutputs}
+          onChange={onSelect}
+          disabled={!supported}
+          aria-label="MIDI output destination"
+        >
+          <option value="">{outputs.length ? 'Select output' : 'Scan outputs'}</option>
+          {selectedId && !outputs.some((output) => output.id === selectedId) ? (
+            <option value={selectedId}>Saved output</option>
+          ) : null}
+          {outputs.map((output) => (
+            <option key={output.id} value={output.id}>
+              {output.name || output.manufacturer || output.id}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className="midi-out__scan"
+          onClick={loadOutputs}
+          disabled={!supported}
+        >
+          scan
+        </button>
+      </div>
+      <div className={`midi-out__status midi-out__status--${status}`}>{statusText}</div>
+      {error ? <div className="midi-out__error">{error}</div> : null}
+    </div>
+  );
+}
+
 function StrudelCheatSheet({ onApply, onReset, onHush, status = 'ready', compact = false } = {}) {
   const rows = [
     {
@@ -3618,38 +3816,19 @@ function StrudelReplFeature() {
   return (
     <Section id="strudel" label="05 · LIVE CODE · POETRY IN PROOF">
       <aside className="help-feature__notes help-feature__notes--match-stack strudel-repl__intro">
-        <h3 className="serif">Browser-native audio-visual, score-driven, MIDI-addressable.</h3>
+        <h3 className="serif">A browser-based music and interactive visuals demo.</h3>
         <p>
-          <strong>Poetry in Proof</strong> is one viewport onto a runtime for
-          building audio-visual experiences that live in a browser tab:
-          music as the score, the page as the visual surface, and a MIDI
-          bus underneath so an external controller, a stage cue, or a
-          remote performance rig can take over and trigger sections,
-          chords, or drum hits live.
+          <strong>Poetry in Proof</strong> is a browser-based music and
+          interactive visuals demo running on this website. The music is
+          composed in Strudel, with custom code producing MIDI triggers that
+          drive real-time page animations, text and code highlights, the MIDI
+          monitor, and Mac screen reactions. The code editor is live, so the
+          composition can be changed while the page is running. When MIDI OUT is
+          enabled, those same triggers can be sent to an external MIDI
+          destination such as IAC Driver or a network MIDI session. Web MIDI is
+          bound to every lane, so sections, chords, and drums are all
+          addressable from external hardware or remote rigs.
         </p>
-        <p>
-          Every event the scheduler fires emits a MIDI message you can
-          route out to a lighting rig, a visualiser, or a DAW. The same
-          schedule drives the visuals on this page — the typed title
-          accelerates on each kick, phrases cycle through fonts on every
-          chord change, plates advance on the downbeat. Audio and motion
-          share one clock.
-        </p>
-        <dl className="blackbird-facts">
-          <div>
-            <dt className="mono">Audio · Visual</dt>
-            <dd>A single scheduler drives both the music and the page animations, frame-locked to the beat.</dd>
-          </div>
-          <div>
-            <dt className="mono">MIDI in / out</dt>
-            <dd>Web MIDI bound to every lane — sections, chords, drums all addressable from external hardware or remote rigs.</dd>
-          </div>
-          <div>
-            <dt className="mono">Live-lit source</dt>
-            <dd>Each scheduled event carries a source position; the editor flashes the exact token producing the sound.</dd>
-          </div>
-        </dl>
-        <StrudelCheatSheet status={editStatus} onApply={applyCode} onHush={hushCode} onReset={resetCode} />
       </aside>
       <div className="help-feature strudel-repl">
         <div className="help-feature__player-col help-feature__player-col--wide">
@@ -3679,6 +3858,7 @@ function StrudelReplFeature() {
               ) : null}
               <div className="strudel-repl__screen-dock">
                 <MidiBusMonitor compact />
+                <MidiOutputPanel compact />
                 <StrudelCheatSheet compact status={editStatus} onApply={applyCode} onHush={hushCode} onReset={resetCode} />
               </div>
             </div>
@@ -3798,6 +3978,104 @@ function Experience({ items }) {
 // ────────────────────────────────────────────────────────────────────
 
 const TV_MODEL_URL = 'media/3d/apple_macintosh.glb';
+const DOOM_TERMINAL_COMMANDS = new Set(['doom', 'doom.exe', './doom', 'run doom', 'launch doom', 'open doom']);
+
+function getDoomIframeUrl() {
+  return new URL('doom.html', window.location.href).href;
+}
+
+const MAC_KEY_DEFS = {
+  Backquote:    { mesh: 'Mesh285', char: '`', shiftChar: '~' },
+  Digit1:       { mesh: 'Mesh286', char: '1', shiftChar: '!' },
+  Digit2:       { mesh: 'Mesh287', char: '2', shiftChar: '@' },
+  Digit3:       { mesh: 'Mesh288', char: '3', shiftChar: '#' },
+  Digit4:       { mesh: 'Mesh289', char: '4', shiftChar: '$' },
+  Digit5:       { mesh: 'Mesh290', char: '5', shiftChar: '%' },
+  Digit6:       { mesh: 'Mesh291', char: '6', shiftChar: '^' },
+  Digit7:       { mesh: 'Mesh292', char: '7', shiftChar: '&' },
+  Digit8:       { mesh: 'Mesh293', char: '8', shiftChar: '*' },
+  Digit9:       { mesh: 'Mesh294', char: '9', shiftChar: '(' },
+  Digit0:       { mesh: 'Mesh295', char: '0', shiftChar: ')' },
+  Minus:        { mesh: 'Mesh296', char: '-', shiftChar: '_' },
+  Equal:        { mesh: 'Mesh297', char: '=', shiftChar: '+' },
+  Backspace:    { mesh: 'Mesh298', action: 'backspace' },
+
+  Tab:          { mesh: 'Mesh299', char: '  ' },
+  KeyQ:         { mesh: 'Mesh300', char: 'q', shiftChar: 'Q' },
+  KeyW:         { mesh: 'Mesh301', char: 'w', shiftChar: 'W' },
+  KeyE:         { mesh: 'Mesh302', char: 'e', shiftChar: 'E' },
+  KeyR:         { mesh: 'Mesh303', char: 'r', shiftChar: 'R' },
+  KeyT:         { mesh: 'Mesh304', char: 't', shiftChar: 'T' },
+  KeyY:         { mesh: 'Mesh305', char: 'y', shiftChar: 'Y' },
+  KeyU:         { mesh: 'Mesh306', char: 'u', shiftChar: 'U' },
+  KeyI:         { mesh: 'Mesh307', char: 'i', shiftChar: 'I' },
+  KeyO:         { mesh: 'Mesh308', char: 'o', shiftChar: 'O' },
+  KeyP:         { mesh: 'Mesh309', char: 'p', shiftChar: 'P' },
+  BracketLeft:  { mesh: 'Mesh310', char: '[', shiftChar: '{' },
+  BracketRight: { mesh: 'Mesh311', char: ']', shiftChar: '}' },
+  Backslash:    { mesh: 'Mesh312', char: '\\', shiftChar: '|' },
+
+  CapsLock:     { mesh: 'Mesh325', action: 'modifier' },
+  KeyA:         { mesh: 'Mesh324', char: 'a', shiftChar: 'A' },
+  KeyS:         { mesh: 'Mesh323', char: 's', shiftChar: 'S' },
+  KeyD:         { mesh: 'Mesh322', char: 'd', shiftChar: 'D' },
+  KeyF:         { mesh: 'Mesh321', char: 'f', shiftChar: 'F' },
+  KeyG:         { mesh: 'Mesh320', char: 'g', shiftChar: 'G' },
+  KeyH:         { mesh: 'Mesh319', char: 'h', shiftChar: 'H' },
+  KeyJ:         { mesh: 'Mesh318', char: 'j', shiftChar: 'J' },
+  KeyK:         { mesh: 'Mesh317', char: 'k', shiftChar: 'K' },
+  KeyL:         { mesh: 'Mesh316', char: 'l', shiftChar: 'L' },
+  Semicolon:    { mesh: 'Mesh315', char: ';', shiftChar: ':' },
+  Quote:        { mesh: 'Mesh314', char: "'", shiftChar: '"' },
+  Enter:        { mesh: 'Mesh313', action: 'enter' },
+
+  ShiftLeft:    { mesh: 'Mesh326', action: 'modifier' },
+  KeyZ:         { mesh: 'Mesh327', char: 'z', shiftChar: 'Z' },
+  KeyX:         { mesh: 'Mesh328', char: 'x', shiftChar: 'X' },
+  KeyC:         { mesh: 'Mesh329', char: 'c', shiftChar: 'C' },
+  KeyV:         { mesh: 'Mesh330', char: 'v', shiftChar: 'V' },
+  KeyB:         { mesh: 'Mesh331', char: 'b', shiftChar: 'B' },
+  KeyN:         { mesh: 'Mesh332', char: 'n', shiftChar: 'N' },
+  KeyM:         { mesh: 'Mesh333', char: 'm', shiftChar: 'M' },
+  Comma:        { mesh: 'Mesh334', char: ',', shiftChar: '<' },
+  Period:       { mesh: 'Mesh335', char: '.', shiftChar: '>' },
+  Slash:        { mesh: 'Mesh336', char: '/', shiftChar: '?' },
+  ShiftRight:   { mesh: 'Mesh337', action: 'modifier' },
+
+  AltLeft:      { mesh: 'Mesh339', action: 'modifier' },
+  MetaLeft:     { mesh: 'Mesh338', action: 'modifier' },
+  Space:        { mesh: '3DGeom_15', char: ' ' },
+  MetaRight:    { mesh: 'Mesh340', action: 'modifier' },
+  AltRight:     { mesh: 'Mesh341', action: 'modifier' },
+};
+
+const MAC_KEY_ALIASES = {
+  W: 'KeyW',
+  A: 'KeyA',
+  S: 'KeyS',
+  D: 'KeyD',
+  space: 'Space',
+};
+
+const MAC_KEY_BY_CHAR = Object.fromEntries(
+  Object.entries(MAC_KEY_DEFS).flatMap(([code, def]) => (
+    def.char
+      ? [[def.char.toLowerCase(), code], [def.shiftChar?.toLowerCase?.(), code]].filter(([key]) => key)
+      : []
+  ))
+);
+
+function getMacKeyCodeFromEvent(event) {
+  if (MAC_KEY_DEFS[event.code]) return event.code;
+  const key = event.key === ' ' ? ' ' : String(event.key || '').toLowerCase();
+  return MAC_KEY_BY_CHAR[key] || '';
+}
+
+function getMacTerminalCharacter(code, shiftKey = false) {
+  const def = MAC_KEY_DEFS[code];
+  if (!def || !def.char) return '';
+  return shiftKey && def.shiftChar ? def.shiftChar : def.char;
+}
 
 function TvHero({ sources = [], children }) {
   const wrapRef = React.useRef(null);
@@ -3907,95 +4185,73 @@ function TvHero({ sources = [], children }) {
     term.lines = [...term.lines, line].slice(-12);
   }, [ensureMacTerminal]);
 
-  // Paint the Mac's inactive screen as a period-ish monochrome terminal:
-  // 1-bit Macintosh window chrome, a black terminal well, and a flashing
-  // block cursor. It is intentionally drawn into a low-res back buffer and
-  // nearest-neighbor scaled so the CRT texture keeps a bitmap UI character.
+  // Paint the Mac's inactive screen as a period-ish monochrome terminal.
+  // Draw directly at texture resolution so the UI keeps the vintage shape
+  // without turning into a jagged low-res texture on the curved screen.
   const drawMacOffScreen = React.useCallback(() => {
     const { ctx2d, screenCanvas, screenTex } = stateRef.current;
     if (!ctx2d || !screenCanvas) return;
     const w = screenCanvas.width, h = screenCanvas.height;
     const term = ensureMacTerminal();
-    const sw = 512, sh = 384;
-    const state = stateRef.current;
-    if (!state.terminalCanvas) {
-      state.terminalCanvas = document.createElement('canvas');
-      state.terminalCanvas.width = sw;
-      state.terminalCanvas.height = sh;
-      state.terminalCtx = state.terminalCanvas.getContext('2d');
-    }
-    const tctx = state.terminalCtx;
+    const px = (value) => Math.round(value);
     ctx2d.save();
-    tctx.save();
-    tctx.imageSmoothingEnabled = false;
-    tctx.fillStyle = '#f7f7f7';
-    tctx.fillRect(0, 0, sw, sh);
+    ctx2d.imageSmoothingEnabled = true;
+    ctx2d.fillStyle = '#050505';
+    ctx2d.fillRect(0, 0, w, h);
 
-    // Menu bar + simple Chicago-ish bitmap text.
-    tctx.fillStyle = '#000';
-    tctx.fillRect(0, 0, sw, 15);
-    tctx.fillStyle = '#fff';
-    tctx.font = '10px Monaco, Menlo, monospace';
-    tctx.fillText('■  File  Edit  Session  Settings', 8, 11);
+    const menuH = px(h * 0.068);
+    ctx2d.fillStyle = '#fbfbf8';
+    ctx2d.fillRect(0, 0, w, menuH);
+    ctx2d.fillStyle = '#050505';
+    ctx2d.fillRect(0, menuH - 2, w, 2);
+    ctx2d.font = `${px(h * 0.031)}px "SF Mono", Monaco, Menlo, monospace`;
+    ctx2d.fillText('■  MacTerminal  File  Edit  Session', px(w * 0.025), px(menuH * 0.68));
 
-    // Terminal window.
-    const wx = 20, wy = 28, ww = 472, wh = 326;
-    tctx.fillStyle = '#fff';
-    tctx.fillRect(wx, wy, ww, wh);
-    tctx.strokeStyle = '#000';
-    tctx.lineWidth = 2;
-    tctx.strokeRect(wx, wy, ww, wh);
-    tctx.fillStyle = '#000';
-    tctx.fillRect(wx + 2, wy + 2, ww - 4, 16);
-    tctx.fillStyle = '#fff';
-    tctx.font = '10px Monaco, Menlo, monospace';
-    tctx.fillText('MacTerminal', wx + 198, wy + 14);
+    const tx = px(w * 0.065);
+    const ty = menuH + px(h * 0.07);
+    const tw = w - tx * 2;
+    const th = h - ty - px(h * 0.07);
+    ctx2d.strokeStyle = '#f7f7f2';
+    ctx2d.lineWidth = 2;
+    ctx2d.strokeRect(tx - px(w * 0.02), ty - px(h * 0.035), tw + px(w * 0.04), th + px(h * 0.07));
 
-    const tx = wx + 12;
-    const ty = wy + 30;
-    const tw = ww - 24;
-    const th = wh - 46;
-    tctx.fillStyle = '#050505';
-    tctx.fillRect(tx, ty, tw, th);
-    tctx.strokeStyle = '#000';
-    tctx.lineWidth = 1;
-    tctx.strokeRect(tx - 1, ty - 1, tw + 2, th + 2);
-
-    tctx.save();
-    tctx.beginPath();
-    tctx.rect(tx + 9, ty + 10, tw - 18, th - 20);
-    tctx.clip();
-    tctx.fillStyle = '#f7f7f7';
-    tctx.font = '13px Monaco, Menlo, monospace';
+    ctx2d.save();
+    ctx2d.beginPath();
+    ctx2d.rect(tx, ty, tw, th);
+    ctx2d.clip();
+    ctx2d.fillStyle = '#f7f7f2';
+    const fontSize = px(h * 0.055);
+    const lineHeight = px(fontSize * 1.45);
+    ctx2d.font = `${fontSize}px "SF Mono", Monaco, Menlo, monospace`;
     const prompt = 'tawfeeq$ ';
     const allLines = [
       ...term.lines,
       `${prompt}${term.input}`,
     ];
-    const visible = allLines.slice(-11);
-    let y = ty + 25;
+    const visibleCount = Math.max(6, Math.floor(th / lineHeight));
+    const visible = allLines.slice(-visibleCount);
+    const textX = tx;
+    let y = ty + fontSize;
     for (const line of visible) {
-      tctx.fillText(line, tx + 12, y);
-      y += 19;
+      ctx2d.fillText(line, textX, y);
+      y += lineHeight;
     }
     if (term.cursorOn) {
       const current = `${prompt}${term.input}`;
-      const cursorX = tx + 12 + Math.min(tw - 28, tctx.measureText(current).width);
-      const cursorY = y - 19 - 12;
-      tctx.fillStyle = '#f7f7f7';
-      tctx.fillRect(cursorX + 2, cursorY, 8, 15);
+      const cursorX = textX + Math.min(tw - px(w * 0.08), ctx2d.measureText(current).width);
+      const cursorY = y - lineHeight - px(fontSize * 0.78);
+      ctx2d.fillStyle = '#f7f7f2';
+      ctx2d.fillRect(cursorX + 3, cursorY, px(fontSize * 0.58), px(fontSize * 1.05));
     }
-    tctx.restore();
+    ctx2d.restore();
 
-    tctx.fillStyle = '#000';
-    tctx.font = '9px Monaco, Menlo, monospace';
-    tctx.fillText('RETURN runs command · PLAY starts audio · RESET restores song', wx + 14, wy + wh - 12);
-    tctx.restore();
-
-    ctx2d.imageSmoothingEnabled = false;
-    ctx2d.fillStyle = '#000';
+    ctx2d.globalCompositeOperation = 'source-over';
+    const vg = ctx2d.createRadialGradient(w / 2, h / 2, w * 0.28, w / 2, h / 2, w * 0.68);
+    vg.addColorStop(0, 'rgba(255,255,255,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.22)');
+    ctx2d.fillStyle = vg;
     ctx2d.fillRect(0, 0, w, h);
-    ctx2d.drawImage(state.terminalCanvas, 0, 0, sw, sh, 0, 0, w, h);
+    ctx2d.globalCompositeOperation = 'source-over';
     ctx2d.restore();
     if (screenTex) {
       screenTex.needsUpdate = true;
@@ -4514,6 +4770,7 @@ function TvHero({ sources = [], children }) {
     }
     if (lower === 'help' || lower === '?') {
       pushMacTerminalLine('PLAY     insert disk and run song');
+      pushMacTerminalLine('DOOM     boot fullscreen Doom');
       pushMacTerminalLine('STATUS   print audio engine state');
       pushMacTerminalLine('RESET    restore default Strudel code');
       pushMacTerminalLine('CLEAR    clear terminal');
@@ -4551,6 +4808,27 @@ function TvHero({ sources = [], children }) {
       drawMacOffScreen();
       return;
     }
+    if (DOOM_TERMINAL_COMMANDS.has(lower)) {
+      if (state.powerToggleInFlight) return;
+      state.powerToggleInFlight = true;
+      pushMacTerminalLine('loading DOOM.EXE...');
+      pushMacTerminalLine('halting site audio...');
+      drawMacOffScreen();
+      try {
+        if (engine?.enabled) await engine.setEnabled(false);
+        await animateFloppy(true);
+        await animateMacBloomBurst('powerOn');
+        pushMacTerminalLine('fullscreen handoff armed.');
+        drawMacOffScreen();
+        window.dispatchEvent(new CustomEvent('resume-launch-doom'));
+      } catch (error) {
+        pushMacTerminalLine(`doom failed: ${error?.message || String(error)}`);
+        drawMacOffScreen();
+      } finally {
+        stateRef.current.powerToggleInFlight = false;
+      }
+      return;
+    }
     if (['play', 'run', 'start', './poetry', './proof'].includes(lower)) {
       if (state.powerToggleInFlight) return;
       state.powerToggleInFlight = true;
@@ -4578,6 +4856,36 @@ function TvHero({ sources = [], children }) {
     pushMacTerminalLine('Type HELP for commands.');
     drawMacOffScreen();
   }, [animateFloppy, animateMacBloomBurst, drawMacOffScreen, ensureMacTerminal, pushMacTerminalLine]);
+
+  const applyMacTerminalKey = React.useCallback((code, options = {}) => {
+    const { shiftKey = false, charOverride = '' } = options;
+    const term = ensureMacTerminal();
+    const def = MAC_KEY_DEFS[code];
+    if (!def) return false;
+    if (def.action === 'enter') {
+      const cmd = term.input;
+      term.input = '';
+      runMacTerminalCommand(cmd);
+      return true;
+    }
+    if (def.action === 'backspace') {
+      term.input = term.input.slice(0, -1);
+      term.cursorOn = true;
+      drawMacOffScreen();
+      return true;
+    }
+    if (def.action === 'modifier') {
+      return false;
+    }
+    const nextChar = charOverride.length === 1
+      ? charOverride
+      : getMacTerminalCharacter(code, shiftKey);
+    if (!nextChar) return false;
+    term.input = (term.input + nextChar).slice(-64);
+    term.cursorOn = true;
+    drawMacOffScreen();
+    return true;
+  }, [drawMacOffScreen, ensureMacTerminal, runMacTerminalCommand]);
 
   const drawChannelStatic = React.useCallback((seed = 1, strength = 1) => {
     const state = stateRef.current;
@@ -5053,8 +5361,68 @@ function TvHero({ sources = [], children }) {
           const sorted = allMeshes.slice().sort((a, b) => b.geometry.attributes.position.count - a.geometry.attributes.position.count);
           screenMeshes = sorted.slice(1);
         }
-        for (const m of screenMeshes) {
-          m.material = new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false });
+        const makeMacScreenProxy = () => {
+          const screenMesh = screenMeshes[0];
+          if (!screenMesh?.geometry) return null;
+          screenMesh.geometry.computeBoundingBox();
+          const bb = screenMesh.geometry.boundingBox;
+          const center = bb.getCenter(new THREE.Vector3()).add(screenMesh.position);
+          const size = bb.getSize(new THREE.Vector3());
+          const width = size.x * 0.965;
+          const height = size.y * 0.955;
+          const positions = screenMesh.geometry.attributes.position;
+          let sumY = 0, sumZ = 0, sumYY = 0, sumYZ = 0;
+          for (let i = 0; i < positions.count; i++) {
+            const y = positions.getY(i);
+            const z = positions.getZ(i);
+            sumY += y;
+            sumZ += z;
+            sumYY += y * y;
+            sumYZ += y * z;
+          }
+          const denom = positions.count * sumYY - sumY * sumY;
+          const tiltZPerY = Math.abs(denom) > 1e-6
+            ? (positions.count * sumYZ - sumY * sumZ) / denom
+            : 0;
+          const interceptZ = positions.count
+            ? (sumZ - tiltZPerY * sumY) / positions.count
+            : center.z;
+          const fittedCenterZ = tiltZPerY * (center.y - screenMesh.position.y) + interceptZ + screenMesh.position.z;
+          const geo = new THREE.PlaneGeometry(width, height, 36, 28);
+          const pos = geo.attributes.position;
+          for (let i = 0; i < pos.count; i++) {
+            pos.setZ(i, tiltZPerY * pos.getY(i));
+          }
+          pos.needsUpdate = true;
+          const uv = geo.attributes.uv;
+          for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - uv.getY(i));
+          uv.needsUpdate = true;
+          geo.computeVertexNormals();
+          const proxy = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+            map: screenTex,
+            toneMapped: false,
+            side: THREE.FrontSide,
+          }));
+          proxy.name = 'MacScreenTextureProxy';
+          proxy.position.set(center.x, center.y, fittedCenterZ + 0.035);
+          model.add(proxy);
+          return proxy;
+        };
+        if (stateRef.current.deviceMode === 'mac') {
+          const originalScreenMeshes = [...screenMeshes];
+          const proxy = makeMacScreenProxy();
+          if (proxy) {
+            originalScreenMeshes.forEach((m) => { m.visible = false; });
+            screenMeshes = [proxy];
+          } else {
+            for (const m of screenMeshes) {
+              m.material = new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false });
+            }
+          }
+        } else {
+          for (const m of screenMeshes) {
+            m.material = new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false });
+          }
         }
         const isKeycapMesh = (mesh) => {
           if (mesh.name === '3DGeom_15') return true;
@@ -5106,31 +5474,28 @@ function TvHero({ sources = [], children }) {
         for (const m of keycapMeshes) {
           m.material = makeKeycapMaterial(m);
         }
-        // Capture animated keys: spacebar (clap) + W/A/S/D (lead notes).
-        // Mesh names identified via debug paint + Blender geometry scan.
-        const KEY_NAMES = {
-          space: '3DGeom_15',
-          W: 'Mesh301',
-          A: 'Mesh324',
-          S: 'Mesh323',
-          D: 'Mesh322',
-        };
+        // Capture the full keyboard. Mesh names are laid out in QWERTY
+        // order in the GLB, so physical KeyboardEvent.code values and
+        // onscreen clicks can drive the same key travel animation.
         stateRef.current.keys = {};
-        for (const [label, meshName] of Object.entries(KEY_NAMES)) {
-          const mesh = allMeshes.find((m) => m.name === meshName);
+        for (const [code, def] of Object.entries(MAC_KEY_DEFS)) {
+          const mesh = allMeshes.find((m) => m.name === def.mesh);
           if (!mesh) {
-            console.warn('[TvHero] key mesh not found:', label, meshName);
+            console.warn('[TvHero] key mesh not found:', code, def.mesh);
             continue;
           }
           mesh.geometry.computeBoundingBox();
           const gb = mesh.geometry.boundingBox;
-          const depthScale = label === 'space' ? 0.38 : 0.95;
-          stateRef.current.keys[label] = {
+          const depthScale = code === 'Space' ? 0.38 : def.action === 'modifier' ? 0.78 : 0.95;
+          stateRef.current.keys[code] = {
             mesh,
             homeY: mesh.position.y,
             depth: (gb.max.y - gb.min.y) * depthScale,
             raf: 0,
           };
+        }
+        for (const [alias, code] of Object.entries(MAC_KEY_ALIASES)) {
+          if (stateRef.current.keys[code]) stateRef.current.keys[alias] = stateRef.current.keys[code];
         }
         console.info('[TvHero] keys ready:', Object.keys(stateRef.current.keys));
         // Floppy disk = Mesh84 (front label sliver) + Mesh273 (disk body
@@ -5186,11 +5551,13 @@ function TvHero({ sources = [], children }) {
         screenMeshes.forEach((m) => addHitTarget(m, 'screen'));
         floppyParts.forEach((m) => addHitTarget(m, 'floppy'));
         keycapMeshes.forEach((m) => addHitTarget(m, 'key'));
-        for (const [label, key] of Object.entries(stateRef.current.keys || {})) {
-          addHitTarget(key.mesh, 'key', label);
+        for (const code of Object.keys(MAC_KEY_DEFS)) {
+          const key = stateRef.current.keys?.[code];
+          if (key) addHitTarget(key.mesh, 'key', code);
         }
+        const hitMeshPool = [...allMeshes, ...screenMeshes];
         stateRef.current.macHitMeshes = Array.from(hitTargets.keys())
-          .map((uuid) => allMeshes.find((m) => m.uuid === uuid))
+          .map((uuid) => hitMeshPool.find((m) => m.uuid === uuid))
           .filter(Boolean);
         stateRef.current.macHitTargets = hitTargets;
         stateRef.current.mouseHitMeshes = [mouseBody, mouseButton].filter(Boolean);
@@ -5302,54 +5669,34 @@ function TvHero({ sources = [], children }) {
       return rect.bottom > 0 && rect.top < vh;
     };
     const onKey = (event) => {
-      if (window.__resumeStrudelAudioEngine?.enabled) return;
       if (stateRef.current.deviceMode !== 'mac') return;
       if (!heroVisible()) return;
       if (isEditableTarget(event.target)) return;
-      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const code = getMacKeyCodeFromEvent(event);
+      if (code) animateKeyPress(code);
+      if (window.__resumeStrudelAudioEngine?.enabled) return;
       if (event.shiftKey && ['Digit1', 'Digit2', 'Digit3'].includes(event.code)) return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
       const term = ensureMacTerminal();
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        const cmd = term.input;
-        term.input = '';
-        runMacTerminalCommand(cmd);
-        return;
-      }
-      if (event.key === 'Backspace') {
-        event.preventDefault();
-        term.input = term.input.slice(0, -1);
-        term.cursorOn = true;
-        drawMacOffScreen();
-        return;
-      }
       if (event.key === 'Escape') {
         event.preventDefault();
+        event.stopImmediatePropagation();
         term.input = '';
         term.cursorOn = true;
         drawMacOffScreen();
         return;
       }
-      if (event.key === ' ') {
+      if (code && applyMacTerminalKey(code, {
+        shiftKey: event.shiftKey,
+        charOverride: event.key && event.key.length === 1 ? event.key : '',
+      })) {
         event.preventDefault();
-        term.input += ' ';
-        term.cursorOn = true;
-        animateKeyPress('space');
-        drawMacOffScreen();
-        return;
-      }
-      if (event.key.length === 1) {
-        event.preventDefault();
-        term.input = (term.input + event.key).slice(-54);
-        term.cursorOn = true;
-        const upper = event.key.toUpperCase();
-        if (['W', 'A', 'S', 'D'].includes(upper)) animateKeyPress(upper);
-        drawMacOffScreen();
+        event.stopImmediatePropagation();
       }
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [animateKeyPress, drawMacOffScreen, ensureMacTerminal, runMacTerminalCommand]);
+  }, [animateKeyPress, applyMacTerminalKey, drawMacOffScreen, ensureMacTerminal]);
 
   React.useEffect(() => {
     if (stateRef.current.deviceMode !== 'mac') return undefined;
@@ -5469,14 +5816,12 @@ function TvHero({ sources = [], children }) {
 	        const term = ensureMacTerminal();
 	        term.focused = true;
 	        term.cursorOn = true;
-	        if (target.label === 'space') {
-	          term.input = `${term.input} `.slice(-54);
-	        } else if (target.label && target.label.length === 1) {
-	          term.input = `${term.input}${target.label.toLowerCase()}`.slice(-54);
-	        } else if (!target.label) {
+	        if (target.label) {
+	          applyMacTerminalKey(target.label, { shiftKey: false });
+	        } else {
 	          pushMacTerminalLine('keyboard active. type PLAY then RETURN.');
+	          drawMacOffScreen();
 	        }
-	        drawMacOffScreen();
 	        return;
 	      }
 	      state.powerToggleInFlight = true;
@@ -5519,7 +5864,24 @@ function TvHero({ sources = [], children }) {
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.style.cursor = '';
     };
-	  }, [animateMouseButton, animateKeyPress, animateKeyMeshPress, animateFloppy, animateMacBloomBurst, drawMacOffScreen, ensureMacTerminal, pushMacTerminalLine]);
+  }, [animateMouseButton, animateKeyPress, animateKeyMeshPress, animateFloppy, animateMacBloomBurst, applyMacTerminalKey, drawMacOffScreen, ensureMacTerminal, pushMacTerminalLine]);
+
+  React.useEffect(() => {
+    if (stateRef.current.deviceMode !== 'mac') return;
+    const onDoomClosed = async () => {
+      if (stateRef.current.powerToggleInFlight) return;
+      stateRef.current.powerToggleInFlight = true;
+      pushMacTerminalLine('DOOM session ended.');
+      drawMacOffScreen();
+      try {
+        await animateFloppy(false);
+      } finally {
+        stateRef.current.powerToggleInFlight = false;
+      }
+    };
+    window.addEventListener('resume-doom-closed', onDoomClosed);
+    return () => window.removeEventListener('resume-doom-closed', onDoomClosed);
+  }, [animateFloppy, drawMacOffScreen, pushMacTerminalLine]);
 
   // Lead/melody notes → round-robin W → A → S → D on the Mac keyboard.
   React.useEffect(() => {
@@ -5885,6 +6247,85 @@ function Skills({ groups }) {
   );
 }
 
+function DoomOverlay() {
+  const [active, setActive] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [src, setSrc] = React.useState('');
+  const closeRef = React.useRef(null);
+
+  const close = React.useCallback(() => {
+    setActive(false);
+    setLoading(false);
+    setSrc('');
+    document.documentElement.classList.remove('has-doom-overlay');
+    window.dispatchEvent(new CustomEvent('resume-doom-closed'));
+  }, []);
+
+  closeRef.current = close;
+
+  React.useEffect(() => {
+    const launch = async () => {
+      const engine = window.__resumeStrudelAudioEngine;
+      try {
+        if (engine?.enabled) await engine.setEnabled(false);
+      } catch (_) {}
+      setSrc(getDoomIframeUrl());
+      setLoading(true);
+      setActive(true);
+      document.documentElement.classList.add('has-doom-overlay');
+    };
+    window.addEventListener('resume-launch-doom', launch);
+    return () => window.removeEventListener('resume-launch-doom', launch);
+  }, []);
+
+  React.useEffect(() => {
+    if (!active) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      close();
+    };
+    const onMessage = (event) => {
+      if (event.data?.type === 'resume-doom-exit') closeRef.current?.();
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    window.addEventListener('message', onMessage);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown, true);
+      window.removeEventListener('message', onMessage);
+    };
+  }, [active, close]);
+
+  if (!active) return null;
+
+  return (
+    <div className="doom-overlay" role="dialog" aria-label="Doom fullscreen player">
+      <iframe
+        className="doom-overlay__frame"
+        src={src}
+        title="Doom"
+        allow="autoplay; fullscreen; gamepad"
+        allowFullScreen
+        tabIndex={-1}
+        onLoad={(event) => {
+          setLoading(false);
+          try { event.currentTarget.focus({ preventScroll: true }); } catch (_) {}
+        }}
+      />
+      <div className="doom-overlay__bar mono">
+        <span>DOOM.EXE</span>
+        <button type="button" className="doom-overlay__close" onClick={close}>ESC EXIT</button>
+      </div>
+      {loading && (
+        <div className="doom-overlay__loading mono">
+          <span>loading executable</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ────────────────────────────────────────────────────────────────────
 //  Education
 // ────────────────────────────────────────────────────────────────────
@@ -5973,6 +6414,7 @@ function References({ items }) {
                 <ReferenceAvatar item={r} index={i} shapes={refShapes} />
                 <span className="refs__chip-name">{r.name}</span>
                 <span className="refs__chip-title mono dim">{r.title}</span>
+                {r.sub && <span className="refs__chip-sub mono dim">{r.sub}</span>}
               </button>
               <div className={`refs__inline-quote ${i === active ? 'is-active' : ''}`}>
                 <ReferenceMessage item={r} index={i} shapes={refShapes} />
@@ -6002,5 +6444,5 @@ function Footer({ data }) {
 Object.assign(window, {
   HelpPlayer, HelpFeature, Summary,
   Experience, ProjectCard, LiveSystemFeature, Awards, Skills, Education, References, Footer,
-  VideoSlot, BlackbirdFeature, ScrollAudioLayers, StrudelReplFeature, TvHero
+  VideoSlot, BlackbirdFeature, ScrollAudioLayers, StrudelReplFeature, TvHero, DoomOverlay
 });

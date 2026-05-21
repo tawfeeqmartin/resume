@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Doom</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="vendor/js-dos/emulators-ui.css">
+<style>
+  html,
+  body,
+  #jsdos {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: #000;
+  }
+  body {
+    display: grid;
+    place-items: stretch;
+    color: #eee;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .emulator-root {
+    width: 100% !important;
+    height: 100% !important;
+    background: #000 !important;
+  }
+  .emulator-root canvas {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain;
+    image-rendering: pixelated;
+  }
+  .doom-fallback {
+    position: fixed;
+    inset: 0;
+    display: none;
+    place-items: center;
+    padding: 2rem;
+    text-align: center;
+    background: #050505;
+    color: #f8f8f0;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    line-height: 1.6;
+    text-transform: uppercase;
+  }
+  body.is-error .doom-fallback { display: grid; }
+</style>
+</head>
+<body>
+<div id="jsdos" aria-label="Doom emulator"></div>
+<div class="doom-fallback">
+  Doom failed to load. Check the console or network connection.
+</div>
+<script>
+  (function () {
+    const exit = () => {
+      try {
+        parent.postMessage({ type: 'resume-doom-exit' }, '*');
+      } catch (_) {}
+    };
+    const onExitKey = (event) => {
+      if (event.key !== 'Escape' && event.code !== 'Escape') return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      exit();
+    };
+    window.__resumeDoomExit = exit;
+    window.addEventListener('keydown', onExitKey, true);
+    window.addEventListener('keyup', onExitKey, true);
+    document.addEventListener('keydown', onExitKey, true);
+    document.addEventListener('keyup', onExitKey, true);
+  })();
+</script>
+<script src="vendor/js-dos/emulators.js"></script>
+<script src="vendor/js-dos/emulators-ui.js"></script>
+<script>
+  (function () {
+    const root = document.getElementById('jsdos');
+    const fallback = document.querySelector('.doom-fallback');
+    const bundle = 'https://v8.js-dos.com/bundles/doom.jsdos';
+    const fail = (error) => {
+      console.error(error);
+      if (fallback) fallback.textContent = 'Doom failed to load: ' + (error && error.message ? error.message : String(error));
+      document.body.classList.add('is-error');
+    };
+    try {
+      window.emulators.pathPrefix = 'vendor/js-dos/';
+      const dos = window.Dos(root, {
+        style: 'hidden',
+        noSocialLinks: true,
+        noNetworking: true,
+      });
+      window.__resumeDoom = dos;
+      const result = dos.run(bundle);
+      if (result && typeof result.catch === 'function') {
+        result.catch(fail);
+      }
+    } catch (error) {
+      fail(error);
+    }
+  })();
+</script>
+</body>
+</html>

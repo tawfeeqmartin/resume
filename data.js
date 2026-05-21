@@ -113,7 +113,7 @@ const RESUME = {
     { group: "Creative Technology", items: ["TouchDesigner", "Three.js", "WebGL / GLSL", "Web Audio (HRTF)", "p5.js"] },
     { group: "AI & Research", items: ["LLM tooling research", "Multi-agent orchestration", "Local inference", "CUDA multi-GPU"] },
     { group: "Product", items: ["SW/HW prototyping", "UX/UI", "ML/AI", "AR/VR", "Biometrics", "Agile / Scrum"] },
-    { group: "Music", items: ["Ableton Live", "Push 3 standalone", "Generative MIDI"] },
+    { group: "Music", items: ["Ableton Live", "Bitwig Studio", "Strudel", "Push 3 standalone", "Generative MIDI"] },
     { group: "Languages", items: ["Python", "JavaScript / Node", "C++", "bash"] },
     { group: "Leadership", items: ["R&D leadership", "Executive leadership", "BD & strategy", "Certified Scrum Master"] },
   ],

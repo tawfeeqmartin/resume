@@ -120,7 +120,6 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .identity {
   position: relative;
   padding: 0 0 1rem;
-  border-bottom: 1px solid var(--rule);
   isolation: isolate;
 }
 /* ── reusable SVG diagram primitives ─────────────────────── */
@@ -245,7 +244,6 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   font-size: 0.72rem; letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink);
-  transform: translateX(calc(-1.245rem + 2px));
 }
 .identity__top > span:first-child,
 .identity__top a {
@@ -292,6 +290,68 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   height: 0.46rem;
 }
 .identity__top a { border: none; }
+.site-mode-toggle-row {
+  position: relative;
+  z-index: 265;
+  display: flex;
+  justify-content: flex-start;
+  margin: 0.62rem 0 0;
+}
+.site-mode-toggle {
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 0.92rem;
+  background: var(--paper);
+  color: var(--ink-3);
+}
+.site-mode-toggle button {
+  appearance: none;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  padding: 0 0 0.28rem;
+  cursor: pointer;
+}
+.site-mode-toggle button:hover,
+.site-mode-toggle button:focus-visible {
+  color: var(--ink);
+  outline: none;
+}
+.site-mode-toggle button.is-active {
+  border-bottom-color: var(--ink);
+  color: var(--ink);
+}
+.site-mode-toggle__mark {
+  width: 0.5rem;
+  height: 0.5rem;
+  display: inline-block;
+  flex: 0 0 auto;
+  background: currentColor;
+}
+.site-mode-toggle__mark--triangle {
+  color: var(--accent-yellow);
+  width: 0.54rem;
+  height: 0.48rem;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M6 1 L11 9 L1 9 Z' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M6 1 L11 9 L1 9 Z' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+.site-mode-toggle__mark--square {
+  color: var(--accent-red);
+}
+.site-mode-toggle button.is-active .site-mode-toggle__mark {
+  background: currentColor;
+}
 .stem-mutes {
   display: flex;
   align-items: center;
@@ -1328,8 +1388,9 @@ html.has-pseudo-fullscreen body {
   margin-left: -8vw;
   pointer-events: none;
 }
-/* Make the TopStrip is below the TV in stacking order. */
-.identity { z-index: 1; }
+/* Keep the top strip and mode toggle clickable above the transparent
+   Three.js canvas while the model still visually overlaps the page below. */
+.identity { z-index: 260; }
 .hero-stack__sticky > * { pointer-events: auto; }
 
 /* ── TV hero (3D Sony Trinitron) ──────────────────────── */
@@ -1369,6 +1430,75 @@ html.has-pseudo-fullscreen body {
 }
 .tv-hero__controls .pp-audio-toggle { color: #f4f0e6; padding: 0; }
 .tv-hero__controls .pp-audio-toggle:hover { color: #ffd840; }
+
+html.has-doom-overlay,
+html.has-doom-overlay body {
+  overflow: hidden;
+}
+.doom-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: grid;
+  background: #020202;
+  color: #f8f8f0;
+}
+.doom-overlay__frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #000;
+  display: block;
+}
+.doom-overlay__bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.78), rgba(0,0,0,0));
+  color: rgba(255,255,255,0.72);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  pointer-events: none;
+}
+.doom-overlay__close {
+  pointer-events: auto;
+  appearance: none;
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 0;
+  background: rgba(0,0,0,0.45);
+  color: rgba(255,255,255,0.76);
+  font: inherit;
+  letter-spacing: inherit;
+  padding: 5px 8px;
+  cursor: pointer;
+}
+.doom-overlay__close:hover,
+.doom-overlay__close:focus-visible {
+  border-color: #ffd840;
+  color: #ffd840;
+  outline: none;
+}
+.doom-overlay__loading {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(transparent 50%, rgba(255,255,255,0.035) 50%) 0 0 / 100% 4px,
+    #050505;
+  color: rgba(255,255,255,0.72);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
 @media (max-width: 760px) {
   .hero-stack {
     display: flex;
@@ -1597,7 +1727,7 @@ html.has-pseudo-fullscreen body {
 }
 #strudel.is-strudel-pinned .strudel-repl__screen-dock {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(170px, 0.65fr);
+  grid-template-columns: minmax(0, 1.24fr) minmax(150px, 0.43fr) minmax(170px, 0.62fr);
   flex: 0 0 clamp(108px, 29%, 150px);
   min-height: 0;
   border-top: 1px solid rgba(255,255,255,0.11);
@@ -1834,6 +1964,132 @@ html.has-pseudo-fullscreen body {
   height: 100%;
   background: var(--lane-color, var(--accent));
   transition: width 120ms ease-out;
+}
+.midi-out {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--rule);
+  color: var(--ink);
+  background: transparent;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+.midi-out__head,
+.midi-out__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.midi-out__head {
+  justify-content: space-between;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--ink);
+}
+.midi-out__toggle,
+.midi-out__scan {
+  appearance: none;
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font: 700 9px / 1 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 5px 7px;
+  cursor: pointer;
+}
+.midi-out__toggle:hover,
+.midi-out__scan:hover,
+.midi-out__toggle:focus-visible,
+.midi-out__scan:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+  outline: none;
+}
+.midi-out__toggle.is-on {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+.midi-out__toggle:disabled,
+.midi-out__scan:disabled,
+.midi-out__select:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.midi-out__select {
+  min-width: 0;
+  width: 100%;
+  appearance: none;
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 10px / 1.25 var(--mono);
+  letter-spacing: 0.04em;
+  padding: 6px 8px;
+}
+.midi-out__select:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+.midi-out__status {
+  color: var(--ink-3);
+  font-size: 9.5px;
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+}
+.midi-out__status--on { color: var(--accent-blue); }
+.midi-out__status--error,
+.midi-out__error {
+  color: var(--accent-red);
+}
+.midi-out__error {
+  font-size: 8.5px;
+  line-height: 1.3;
+  letter-spacing: 0.03em;
+}
+.midi-out--compact {
+  padding: 8px 10px;
+  border-top: 0;
+  border-left: 1px solid rgba(255,255,255,0.11);
+  color: #d4d4d4;
+}
+.midi-out--compact .midi-out__head {
+  font-size: 7.5px;
+  color: #d4d4d4;
+}
+.midi-out--compact .midi-out__toggle,
+.midi-out--compact .midi-out__scan {
+  border-color: rgba(255,255,255,0.14);
+  color: #d4d4d4;
+  font-size: 7px;
+  padding: 4px 5px;
+}
+.midi-out--compact .midi-out__toggle.is-on {
+  border-color: #569cd6;
+  color: #569cd6;
+}
+.midi-out--compact .midi-out__select {
+  border-color: rgba(255,255,255,0.14);
+  color: #d4d4d4;
+  background: #1e1e1e;
+  font-size: 7.5px;
+  padding: 5px 6px;
+}
+.midi-out--compact .midi-out__status {
+  color: #858585;
+  font-size: 7px;
+}
+.midi-out--compact .midi-out__status--on { color: #569cd6; }
+.midi-out--compact .midi-out__status--error,
+.midi-out--compact .midi-out__error {
+  color: #f48771;
+}
+.midi-out--compact .midi-out__error {
+  font-size: 6.8px;
 }
 .strudel-cheats {
   margin-top: 1.1rem;
@@ -2175,6 +2431,63 @@ html.has-pseudo-fullscreen body {
 .award-row__project { color: var(--ink-3); line-height: 1.35; }
 
 /* ── mobile resume mode: static, fast, recruiter-readable ───────── */
+.page--read-only-resume {
+  max-width: 62rem;
+  padding-top: 1.2rem;
+}
+.read-only-hero {
+  margin: clamp(3rem, 8vw, 5rem) 0 clamp(2rem, 5vw, 3.5rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.48fr);
+  gap: clamp(1.4rem, 4vw, 4rem);
+  align-items: end;
+}
+.read-only-hero h1 {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: clamp(4.2rem, 9vw, 8.2rem);
+  font-weight: 600;
+  letter-spacing: -0.055em;
+  line-height: 0.92;
+}
+.read-only-hero__title {
+  margin: 0 0 0.4rem;
+  max-width: 34ch;
+  color: var(--ink-2);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+.page--read-only-resume .mobile-section {
+  margin-top: 2.4rem;
+}
+.page--read-only-resume .mobile-section__body {
+  max-width: none;
+}
+.page--read-only-resume .mobile-projects,
+.page--read-only-resume .mobile-awards,
+.page--read-only-resume .mobile-skills,
+.page--read-only-resume .mobile-references {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.25rem;
+}
+.page--read-only-resume .mobile-project,
+.page--read-only-resume .mobile-award,
+.page--read-only-resume .mobile-skill,
+.page--read-only-resume .mobile-reference {
+  margin: 0;
+}
+.page--read-only-resume .mobile-award,
+.page--read-only-resume .mobile-reference {
+  grid-template-columns: minmax(0, 1fr);
+}
+.page--read-only-resume .mobile-award__stamp,
+.page--read-only-resume .mobile-reference img {
+  display: none;
+}
+.page--read-only-resume .mobile-job__credits ul {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
 .page--mobile-resume {
   max-width: 46rem;
   padding-top: 1.1rem;
@@ -2434,6 +2747,12 @@ html.has-pseudo-fullscreen body {
   font-size: 0.62rem;
   line-height: 1.35;
 }
+.mobile-reference__sub {
+  margin-top: 0.16rem;
+  color: var(--ink-3);
+  font-size: 0.58rem;
+  line-height: 1.35;
+}
 .mobile-reference__quote {
   margin: 0.6rem 0 0;
   color: var(--ink-2);
@@ -2588,6 +2907,11 @@ html.has-pseudo-fullscreen body {
 .refs__chip-num { font-size: 0.7rem; color: var(--accent); grid-row: span 2; align-self: center; }
 .refs__chip-name { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); }
 .refs__chip-title { font-size: 0.58rem; grid-column: 3; }
+.refs__chip-sub {
+  grid-column: 3;
+  font-size: 0.54rem;
+  line-height: 1.35;
+}
 .refs__inline-quote {
   display: block;
   margin: 0.65rem 0 1.1rem 0;
@@ -3064,12 +3388,175 @@ html.has-pseudo-fullscreen body {
 
 /* ── print ───────────────────────────────────────────── */
 @media print {
-  body { background: white; }
+  @page { margin: 0.55in; }
+  * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  html,
+  body {
+    background: white;
+    color: #111;
+    font-size: 10pt;
+    line-height: 1.36;
+  }
+  .site-mode-toggle-row { display: none; }
   .help-player, .help-feature__player-col { display: none; }
   .help-feature { grid-template-columns: 1fr; }
-  .section { break-inside: avoid; }
-  .job { break-inside: avoid; }
-  .award { break-inside: avoid; }
+  .page,
+  .page--read-only-resume {
+    max-width: none;
+    padding: 0;
+  }
+  .identity {
+    padding-bottom: 0.35rem;
+  }
+  .identity__top {
+    gap: 0.45rem;
+    font-size: 7pt;
+    line-height: 1.25;
+  }
+  .read-only-hero {
+    margin: 0.75rem 0 0.9rem;
+    grid-template-columns: minmax(0, 1fr) 31ch;
+    gap: 0.45in;
+  }
+  .read-only-hero h1 {
+    font-size: 42pt;
+    letter-spacing: -0.052em;
+    line-height: 0.94;
+  }
+  .read-only-hero__title {
+    font-size: 7.5pt;
+    line-height: 1.35;
+  }
+  .page--read-only-resume .mobile-section {
+    margin-top: 0.72rem;
+    padding-top: 0.45rem;
+  }
+  .mobile-section__header {
+    gap: 0.42rem;
+    margin-bottom: 0.45rem;
+  }
+  .mobile-section__mark {
+    width: 0.42rem;
+    height: 0.38rem;
+  }
+  .mobile-section__label {
+    font-size: 7.2pt;
+    line-height: 1.2;
+  }
+  .mobile-summary {
+    font-size: 12pt;
+    line-height: 1.33;
+  }
+  .mobile-job,
+  .mobile-project,
+  .mobile-award,
+  .mobile-education li,
+  .mobile-reference {
+    padding-bottom: 0.46rem;
+    margin-bottom: 0.46rem;
+  }
+  .mobile-job {
+    break-inside: auto;
+  }
+  .mobile-job h3,
+  .mobile-project h3 {
+    font-size: 16pt;
+    line-height: 1.08;
+  }
+  .mobile-job__head,
+  .mobile-project__head,
+  .mobile-job__meta {
+    break-after: avoid;
+  }
+  .mobile-job__meta {
+    gap: 0.12rem 0.45rem;
+    margin-top: 0.18rem;
+    font-size: 8.3pt;
+  }
+  .mobile-job__bullets {
+    margin-top: 0.38rem;
+  }
+  .mobile-job__bullets li {
+    padding-left: 0.82rem;
+    margin-bottom: 0.13rem;
+    font-size: 9.15pt;
+    line-height: 1.3;
+  }
+  .mobile-job__credits {
+    margin-top: 0.35rem;
+  }
+  .mobile-job__credits-label,
+  .mobile-project__meta {
+    font-size: 6.4pt;
+    line-height: 1.25;
+  }
+  .mobile-job__credits ul,
+  .mobile-project__stack {
+    margin-top: 0.22rem;
+    gap: 0.12rem 0.45rem;
+  }
+  .mobile-job__credits li,
+  .mobile-project__stack li {
+    font-size: 7.2pt;
+    line-height: 1.22;
+  }
+  .page--read-only-resume .mobile-projects,
+  .page--read-only-resume .mobile-awards,
+  .page--read-only-resume .mobile-skills,
+  .page--read-only-resume .mobile-references {
+    gap: 0.55rem 0.85rem;
+  }
+  .mobile-project p {
+    margin-top: 0.38rem;
+    font-size: 9.2pt;
+    line-height: 1.34;
+  }
+  .mobile-award__org,
+  .mobile-skill h3 {
+    font-size: 6.6pt;
+    line-height: 1.25;
+  }
+  .mobile-award__title,
+  .mobile-skill p,
+  .mobile-education li > div:last-child {
+    font-size: 9pt;
+    line-height: 1.28;
+  }
+  .mobile-award__project {
+    font-size: 8.3pt;
+    line-height: 1.26;
+  }
+  .mobile-skills {
+    gap: 0.45rem;
+  }
+  .mobile-education__school {
+    font-size: 10pt;
+    line-height: 1.2;
+  }
+  .mobile-reference__name {
+    font-size: 9.3pt;
+    line-height: 1.2;
+  }
+  .mobile-reference__title,
+  .mobile-reference__sub {
+    font-size: 6.6pt;
+    line-height: 1.28;
+  }
+  .mobile-reference__quote {
+    margin-top: 0.32rem;
+    font-size: 9.2pt;
+    line-height: 1.33;
+  }
+  .mobile-project,
+  .mobile-award,
+  .mobile-skill,
+  .mobile-education li,
+  .mobile-reference {
+    break-inside: avoid;
+  }
 }
 
 /* ── shared audio toggle ─────────────────────────────────── */
@@ -3167,6 +3654,6 @@ window.__loadThreeBundle = () => {
   return window.__threePromise;
 };
 </script>
-<script type="module" src="dist/app.js?v=20260521-repl-guards-help-copy"></script>
+<script type="module" src="dist/app.js?v=20260521-view-mode"></script>
 </body>
 </html>
