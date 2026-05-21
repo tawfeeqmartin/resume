@@ -98,9 +98,10 @@ arrange(
   [8,  breakdown]
 )`;
 
-const POETRY_IN_PROOF_SOURCE_STORAGE_KEY = 'resume.poetryInProofSource.v1';
-const POETRY_IN_PROOF_DRAFT_STORAGE_KEY = 'resume.poetryInProofDraft.v1';
-const POETRY_IN_PROOF_LAST_GOOD_STORAGE_KEY = 'resume.poetryInProofLastGood.v1';
+const POETRY_IN_PROOF_STORAGE_VERSION = 'v2-comfy-arrangement';
+const POETRY_IN_PROOF_SOURCE_STORAGE_KEY = `resume.poetryInProofSource.${POETRY_IN_PROOF_STORAGE_VERSION}`;
+const POETRY_IN_PROOF_DRAFT_STORAGE_KEY = `resume.poetryInProofDraft.${POETRY_IN_PROOF_STORAGE_VERSION}`;
+const POETRY_IN_PROOF_LAST_GOOD_STORAGE_KEY = `resume.poetryInProofLastGood.${POETRY_IN_PROOF_STORAGE_VERSION}`;
 
 function readStoredPoetryInProofSource(key) {
   try {
@@ -4077,6 +4078,8 @@ function getMacTerminalCharacter(code, shiftKey = false) {
   return shiftKey && def.shiftChar ? def.shiftChar : def.char;
 }
 
+const TV_HERO_VIDEO_CACHE_LIMIT = 12;
+
 function TvHero({ sources = [], children }) {
   const wrapRef = React.useRef(null);
   const canvasRef = React.useRef(null);
@@ -4161,6 +4164,31 @@ function TvHero({ sources = [], children }) {
     stateRef.current.recent = [...stateRef.current.recent, picked].slice(-RECENT_WINDOW);
     return picked;
   }, [availableSources]);
+
+  const disposeCachedVideo = React.useCallback((video) => {
+    if (!video) return;
+    try { video.pause(); } catch {}
+    try {
+      video.removeAttribute('src');
+      video.load?.();
+    } catch {}
+  }, []);
+
+  const pauseAllCachedVideos = React.useCallback(() => {
+    for (const video of stateRef.current.videoCache.values()) {
+      try { video.pause(); } catch {}
+    }
+  }, []);
+
+  const trimVideoCache = React.useCallback((keepSrc = '') => {
+    const state = stateRef.current;
+    for (const [cachedSrc, video] of [...state.videoCache]) {
+      if (state.videoCache.size <= TV_HERO_VIDEO_CACHE_LIMIT) break;
+      if (cachedSrc === keepSrc || video === state.currentVideo || video === state.powerPausedVideo) continue;
+      state.videoCache.delete(cachedSrc);
+      disposeCachedVideo(video);
+    }
+  }, [disposeCachedVideo]);
 
   const ensureMacTerminal = React.useCallback(() => {
     const state = stateRef.current;
@@ -5071,6 +5099,7 @@ function TvHero({ sources = [], children }) {
         try { state.currentVideo.pause(); } catch {}
         state.currentVideo = null;
       }
+      pauseAllCachedVideos();
     };
     const resumeTvWork = () => {
       state.requestRender?.();
@@ -5109,7 +5138,7 @@ function TvHero({ sources = [], children }) {
       document.removeEventListener('visibilitychange', onVisibility);
       observer?.disconnect();
     };
-  }, [drawVideoLoop, engineEnabled]);
+  }, [drawVideoLoop, engineEnabled, pauseAllCachedVideos]);
 
   const animateChannelFlip = React.useCallback((detail = {}) => {
     const state = stateRef.current;
@@ -5175,6 +5204,10 @@ function TvHero({ sources = [], children }) {
         video.loop = true;
         video.preload = 'metadata';
         video.src = src;
+        cache.set(src, video);
+        trimVideoCache(src);
+      } else {
+        cache.delete(src);
         cache.set(src, video);
       }
       const mountVideo = () => {
@@ -5244,7 +5277,7 @@ function TvHero({ sources = [], children }) {
         drawSourceToCanvas(img);
       };
     }
-  }, [availableSources, pickIndex, drawSourceToCanvas, drawVideoLoop, stopVideoLoop]);
+  }, [availableSources, pickIndex, drawSourceToCanvas, drawVideoLoop, stopVideoLoop, trimVideoCache]);
   React.useEffect(() => { cutRef.current = cut; }, [cut]);
 
   // Init Three.js scene (lazy-loaded)
@@ -5627,6 +5660,14 @@ function TvHero({ sources = [], children }) {
       cancelAnimationFrame(s.macBloomRaf);
       for (const k of Object.values(s.keys || {})) cancelAnimationFrame(k.raf);
       for (const k of (s.genericKeyPresses?.values?.() || [])) cancelAnimationFrame(k.raf);
+      for (const video of s.videoCache.values()) {
+        try { video.pause(); } catch {}
+        try {
+          video.removeAttribute('src');
+          video.load?.();
+        } catch {}
+      }
+      s.videoCache.clear();
       window.clearTimeout(s.channelCutTimer);
       if (onResize) window.removeEventListener('resize', onResize);
       s.requestRender = null;
@@ -5918,16 +5959,18 @@ function TvHero({ sources = [], children }) {
         try { stateRef.current.currentVideo.cancelVideoFrameCallback(stateRef.current.videoFrameRequest); } catch {}
       }
       stateRef.current.videoFrameRequest = 0;
+      pauseAllCachedVideos();
       stateRef.current.currentVideo = null;
       stateRef.current.currentMedia = null;
       stateRef.current.currentImage = null;
+      stateRef.current.powerPausedVideo = null;
       drawMacOffScreen();
       return;
     }
     cutRef.current?.('idle');
     const t = setInterval(() => cutRef.current?.('idle'), 3500);
     return () => clearInterval(t);
-  }, [engineEnabled, availableSources]);
+  }, [engineEnabled, availableSources, drawMacOffScreen, pauseAllCachedVideos]);
 
   return (
     <div ref={wrapRef} className={`tv-hero ${engineEnabled ? 'is-live' : 'is-idle'}`}>
