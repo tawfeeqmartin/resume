@@ -157,6 +157,25 @@ window.RESUME_TV_CLIP_POOLS = {
   visual: CLEARED_TRAILER_SOURCES,
   vocal: CLEARED_TRAILER_HOOK_SOURCES,
 };
+const MOBILE_RESUME_QUERY = '(max-width: 760px), (pointer: coarse)';
+
+function useMobileResumeMode() {
+  const getMatch = () => window.matchMedia(MOBILE_RESUME_QUERY).matches;
+  const [mobile, setMobile] = useState(getMatch);
+  useEffect(() => {
+    const query = window.matchMedia(MOBILE_RESUME_QUERY);
+    const update = () => setMobile(query.matches);
+    update();
+    if (query.addEventListener) query.addEventListener('change', update);
+    else query.addListener?.(update);
+    return () => {
+      if (query.removeEventListener) query.removeEventListener('change', update);
+      else query.removeListener?.(update);
+    };
+  }, []);
+  return mobile;
+}
+
 // Compact top strip for the current resume shell.
 function TopStrip({ data }) {
   return (
@@ -236,7 +255,196 @@ Awards = function Awards({ items }) {
   );
 };
 
+function MobileResumeSection({ label, tone = 'yellow', children }) {
+  return (
+    <section className={`mobile-section mobile-section--${tone}`}>
+      <header className="mobile-section__header">
+        <span className="mobile-section__mark" aria-hidden="true" />
+        <span className="mobile-section__label mono">{label}</span>
+      </header>
+      <div className="mobile-section__body">{children}</div>
+    </section>
+  );
+}
+
+function MobileExperience({ items }) {
+  return (
+    <MobileResumeSection label="Experience" tone="yellow">
+      <ol className="mobile-jobs">
+        {items.map((job) => (
+          <li key={`${job.role}-${job.period}`} className="mobile-job">
+            <div className="mobile-job__head">
+              <h3>{job.role}</h3>
+              {job.tag ? <span className="mobile-job__tag mono">{job.tag}</span> : null}
+            </div>
+            <div className="mobile-job__meta">
+              <span>{job.org}</span>
+              {job.where ? <span>{job.where}</span> : null}
+              <span>{job.period}</span>
+            </div>
+            <ul className="mobile-job__bullets">
+              {job.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}
+            </ul>
+            {job.credits ? (
+              <div className="mobile-job__credits">
+                <div className="mobile-job__credits-label mono">Selected show credits</div>
+                <ul>
+                  {job.credits.map((credit) => <li key={credit}>{credit}</li>)}
+                </ul>
+              </div>
+            ) : null}
+          </li>
+        ))}
+      </ol>
+    </MobileResumeSection>
+  );
+}
+
+function MobileProjects({ project }) {
+  const projects = [
+    {
+      name: "Google Spotlight Stories 'HELP'",
+      meta: "Mill Stitch™ · immersive 360° production",
+      body: "Co-invented and led the on-set technology for a real-time 360° preview pipeline that let Justin Lin direct surround action live during principal photography.",
+      stack: ["Cannes Gold", "SXSW Gold", "Webby Technical Achievement"],
+    },
+    {
+      name: "The Mill Blackbird",
+      meta: "technical product management · production innovation",
+      body: "Led technical product management across hardware, on-set workflow, and CG pipeline for an adjustable vehicle rig that could represent multiple production cars in post.",
+      stack: ["HPA Judges Award", "Cannes Gold", "CLIO Production Innovation"],
+    },
+    {
+      name: "Poetry in Proof",
+      meta: "browser audio-visual system · Web MIDI",
+      body: "A live-code and interaction prototype where Strudel audio events drive page motion, source-code highlights, MIDI lanes, and reactive visual states from one shared clock.",
+      stack: ["Strudel", "Web MIDI", "React", "Three.js"],
+    },
+    {
+      name: project.name,
+      meta: project.sub,
+      body: project.body,
+      stack: project.stack,
+    },
+  ];
+  return (
+    <MobileResumeSection label="Selected projects" tone="blue">
+      <ol className="mobile-projects">
+        {projects.map((item) => (
+          <li key={item.name} className="mobile-project">
+            <div className="mobile-project__head">
+              <h3>{item.name}</h3>
+              <div className="mobile-project__meta mono">{item.meta}</div>
+            </div>
+            <p>{item.body}</p>
+            <ul className="mobile-project__stack mono">
+              {item.stack.map((tag) => <li key={tag}>{tag}</li>)}
+            </ul>
+          </li>
+        ))}
+      </ol>
+    </MobileResumeSection>
+  );
+}
+
+function MobileAwards({ items }) {
+  return (
+    <MobileResumeSection label="Awards & recognition" tone="red">
+      <ul className="mobile-awards">
+        {items.map((award) => (
+          <li key={`${award.org}-${award.title}`} className="mobile-award">
+            <AwardStamp tier={award.tier} className="mobile-award__stamp" />
+            <div>
+              <div className="mobile-award__org mono">{award.org}</div>
+              <div className="mobile-award__title">{award.title}</div>
+              <div className="mobile-award__project serif italic">{award.project}</div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </MobileResumeSection>
+  );
+}
+
+function MobileSkills({ groups }) {
+  return (
+    <MobileResumeSection label="Technical" tone="red">
+      <div className="mobile-skills">
+        {groups.map((group) => (
+          <div key={group.group} className="mobile-skill">
+            <h3 className="mono">{group.group}</h3>
+            <p>{group.items.join(" · ")}</p>
+          </div>
+        ))}
+      </div>
+    </MobileResumeSection>
+  );
+}
+
+function MobileEducation({ items }) {
+  return (
+    <MobileResumeSection label="Education" tone="red">
+      <ul className="mobile-education">
+        {items.map((item) => (
+          <li key={item.school}>
+            <div className="mobile-education__school serif">{item.school}</div>
+            <div>{item.degree}</div>
+          </li>
+        ))}
+      </ul>
+    </MobileResumeSection>
+  );
+}
+
+function MobileReferences({ items }) {
+  return (
+    <MobileResumeSection label="References" tone="red">
+      <ul className="mobile-references">
+        {items.map((item) => (
+          <li key={item.name} className="mobile-reference">
+            <img src={item.avatar} alt="" loading="lazy" decoding="async" />
+            <div>
+              <div className="mobile-reference__name">{item.name}</div>
+              <div className="mobile-reference__title mono">{item.title}</div>
+              <blockquote className="mobile-reference__quote serif">{item.quote}</blockquote>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </MobileResumeSection>
+  );
+}
+
+function MobileResume() {
+  useEffect(() => {
+    const engine = getResumeAudioEngine?.();
+    if (engine?.enabled) engine.setEnabled(false).catch(() => {});
+  }, []);
+
+  return (
+    <div className="page page--mobile-resume">
+      <TopStrip data={RESUME} />
+      <header className="mobile-resume-hero">
+        <h1>Tawfeeq Martin.</h1>
+        <p className="mobile-resume-hero__title mono">{RESUME.title}</p>
+      </header>
+      <MobileResumeSection label="Summary" tone="yellow">
+        <p className="mobile-summary serif">{RESUME.summary}</p>
+      </MobileResumeSection>
+      <MobileExperience items={RESUME.experience} />
+      <MobileProjects project={RESUME.project} />
+      <MobileAwards items={RESUME.awards} />
+      <MobileSkills groups={RESUME.skills} />
+      <MobileEducation items={RESUME.education} />
+      <MobileReferences items={RESUME.references} />
+    </div>
+  );
+}
+
 function App() {
+  const mobileResume = useMobileResumeMode();
+  if (mobileResume) return <MobileResume />;
+
   return (
     <>
       <ScrollAudioLayers />

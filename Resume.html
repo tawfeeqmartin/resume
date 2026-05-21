@@ -2175,6 +2175,273 @@ html.has-pseudo-fullscreen body {
 .award-row__title { color: var(--ink); line-height: 1.35; }
 .award-row__project { color: var(--ink-3); line-height: 1.35; }
 
+/* ── mobile resume mode: static, fast, recruiter-readable ───────── */
+.page--mobile-resume {
+  max-width: 46rem;
+  padding-top: 1.1rem;
+}
+.page--mobile-resume .identity__top {
+  transform: none;
+  gap: 0.5rem;
+  font-size: 0.62rem;
+  line-height: 1.35;
+}
+.mobile-resume-hero {
+  margin: clamp(2.2rem, 11vw, 4rem) 0 2rem;
+}
+.mobile-resume-hero h1 {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: clamp(3rem, 13vw, 5rem);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 0.96;
+}
+.mobile-resume-hero__title {
+  margin: 1rem 0 0;
+  max-width: 38ch;
+  color: var(--ink-2);
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+.mobile-section {
+  --mobile-accent: var(--accent-yellow);
+  margin-top: 2.15rem;
+  padding-top: 1.05rem;
+  border-top: 1px solid var(--rule);
+}
+.mobile-section--blue { --mobile-accent: var(--accent-blue); }
+.mobile-section--red { --mobile-accent: var(--accent-red); }
+.mobile-section__header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+.mobile-section__mark {
+  flex: 0 0 auto;
+  width: 0.58rem;
+  height: 0.52rem;
+  background: var(--mobile-accent);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M6 1 L11 9 L1 9 Z' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M6 1 L11 9 L1 9 Z' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+.mobile-section--blue .mobile-section__mark {
+  width: 0.55rem;
+  height: 0.55rem;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='5' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='5' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+.mobile-section--red .mobile-section__mark {
+  width: 0.52rem;
+  height: 0.52rem;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Crect x='1' y='1' width='10' height='10' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Crect x='1' y='1' width='10' height='10' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+.mobile-section__label {
+  color: var(--ink);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mobile-summary {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.08rem, 5.1vw, 1.45rem);
+  line-height: 1.45;
+}
+.mobile-jobs,
+.mobile-projects,
+.mobile-awards,
+.mobile-education,
+.mobile-references {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.mobile-job,
+.mobile-project,
+.mobile-award,
+.mobile-education li,
+.mobile-reference {
+  padding: 0 0 1.25rem;
+  margin: 0 0 1.25rem;
+  border-bottom: 1px solid var(--rule);
+}
+.mobile-job:last-child,
+.mobile-project:last-child,
+.mobile-award:last-child,
+.mobile-education li:last-child,
+.mobile-reference:last-child {
+  border-bottom: 0;
+  margin-bottom: 0;
+}
+.mobile-job__head,
+.mobile-project__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+.mobile-job h3,
+.mobile-project h3 {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: clamp(1.28rem, 6.2vw, 1.9rem);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+}
+.mobile-job__tag,
+.mobile-project__meta,
+.mobile-job__credits-label {
+  color: var(--mobile-accent);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.mobile-job__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.65rem;
+  margin-top: 0.45rem;
+  color: var(--ink-2);
+  font-size: 0.92rem;
+}
+.mobile-job__bullets {
+  list-style: none;
+  padding: 0;
+  margin: 0.85rem 0 0;
+}
+.mobile-job__bullets li {
+  position: relative;
+  padding-left: 1.25rem;
+  margin-bottom: 0.42rem;
+  color: var(--ink-2);
+}
+.mobile-job__bullets li::before {
+  content: "—";
+  position: absolute;
+  left: 0;
+  color: var(--mobile-accent);
+}
+.mobile-job__credits {
+  margin-top: 0.95rem;
+}
+.mobile-job__credits ul,
+.mobile-project__stack {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.28rem 0.7rem;
+}
+.mobile-job__credits li,
+.mobile-project__stack li {
+  color: var(--ink-3);
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+.mobile-project p {
+  margin: 0.75rem 0 0;
+  color: var(--ink-2);
+}
+.mobile-project__stack {
+  display: flex;
+  flex-wrap: wrap;
+}
+.mobile-project__stack li {
+  font-size: 0.65rem;
+  color: var(--ink);
+}
+.mobile-award {
+  display: grid;
+  grid-template-columns: 1.05rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+.mobile-award__stamp {
+  width: 0.82rem;
+  height: 0.82rem;
+  margin-top: 0.24rem;
+}
+.mobile-award__org {
+  color: var(--ink);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mobile-award__title {
+  margin-top: 0.16rem;
+  color: var(--ink);
+  font-size: 0.96rem;
+  line-height: 1.32;
+}
+.mobile-award__project {
+  margin-top: 0.2rem;
+  color: var(--ink-3);
+  font-size: 0.9rem;
+  line-height: 1.34;
+}
+.mobile-skills {
+  display: grid;
+  gap: 0.95rem;
+}
+.mobile-skill h3 {
+  margin: 0 0 0.25rem;
+  color: var(--ink);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mobile-skill p {
+  margin: 0;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+.mobile-education__school {
+  color: var(--ink);
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+.mobile-education li > div:last-child {
+  margin-top: 0.2rem;
+  color: var(--ink-2);
+}
+.mobile-reference {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 0.85rem;
+}
+.mobile-reference img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 999px;
+  background: var(--rule);
+}
+.mobile-reference__name {
+  color: var(--ink);
+  font-weight: 600;
+}
+.mobile-reference__title {
+  margin-top: 0.12rem;
+  color: var(--ink-3);
+  font-size: 0.62rem;
+  line-height: 1.35;
+}
+.mobile-reference__quote {
+  margin: 0.6rem 0 0;
+  color: var(--ink-2);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
 /* ── skills ──────────────────────────────────────────── */
 .skills {
   display: grid;
@@ -2901,6 +3168,6 @@ window.__loadThreeBundle = () => {
   return window.__threePromise;
 };
 </script>
-<script type="module" src="dist/app.js?v=20260520-awards-all-gold"></script>
+<script type="module" src="dist/app.js?v=20260520-mobile-resume"></script>
 </body>
 </html>
