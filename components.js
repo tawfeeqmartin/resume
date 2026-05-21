@@ -4705,18 +4705,18 @@ function TvHero({ sources = [], children }) {
       const key = new THREE.DirectionalLight(0xfff7e8, 2.35);
       key.position.set(-2.15, 1.85, 1.05);
       scene.add(key);
-      const fill = new THREE.DirectionalLight(0xe8eef7, 0.2);
+      const fill = new THREE.DirectionalLight(0xe8eef7, 0.14);
       fill.position.set(2.0, 0.45, 1.45);
       scene.add(fill);
       const rim = new THREE.DirectionalLight(0xffe6bd, 1.15);
       rim.position.set(-0.65, 2.05, -1.8);
       scene.add(rim);
-      const keyboardGrazing = new THREE.DirectionalLight(0xffd6a6, 0.42);
+      const keyboardGrazing = new THREE.DirectionalLight(0xffd6a6, 0.36);
       keyboardGrazing.position.set(1.2, -0.65, 1.6);
       scene.add(keyboardGrazing);
       // Keep global fill low so the front face and keyboard hold shape.
-      scene.add(new THREE.HemisphereLight(0xfff0d8, 0x0c0a08, 0.18));
-      scene.add(new THREE.AmbientLight(0xffffff, 0.025));
+      scene.add(new THREE.HemisphereLight(0xfff0d8, 0x0c0a08, 0.13));
+      scene.add(new THREE.AmbientLight(0xffffff, 0.012));
 
       // Offscreen canvas for the screen content
       const screenCanvas = document.createElement('canvas');
@@ -4765,11 +4765,6 @@ function TvHero({ sources = [], children }) {
         for (const m of screenMeshes) {
           m.material = new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false });
         }
-        const keycapMaterial = new THREE.MeshStandardMaterial({
-          color: 0x9c8a70,
-          roughness: 0.82,
-          metalness: 0,
-        });
         const isKeycapMesh = (mesh) => {
           if (mesh.name === '3DGeom_15') return true;
           const match = mesh.name.match(/^Mesh(\d+)$/);
@@ -4778,8 +4773,47 @@ function TvHero({ sources = [], children }) {
           return id >= 285 && id <= 341;
         };
         const keycapMeshes = allMeshes.filter(isKeycapMesh);
+        const keycapBounds = keycapMeshes.reduce((acc, mesh) => ({
+          minX: Math.min(acc.minX, mesh.position.x),
+          maxX: Math.max(acc.maxX, mesh.position.x),
+          minZ: Math.min(acc.minZ, mesh.position.z),
+          maxZ: Math.max(acc.maxZ, mesh.position.z),
+        }), { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity });
+        const normalizeKeycapAxis = (value, min, max) => (max > min ? (value - min) / (max - min) : 0.5);
+        const keycapRand = (seed, salt = 0) => {
+          const x = Math.sin(seed * 12.9898 + salt * 78.233) * 43758.5453;
+          return x - Math.floor(x);
+        };
+        const keycapSeed = (mesh) => {
+          if (mesh.name === '3DGeom_15') return 15;
+          const match = mesh.name.match(/^Mesh(\d+)$/);
+          return match ? Number(match[1]) : mesh.id;
+        };
+        const makeKeycapMaterial = (mesh) => {
+          const seed = keycapSeed(mesh);
+          const xBias = normalizeKeycapAxis(mesh.position.x, keycapBounds.minX, keycapBounds.maxX);
+          const zBias = normalizeKeycapAxis(mesh.position.z, keycapBounds.minZ, keycapBounds.maxZ);
+          const color = new THREE.Color(0xb8ae94);
+          const darker = keycapRand(seed, 1) > 0.72 ? 0.06 + keycapRand(seed, 2) * 0.08 : keycapRand(seed, 3) * 0.025;
+          const faded = keycapRand(seed, 4) > 0.5 ? 0.06 + keycapRand(seed, 5) * 0.13 : 0;
+          const wornTop = keycapRand(seed, 9) > 0.74 ? 0.12 + keycapRand(seed, 10) * 0.12 : 0;
+          const amber = keycapRand(seed, 6) > 0.46 ? 0.02 + keycapRand(seed, 7) * 0.045 : 0;
+          const positionalShade = Math.max(0, (zBias - 0.45) * 0.045) + Math.max(0, (0.28 - xBias) * 0.035);
+          color.lerp(new THREE.Color(0x8b7658), darker + positionalShade);
+          color.lerp(new THREE.Color(0xc9c0aa), faded);
+          color.lerp(new THREE.Color(0xd6ceb8), wornTop);
+          color.lerp(new THREE.Color(0xb49363), amber);
+          if (mesh.name === '3DGeom_15') {
+            color.lerp(new THREE.Color(0x9c8564), 0.14);
+          }
+          return new THREE.MeshStandardMaterial({
+            color,
+            roughness: 0.78 + keycapRand(seed, 8) * 0.18,
+            metalness: 0,
+          });
+        };
         for (const m of keycapMeshes) {
-          m.material = keycapMaterial;
+          m.material = makeKeycapMaterial(m);
         }
         // Capture animated keys: spacebar (clap) + W/A/S/D (lead notes).
         // Mesh names identified via debug paint + Blender geometry scan.
@@ -4799,10 +4833,11 @@ function TvHero({ sources = [], children }) {
           }
           mesh.geometry.computeBoundingBox();
           const gb = mesh.geometry.boundingBox;
+          const depthScale = label === 'space' ? 0.38 : 0.95;
           stateRef.current.keys[label] = {
             mesh,
             homeY: mesh.position.y,
-            depth: (gb.max.y - gb.min.y) * 1.4,
+            depth: (gb.max.y - gb.min.y) * depthScale,
             raf: 0,
           };
         }
@@ -5416,38 +5451,33 @@ function ProjectCard({ data }) {
 // ────────────────────────────────────────────────────────────────────
 
 function Awards({ items }) {
-  const [filter, setFilter] = useState('all');
-  const projects = useMemo(() => {
-    const set = new Set(items.map(a => a.project.split('—')[0].trim()));
-    return ['all', ...Array.from(set)];
-  }, [items]);
-  const filtered = filter === 'all' ? items : items.filter(a => a.project.startsWith(filter));
+  // Heavyweights get a hero treatment: the two Engineering Emmys
+  // (Television Academy + NATAS) and the three Cannes Gold Lions.
+  // Everything else collapses into a tight list below.
+  const isFeature = (a) =>
+    /television academy|^natas$|^cannes lions$/i.test(a.org) && a.tier === 'gold';
+  const featured = items.filter(isFeature);
+  const rest = items.filter((a) => !isFeature(a));
   return (
     <Section id="awards" label="06 · AWARDS & RECOGNITION">
-      <div className="awards__filters mono">
-        {['all','gold','silver','honor'].map(t => (
-          <button
-            key={t}
-            className={`awards__filter ${filter===t?'is-on':''}`}
-            onClick={() => setFilter(t)}
-          >{t}</button>
+      <ul className="awards-hero">
+        {featured.map((a, i) => (
+          <li key={i} className="award-hero">
+            <div className="award-hero__org mono">{a.org}</div>
+            <div className="award-hero__title">{a.title}</div>
+            <div className="award-hero__project serif italic">{a.project}</div>
+          </li>
         ))}
-      </div>
-      <ul className="awards">
-        {items
-          .filter(a => filter==='all' || a.tier===filter)
-          .map((a,i) => (
-            <li key={i} className={`award award--${a.tier}`}>
-              <div className="award__tier mono">
-                <span className={`award__tier-dot award__tier-dot--${a.tier}`} />
-                {a.tier}
-              </div>
-              <div className="award__org mono">{a.org}</div>
-              <div className="award__title">{a.title}</div>
-              <div className="award__project serif italic">{a.project}</div>
-              <div className="award__role mono dim">{a.role}</div>
-            </li>
-          ))}
+      </ul>
+      <ul className="awards-list">
+        {rest.map((a, i) => (
+          <li key={i} className={`award-row award-row--${a.tier}`}>
+            <span className={`award-row__tier award-row__tier--${a.tier} mono`}>{a.tier}</span>
+            <span className="award-row__org mono">{a.org}</span>
+            <span className="award-row__title">{a.title}</span>
+            <span className="award-row__project serif italic">{a.project}</span>
+          </li>
+        ))}
       </ul>
     </Section>
   );

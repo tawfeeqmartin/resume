@@ -200,35 +200,35 @@ function AwardStamp({ tier, className = "award-stamp" }) {
   );
 }
 
-// Override the live-site Awards component so each row gets a Byrne stamp.
-// The original from components.js is replaced by reassignment — the JSX
-// in App() resolves the binding at render time, so this picks up here.
+// Awards: heavyweights (Engineering Emmys + Cannes Gold) get a hero
+// treatment, everything else collapses into a tight list below. The
+// override picks up here so the live-site rendering matches the design.
 Awards = function Awards({ items }) {
-  const [filter, setFilter] = useState('all');
-  const filtered = items.filter((a) => filter === 'all' || a.tier === filter);
+  // Every gold gets hero treatment. Silver + honor compress into the list.
+  const featured = items.filter((a) => a.tier === 'gold');
+  const rest = items.filter((a) => a.tier !== 'gold');
   return (
     <Section id="awards" label="06 · AWARDS & RECOGNITION">
-      <div className="awards__filters mono">
-        {['all','gold','silver','honor'].map((t) => (
-          <button key={t}
-                  className={`awards__filter ${filter===t?'is-on':''}`}
-                  onClick={() => setFilter(t)}>
-            {t !== 'all' && <AwardStamp tier={t} className="award-filters__stamp" />}
-            {t}
-          </button>
+      <ul className="awards-hero">
+        {featured.map((a, i) => (
+          <li key={i} className="award-hero">
+            <div className="award-hero__stamp"><AwardStamp tier="gold" /></div>
+            <div className="award-hero__org mono">{a.org}</div>
+            <div className="award-hero__title">{a.title}</div>
+            <div className="award-hero__project serif italic">{a.project}</div>
+          </li>
         ))}
-      </div>
-      <ul className="awards">
-        {filtered.map((a, i) => (
-          <li key={i} className={`award award--${a.tier}`}>
-            <div className="award__tier mono">
-              <AwardStamp tier={a.tier} />
+      </ul>
+      <ul className="awards-list">
+        {rest.map((a, i) => (
+          <li key={i} className={`award-row award-row--${a.tier}`}>
+            <span className={`award-row__tier award-row__tier--${a.tier} mono`}>
+              <AwardStamp tier={a.tier} className="award-row__stamp" />
               {a.tier}
-            </div>
-            <div className="award__org mono">{a.org}</div>
-            <div className="award__title">{a.title}</div>
-            <div className="award__project serif italic">{a.project}</div>
-            <div className="award__role mono dim">{a.role}</div>
+            </span>
+            <span className="award-row__org mono">{a.org}</span>
+            <span className="award-row__title">{a.title}</span>
+            <span className="award-row__project serif italic">{a.project}</span>
           </li>
         ))}
       </ul>
