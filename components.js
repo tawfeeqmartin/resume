@@ -5818,9 +5818,8 @@ function TvHero({ sources = [], children }) {
     return () => window.removeEventListener('resume-drum-hit', onDrumHit);
   }, [animateChannelFlip, animateMacBloomBurst, animateKeyPress]);
 
-	  // Click the Mac screen, floppy, mouse, or keyboard → slide floppy and
-	  // toggle audio + picture. The hit map is built from the loaded GLB mesh
-	  // names above so the 3D model itself is the control surface.
+	  // Click the Mac's physical controls to slide the floppy and toggle
+	  // audio + picture. The screen itself is display-only.
 	  React.useEffect(() => {
 	    if (stateRef.current.deviceMode !== 'mac') return;
 	    const canvas = canvasRef.current;
@@ -5845,6 +5844,15 @@ function TvHero({ sources = [], children }) {
 	      if (state.powerToggleInFlight) return;
 	      const hit = hits[0];
 	      const target = state.macHitTargets?.get(hit.object.uuid) || { type: 'mouse' };
+	      if (target.type === 'screen') {
+	        if (!window.__resumeStrudelAudioEngine?.enabled) {
+	          const term = ensureMacTerminal();
+	          term.focused = true;
+	          term.cursorOn = true;
+	          drawMacOffScreen();
+	        }
+	        return;
+	      }
 	      if (target.type === 'mouse') {
 	        animateMouseButton();
 	      } else if (target.type === 'key') {
