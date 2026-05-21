@@ -1167,6 +1167,8 @@ function getResumeStrudelAudioEngine() {
       if (event.metaKey || event.ctrlKey || event.altKey || event.repeat) return;
       const target = event.target;
       if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
+      const key = event.key.toLowerCase();
+      if ((key === 'w' || key === 'a' || key === 's' || key === 'd') && getActiveHelpPlayerForKeyboard()) return;
       const song = songPresets[songIndex];
       const map = {
         w: song.wasd[0],
@@ -1174,7 +1176,6 @@ function getResumeStrudelAudioEngine() {
         s: song.wasd[2],
         d: song.wasd[3],
       };
-      const key = event.key.toLowerCase();
       if (event.key === 'Escape' && activeWASD) {
         event.preventDefault();
         clearChordReturnTimer();
@@ -1205,6 +1206,7 @@ function getResumeStrudelAudioEngine() {
       const target = event.target;
       if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
       const key = event.key.toLowerCase();
+      if ((key === 'w' || key === 'a' || key === 's' || key === 'd') && getActiveHelpPlayerForKeyboard()) return;
       if (key === 'w' || key === 'a' || key === 's' || key === 'd') {
         releaseLiveChord(key.toUpperCase());
         scheduleChordReturn(key);
@@ -1974,6 +1976,16 @@ function getVideoFullscreenSlot(element) {
   return element.closest?.('.help-player, .video-slot') || null;
 }
 
+function getActiveHelpPlayerForKeyboard() {
+  const fullscreenSlot = getVideoFullscreenSlot(document.fullscreenElement);
+  if (fullscreenSlot?.classList?.contains('help-player')) return fullscreenSlot;
+  const pseudo = document.querySelector('.help-player.is-pseudo-fullscreen');
+  if (pseudo) return pseudo;
+  const focused = document.activeElement?.closest?.('.help-player');
+  if (focused) return focused;
+  return document.querySelector('.help-player:hover');
+}
+
 function notifyVideoFullscreenExit(slot) {
   if (!slot) return;
   window.dispatchEvent(new CustomEvent('resume-video-fullscreen-exit', {
@@ -2047,9 +2059,11 @@ function HelpPlayer({ src }) {
   const [shouldLoad, setShouldLoad] = useState(false);
   const rendererRef = useRef(null);
   const audibleRef = useRef(false);
+  const mutedRef = useRef(true);
   const pausedRef = useRef(true);
   const userPausedRef = useRef(false);
   const wasPlayingBeforeHiddenRef = useRef(false);
+  const keyboardStartPendingRef = useRef(false);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -2112,6 +2126,7 @@ function HelpPlayer({ src }) {
         if (cancelled) { result.renderer.dispose(); return; }
         rendererRef.current = result.renderer;
         result.renderer.setStateCallback((state) => {
+          mutedRef.current = state.muted;
           pausedRef.current = state.paused;
           setMuted(state.muted);
           setPaused(state.paused);
@@ -2188,7 +2203,17 @@ function HelpPlayer({ src }) {
         if (!renderer) return;
         if (!entry.isIntersecting || entry.intersectionRatio < 0.16) {
           wasPlayingBeforeHiddenRef.current = !pausedRef.current;
-          if (!pausedRef.current) renderer.pause();
+          if (!pausedRef.current) {
+            pausedRef.current = true;
+            setPaused(true);
+            renderer.pause();
+            if (!mutedRef.current) {
+              audibleRef.current = false;
+              window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
+                detail: { id: 'help-player', active: false },
+              }));
+            }
+          }
           return;
         }
         if (
@@ -2214,7 +2239,13 @@ function HelpPlayer({ src }) {
       if (!renderer) return;
       wasPlayingBeforeHiddenRef.current = false;
       userPausedRef.current = true;
-      if (!pausedRef.current) renderer.pauseAndMute();
+      if (!pausedRef.current) {
+        pausedRef.current = true;
+        mutedRef.current = true;
+        setPaused(true);
+        setMuted(true);
+        renderer.pauseAndMute();
+      }
     };
     document.addEventListener('visibilitychange', onVisibilityChange);
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
@@ -2226,6 +2257,10 @@ function HelpPlayer({ src }) {
     userPausedRef.current = true;
     wasPlayingBeforeHiddenRef.current = false;
     audibleRef.current = false;
+    pausedRef.current = true;
+    mutedRef.current = true;
+    setPaused(true);
+    setMuted(true);
     rendererRef.current?.pauseAndMute?.();
     window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
       detail: { id: 'help-player', active: false },
@@ -2265,6 +2300,58 @@ function HelpPlayer({ src }) {
     }));
     rendererRef.current?.replayWithSound();
   };
+  const startFromKeyboard = React.useCallback(() => {
+    setShouldLoad(true);
+    setShowHint(false);
+    const renderer = rendererRef.current;
+    if (!renderer) {
+      keyboardStartPendingRef.current = true;
+      return;
+    }
+    const rendererState = renderer.getState?.();
+    const isPaused = rendererState?.paused ?? pausedRef.current;
+    const isMuted = rendererState?.muted ?? mutedRef.current;
+    if (!isPaused && !isMuted) return;
+    keyboardStartPendingRef.current = false;
+    userPausedRef.current = false;
+    wasPlayingBeforeHiddenRef.current = false;
+    window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
+      detail: { id: 'help-player', active: true },
+    }));
+    const playPromise = renderer.playWithSound
+      ? renderer.playWithSound({ restart: false })
+      : (() => {
+          const video = renderer.current?.loaded?.video;
+          if (!video) return renderer.play?.();
+          video.muted = false;
+          return video.play?.();
+        })();
+    if (playPromise?.catch) {
+      playPromise.catch(() => {
+        window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
+          detail: { id: 'help-player', active: false },
+        }));
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const onKey = (event) => {
+      const key = event.key.toLowerCase();
+      if (key !== 'w' && key !== 'a' && key !== 's' && key !== 'd') return;
+      const slot = hostRef.current?.closest('.help-player');
+      if (!slot || getActiveHelpPlayerForKeyboard() !== slot) return;
+      startFromKeyboard();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [startFromKeyboard]);
+
+  useEffect(() => {
+    if (status !== 'ready' || !keyboardStartPendingRef.current) return;
+    startFromKeyboard();
+  }, [status, startFromKeyboard]);
+
   const toggleFullscreen = () => {
     hideHint();
     const slot = hostRef.current?.closest('.help-player');
@@ -3479,9 +3566,6 @@ function StrudelReplFeature() {
                 <StrudelCheatSheet compact status={editStatus} onApply={applyCode} onHush={hushCode} onReset={resetCode} />
               </div>
             </div>
-          </div>
-          <div className="strudel-repl__midi-dock">
-            <MidiBusMonitor />
           </div>
         </div>
       </div>

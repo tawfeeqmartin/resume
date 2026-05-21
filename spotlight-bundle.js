@@ -475,10 +475,7 @@ class SpotlightRenderer {
 
   setAutoSpin(v) { this.autoSpin = v; }
   unmute() {
-    if (this.current) {
-      this.current.loaded.video.muted = false;
-      this.current.loaded.video.play().catch(()=>{});
-    }
+    return this.playWithSound();
   }
   setStateCallback(cb) {
     this.onStateChange = cb;
@@ -486,31 +483,55 @@ class SpotlightRenderer {
   }
   play() {
     if (!this.current) return;
-    this.current.loaded.video.play().catch(()=>{});
+    const promise = this.current.loaded.video.play();
+    this._emitState();
+    if (promise?.catch) promise.catch(() => this._emitState());
+    return promise;
   }
   pause() {
     if (!this.current) return;
     this.current.loaded.video.pause();
+    this._emitState();
   }
   pauseAndMute() {
     if (!this.current) return;
     const video = this.current.loaded.video;
     video.muted = true;
     video.pause();
+    this._emitState();
   }
   replayWithSound() {
+    return this.playWithSound({ restart: true });
+  }
+  playWithSound({ restart = false } = {}) {
     if (!this.current) return;
     const video = this.current.loaded.video;
     video.muted = false;
-    const restart = () => {
-      try { video.currentTime = 0; } catch (_) {}
-      video.play().catch(()=>{});
+    const start = () => {
+      if (restart) {
+        try { video.currentTime = 0; } catch (_) {}
+      }
+      const promise = video.play();
+      this._emitState();
+      if (promise?.then) {
+        return promise.then(() => {
+          this._emitState();
+          return true;
+        }).catch((err) => {
+          this._emitState();
+          throw err;
+        });
+      }
+      return Promise.resolve(true);
     };
-    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) restart();
+    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) return start();
     else {
       video.load();
-      video.addEventListener('loadedmetadata', restart, { once: true });
-      video.play().catch(()=>{});
+      return new Promise((resolve, reject) => {
+        video.addEventListener('loadedmetadata', () => start().then(resolve).catch(reject), { once: true });
+        const promise = video.play();
+        if (promise?.catch) promise.catch(() => {});
+      });
     }
   }
   toggleMuted() {

@@ -483,8 +483,9 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   border: 0;
 }
 .section--dense { margin-top: 3.25rem; }
-/* Summary leads straight off the masthead — no eyebrow label, tight top. */
-#summary { margin-top: 1rem; }
+/* Summary reads as one unit with the masthead — no eyebrow label,
+   minimal top so the name and the lead paragraph sit together. */
+#summary { margin-top: 0.2rem; }
 #summary .section__header { display: none; }
 #experience { margin-top: 3.6rem; }
 .section__header {
@@ -1271,7 +1272,9 @@ html.has-pseudo-fullscreen body {
   overflow: visible;
 }
 .hero-lead {
-  margin: 0 0 2.6rem;
+  /* Equal vertical gap above and below the name. Bottom margin + the
+     summary's top margin (0.2rem) should match the top margin. */
+  margin: 2.4rem 0 2.2rem;
   display: flex; flex-direction: column; gap: 1.1rem;
   max-width: 22ch;
 }
@@ -1558,18 +1561,13 @@ html.has-pseudo-fullscreen body {
   white-space: pre-wrap;
   word-break: break-word;
 }
-.strudel-repl__midi-dock {
-  max-width: var(--strudel-repl-width);
-  margin: -0.65rem auto 0;
-}
 .strudel-repl__screen-dock {
   display: none;
 }
 #strudel {
   min-height: calc(220svh + 10rem);
 }
-#strudel.is-strudel-pinned .help-feature__notes,
-#strudel.is-strudel-pinned .strudel-repl__midi-dock {
+#strudel.is-strudel-pinned .help-feature__notes {
   opacity: 0;
   pointer-events: none;
 }
@@ -2002,7 +2000,6 @@ html.has-pseudo-fullscreen body {
     font-size: clamp(5.2px, 1.45vw, 7.2px);
     padding: 7px 8px;
   }
-  .strudel-repl__midi-dock { margin-top: -0.25rem; }
   .midi-mon__chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -2798,7 +2795,7 @@ window.__loadStrudelModule = () => {
   return window.__resumeStrudelReady;
 };
 window.__loadSpotlightBundle = () => {
-  window.__spotlightBundlePromise ||= import('./spotlight-bundle.js?v=20260513-mobile-projection');
+  window.__spotlightBundlePromise ||= import('./spotlight-bundle.js?v=20260520-help-resume-sound');
   return window.__spotlightBundlePromise;
 };
 window.__loadThreeBundle = () => {
