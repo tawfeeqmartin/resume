@@ -477,18 +477,19 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
        Eyebrow label sits small above a big editorial headline. */
 .section {
   position: relative;
-  margin-top: 6rem;
+  margin-top: 5rem;
   padding: 0;
   background: transparent;
   border: 0;
 }
-.section--dense { margin-top: 4rem; }
+.section--dense { margin-top: 3.25rem; }
 /* Summary leads straight off the masthead — no eyebrow label, tight top. */
-#summary { margin-top: 1.4rem; }
+#summary { margin-top: 1rem; }
 #summary .section__header { display: none; }
+#experience { margin-top: 3.6rem; }
 .section__header {
   display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem;
-  margin: 0 0 1.8rem;
+  margin: 0 0 1.4rem;
   padding: 0;
   border: 0;
 }
@@ -546,8 +547,8 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   grid-template-columns: 32px 1fr;
   grid-template-areas: "rail head" "rail body";
   column-gap: 1.5rem;
-  padding-bottom: 2.5rem;
-  margin-bottom: 2.5rem;
+  padding-bottom: 2rem;
+  margin-bottom: 2rem;
   border-bottom: 1px dashed var(--rule);
 }
 .job:last-child { border-bottom: none; }
@@ -565,7 +566,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   box-shadow: 0 0 0 4px var(--paper);
 }
 .job__rail-line {
-  position: absolute; top: calc(0.75em + 0.78rem); bottom: -2.5rem;
+  position: absolute; top: calc(0.75em + 0.78rem); bottom: -2rem;
   left: 50%; transform: translateX(-50%);
   width: 1px; background: var(--rule);
 }
@@ -609,7 +610,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .job__bullets li {
   position: relative;
   padding-left: 1.5rem;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.48rem;
   color: var(--ink-2);
   text-wrap: pretty;
 }
@@ -1270,7 +1271,7 @@ html.has-pseudo-fullscreen body {
   overflow: visible;
 }
 .hero-lead {
-  margin: 0 0 3.5rem;
+  margin: 0 0 2.6rem;
   display: flex; flex-direction: column; gap: 1.1rem;
   max-width: 22ch;
 }
@@ -1305,10 +1306,10 @@ html.has-pseudo-fullscreen body {
 .hero-stack__flow::after {
   content: "";
   display: block;
-  height: 22rem;
+  height: 18rem;
 }
 .hero-stack + #help {
-  margin-top: -8rem;
+  margin-top: -6.5rem;
 }
 .hero-stack__sticky {
   grid-column: 2;
@@ -1373,9 +1374,9 @@ html.has-pseudo-fullscreen body {
     gap: 0;
   }
   .hero-lead {
-    margin-bottom: 1.4rem;
+    margin-bottom: 0.7rem;
   }
-  .hero-stack + #help { margin-top: 2.4rem; }
+  .hero-stack + #help { margin-top: 1.5rem; }
   .hero-stack__intro {
     order: 0;
   }
@@ -1384,9 +1385,9 @@ html.has-pseudo-fullscreen body {
     position: relative;
     top: auto;
     z-index: 2;
-    height: min(74vw, 22rem);
-    min-height: 17rem;
-    margin: -1.25rem calc(var(--pad) * -1) 0.6rem;
+    height: min(58vw, 18rem);
+    min-height: 13.5rem;
+    margin: -1rem calc(var(--pad) * -1) 0;
     overflow: visible;
     pointer-events: auto;
   }
@@ -1397,14 +1398,14 @@ html.has-pseudo-fullscreen body {
   .tv-hero {
     margin-right: 0;
     overflow: visible;
-    transform: translateX(3.8rem);
+    transform: translateX(clamp(8rem, calc(40vw - 1rem), 10.25rem));
   }
   .tv-hero__canvas {
-    top: -7rem;
+    top: -5.4rem;
     left: 50%;
     right: auto;
     width: min(138vw, 42rem);
-    height: calc(100% + 9rem);
+    height: calc(100% + 7rem);
     min-height: 0;
     transform: translateX(-50%);
   }
@@ -2538,9 +2539,11 @@ html.has-pseudo-fullscreen body {
     grid-template-columns: 1fr;
     grid-template-areas: "head" "body";
     gap: 0.55rem;
-    margin-top: 2.4rem;
-    padding: 0.85rem 0;
+    margin-top: 2rem;
+    padding: 0.65rem 0;
   }
+  #summary { margin-top: 0.35rem; }
+  #experience { margin-top: 1.7rem; }
   .section__rule {
     display: none;
   }
@@ -2569,7 +2572,7 @@ html.has-pseudo-fullscreen body {
     grid-template-columns: 1fr;
     grid-template-areas: "head" "body";
     gap: 0.9rem;
-    padding: 1.1rem 0;
+    padding: 0.95rem 0;
   }
   .job__rail {
     display: none;
