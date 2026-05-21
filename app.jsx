@@ -5,7 +5,7 @@ const mediaUrl = (path) => {
   return `${PRODUCTION_MEDIA_ORIGIN}/${path.replace(/^media\//, '')}`;
 };
 const withCacheKey = (url, key) => `${url}${url.includes('?') ? '&' : '?'}v=${key}`;
-const TV_CLIP_CACHE_KEY = '20260520-bw-preprocessed';
+const TV_CLIP_CACHE_KEY = '20260521-mando-grogu-no-titles';
 const SITE_MODE_STORAGE_KEY = 'resume.desktop.mode';
 const IS_MOBILE_MEDIA_TARGET = window.matchMedia('(max-width: 900px), (pointer: coarse)').matches;
 // First mobile choice: mesh WebM. Frames are authored to align with the
@@ -62,6 +62,7 @@ const CLEARED_TRAILER_GROUPS = [
   {
     slug: 'mandalorian-grogu',
     project: 'The Mandalorian and Grogu',
+    takes: 52,
     weight: 7,
     lanes: ['kick', 'snare', 'bass', 'lead', 'switch', 'angel', 'idle', 'init'],
   },
