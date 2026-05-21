@@ -99,27 +99,59 @@ arrange(
 )`;
 
 const POETRY_IN_PROOF_SOURCE_STORAGE_KEY = 'resume.poetryInProofSource.v1';
+const POETRY_IN_PROOF_DRAFT_STORAGE_KEY = 'resume.poetryInProofDraft.v1';
+const POETRY_IN_PROOF_LAST_GOOD_STORAGE_KEY = 'resume.poetryInProofLastGood.v1';
+
+function readStoredPoetryInProofSource(key) {
+  try {
+    const stored = window.localStorage?.getItem(key);
+    return stored && stored.trim() ? stored : '';
+  } catch {
+    return '';
+  }
+}
 
 function getStoredPoetryInProofSource() {
+  return readStoredPoetryInProofSource(POETRY_IN_PROOF_SOURCE_STORAGE_KEY)
+    || readStoredPoetryInProofSource(POETRY_IN_PROOF_LAST_GOOD_STORAGE_KEY)
+    || POETRY_IN_PROOF_SOURCE;
+}
+
+function getStoredPoetryInProofDraftSource() {
+  return readStoredPoetryInProofSource(POETRY_IN_PROOF_DRAFT_STORAGE_KEY)
+    || getStoredPoetryInProofSource();
+}
+
+function getStoredPoetryInProofLastGoodSource() {
+  return readStoredPoetryInProofSource(POETRY_IN_PROOF_LAST_GOOD_STORAGE_KEY)
+    || POETRY_IN_PROOF_SOURCE;
+}
+
+function writePoetryInProofStorage(key, source, label) {
   try {
-    const stored = window.localStorage?.getItem(POETRY_IN_PROOF_SOURCE_STORAGE_KEY);
-    return stored && stored.trim() ? stored : POETRY_IN_PROOF_SOURCE;
-  } catch {
-    return POETRY_IN_PROOF_SOURCE;
+    window.localStorage?.setItem(key, source);
+  } catch (error) {
+    console.warn(`Unable to save Strudel ${label}`, error);
   }
 }
 
 function savePoetryInProofSource(source) {
-  try {
-    window.localStorage?.setItem(POETRY_IN_PROOF_SOURCE_STORAGE_KEY, source);
-  } catch (error) {
-    console.warn('Unable to save Strudel source', error);
-  }
+  writePoetryInProofStorage(POETRY_IN_PROOF_SOURCE_STORAGE_KEY, source, 'source');
+}
+
+function savePoetryInProofDraftSource(source) {
+  writePoetryInProofStorage(POETRY_IN_PROOF_DRAFT_STORAGE_KEY, source, 'draft');
+}
+
+function savePoetryInProofLastGoodSource(source) {
+  writePoetryInProofStorage(POETRY_IN_PROOF_LAST_GOOD_STORAGE_KEY, source, 'last-good source');
 }
 
 function resetStoredPoetryInProofSource() {
   try {
     window.localStorage?.removeItem(POETRY_IN_PROOF_SOURCE_STORAGE_KEY);
+    window.localStorage?.removeItem(POETRY_IN_PROOF_DRAFT_STORAGE_KEY);
+    window.localStorage?.removeItem(POETRY_IN_PROOF_LAST_GOOD_STORAGE_KEY);
   } catch {}
 }
 
@@ -427,6 +459,22 @@ function getResumeStrudelAudioEngine() {
       },
     },
   ];
+  let lastKnownGoodComposition = getStoredPoetryInProofLastGoodSource();
+  const rememberGoodComposition = (source) => {
+    if (typeof source !== 'string' || !source.trim()) return;
+    lastKnownGoodComposition = source;
+    savePoetryInProofSource(source);
+    savePoetryInProofLastGoodSource(source);
+  };
+  const getRecoveryComposition = (failedSource = '') => {
+    const candidates = [
+      lastKnownGoodComposition,
+      getStoredPoetryInProofLastGoodSource(),
+      POETRY_IN_PROOF_SOURCE,
+    ];
+    return candidates.find((source) => source && source.trim() && source !== failedSource)
+      || POETRY_IN_PROOF_SOURCE;
+  };
 
   const escapePattern = (value) => String(value).replace(/\\/g, '\\\\').replace(/`/g, '\\`');
   const laneTriggerKey = (group, lane) => `${group}${lane.charAt(0).toUpperCase()}${lane.slice(1)}`;
@@ -1043,13 +1091,13 @@ function getResumeStrudelAudioEngine() {
     return out;
   };
 
-  const evaluateCurrent = async ({ resetTransport = false } = {}) => {
+  const evaluateCurrent = async ({ resetTransport = false, recovery = false } = {}) => {
     const token = ++playGeneration;
-    if (!enabled) return;
-    if (videoDucked) return;
+    if (!enabled) return { ok: false, skipped: 'disabled' };
+    if (videoDucked) return { ok: false, skipped: 'video-ducked' };
     const module = await ensureStrudel();
-    if (!enabled) return;
-    if (videoDucked) return;
+    if (!enabled) return { ok: false, skipped: 'disabled' };
+    if (videoDucked) return { ok: false, skipped: 'video-ducked' };
     if (resetTransport) {
       try {
         module.stop?.();
@@ -1067,10 +1115,11 @@ function getResumeStrudelAudioEngine() {
     }
     if (resetTransport) {
       await new Promise((resolve) => window.setTimeout(resolve, 36));
-      if (token !== playGeneration) return;
+      if (token !== playGeneration) return { ok: false, skipped: 'superseded' };
     }
-    if (!enabled || videoDucked) return;
+    if (!enabled || videoDucked) return { ok: false, skipped: enabled ? 'video-ducked' : 'disabled' };
     const song = songPresets[songIndex];
+    const rawComposition = song.composition || '';
     try {
       const isMobileTarget = typeof window !== 'undefined'
         && window.matchMedia('(max-width: 700px), (pointer: coarse)').matches;
@@ -1090,8 +1139,8 @@ function getResumeStrudelAudioEngine() {
       // Songs with a `composition` field provide their own Strudel
       // source (arrangement, mix, gains all baked in). Bypass
       // makePattern for those — just inject the master gate gain.
-      let pattern = song.composition
-        ? applyComposeLaneMix(song.composition)
+      let pattern = rawComposition
+        ? applyComposeLaneMix(rawComposition)
         : makePattern(song, activeWASD);
       if (isMobileTarget) {
         // Strip the most CPU-heavy effects from the pattern so mobile
@@ -1115,16 +1164,36 @@ function getResumeStrudelAudioEngine() {
       // and aligns flashes to its overlay using the evaluated source.
       window.__resumeActivePattern = evaluatedPattern;
       window.__resumeActiveSource = pattern;
+      if (rawComposition && songIndex === 0) rememberGoodComposition(rawComposition);
       window.dispatchEvent(new CustomEvent('resume-pattern-ready', {
-        detail: { pattern: evaluatedPattern, source: pattern, songIndex },
+        detail: { pattern: evaluatedPattern, source: pattern, rawSource: rawComposition || pattern, songIndex },
       }));
+      return { ok: true, source: rawComposition || pattern, evaluatedSource: pattern, songIndex };
     } catch (error) {
       console.warn('Strudel pattern failed', error);
+      window.dispatchEvent(new CustomEvent('resume-pattern-error', {
+        detail: { error, source: rawComposition, songIndex, recovery },
+      }));
+      if (!recovery && songIndex === 0 && rawComposition) {
+        const fallbackSource = getRecoveryComposition(rawComposition);
+        songPresets[0].composition = fallbackSource;
+        savePoetryInProofSource(fallbackSource);
+        const fallbackResult = await evaluateCurrent({ resetTransport: true, recovery: true });
+        return {
+          ok: false,
+          recovered: Boolean(fallbackResult?.ok),
+          error,
+          failedSource: rawComposition,
+          fallbackSource,
+          fallbackResult,
+        };
+      }
+      return { ok: false, error, source: rawComposition, songIndex };
     }
   };
 
   const playCurrent = (options) => {
-    evaluateCurrent(options);
+    return evaluateCurrent(options);
   };
 
   const clearChordReturnTimer = () => {
@@ -1458,25 +1527,44 @@ function getResumeStrudelAudioEngine() {
         solos:  { ...composeMix.solos  },
       };
     },
-    setCompositionSource(source, options = {}) {
-      if (typeof source !== 'string' || !source.trim()) return false;
-      songPresets[0].composition = source;
-      savePoetryInProofSource(source);
-      if (songIndex === 0) {
-        if (enabled) playCurrent({ resetTransport: Boolean(options.resetTransport) });
-        window.dispatchEvent(new CustomEvent('resume-pattern-ready', {
-          detail: { pattern: window.__resumeActivePattern || null, source, songIndex },
-        }));
+    async setCompositionSource(source, options = {}) {
+      if (typeof source !== 'string' || !source.trim()) {
+        return { ok: false, error: new Error('Empty source.') };
       }
-      return true;
+      songPresets[0].composition = source;
+      savePoetryInProofDraftSource(source);
+      let result = { ok: true, skipped: !enabled && !options.start };
+      if (songIndex === 0) {
+        if (options.start && !enabled) {
+          enabled = true;
+          bindKeyboard();
+          const module = await ensureStrudel();
+          if (module.initAudio) await module.initAudio();
+          result = await playCurrent({ resetTransport: true });
+          if (result?.ok === false && !result?.recovered && !result?.skipped) {
+            enabled = false;
+            await hushCurrent(true);
+          }
+          window.dispatchEvent(new CustomEvent('resume-audio-change'));
+        } else if (enabled) {
+          result = await playCurrent({ resetTransport: Boolean(options.resetTransport) });
+        } else {
+          window.dispatchEvent(new CustomEvent('resume-pattern-ready', {
+            detail: { pattern: window.__resumeActivePattern || null, source, rawSource: source, songIndex },
+          }));
+        }
+      }
+      if (result?.ok && !result?.skipped) rememberGoodComposition(source);
+      return result;
     },
     resetCompositionSource(options = {}) {
       resetStoredPoetryInProofSource();
       songPresets[0].composition = POETRY_IN_PROOF_SOURCE;
+      rememberGoodComposition(POETRY_IN_PROOF_SOURCE);
       if (songIndex === 0) {
         if (enabled) playCurrent({ resetTransport: Boolean(options.resetTransport) });
         window.dispatchEvent(new CustomEvent('resume-pattern-ready', {
-          detail: { pattern: window.__resumeActivePattern || null, source: POETRY_IN_PROOF_SOURCE, songIndex },
+          detail: { pattern: window.__resumeActivePattern || null, source: POETRY_IN_PROOF_SOURCE, rawSource: POETRY_IN_PROOF_SOURCE, songIndex },
         }));
       }
       return POETRY_IN_PROOF_SOURCE;
@@ -1548,7 +1636,13 @@ function getResumeStrudelAudioEngine() {
         bindKeyboard();
         const module = await ensureStrudel();
         if (module.initAudio) await module.initAudio();
-        playCurrent({ resetTransport: true });
+        const result = await playCurrent({ resetTransport: true });
+        if (result?.ok === false && !result?.recovered && !result?.skipped) {
+          enabled = false;
+          await hushCurrent(true);
+          window.dispatchEvent(new CustomEvent('resume-audio-change'));
+          throw result.error || new Error('Strudel source failed to evaluate.');
+        }
       } else {
         clearChordReturnTimer();
         clearScrollTransitionTimers();
@@ -3190,7 +3284,7 @@ function StrudelReplFeature() {
   const [status, setStatus] = React.useState('idle'); // idle | loading | playing | error
   const [editStatus, setEditStatus] = React.useState('ready');
   const [errorMsg, setErrorMsg] = React.useState('');
-  const [code, setCode] = React.useState(() => getStoredPoetryInProofSource());
+  const [code, setCode] = React.useState(() => getStoredPoetryInProofDraftSource());
   // Source string the engine actually evaluated. Drives the highlight
   // overlay: hap locations refer to positions in this string, not the
   // user-editable textarea.
@@ -3215,14 +3309,23 @@ function StrudelReplFeature() {
       return;
     }
     try {
-      const applied = engine.setCompositionSource(code, { resetTransport: engine.enabled });
-      if (!applied) throw new Error('Empty source.');
+      setStatus('loading');
+      const result = await engine.setCompositionSource(code, {
+        resetTransport: engine.enabled,
+        start: true,
+      });
+      if (!result?.ok) {
+        const message = result?.error?.message || result?.error || 'Strudel could not evaluate that source.';
+        setStatus(result?.recovered ? 'playing' : 'error');
+        setEditStatus('error');
+        setErrorMsg(
+          `${message} Your edit is saved as a draft; audio recovered to the last working version.`
+        );
+        if (result?.fallbackSource) setEngineSource(result.fallbackSource);
+        return;
+      }
       setEngineSource(code);
       setEditStatus('applied');
-      if (!engine.enabled) {
-        setStatus('loading');
-        await engine.setEnabled(true);
-      }
       setStatus('playing');
     } catch (error) {
       setStatus('error');
@@ -3259,7 +3362,9 @@ function StrudelReplFeature() {
   }, []);
 
   const handleCodeChange = React.useCallback((event) => {
-    setCode(event.target.value);
+    const next = event.target.value;
+    setCode(next);
+    savePoetryInProofDraftSource(next);
     setEditStatus('dirty');
   }, []);
 
@@ -3313,10 +3418,21 @@ function StrudelReplFeature() {
   // When the engine evaluates a pattern, capture its source so the
   // highlight overlay knows which characters to flash.
   React.useEffect(() => {
-    const onReady = (e) => setEngineSource(e.detail?.source ?? null);
+    const onReady = (e) => setEngineSource(e.detail?.rawSource ?? e.detail?.source ?? null);
     if (window.__resumeActiveSource) setEngineSource(window.__resumeActiveSource);
     window.addEventListener('resume-pattern-ready', onReady);
     return () => window.removeEventListener('resume-pattern-ready', onReady);
+  }, []);
+
+  React.useEffect(() => {
+    const onError = (event) => {
+      const error = event.detail?.error;
+      const message = error?.message || String(error || 'Strudel could not evaluate that source.');
+      setEditStatus('error');
+      setErrorMsg(`${message} Your edit is saved as a draft; audio recovered to the last working version.`);
+    };
+    window.addEventListener('resume-pattern-error', onError);
+    return () => window.removeEventListener('resume-pattern-error', onError);
   }, []);
 
   // Strudel-style active-token highlights. Each hap carries source
@@ -3727,6 +3843,7 @@ function TvHero({ sources = [], children }) {
 	    requestRender: null,
 	    powerPausedVideo: null,
 	    powerToggleInFlight: false,
+	    terminal: null,
 	  });
   const [engineEnabled, setEngineEnabled] = React.useState(false);
   const [availableSources, setAvailableSources] = React.useState(() => sources);
@@ -3767,27 +3884,124 @@ function TvHero({ sources = [], children }) {
     return picked;
   }, [availableSources]);
 
-  // Paint the Mac's "powered off" screen — black background with a
-  // "CLICK MOUSE TO START" prompt centered. Period-correct Chicago-style
-  // monospace would be ideal but any monospace reads as Mac classic UI.
-  // Mac powered-off screen: black background with pixelated "click mouse to
-  // start" prompt. Text is rendered small then upscaled with nearest-neighbor
-  // for the chunky 1-bit bitmap look.
-  // Mac powered-off screen: just black, like an unpowered CRT. The ejected
-  // floppy + pointer cursor on the mouse are the affordance to click.
+  const ensureMacTerminal = React.useCallback(() => {
+    const state = stateRef.current;
+    if (!state.terminal) {
+      state.terminal = {
+        input: '',
+        cursorOn: true,
+        focused: true,
+        lines: [
+          'MacTerminal 2.0',
+          'System 6 terminal session',
+          '',
+          'Type HELP for commands.',
+        ],
+      };
+    }
+    return state.terminal;
+  }, []);
+
+  const pushMacTerminalLine = React.useCallback((line = '') => {
+    const term = ensureMacTerminal();
+    term.lines = [...term.lines, line].slice(-12);
+  }, [ensureMacTerminal]);
+
+  // Paint the Mac's inactive screen as a period-ish monochrome terminal:
+  // 1-bit Macintosh window chrome, a black terminal well, and a flashing
+  // block cursor. It is intentionally drawn into a low-res back buffer and
+  // nearest-neighbor scaled so the CRT texture keeps a bitmap UI character.
   const drawMacOffScreen = React.useCallback(() => {
     const { ctx2d, screenCanvas, screenTex } = stateRef.current;
     if (!ctx2d || !screenCanvas) return;
     const w = screenCanvas.width, h = screenCanvas.height;
+    const term = ensureMacTerminal();
+    const sw = 512, sh = 384;
+    const state = stateRef.current;
+    if (!state.terminalCanvas) {
+      state.terminalCanvas = document.createElement('canvas');
+      state.terminalCanvas.width = sw;
+      state.terminalCanvas.height = sh;
+      state.terminalCtx = state.terminalCanvas.getContext('2d');
+    }
+    const tctx = state.terminalCtx;
     ctx2d.save();
+    tctx.save();
+    tctx.imageSmoothingEnabled = false;
+    tctx.fillStyle = '#f7f7f7';
+    tctx.fillRect(0, 0, sw, sh);
+
+    // Menu bar + simple Chicago-ish bitmap text.
+    tctx.fillStyle = '#000';
+    tctx.fillRect(0, 0, sw, 15);
+    tctx.fillStyle = '#fff';
+    tctx.font = '10px Monaco, Menlo, monospace';
+    tctx.fillText('■  File  Edit  Session  Settings', 8, 11);
+
+    // Terminal window.
+    const wx = 20, wy = 28, ww = 472, wh = 326;
+    tctx.fillStyle = '#fff';
+    tctx.fillRect(wx, wy, ww, wh);
+    tctx.strokeStyle = '#000';
+    tctx.lineWidth = 2;
+    tctx.strokeRect(wx, wy, ww, wh);
+    tctx.fillStyle = '#000';
+    tctx.fillRect(wx + 2, wy + 2, ww - 4, 16);
+    tctx.fillStyle = '#fff';
+    tctx.font = '10px Monaco, Menlo, monospace';
+    tctx.fillText('MacTerminal', wx + 198, wy + 14);
+
+    const tx = wx + 12;
+    const ty = wy + 30;
+    const tw = ww - 24;
+    const th = wh - 46;
+    tctx.fillStyle = '#050505';
+    tctx.fillRect(tx, ty, tw, th);
+    tctx.strokeStyle = '#000';
+    tctx.lineWidth = 1;
+    tctx.strokeRect(tx - 1, ty - 1, tw + 2, th + 2);
+
+    tctx.save();
+    tctx.beginPath();
+    tctx.rect(tx + 9, ty + 10, tw - 18, th - 20);
+    tctx.clip();
+    tctx.fillStyle = '#f7f7f7';
+    tctx.font = '13px Monaco, Menlo, monospace';
+    const prompt = 'tawfeeq$ ';
+    const allLines = [
+      ...term.lines,
+      `${prompt}${term.input}`,
+    ];
+    const visible = allLines.slice(-11);
+    let y = ty + 25;
+    for (const line of visible) {
+      tctx.fillText(line, tx + 12, y);
+      y += 19;
+    }
+    if (term.cursorOn) {
+      const current = `${prompt}${term.input}`;
+      const cursorX = tx + 12 + Math.min(tw - 28, tctx.measureText(current).width);
+      const cursorY = y - 19 - 12;
+      tctx.fillStyle = '#f7f7f7';
+      tctx.fillRect(cursorX + 2, cursorY, 8, 15);
+    }
+    tctx.restore();
+
+    tctx.fillStyle = '#000';
+    tctx.font = '9px Monaco, Menlo, monospace';
+    tctx.fillText('RETURN runs command · PLAY starts audio · RESET restores song', wx + 14, wy + wh - 12);
+    tctx.restore();
+
+    ctx2d.imageSmoothingEnabled = false;
     ctx2d.fillStyle = '#000';
     ctx2d.fillRect(0, 0, w, h);
+    ctx2d.drawImage(state.terminalCanvas, 0, 0, sw, sh, 0, 0, w, h);
     ctx2d.restore();
     if (screenTex) {
       screenTex.needsUpdate = true;
       stateRef.current.requestRender?.();
     }
-  }, []);
+  }, [ensureMacTerminal]);
 
   // Draw a source image to the offscreen screen canvas with a light wash.
   const drawSourceToCanvas = React.useCallback((img, effect = null) => {
@@ -4287,6 +4501,83 @@ function TvHero({ sources = [], children }) {
       tick();
     });
   }, [drawMacBloom, drawSourceToCanvas]);
+
+  const runMacTerminalCommand = React.useCallback(async (rawCommand) => {
+    const cmd = String(rawCommand || '').trim();
+    const lower = cmd.toLowerCase();
+    const state = stateRef.current;
+    const engine = window.__resumeStrudelAudioEngine;
+    pushMacTerminalLine(`tawfeeq$ ${cmd}`);
+    if (!lower) {
+      drawMacOffScreen();
+      return;
+    }
+    if (lower === 'help' || lower === '?') {
+      pushMacTerminalLine('PLAY     insert disk and run song');
+      pushMacTerminalLine('STATUS   print audio engine state');
+      pushMacTerminalLine('RESET    restore default Strudel code');
+      pushMacTerminalLine('CLEAR    clear terminal');
+      pushMacTerminalLine('ABOUT    describe this system');
+      drawMacOffScreen();
+      return;
+    }
+    if (lower === 'clear' || lower === 'cls') {
+      const term = ensureMacTerminal();
+      term.lines = ['MacTerminal 2.0', 'System 6 terminal session', '', 'Type HELP for commands.'];
+      drawMacOffScreen();
+      return;
+    }
+    if (lower === 'about') {
+      pushMacTerminalLine('Poetry in Proof: browser-native');
+      pushMacTerminalLine('Strudel audio + Web MIDI + Three.js');
+      pushMacTerminalLine('one clock drives sound and image.');
+      drawMacOffScreen();
+      return;
+    }
+    if (lower === 'status') {
+      pushMacTerminalLine(`audio: ${engine?.enabled ? 'online' : 'offline'}`);
+      pushMacTerminalLine(`song: ${engine?.session?.name || 'halftime trap'}`);
+      pushMacTerminalLine('source guard: last-good fallback armed');
+      drawMacOffScreen();
+      return;
+    }
+    if (lower === 'reset') {
+      if (engine?.resetCompositionSource) {
+        engine.resetCompositionSource({ resetTransport: false });
+        pushMacTerminalLine('default Strudel source restored.');
+      } else {
+        pushMacTerminalLine('audio engine not ready.');
+      }
+      drawMacOffScreen();
+      return;
+    }
+    if (['play', 'run', 'start', './poetry', './proof'].includes(lower)) {
+      if (state.powerToggleInFlight) return;
+      state.powerToggleInFlight = true;
+      pushMacTerminalLine('inserting disk...');
+      drawMacOffScreen();
+      try {
+        await animateFloppy(true);
+        cutRef.current?.('init');
+        await animateMacBloomBurst('powerOn');
+        const nextEngine = window.__resumeStrudelAudioEngine;
+        const result = await nextEngine?.setEnabled(true);
+        if (result === false) {
+          pushMacTerminalLine('audio failed; use RESET then PLAY.');
+          drawMacOffScreen();
+        }
+      } catch (error) {
+        pushMacTerminalLine(`error: ${error?.message || String(error)}`);
+        drawMacOffScreen();
+      } finally {
+        stateRef.current.powerToggleInFlight = false;
+      }
+      return;
+    }
+    pushMacTerminalLine(`${cmd}: command not found`);
+    pushMacTerminalLine('Type HELP for commands.');
+    drawMacOffScreen();
+  }, [animateFloppy, animateMacBloomBurst, drawMacOffScreen, ensureMacTerminal, pushMacTerminalLine]);
 
   const drawChannelStatic = React.useCallback((seed = 1, strength = 1) => {
     const state = stateRef.current;
@@ -4995,6 +5286,85 @@ function TvHero({ sources = [], children }) {
     return () => window.removeEventListener('resume-audio-change', sync);
   }, [syncMacFloppyToAudio]);
 
+  // Inactive Mac screen terminal: when the music is off and the hero is in
+  // view, normal keyboard input goes to the monochrome terminal on the CRT.
+  React.useEffect(() => {
+    if (stateRef.current.deviceMode !== 'mac') return undefined;
+    const isEditableTarget = (target) => {
+      const tag = target?.tagName?.toLowerCase?.();
+      return tag === 'input' || tag === 'textarea' || target?.isContentEditable;
+    };
+    const heroVisible = () => {
+      const el = wrapRef.current;
+      if (!el) return false;
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+      return rect.bottom > 0 && rect.top < vh;
+    };
+    const onKey = (event) => {
+      if (window.__resumeStrudelAudioEngine?.enabled) return;
+      if (stateRef.current.deviceMode !== 'mac') return;
+      if (!heroVisible()) return;
+      if (isEditableTarget(event.target)) return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.shiftKey && ['Digit1', 'Digit2', 'Digit3'].includes(event.code)) return;
+      const term = ensureMacTerminal();
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        const cmd = term.input;
+        term.input = '';
+        runMacTerminalCommand(cmd);
+        return;
+      }
+      if (event.key === 'Backspace') {
+        event.preventDefault();
+        term.input = term.input.slice(0, -1);
+        term.cursorOn = true;
+        drawMacOffScreen();
+        return;
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        term.input = '';
+        term.cursorOn = true;
+        drawMacOffScreen();
+        return;
+      }
+      if (event.key === ' ') {
+        event.preventDefault();
+        term.input += ' ';
+        term.cursorOn = true;
+        animateKeyPress('space');
+        drawMacOffScreen();
+        return;
+      }
+      if (event.key.length === 1) {
+        event.preventDefault();
+        term.input = (term.input + event.key).slice(-54);
+        term.cursorOn = true;
+        const upper = event.key.toUpperCase();
+        if (['W', 'A', 'S', 'D'].includes(upper)) animateKeyPress(upper);
+        drawMacOffScreen();
+      }
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [animateKeyPress, drawMacOffScreen, ensureMacTerminal, runMacTerminalCommand]);
+
+  React.useEffect(() => {
+    if (stateRef.current.deviceMode !== 'mac') return undefined;
+    const tick = () => {
+      if (window.__resumeStrudelAudioEngine?.enabled) return;
+      const state = stateRef.current;
+      if (state.tabVisible === false || state.tvVisible === false) return;
+      const term = ensureMacTerminal();
+      term.cursorOn = !term.cursorOn;
+      drawMacOffScreen();
+    };
+    const timer = window.setInterval(tick, 470);
+    return () => window.clearInterval(timer);
+  }, [drawMacOffScreen, ensureMacTerminal]);
+
   // Shift+1/2/3 — toggle screen mode (color | grayscale | 1bit) so the user
   // can preview the period-correct B&W and pick a default.
   React.useEffect(() => {
@@ -5085,7 +5455,6 @@ function TvHero({ sources = [], children }) {
 	      if (!hits.length) return;
 	      event.preventDefault();
 	      if (state.powerToggleInFlight) return;
-	      state.powerToggleInFlight = true;
 	      const hit = hits[0];
 	      const target = state.macHitTargets?.get(hit.object.uuid) || { type: 'mouse' };
 	      if (target.type === 'mouse') {
@@ -5096,6 +5465,21 @@ function TvHero({ sources = [], children }) {
 	      }
 	      const engine = window.__resumeStrudelAudioEngine;
 	      const isOn = !!engine?.enabled;
+	      if (!isOn && target.type === 'key') {
+	        const term = ensureMacTerminal();
+	        term.focused = true;
+	        term.cursorOn = true;
+	        if (target.label === 'space') {
+	          term.input = `${term.input} `.slice(-54);
+	        } else if (target.label && target.label.length === 1) {
+	          term.input = `${term.input}${target.label.toLowerCase()}`.slice(-54);
+	        } else if (!target.label) {
+	          pushMacTerminalLine('keyboard active. type PLAY then RETURN.');
+	        }
+	        drawMacOffScreen();
+	        return;
+	      }
+	      state.powerToggleInFlight = true;
 	      try {
 	        if (isOn) {
 	          // Power off: fast picture roll on the current frame, THEN blank +
@@ -5135,7 +5519,7 @@ function TvHero({ sources = [], children }) {
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.style.cursor = '';
     };
-	  }, [animateMouseButton, animateKeyPress, animateKeyMeshPress, animateFloppy, animateMacBloomBurst, drawMacOffScreen]);
+	  }, [animateMouseButton, animateKeyPress, animateKeyMeshPress, animateFloppy, animateMacBloomBurst, drawMacOffScreen, ensureMacTerminal, pushMacTerminalLine]);
 
   // Lead/melody notes → round-robin W → A → S → D on the Mac keyboard.
   React.useEffect(() => {
@@ -5236,21 +5620,18 @@ function HelpFeature({ src }) {
             experience built for mobile — a Google Spotlight Stories title delivered in a
             custom MESH projection rather than equirectangular video.
           </p>
+          <p>
+            As Technical Innovations Manager and Product Manager, I worked with our artists,
+            engineers, and partners at Google, Derivative, and Keslow Camera to produce the
+            360° camera rig, <strong>Mill Stitch™</strong>, and the on-set and post-production
+            technology that enabled this first-of-its-kind deliverable. Mill Stitch was the
+            real-time 360° pipeline that let the director see the surround action live during
+            principal photography in the LA River basin. Use <span className="mono">W A S D</span>
+            or drag to look around.
+          </p>
         </div>
         <div className="help-hero__player">
           <HelpPlayer src={src} />
-        </div>
-        <div className="help-hero__details">
-          <p>
-            I led the on-set technology and co-invented <strong>Mill Stitch™</strong>, a
-            real-time 360° pipeline that let the director see the surround action live during
-            principal photography in the LA river basin.
-          </p>
-          <p>
-            What you're watching here is decoded directly from that original format —
-            <span className="mono"> sv3d → proj → mshp</span>, the geometry inflated and rendered
-            on a sphere at the world origin. Drag to look around.
-          </p>
         </div>
       </div>
     </Section>
