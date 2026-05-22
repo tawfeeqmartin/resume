@@ -4148,6 +4148,7 @@ function TvHero({ sources = [], children }) {
     currentMedia: null,
     currentVideo: null,
     currentLane: 'idle',
+    currentCutMode: 'normal',
     lastVideoFrameTime: -1,
     currentFit: 'cover',
     currentMatteAspect: null,
@@ -4170,6 +4171,7 @@ function TvHero({ sources = [], children }) {
     lastCutAt: 0,
     lastRhythmCutAt: 0,
     lastSparseCutAt: 0,
+    sparseMotif: null,
     cutToken: 0,
     raf: 0,
     bbox: null,
@@ -4201,30 +4203,79 @@ function TvHero({ sources = [], children }) {
   const RECENT_WINDOW = 28;
   const RECENT_PROJECT_WINDOW = 3;
 
-  const pickIndex = React.useCallback((lane) => {
+  const pickIndex = React.useCallback((lane, options = {}) => {
     if (!availableSources.length) return 0;
-    const eligible = availableSources
-      .map((s, i) => ({ s, i }))
-      .filter(({ s }) => !s.lanes || s.lanes.includes(lane));
-    if (!eligible.length) return currentIdxRef.current >= 0 ? currentIdxRef.current : 0;
-    const state = stateRef.current;
-    const recent = new Set(state.recent);
-    const recentProjects = new Set((state.recentProjects || []).slice(-RECENT_PROJECT_WINDOW));
-    const fresh = eligible.filter(({ i }) => !recent.has(i));
-    const projectFresh = fresh.filter(({ s }) => !recentProjects.has(s.project || ''));
-    const pool = projectFresh.length
-      ? projectFresh
-      : fresh.length
-        ? fresh
-        : eligible.filter(({ i }) => i !== currentIdxRef.current);
-    const finalPool = pool.length ? pool : eligible;
-    const cursor = (state.laneCursors.get(lane) || 0) % finalPool.length;
-    const picked = finalPool[cursor].i;
-    state.laneCursors.set(lane, (cursor + 1) % Math.max(1, finalPool.length));
-    const project = availableSources[picked]?.project || '';
-    state.recent = [...state.recent, picked].slice(-RECENT_WINDOW);
-    if (project) state.recentProjects = [...(state.recentProjects || []), project].slice(-RECENT_PROJECT_WINDOW);
-    return picked;
+    const chooseFresh = (pickLane, blockedIndexes = new Set(), blockedProjects = new Set(), cursorKey = pickLane) => {
+      const activeBlockedIndexes = new Set(blockedIndexes);
+      if (currentIdxRef.current >= 0) activeBlockedIndexes.add(currentIdxRef.current);
+      const laneEligible = availableSources
+        .map((s, i) => ({ s, i }))
+        .filter(({ s, i }) => (!s.lanes || s.lanes.includes(pickLane)) && !activeBlockedIndexes.has(i));
+      const eligible = laneEligible.length
+        ? laneEligible
+        : availableSources
+            .map((s, i) => ({ s, i }))
+            .filter(({ s }) => !s.lanes || s.lanes.includes(pickLane));
+      if (!eligible.length) return currentIdxRef.current >= 0 ? currentIdxRef.current : 0;
+      const state = stateRef.current;
+      const recent = new Set(state.recent);
+      const recentProjects = new Set([
+        ...(state.recentProjects || []).slice(-RECENT_PROJECT_WINDOW),
+        ...blockedProjects,
+      ]);
+      const fresh = eligible.filter(({ i }) => !recent.has(i));
+      const projectFresh = fresh.filter(({ s }) => !recentProjects.has(s.project || ''));
+      const pool = projectFresh.length
+        ? projectFresh
+        : fresh.length
+          ? fresh
+          : eligible.filter(({ i }) => i !== currentIdxRef.current);
+      const finalPool = pool.length ? pool : eligible;
+      const cursor = (state.laneCursors.get(cursorKey) || 0) % finalPool.length;
+      const picked = finalPool[cursor].i;
+      state.laneCursors.set(cursorKey, (cursor + 1) % Math.max(1, finalPool.length));
+      const project = availableSources[picked]?.project || '';
+      state.recent = [...state.recent, picked].slice(-RECENT_WINDOW);
+      if (project) state.recentProjects = [...(state.recentProjects || []), project].slice(-RECENT_PROJECT_WINDOW);
+      return picked;
+    };
+
+    if (options.mode === 'sparse') {
+      const state = stateRef.current;
+      const now = performance.now();
+      const motifLane = lane === 'bass' ? 'bass' : 'lead';
+      let motif = state.sparseMotif;
+      const stale = !motif
+        || motif.expiresAt <= now
+        || !motif.indexes?.length
+        || motif.cutsRemaining <= 0;
+      if (stale) {
+        const blockedIndexes = new Set();
+        if (currentIdxRef.current >= 0) blockedIndexes.add(currentIdxRef.current);
+        const blockedProjects = new Set();
+        const indexes = [];
+        for (let slot = 0; slot < 2; slot++) {
+          const picked = chooseFresh(motifLane, blockedIndexes, blockedProjects, `${motifLane}:sparse`);
+          if (!indexes.includes(picked)) indexes.push(picked);
+          blockedIndexes.add(picked);
+          const project = availableSources[picked]?.project || '';
+          if (project) blockedProjects.add(project);
+        }
+        motif = {
+          indexes,
+          cursor: 0,
+          cutsRemaining: Math.max(3, indexes.length * 3),
+          expiresAt: now + 11000,
+        };
+        state.sparseMotif = motif;
+      }
+      const picked = motif.indexes[motif.cursor % motif.indexes.length];
+      motif.cursor += 1;
+      motif.cutsRemaining -= 1;
+      return picked;
+    }
+
+    return chooseFresh(lane);
   }, [availableSources]);
 
   const disposeCachedVideo = React.useCallback((video) => {
@@ -5246,14 +5297,15 @@ function TvHero({ sources = [], children }) {
   }, [drawChannelStatic, drawSourceToCanvas, drawVideoLoop]);
 
   const cutRef = React.useRef(null);
-  const cut = React.useCallback((lane) => {
+  const cut = React.useCallback((lane, options = {}) => {
     if (!availableSources.length) return;
-    const idx = pickIndex(lane);
+    const idx = pickIndex(lane, options);
     currentIdxRef.current = idx;
     const source = availableSources[idx];
     const src = source.url;
     const now = performance.now();
     stateRef.current.currentLane = lane || source.lanes?.[0] || 'idle';
+    stateRef.current.currentCutMode = options.mode || 'normal';
     stateRef.current.lastCutAt = now;
     if (lane === 'snare') stateRef.current.lastRhythmCutAt = now;
     const cutToken = (stateRef.current.cutToken || 0) + 1;
@@ -5298,7 +5350,9 @@ function TvHero({ sources = [], children }) {
           if (state.currentVideo !== video || state.currentMedia !== video) return;
           if (state.tabVisible === false || state.tvVisible === false) return;
           if (!window.__resumeStrudelAudioEngine?.enabled) return;
-          cutRef.current?.(state.currentLane || lane || 'idle');
+          cutRef.current?.(state.currentLane || lane || 'idle', {
+            mode: state.currentCutMode === 'sparse' ? 'sparse' : 'normal',
+          });
         };
         try { video.currentTime = source.start ?? 0; } catch {}
         const playPromise = video.play?.();
@@ -5880,6 +5934,7 @@ function TvHero({ sources = [], children }) {
       if (event.detail?.lane !== 'snare') return;
       if (stateRef.current.tabVisible === false || stateRef.current.tvVisible === false) return;
       stateRef.current.lastRhythmCutAt = performance.now();
+      stateRef.current.sparseMotif = null;
       if (stateRef.current.deviceMode === 'mac') {
         // Mac path: hard bloom flash + spacebar press + clean cut.
         animateMacBloomBurst('clap');
@@ -5907,7 +5962,7 @@ function TvHero({ sources = [], children }) {
       if (now - state.lastCutAt < 2200) return;
       if (now - state.lastSparseCutAt < 2600) return;
       state.lastSparseCutAt = now;
-      cutRef.current?.(lane);
+      cutRef.current?.(lane, { mode: 'sparse' });
     };
     const onMelody = (event) => {
       if (event.detail?.lane === 'lead') trySparseCut('lead');
@@ -6063,6 +6118,7 @@ function TvHero({ sources = [], children }) {
     stateRef.current.lastCutAt = 0;
     stateRef.current.lastRhythmCutAt = 0;
     stateRef.current.lastSparseCutAt = 0;
+    stateRef.current.sparseMotif = null;
     if (!stateRef.current.currentMedia) cutRef.current?.('init');
   }, [engineEnabled, availableSources]);
 
