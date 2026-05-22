@@ -4147,6 +4147,7 @@ function TvHero({ sources = [], children }) {
     currentImage: null,
     currentMedia: null,
     currentVideo: null,
+    currentLane: 'idle',
     lastVideoFrameTime: -1,
     currentFit: 'cover',
     currentMatteAspect: null,
@@ -4164,6 +4165,11 @@ function TvHero({ sources = [], children }) {
     staticCtx: null,
     imageCache: new Map(),
     recent: [],
+    recentProjects: [],
+    laneCursors: new Map(),
+    lastCutAt: 0,
+    lastRhythmCutAt: 0,
+    lastSparseCutAt: 0,
     cutToken: 0,
     raf: 0,
     bbox: null,
@@ -4192,7 +4198,8 @@ function TvHero({ sources = [], children }) {
     setAvailableSources(sources);
   }, [sources]);
 
-  const RECENT_WINDOW = 12;
+  const RECENT_WINDOW = 28;
+  const RECENT_PROJECT_WINDOW = 3;
 
   const pickIndex = React.useCallback((lane) => {
     if (!availableSources.length) return 0;
@@ -4200,20 +4207,23 @@ function TvHero({ sources = [], children }) {
       .map((s, i) => ({ s, i }))
       .filter(({ s }) => !s.lanes || s.lanes.includes(lane));
     if (!eligible.length) return currentIdxRef.current >= 0 ? currentIdxRef.current : 0;
-    const recent = new Set(stateRef.current.recent);
+    const state = stateRef.current;
+    const recent = new Set(state.recent);
+    const recentProjects = new Set((state.recentProjects || []).slice(-RECENT_PROJECT_WINDOW));
     const fresh = eligible.filter(({ i }) => !recent.has(i));
-    const pool = fresh.length
-      ? fresh
-      : eligible.filter(({ i }) => i !== currentIdxRef.current);
+    const projectFresh = fresh.filter(({ s }) => !recentProjects.has(s.project || ''));
+    const pool = projectFresh.length
+      ? projectFresh
+      : fresh.length
+        ? fresh
+        : eligible.filter(({ i }) => i !== currentIdxRef.current);
     const finalPool = pool.length ? pool : eligible;
-    const totalW = finalPool.reduce((acc, { s }) => acc + (s.weight ?? 1), 0);
-    let r = Math.random() * totalW;
-    let picked = finalPool[finalPool.length - 1].i;
-    for (const { s, i } of finalPool) {
-      r -= (s.weight ?? 1);
-      if (r <= 0) { picked = i; break; }
-    }
-    stateRef.current.recent = [...stateRef.current.recent, picked].slice(-RECENT_WINDOW);
+    const cursor = (state.laneCursors.get(lane) || 0) % finalPool.length;
+    const picked = finalPool[cursor].i;
+    state.laneCursors.set(lane, (cursor + 1) % Math.max(1, finalPool.length));
+    const project = availableSources[picked]?.project || '';
+    state.recent = [...state.recent, picked].slice(-RECENT_WINDOW);
+    if (project) state.recentProjects = [...(state.recentProjects || []), project].slice(-RECENT_PROJECT_WINDOW);
     return picked;
   }, [availableSources]);
 
@@ -5242,6 +5252,10 @@ function TvHero({ sources = [], children }) {
     currentIdxRef.current = idx;
     const source = availableSources[idx];
     const src = source.url;
+    const now = performance.now();
+    stateRef.current.currentLane = lane || source.lanes?.[0] || 'idle';
+    stateRef.current.lastCutAt = now;
+    if (lane === 'snare') stateRef.current.lastRhythmCutAt = now;
     const cutToken = (stateRef.current.cutToken || 0) + 1;
     stateRef.current.cutToken = cutToken;
     if (source.kind === 'video') {
@@ -5253,7 +5267,7 @@ function TvHero({ sources = [], children }) {
         video.muted = true;
         video.defaultMuted = true;
         video.playsInline = true;
-        video.loop = true;
+        video.loop = false;
         video.preload = 'metadata';
         video.src = src;
         cache.set(src, video);
@@ -5278,6 +5292,14 @@ function TvHero({ sources = [], children }) {
         stateRef.current.currentFit = source.fit || 'contain';
         stateRef.current.currentMatteAspect = source.matteAspect || null;
         stateRef.current.currentPunchIn = source.punchIn || 1;
+        video.loop = false;
+        video.onended = () => {
+          const state = stateRef.current;
+          if (state.currentVideo !== video || state.currentMedia !== video) return;
+          if (state.tabVisible === false || state.tvVisible === false) return;
+          if (!window.__resumeStrudelAudioEngine?.enabled) return;
+          cutRef.current?.(state.currentLane || lane || 'idle');
+        };
         try { video.currentTime = source.start ?? 0; } catch {}
         const playPromise = video.play?.();
         if (playPromise?.catch) playPromise.catch(() => {});
@@ -5857,6 +5879,7 @@ function TvHero({ sources = [], children }) {
     const onDrumHit = (event) => {
       if (event.detail?.lane !== 'snare') return;
       if (stateRef.current.tabVisible === false || stateRef.current.tvVisible === false) return;
+      stateRef.current.lastRhythmCutAt = performance.now();
       if (stateRef.current.deviceMode === 'mac') {
         // Mac path: hard bloom flash + spacebar press + clean cut.
         animateMacBloomBurst('clap');
@@ -5869,6 +5892,36 @@ function TvHero({ sources = [], children }) {
     window.addEventListener('resume-drum-hit', onDrumHit);
     return () => window.removeEventListener('resume-drum-hit', onDrumHit);
   }, [animateChannelFlip, animateMacBloomBurst, animateKeyPress]);
+
+  // Intro + breakdown have no clap/snare lane, so without a secondary
+  // cue the short trailer clips loop visibly. Let sparse melody/bass
+  // hits trigger occasional fresh cuts, while staying out of the way
+  // once the snare-driven channel cuts are active.
+  React.useEffect(() => {
+    if (!engineEnabled || !availableSources.length) return undefined;
+    const trySparseCut = (lane) => {
+      const state = stateRef.current;
+      if (state.tabVisible === false || state.tvVisible === false) return;
+      const now = performance.now();
+      if (now - state.lastRhythmCutAt < 1700) return;
+      if (now - state.lastCutAt < 2200) return;
+      if (now - state.lastSparseCutAt < 2600) return;
+      state.lastSparseCutAt = now;
+      cutRef.current?.(lane);
+    };
+    const onMelody = (event) => {
+      if (event.detail?.lane === 'lead') trySparseCut('lead');
+    };
+    const onBass = (event) => {
+      if (event.detail?.lane === 'bass') trySparseCut('bass');
+    };
+    window.addEventListener('resume-melody-note', onMelody);
+    window.addEventListener('resume-bass-hit', onBass);
+    return () => {
+      window.removeEventListener('resume-melody-note', onMelody);
+      window.removeEventListener('resume-bass-hit', onBass);
+    };
+  }, [engineEnabled, availableSources]);
 
 	  // Click the Mac's physical controls to slide the floppy and toggle
 	  // audio + picture. The screen itself is display-only.
@@ -6005,6 +6058,11 @@ function TvHero({ sources = [], children }) {
     if (!engineEnabled || !availableSources.length) return;
     setPhase('hold');
     stateRef.current.recent = [];
+    stateRef.current.recentProjects = [];
+    stateRef.current.laneCursors.clear();
+    stateRef.current.lastCutAt = 0;
+    stateRef.current.lastRhythmCutAt = 0;
+    stateRef.current.lastSparseCutAt = 0;
     if (!stateRef.current.currentMedia) cutRef.current?.('init');
   }, [engineEnabled, availableSources]);
 
