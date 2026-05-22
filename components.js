@@ -2218,20 +2218,21 @@ function HelpPlayer({ src }) {
     async function go() {
       try {
         const sources = Array.isArray(src) ? src : [src];
-        const playableSources = [];
-        // HEAD probe first so a missing file fails fast and the
-        // placeholder shows immediately instead of stalling.
-        for (const candidate of sources) {
-          if (!canPlaySource(candidate)) continue;
-          const head = await fetch(getVideoUrl(candidate), { method: 'HEAD' }).catch(() => null);
-          if (head?.ok) playableSources.push(candidate);
-        }
-        if (playableSources.length === 0) { if (!cancelled) setStatus('missing'); return; }
         const spotlightLoader = window.__loadSpotlightBundle || (() => window.__spotlightBundlePromise);
         const mod = await spotlightLoader();
         if (cancelled) return;
         const errors = [];
-        for (const candidate of playableSources) {
+        let sawPlayableSource = false;
+        for (const candidate of sources) {
+          if (!canPlaySource(candidate)) continue;
+          sawPlayableSource = true;
+          // HEAD probe first so a missing file fails fast and the
+          // placeholder shows immediately instead of stalling.
+          const head = await fetch(getVideoUrl(candidate), { method: 'HEAD' }).catch(() => null);
+          if (!head?.ok) {
+            errors.push(new Error(`HELP source unavailable: ${getVideoUrl(candidate)}`));
+            continue;
+          }
           try {
             const result = await mod.mountSpotlight(hostRef.current, candidate);
             if (cancelled) { result.renderer.dispose(); return; }
@@ -2257,6 +2258,7 @@ function HelpPlayer({ src }) {
             console.warn('[help-player] source failed, trying next HELP source', getVideoUrl(candidate), err);
           }
         }
+        if (!sawPlayableSource) { if (!cancelled) setStatus('missing'); return; }
         throw errors[errors.length - 1] || new Error('No HELP source mounted.');
       } catch (err) {
         console.error('[help-player]', err);

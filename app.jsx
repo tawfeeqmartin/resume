@@ -18,11 +18,9 @@ const helpMeshSource = (path) => ({
 // broken, so there is intentionally no MP4/raw inline fallback here.
 const HELP_DESKTOP_SOURCES = [
   helpMeshSource("media/help_full.webm"),
-  helpMeshSource("media/help.f338.webm"),
 ];
 const HELP_MOBILE_SOURCES = [
   helpMeshSource("media/help_full.webm"),
-  helpMeshSource("media/help.f338.webm"),
 ];
 const HELP_VIDEO_URLS = IS_MOBILE_MEDIA_TARGET
   ? HELP_MOBILE_SOURCES
