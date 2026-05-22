@@ -310,9 +310,11 @@ function makeEquirectSphere() {
 }
 
 async function fetchProjectionBytes(url) {
-  // 1 MiB is plenty for the MSHP/sv3d header — it lives right after the
-  // file header. Smaller range fetches faster on mobile networks.
-  const res = await fetch(url, { headers: { Range: 'bytes=0-1048575' } });
+  // Most MESH metadata lives near the file header, but some encoded
+  // variants put enough WebM tables up front that 1 MiB can miss it.
+  // Pull a still-small 4 MiB range so we fail less often without loading
+  // the full video file.
+  const res = await fetch(url, { headers: { Range: 'bytes=0-4194303' } });
   if (!res.ok) throw new Error(`fetch ${url} → ${res.status}`);
   return res.arrayBuffer();
 }
@@ -339,11 +341,14 @@ function normalizeSource(source) {
     videoUrl: source.videoUrl || source.src || source.url,
     projectionUrl: source.projectionUrl || source.projection || source.videoUrl || source.src || source.url,
     inlineVideoFallback: Boolean(source.inlineVideoFallback),
+    requireMesh: Boolean(source.requireMesh),
   };
 }
 
 async function loadFromUrl(source) {
-  const { videoUrl, projectionUrl, inlineVideoFallback } = normalizeSource(source);
+  const normalized = normalizeSource(source);
+  const { videoUrl, projectionUrl, requireMesh } = normalized;
+  const inlineVideoFallback = Boolean(normalized.inlineVideoFallback && !requireMesh);
   let geometry = makeEquirectSphere();
   let projection = 'equirect';
   const isCoarsePointer = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
@@ -373,7 +378,14 @@ async function loadFromUrl(source) {
       }
     }
   } catch (error) {
+    if (requireMesh) {
+      throw new Error(`MESH projection decode failed for ${projectionUrl}: ${error?.message || error}`);
+    }
     console.warn('[spotlight] projection decode failed, using equirect fallback', error);
+  }
+
+  if (requireMesh && projection !== 'mesh') {
+    throw new Error(`MESH projection missing in ${projectionUrl}`);
   }
 
   const video = document.createElement('video');
@@ -391,7 +403,7 @@ async function loadFromUrl(source) {
   video.setAttribute('webkit-playsinline', '');
   video.muted = true;
   video.preload = 'metadata';
-  video.style.cssText = `position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:${inlineVideoFallback ? '1' : '0.01'};pointer-events:none;`;
+  video.style.cssText = `position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:${inlineVideoFallback ? '1' : '0'};pointer-events:none;`;
 
   return { geometry, projection, video, inlineVideoFallback, dispose: () => { video.removeAttribute('src'); video.load(); video.remove(); } };
 }
@@ -408,7 +420,8 @@ class SpotlightRenderer {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(host.clientWidth, host.clientHeight, false);
-    this.host.style.position ||= 'relative';
+    const hostPosition = getComputedStyle(host).position;
+    if (!hostPosition || hostPosition === 'static') this.host.style.position = 'relative';
     host.appendChild(this.renderer.domElement);
     this.renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none;';
     this.renderer.domElement.tabIndex = 0;
@@ -422,6 +435,7 @@ class SpotlightRenderer {
     this.current = null;
     this.resizeObserver = null;
     this.onStateChange = null;
+    this.disposed = false;
 
     this._onResize = this._onResize.bind(this);
     this._onDown = this._onDown.bind(this);
@@ -568,6 +582,7 @@ class SpotlightRenderer {
   }
 
   _tick() {
+    if (this.disposed) return;
     requestAnimationFrame(this._tick);
     const now = performance.now();
     const dt = (now - this._lastTime) / 1000;
@@ -606,6 +621,12 @@ class SpotlightRenderer {
 
   _onResize() {
     const w = this.host.clientWidth, h = this.host.clientHeight;
+    if (!w || !h) {
+      requestAnimationFrame(() => {
+        if (!this.disposed) this._onResize();
+      });
+      return;
+    }
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h, false);
@@ -667,6 +688,7 @@ class SpotlightRenderer {
   }
 
   dispose() {
+    this.disposed = true;
     window.removeEventListener('resize', this._onResize);
     window.removeEventListener('pointermove', this._onMove);
     window.removeEventListener('pointerup', this._onUp);

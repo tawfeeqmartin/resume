@@ -8,35 +8,22 @@ const withCacheKey = (url, key) => `${url}${url.includes('?') ? '&' : '?'}v=${ke
 const TV_CLIP_CACHE_KEY = '20260521-mando-grogu-no-titles';
 const SITE_MODE_STORAGE_KEY = 'resume.desktop.mode';
 const IS_MOBILE_MEDIA_TARGET = window.matchMedia('(max-width: 900px), (pointer: coarse)').matches;
-// First mobile choice: mesh WebM. Frames are authored to align with the
-// mesh UVs so projection renders correctly. Chrome Android plays VP9
-// fine; iOS Safari's WebM/VP9 support is unreliable, so this source
-// fails canPlayType() on iOS and we fall through to the MP4.
-const HELP_MOBILE_WEBM = {
-  videoUrl: mediaUrl("media/help-720-mesh.webm"),
-  projectionUrl: mediaUrl("media/help-720-mesh.webm"),
-};
-// iOS Safari fallback: the MP4 frames don't align with the mesh UVs so
-// projection looks wrong on it. Show it inline (raw) so the user at
-// least sees the video content while we work out a properly mesh-laid
-// MP4 source.
-const HELP_MOBILE_MP4 = {
-  videoUrl: mediaUrl("media/help-720-mobile.mp4"),
-  projectionUrl: mediaUrl("media/help-720-mesh.webm"),
-  inlineVideoFallback: true,
-};
-// Desktop sources — full mesh-laid-out WebMs, with an MP4 inline
-// fallback at the end so Safari Mac (which can fail VP9) still
-// shows something.
+const helpMeshSource = (path) => ({
+  videoUrl: mediaUrl(path),
+  projectionUrl: mediaUrl(path),
+  requireMesh: true,
+});
+// HELP must either render through the decoded Google Spotlight MESH
+// projection or fail closed. Showing the native encoded layout looks
+// broken, so there is intentionally no MP4/raw inline fallback here.
 const HELP_DESKTOP_SOURCES = [
-  mediaUrl("media/help_full.webm"),
-  mediaUrl("media/help-720-mesh.webm"),
-  mediaUrl("media/help.f338.webm"),
-  HELP_MOBILE_MP4,
+  helpMeshSource("media/help_full.webm"),
+  helpMeshSource("media/help.f338.webm"),
 ];
-// Mobile sources — kept entirely separate from desktop so changes to
-// one path can't bleed into the other.
-const HELP_MOBILE_SOURCES = [HELP_MOBILE_WEBM, HELP_MOBILE_MP4];
+const HELP_MOBILE_SOURCES = [
+  helpMeshSource("media/help_full.webm"),
+  helpMeshSource("media/help.f338.webm"),
+];
 const HELP_VIDEO_URLS = IS_MOBILE_MEDIA_TARGET
   ? HELP_MOBILE_SOURCES
   : HELP_DESKTOP_SOURCES;

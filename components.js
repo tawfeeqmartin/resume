@@ -2160,6 +2160,22 @@ function HelpPlayer({ src }) {
   const userPausedRef = useRef(false);
   const wasPlayingBeforeHiddenRef = useRef(false);
   const keyboardStartPendingRef = useRef(false);
+  const resizeTimerRef = useRef(null);
+
+  const forceRendererResize = React.useCallback(() => {
+    const renderer = rendererRef.current;
+    if (!renderer?.resize) return;
+    renderer.resize();
+    requestAnimationFrame(() => {
+      rendererRef.current?.resize?.();
+      requestAnimationFrame(() => rendererRef.current?.resize?.());
+    });
+    if (resizeTimerRef.current) window.clearTimeout(resizeTimerRef.current);
+    resizeTimerRef.current = window.setTimeout(() => {
+      resizeTimerRef.current = null;
+      rendererRef.current?.resize?.();
+    }, 260);
+  }, []);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -2193,8 +2209,7 @@ function HelpPlayer({ src }) {
       if (clean.endsWith('.mp4')) return probeVideo.canPlayType('video/mp4') !== '';
       if (clean.endsWith('.webm')) {
         // Accept any non-empty canPlayType for WebM (covers Chrome,
-        // Firefox, Safari Mac which returns 'maybe'). The MP4 sits at
-        // the end of the desktop source chain as a last resort.
+        // Firefox, Safari Mac which returns 'maybe').
         return probeVideo.canPlayType('video/webm; codecs="vp9, opus"') !== ''
           || probeVideo.canPlayType('video/webm') !== '';
       }
@@ -2203,39 +2218,46 @@ function HelpPlayer({ src }) {
     async function go() {
       try {
         const sources = Array.isArray(src) ? src : [src];
-        let playableSrc = null;
+        const playableSources = [];
         // HEAD probe first so a missing file fails fast and the
         // placeholder shows immediately instead of stalling.
         for (const candidate of sources) {
           if (!canPlaySource(candidate)) continue;
           const head = await fetch(getVideoUrl(candidate), { method: 'HEAD' }).catch(() => null);
-          if (head?.ok) {
-            playableSrc = candidate;
-            break;
-          }
+          if (head?.ok) playableSources.push(candidate);
         }
-        if (!playableSrc) { if (!cancelled) setStatus('missing'); return; }
+        if (playableSources.length === 0) { if (!cancelled) setStatus('missing'); return; }
         const spotlightLoader = window.__loadSpotlightBundle || (() => window.__spotlightBundlePromise);
         const mod = await spotlightLoader();
         if (cancelled) return;
-        const result = await mod.mountSpotlight(hostRef.current, playableSrc);
-        if (cancelled) { result.renderer.dispose(); return; }
-        rendererRef.current = result.renderer;
-        result.renderer.setStateCallback((state) => {
-          mutedRef.current = state.muted;
-          pausedRef.current = state.paused;
-          setMuted(state.muted);
-          setPaused(state.paused);
-          const active = !state.muted && !state.paused;
-          if (active !== audibleRef.current) {
-            audibleRef.current = active;
-            window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
-              detail: { id: 'help-player', active },
-            }));
+        const errors = [];
+        for (const candidate of playableSources) {
+          try {
+            const result = await mod.mountSpotlight(hostRef.current, candidate);
+            if (cancelled) { result.renderer.dispose(); return; }
+            rendererRef.current = result.renderer;
+            result.renderer.setStateCallback((state) => {
+              mutedRef.current = state.muted;
+              pausedRef.current = state.paused;
+              setMuted(state.muted);
+              setPaused(state.paused);
+              const active = !state.muted && !state.paused;
+              if (active !== audibleRef.current) {
+                audibleRef.current = active;
+                window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
+                  detail: { id: 'help-player', active },
+                }));
+              }
+            });
+            setProjection(result.projection);
+            setStatus('ready');
+            return;
+          } catch (err) {
+            errors.push(err);
+            console.warn('[help-player] source failed, trying next HELP source', getVideoUrl(candidate), err);
           }
-        });
-        setProjection(result.projection);
-        setStatus('ready');
+        }
+        throw errors[errors.length - 1] || new Error('No HELP source mounted.');
       } catch (err) {
         console.error('[help-player]', err);
         if (!cancelled) setStatus('error');
@@ -2249,8 +2271,12 @@ function HelpPlayer({ src }) {
         detail: { id: 'help-player', active: false },
       }));
       if (rendererRef.current) { rendererRef.current.dispose(); rendererRef.current = null; }
+      if (resizeTimerRef.current) {
+        window.clearTimeout(resizeTimerRef.current);
+        resizeTimerRef.current = null;
+      }
     };
-  }, [src, shouldLoad]);
+  }, [src, shouldLoad, forceRendererResize]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -2312,6 +2338,7 @@ function HelpPlayer({ src }) {
           }
           return;
         }
+        forceRendererResize();
         if (
           entry.intersectionRatio >= 0.48 &&
           wasPlayingBeforeHiddenRef.current &&
@@ -2325,7 +2352,30 @@ function HelpPlayer({ src }) {
     );
     observer.observe(slot);
     return () => observer.disconnect();
-  }, [status]);
+  }, [status, forceRendererResize]);
+
+  useEffect(() => {
+    if (status !== 'ready') return undefined;
+    forceRendererResize();
+    const slot = hostRef.current?.closest('.help-player');
+    const onLayoutChange = (event) => {
+      if (event.type === 'resume-help-pin-change') {
+        const player = event.detail?.section?.querySelector?.('.help-player');
+        if (player && player !== slot) return;
+      }
+      forceRendererResize();
+    };
+    window.addEventListener('resize', onLayoutChange);
+    window.addEventListener('orientationchange', onLayoutChange);
+    window.addEventListener('resume-help-pin-change', onLayoutChange);
+    document.addEventListener('fullscreenchange', onLayoutChange);
+    return () => {
+      window.removeEventListener('resize', onLayoutChange);
+      window.removeEventListener('orientationchange', onLayoutChange);
+      window.removeEventListener('resume-help-pin-change', onLayoutChange);
+      document.removeEventListener('fullscreenchange', onLayoutChange);
+    };
+  }, [status, forceRendererResize]);
 
   useEffect(() => {
     if (status !== 'ready') return undefined;
@@ -2368,11 +2418,11 @@ function HelpPlayer({ src }) {
       const slot = hostRef.current?.closest('.help-player');
       if (!slot || event.detail?.slot !== slot) return;
       stopPlayback();
-      rendererRef.current?.resize?.();
+      forceRendererResize();
     };
     window.addEventListener('resume-video-fullscreen-exit', onFullscreenExit);
     return () => window.removeEventListener('resume-video-fullscreen-exit', onFullscreenExit);
-  }, [stopPlayback]);
+  }, [stopPlayback, forceRendererResize]);
 
   const togglePlayback = () => {
     if (!rendererRef.current) return;
@@ -2455,7 +2505,7 @@ function HelpPlayer({ src }) {
     if (slot.classList.contains('is-pseudo-fullscreen')) {
       exitPseudoFullscreen(slot);
       notifyVideoFullscreenExit(slot);
-      rendererRef.current?.resize?.();
+      forceRendererResize();
       return;
     }
     if (document.fullscreenElement) {
@@ -2464,16 +2514,16 @@ function HelpPlayer({ src }) {
     }
     if (isMobileFullscreenTarget()) {
       if (rendererRef.current?.enterNativeVideoFullscreen?.()) return;
-      enterPseudoFullscreen(slot, () => rendererRef.current?.resize?.());
+      enterPseudoFullscreen(slot, forceRendererResize);
       return;
     }
     if (slot.requestFullscreen) {
       slot.requestFullscreen().catch(() => {
-        enterPseudoFullscreen(slot, () => rendererRef.current?.resize?.());
+        enterPseudoFullscreen(slot, forceRendererResize);
       });
       return;
     }
-    enterPseudoFullscreen(slot, () => rendererRef.current?.resize?.());
+    enterPseudoFullscreen(slot, forceRendererResize);
   };
 
   return (
@@ -5997,6 +6047,7 @@ function HelpFeature({ src }) {
     const section = document.getElementById('help');
     if (!section) return undefined;
     let frame = 0;
+    let pinned = false;
 
     const update = () => {
       frame = 0;
@@ -6004,6 +6055,12 @@ function HelpFeature({ src }) {
       const viewportH = window.innerHeight || document.documentElement.clientHeight || 0;
       const shouldPin = rect.top <= 1 && rect.bottom > viewportH + 1;
       section.classList.toggle('is-help-pinned', shouldPin);
+      if (shouldPin !== pinned) {
+        pinned = shouldPin;
+        window.dispatchEvent(new CustomEvent('resume-help-pin-change', {
+          detail: { pinned, section },
+        }));
+      }
     };
 
     const queueUpdate = () => {
@@ -6017,6 +6074,11 @@ function HelpFeature({ src }) {
     return () => {
       if (frame) cancelAnimationFrame(frame);
       section.classList.remove('is-help-pinned');
+      if (pinned) {
+        window.dispatchEvent(new CustomEvent('resume-help-pin-change', {
+          detail: { pinned: false, section },
+        }));
+      }
       window.removeEventListener('scroll', queueUpdate);
       window.removeEventListener('resize', queueUpdate);
     };

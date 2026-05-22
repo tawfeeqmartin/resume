@@ -23,6 +23,7 @@ rsync -a \
   --exclude 'review' \
   --exclude 'archive' \
   --exclude 'models' \
+  --exclude 'fonts' \
   --exclude '*.md' \
   --exclude 'media' \
   --exclude '.DS_Store' \
