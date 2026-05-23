@@ -1092,6 +1092,10 @@ function getResumeStrudelAudioEngine() {
   // `"<0.45 0.25 0.5 0.35>"` each value is scaled in place.
   const applyComposeLaneMix = (source) => {
     const anySolo = composeLanes.some((l) => composeMix.solos[l]);
+    const neutral = !anySolo && composeLanes.every((lane) => (
+      !composeMix.mutes[lane] && Math.abs((composeMix.levels[lane] ?? 1) - 1) < 0.0001
+    ));
+    if (neutral) return source;
     let out = source;
     for (const lane of composeLanes) {
       const trigger = COMPOSE_LANE_TRIGGERS[lane];
@@ -3906,11 +3910,16 @@ function StrudelReplFeature() {
     const onMidi = (event) => {
       const detail = event.detail || {};
       if (detail.source === 'webmidi') return;
+      // If the evaluated Strudel source matches the editor, pattern.draw
+      // has exact source locations. Do not also run the approximate MIDI
+      // fallback, because repeated notes across sections can flash the
+      // wrong block.
+      if (window.__resumeActiveSource === code) return;
       flashMidiTokenFallback(detail);
     };
     window.addEventListener('resume-midi-event', onMidi);
     return () => window.removeEventListener('resume-midi-event', onMidi);
-  }, [flashMidiTokenFallback]);
+  }, [code, flashMidiTokenFallback]);
 
   const handlePlay = React.useCallback(async () => {
     setErrorMsg('');
