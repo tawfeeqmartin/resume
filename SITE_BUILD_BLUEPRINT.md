@@ -353,6 +353,10 @@ Current implementation:
 - `TvHero` receives `vocalSamples` separately from `sources`. The Mac/TV visual pool remains silent.
 - Vocal playback uses Web Audio buffer sources so a phrase can start/stop at exact offsets without seeking a `<video>` element.
 - Vocal cues emit the normalized MIDI lane `vocal` on channel 16 so future hardware, visualizers, and external MIDI routing can follow the sample events.
+- The REPL default source includes inert Strudel-style `vocalCall`,
+  `vocalAnswer`, and `vocalChops` patterns. They do not duplicate audio;
+  they document the current WebAudio vocal-sampler composition and give
+  real vocal MIDI events words to highlight in the editor.
 - Current breakdown window follows the active Strudel arrangement: 40 cycles total, breakdown starts at cycle 32 and ends at cycle 40.
 - Mac screen bass response uses the `bass` lane event directly: each bass hit advances a persistent CRT roll phase, draws a short black sync band, and applies a brief, strong sideways tracking shake from the same scheduled hit so the motion feels locked to the bassline.
 

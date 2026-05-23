@@ -173,6 +173,17 @@ Verification performed:
   - lead: channel 9 / note 76
 - Live stamps lit from real Strudel lane events after replacing inline anonymous trigger callbacks with the global lane trigger registry.
 
+Vocal REPL representation:
+
+- Vocal audio remains the current WebAudio stem/chop system so the
+  existing call/answer/breakdown arrangement is preserved.
+- The default REPL source includes inert Strudel-style `vocalCall`,
+  `vocalAnswer`, and `vocalChops` patterns before the final `arrange()`.
+  They are documentation/score lanes, not duplicate audio lanes.
+- Real vocal MIDI events on channel 16 flash matching words from those
+  score patterns, using `cue`, `region`, `sampleKey`, and `mode` from
+  the vocal event payload.
+
 Future scroll-composition idea:
 
 - At the top interactive demo section, play the full composition once sound is armed.

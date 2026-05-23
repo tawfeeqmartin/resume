@@ -89,6 +89,19 @@ const hatVerse = s("hh hh hh hh")
   .bank("RolandTR808").fast(2).lpf(4000).gain(0.3)
   .onTrigger(T.drumHat, false);
 
+// Vocal score for the site sampler bridge.
+// The cleaned voice stems are triggered by page code from the same
+// Strudel clock; these inert patterns document the current call /
+// answer / chop composition and give the REPL real words to light up.
+const vocalCall = s("life broader stand for crazy ones")
+  .gain(0);
+
+const vocalAnswer = s("build your own things this is the way change things")
+  .gain(0);
+
+const vocalChops = s("made up by people no smarter than you change it")
+  .gain(0);
+
 const intro      = stack(padChorus, leadIntro);
 const chorus     = stack(padChorus, leadChorus, subBass, kick, clapChorus, hatChorus);
 const verse      = stack(padChorus, leadVerse, subBass, clapVerse, hatVerse);
@@ -104,7 +117,7 @@ arrange(
   [8,  breakdown]
 )`;
 
-const POETRY_IN_PROOF_STORAGE_VERSION = 'v3-intro-lead';
+const POETRY_IN_PROOF_STORAGE_VERSION = 'v4-vocal-score';
 const POETRY_IN_PROOF_SOURCE_STORAGE_KEY = `resume.poetryInProofSource.${POETRY_IN_PROOF_STORAGE_VERSION}`;
 const POETRY_IN_PROOF_DRAFT_STORAGE_KEY = `resume.poetryInProofDraft.${POETRY_IN_PROOF_STORAGE_VERSION}`;
 const POETRY_IN_PROOF_LAST_GOOD_STORAGE_KEY = `resume.poetryInProofLastGood.${POETRY_IN_PROOF_STORAGE_VERSION}`;
@@ -3263,6 +3276,7 @@ const REPL_MIDI_LANES = [
   { lane: 'kick',      short: 'kick',    group: 'drums'   },
   { lane: 'snare',     short: 'snare',   group: 'drums'   },
   { lane: 'hat',       short: 'hat',     group: 'drums'   },
+  { lane: 'vocal',     short: 'vox',     group: 'vocal'   },
 ];
 
 function MidiBusMonitor({ compact = false } = {}) {
@@ -3822,9 +3836,31 @@ function StrudelReplFeature() {
 
   const getMidiDetailTokens = React.useCallback((detail = {}) => {
     const raw = detail.raw || {};
-    const source = raw.note ?? raw.n ?? raw.midinote ?? raw.s ?? raw.value ?? '';
-    const values = Array.isArray(source) ? source : [source];
-    return values.map(normalizeReplToken).filter(Boolean);
+    const sources = [
+      raw.note,
+      raw.n,
+      raw.midinote,
+      raw.s,
+      raw.value,
+      raw.region,
+      raw.cue,
+      raw.sampleKey,
+      raw.mode,
+    ].filter((value) => value != null && value !== '');
+    const values = sources.flatMap((source) => (
+      Array.isArray(source) ? source : [source]
+    ));
+    const tokens = new Set();
+    for (const value of values) {
+      const normalized = normalizeReplToken(value);
+      if (normalized) tokens.add(normalized);
+      String(value)
+        .split(/[^A-Za-z0-9#./-]+/)
+        .map(normalizeReplToken)
+        .filter(Boolean)
+        .forEach((token) => tokens.add(token));
+    }
+    return [...tokens];
   }, [normalizeReplToken]);
 
   const flashMidiTokenFallback = React.useCallback((detail = {}) => {
@@ -4053,6 +4089,8 @@ function StrudelReplFeature() {
       const prevSemi = src.lastIndexOf(';', offset);
       const nextSemi = src.indexOf(';', offset);
       const block = src.slice(prevSemi === -1 ? 0 : prevSemi + 1, nextSemi === -1 ? src.length : nextSemi + 1);
+      const constName = block.match(/\bconst\s+([A-Za-z0-9_]+)/)?.[1] || '';
+      if (/^vocal/i.test(constName)) return 'vocal';
       const trigger = block.match(/\.onTrigger\(\s*T\.([A-Za-z0-9_]+)\s*,\s*false\s*\)/)?.[1];
       return triggerToLane[trigger] || '';
     };
@@ -4061,6 +4099,8 @@ function StrudelReplFeature() {
       const nextSemi = src.indexOf(';', offset);
       const block = src.slice(prevSemi === -1 ? 0 : prevSemi + 1, nextSemi === -1 ? src.length : nextSemi + 1);
       const constName = block.match(/\bconst\s+([A-Za-z0-9_]+)/)?.[1] || '';
+      if (/vocalCall/i.test(constName)) return ['preChorus'];
+      if (/vocal(Answer|Chops)/i.test(constName)) return ['breakdown'];
       if (/preChorus/i.test(constName)) return ['preChorus'];
       if (/Chorus/.test(constName)) return ['intro', 'chorus'];
       if (/Verse/.test(constName)) return ['verse'];
@@ -4878,6 +4918,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       raw: {
         sampleKey: sample?.sampleKey || '',
         cue: sample?.cue || '',
+        region: detail.region || '',
         mode: detail.mode || 'phrase',
       },
     });
@@ -4948,6 +4989,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       duration: duration * 1000,
       velocity: level,
       mode,
+      region: region.label || '',
     });
     window.dispatchEvent(new CustomEvent('resume-vocal-sample-cue', {
       detail: {
