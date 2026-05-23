@@ -44,6 +44,10 @@ Any custom workflow, media pipeline, toolchain install, browser behavior, reusab
 - Any production upload/cache step required after local generation.
 - Any failure mode already encountered and how to avoid repeating it.
 
+Open-source library references are cached with `opensrc` outside the repo at
+`~/Dev/.opensrc`. See `OPEN_SOURCE_REFERENCES.md` before browsing or
+re-fetching source for Strudel, Three.js, js-dos, or similar dependencies.
+
 ## Visual System
 
 Design direction:

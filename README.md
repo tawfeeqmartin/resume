@@ -30,3 +30,10 @@ The header audio and interaction design uses vendored Strudel plus a normalized 
 ## Build Blueprint
 
 The reusable site build system is documented in `SITE_BUILD_BLUEPRINT.md`. That document covers the interactive header, video players, HELP MESH playback, Strudel/MIDI audio integration, scroll-composition direction, mobile rules, hosting/media strategy, and verification checklist.
+
+## Open Source References
+
+Third-party source inspection uses `opensrc` with a shared cache at
+`~/Dev/.opensrc`, outside this repo. See `OPEN_SOURCE_REFERENCES.md` for
+the exact setup, Strudel source paths, and the prompt snippet to give future
+agents before they inspect library internals.
