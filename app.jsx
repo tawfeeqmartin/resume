@@ -833,7 +833,6 @@ function MobileReferences({ items }) {
       <ul className="mobile-references">
         {items.map((item) => (
           <li key={item.name} className="mobile-reference">
-            <img src={item.avatar} alt="" loading="lazy" decoding="async" />
             <div>
               <div className="mobile-reference__name">{item.name}</div>
               <div className="mobile-reference__title mono">{item.title}</div>

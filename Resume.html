@@ -2433,8 +2433,7 @@ html.has-doom-overlay body {
 .page--read-only-resume .mobile-reference {
   grid-template-columns: minmax(0, 1fr);
 }
-.page--read-only-resume .mobile-award__stamp,
-.page--read-only-resume .mobile-reference img {
+.page--read-only-resume .mobile-award__stamp {
   display: none;
 }
 .page--read-only-resume .mobile-job__credits ul {
@@ -2679,15 +2678,8 @@ html.has-doom-overlay body {
 }
 .mobile-reference {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  gap: 0.85rem;
-}
-.mobile-reference img {
-  width: 44px;
-  height: 44px;
-  object-fit: cover;
-  border-radius: 999px;
-  background: var(--rule);
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
 }
 .mobile-reference__name {
   color: var(--ink);
@@ -3490,6 +3482,6 @@ window.__loadThreeBundle = () => {
   return window.__threePromise;
 };
 </script>
-<script type="module" src="dist/app.js?v=20260523-award-stamp-lanes"></script>
+<script type="module" src="dist/app.js?v=20260523-mobile-references-text"></script>
 </body>
 </html>
