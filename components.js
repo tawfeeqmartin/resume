@@ -6428,7 +6428,9 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       if (!wrap || !canvas) return;
 
       const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-      renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
+      // Keep the Mac shell and terminal crisp. The expensive part was the
+      // dynamic screen texture mipmap rebuild, not this on-demand render DPR.
+      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
       // Use the canvas's CSS dimensions (which include the negative-top
       // overflow). Renderer setSize is called inside the tick loop too,
       // so the seed value here doesn't matter much.
