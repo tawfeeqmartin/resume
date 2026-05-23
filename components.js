@@ -5195,12 +5195,14 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       const shakeCurve = Math.pow(1 - hitT, 2.2);
       const seed = state.macBloom?.shakeSeed || 1;
       const hitStrength = Math.max(0.82, Math.min(2.35, state.macBloom?.hitStrength || s));
-      const horizontalShake = 0.034 + hitStrength * 0.036;
+      const horizontalShake = (0.034 + hitStrength * 0.036) * 1.1;
       const verticalShake = 0.0016 + hitStrength * 0.001;
+      const slipSign = Math.sin(seed * 9.173) >= 0 ? 1 : -1;
+      const trackingSlip = slipSign * w * (0.012 + hitStrength * 0.018) * s * Math.pow(1 - hitT, 3.2);
       const shakeX = Math.round((
         Math.sin(seed * 0.71 + elapsed * 0.095) * 0.72 +
         Math.sin(seed * 1.37 + elapsed * 0.173) * 0.28
-      ) * w * horizontalShake * s * shakeCurve);
+      ) * w * horizontalShake * s * shakeCurve + trackingSlip);
       const shakeY = Math.round(Math.sin(seed * 0.53 + elapsed * 0.12) * h * verticalShake * s * shakeCurve);
       if (shakeX || shakeY) {
         if (!state.rollBuffer) state.rollBuffer = document.createElement('canvas');
@@ -5216,6 +5218,18 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         ctx2d.fillStyle = '#050505';
         ctx2d.fillRect(0, 0, w, h);
         ctx2d.drawImage(state.rollBuffer, shakeX, shakeY, w, h);
+        ctx2d.save();
+        ctx2d.beginPath();
+        ctx2d.rect(0, 0, w, h);
+        ctx2d.clip();
+        for (let i = 0; i < 3; i++) {
+          const bandSeed = seed * (i + 3.7);
+          const bandY = Math.round((((Math.sin(bandSeed) * 0.5 + 0.5) * h) + elapsed * (0.24 + i * 0.05)) % h);
+          const tearH = Math.max(6, Math.round(h * (0.018 + i * 0.006) * s));
+          const tearX = Math.round(slipSign * (w * (0.018 + i * 0.014) * s * Math.pow(1 - hitT, 2.8)));
+          if (tearX) ctx2d.drawImage(state.rollBuffer, 0, bandY, w, tearH, tearX, bandY, w, tearH);
+        }
+        ctx2d.restore();
         ctx2d.restore();
       }
       if (yBottom > 0 && yTop < h) {
