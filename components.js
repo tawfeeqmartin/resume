@@ -3733,12 +3733,15 @@ function StrudelReplFeature() {
   const tokenCursorRef = React.useRef({});
   const highlightGenerationRef = React.useRef(0);
   const activeHighlightSourceRef = React.useRef('');
+  const codeRef = React.useRef('');
+  const highlightErrorLoggedRef = React.useRef(false);
   const flashTimersRef = React.useRef(new Set());
   const evalFlashTimerRef = React.useRef(null);
   const [status, setStatus] = React.useState('idle'); // idle | loading | playing | error
   const [editStatus, setEditStatus] = React.useState('ready');
   const [errorMsg, setErrorMsg] = React.useState('');
   const [code, setCode] = React.useState(() => getStoredPoetryInProofDraftSource());
+  codeRef.current = code;
   // Source string the engine actually evaluated. Drives the highlight
   // overlay: hap locations refer to positions in this string, not the
   // user-editable textarea.
@@ -3938,6 +3941,7 @@ function StrudelReplFeature() {
   const resetReplHighlighter = React.useCallback((source = '') => {
     highlightGenerationRef.current += 1;
     activeHighlightSourceRef.current = source || '';
+    highlightErrorLoggedRef.current = false;
     tokenCursorRef.current = {};
     clearReplTokenFlashes();
   }, [clearReplTokenFlashes]);
@@ -4183,37 +4187,47 @@ function StrudelReplFeature() {
   // active location on the hap, not only the innermost mini token.
   React.useEffect(() => {
     let cancelled = false;
-    const setup = () => {
-      const pattern = window.__resumeActivePattern;
+    const setup = (readyPattern = null) => {
+      const pattern = readyPattern || window.__resumeActivePattern;
       if (!pattern || typeof pattern.draw !== 'function') return;
       const generation = highlightGenerationRef.current;
-      const locationSource = window.__resumeActiveSource || activeHighlightSourceRef.current || code;
-      const visibleSource = code;
+      const locationSource = activeHighlightSourceRef.current
+        || window.__resumeActiveSource
+        || codeRef.current;
       // Replace any previous draw registration with same id.
       try {
         pattern.draw((haps, time) => {
-          if (cancelled) return;
-          if (generation !== highlightGenerationRef.current) return;
-          const overlay = overlayRef.current;
-          if (!overlay) return;
-          const flashed = new Set();
-          for (const hap of haps) {
-            // Active during this frame? whole.{begin,end} are Fractions of cycles.
-            const beg = hap.whole?.begin?.valueOf?.();
-            const end = hap.whole?.end?.valueOf?.();
-            if (beg == null || end == null) continue;
-            if (time < beg || time >= end) continue;
-            const locs = hap.context?.locations || [];
-            const dur = Math.max(80, Math.min(220, (end - beg) * 1000 * 0.8));
-            for (const loc of locs) {
-              if (!loc || typeof loc.start !== 'number') continue;
-              const key = `${loc.start}:${loc.end ?? ''}`;
-              if (flashed.has(key)) continue;
-              flashed.add(key);
-              const mappedLoc = mapLocationToCurrentCode(loc, locationSource, visibleSource);
-              if (!mappedLoc) continue;
-              const span = findTokenSpanForLocation(overlay, mappedLoc);
-              flashReplTokenSpan(span, dur, generation);
+          try {
+            if (cancelled) return;
+            if (generation !== highlightGenerationRef.current) return;
+            const overlay = overlayRef.current;
+            if (!overlay) return;
+            const visibleSource = codeRef.current;
+            const flashed = new Set();
+            const activeHaps = Array.isArray(haps) ? haps : [];
+            for (const hap of activeHaps) {
+              // Active during this frame? whole.{begin,end} are Fractions of cycles.
+              const beg = hap.whole?.begin?.valueOf?.();
+              const end = hap.whole?.end?.valueOf?.();
+              if (!Number.isFinite(beg) || !Number.isFinite(end)) continue;
+              if (time < beg || time >= end) continue;
+              const locs = Array.isArray(hap.context?.locations) ? hap.context.locations : [];
+              const dur = Math.max(80, Math.min(220, (end - beg) * 1000 * 0.8));
+              for (const loc of locs) {
+                if (!loc || typeof loc.start !== 'number') continue;
+                const key = `${loc.start}:${loc.end ?? ''}`;
+                if (flashed.has(key)) continue;
+                flashed.add(key);
+                const mappedLoc = mapLocationToCurrentCode(loc, locationSource, visibleSource);
+                if (!mappedLoc) continue;
+                const span = findTokenSpanForLocation(overlay, mappedLoc);
+                flashReplTokenSpan(span, dur, generation);
+              }
+            }
+          } catch (err) {
+            if (!highlightErrorLoggedRef.current) {
+              highlightErrorLoggedRef.current = true;
+              console.warn('REPL token highlight failed; audio playback preserved.', err);
             }
           }
         }, { id: 'strudel-repl-flash', lookahead: 0.02, lookbehind: 0 });
@@ -4221,14 +4235,14 @@ function StrudelReplFeature() {
         // Pattern may have been detached between events — silent.
       }
     };
-    const onReady = () => setup();
+    const onReady = (event) => setup(event.detail?.pattern);
     window.addEventListener('resume-pattern-ready', onReady);
     if (window.__resumeActivePattern) setup();
     return () => {
       cancelled = true;
       window.removeEventListener('resume-pattern-ready', onReady);
     };
-  }, [code, findTokenSpanForLocation, flashReplTokenSpan, mapLocationToCurrentCode]);
+  }, [findTokenSpanForLocation, flashReplTokenSpan, mapLocationToCurrentCode]);
 
   React.useEffect(() => {
     const onMidi = (event) => {
