@@ -1505,9 +1505,34 @@ function getResumeStrudelAudioEngine() {
   // don't keep burning CPU in the background. Resume + fresh pattern
   // evaluation on return so accumulated scheduling state gets reset.
   let wasPlayingBeforeHidden = false;
+  let pendingGestureResume = false;
+  const audioContextIsSuspended = () => {
+    try {
+      const context = strudel?.getAudioContext?.();
+      return context?.state === 'suspended';
+    } catch {
+      return false;
+    }
+  };
+  const resumeAfterUserGesture = async () => {
+    if ((!pendingGestureResume && !audioContextIsSuspended()) || !enabled || videoDucked) return;
+    pendingGestureResume = false;
+    try {
+      const module = await ensureStrudel();
+      if (module.initAudio) await module.initAudio();
+      const context = module.getAudioContext?.();
+      if (context?.state === 'suspended') await context.resume();
+      await playCurrent({ resetTransport: false });
+      window.dispatchEvent(new CustomEvent('resume-audio-change'));
+    } catch (error) {
+      pendingGestureResume = true;
+      console.warn('Strudel gesture resume failed', error);
+    }
+  };
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       wasPlayingBeforeHidden = enabled && !videoDucked;
+      pendingGestureResume = wasPlayingBeforeHidden;
       if (wasPlayingBeforeHidden) {
         [...liveChordVoices.keys()].forEach((key) => releaseLiveChord(key));
         hushCurrent(true);
@@ -1515,10 +1540,15 @@ function getResumeStrudelAudioEngine() {
     } else if (wasPlayingBeforeHidden) {
       wasPlayingBeforeHidden = false;
       if (enabled && !videoDucked) {
-        playCurrent({ resetTransport: true });
+        playCurrent({ resetTransport: true }).then(() => {
+          if (!audioContextIsSuspended()) pendingGestureResume = false;
+          window.dispatchEvent(new CustomEvent('resume-audio-change'));
+        });
       }
     }
   });
+  window.addEventListener('pointerdown', resumeAfterUserGesture, true);
+  window.addEventListener('keydown', resumeAfterUserGesture, true);
 
   // (Removed the periodic 90s soft reset — verified via CDP harness that
   // it was leaking ~8MB/min on mobile while desktop stayed flat. The
@@ -3776,6 +3806,7 @@ function StrudelReplFeature() {
   const activeHighlightSourceRef = React.useRef('');
   const codeRef = React.useRef('');
   const highlightErrorLoggedRef = React.useRef(false);
+  const lastReplDrawFlashAtRef = React.useRef(0);
   const flashTimersRef = React.useRef(new Set());
   const evalFlashTimerRef = React.useRef(null);
   const [status, setStatus] = React.useState('idle'); // idle | loading | playing | error
@@ -3985,6 +4016,7 @@ function StrudelReplFeature() {
     highlightGenerationRef.current += 1;
     activeHighlightSourceRef.current = source || '';
     highlightErrorLoggedRef.current = false;
+    lastReplDrawFlashAtRef.current = 0;
     tokenCursorRef.current = {};
     clearReplTokenFlashes();
   }, [clearReplTokenFlashes]);
@@ -4278,7 +4310,9 @@ function StrudelReplFeature() {
                 const mappedLoc = mapLocationToCurrentCode(loc, locationSource, visibleSource);
                 if (!mappedLoc) continue;
                 const span = findTokenSpanForLocation(overlay, mappedLoc);
-                flashReplTokenSpan(span, dur, generation);
+                if (flashReplTokenSpan(span, dur, generation)) {
+                  lastReplDrawFlashAtRef.current = performance.now();
+                }
               }
             }
           } catch (err) {
@@ -4307,10 +4341,10 @@ function StrudelReplFeature() {
       if (detail.source === 'webmidi') return;
       if (!activeHighlightSourceRef.current) return;
       // Normal Strudel audio should be highlighted from hap source
-      // locations above. The fallback is only for custom site-only lanes
-      // that are not actually sounded by the evaluated Strudel pattern,
-      // currently the WebAudio vocal sampler bridge.
-      if (detail.lane !== 'vocal' && detail.group !== 'vocal') return;
+      // locations above. If those source locations stop mapping after a
+      // live edit, fall back to MIDI lane events so the REPL never goes dark.
+      const drawIsLive = performance.now() - lastReplDrawFlashAtRef.current < 360;
+      if (drawIsLive && detail.lane !== 'vocal' && detail.group !== 'vocal') return;
       flashMidiTokenFallback(detail);
     };
     window.addEventListener('resume-midi-event', onMidi);
