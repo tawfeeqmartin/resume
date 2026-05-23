@@ -3017,32 +3017,35 @@ function VideoSlot({ src, label, fallbackPath }) {
 // ────────────────────────────────────────────────────────────────────
 
 const HELP_AWARD_STAMPS = [
-  { org: "Cannes Lions", award: "Gold · Innovative Use of Tech", diagram: "circles", lane: "kick", midiChannel: 1, midiNote: 36 },
-  { org: "Cannes Lions", award: "Gold · Virtual Reality", diagram: "sphere", lane: "snare", midiChannel: 2, midiNote: 38 },
-  { org: "SXSW", award: "Gold · AR/VR Breakthrough", diagram: "axis", lane: "hat", midiChannel: 3, midiNote: 42 },
-  { org: "Webby", award: "Technical Achievement", diagram: "triangle", lane: "perc", midiChannel: 4, midiNote: 39 },
+  { org: "Cannes Lions", award: "Gold · Innovative Use of Tech", diagram: "circles", lane: "chord", midiChannel: 6, midiNote: 48 },
+  { org: "Cannes Lions", award: "Gold · Virtual Reality", diagram: "sphere", lane: "lead", midiChannel: 9, midiNote: 76 },
+  { org: "SXSW", award: "Gold · AR/VR Breakthrough", diagram: "axis", lane: "bass", midiChannel: 5, midiNote: 36 },
+  { org: "Webby", award: "Technical Achievement", diagram: "triangle", lane: "snare", midiChannel: 2, midiNote: 38 },
 ];
 
 const BLACKBIRD_AWARD_STAMPS = [
   { org: "HPA", award: "Judges Award · Creativity + Innovation", diagram: "axis", lane: "kick", midiChannel: 1, midiNote: 36 },
-  { org: "Cannes Lions", award: "Gold · Innovative Use of Tech", diagram: "triangle", lane: "snare", midiChannel: 2, midiNote: 38 },
-  { org: "CLIO Awards", award: "2016 · Production Innovation", diagram: "circles", lane: "hat", midiChannel: 3, midiNote: 42 },
+  { org: "Cannes Lions", award: "Gold · Innovative Use of Tech", diagram: "triangle", lane: "bass", midiChannel: 5, midiNote: 36 },
+  { org: "CLIO Awards", award: "2016 · Production Innovation", diagram: "circles", lane: "lead", midiChannel: 9, midiNote: 76 },
 ];
 
-const DRUM_STAMP_LANES = ["kick", "snare", "hat", "perc"];
-const DRUM_STAMP_MIDI = {
+const PROOF_STAMP_LANES = ["kick", "snare", "hat", "perc", "chord", "bass", "lead"];
+const PROOF_STAMP_MIDI = {
   "1:36": "kick",
   "2:38": "snare",
   "3:42": "hat",
   "4:39": "perc",
+  "5:36": "bass",
+  "6:48": "chord",
+  "9:76": "lead",
 };
 
-function useDrumLanePulses() {
+function useProofStampPulses() {
   const [pulses, setPulses] = useState({});
   const timersRef = useRef({});
   useEffect(() => {
     const emitPulse = (lane, detail = {}) => {
-      if (!DRUM_STAMP_LANES.includes(lane)) return;
+      if (!PROOF_STAMP_LANES.includes(lane)) return;
       const duration = Math.max(220, detail.duration || 640);
       setPulses((current) => {
         const seq = (current[lane]?.seq || 0) + 1;
@@ -3071,8 +3074,8 @@ function useDrumLanePulses() {
     };
     const onMidiEvent = (event) => {
       const detail = event.detail || {};
-      if (detail.type !== "noteon" || detail.group !== "drums") return;
-      const lane = detail.lane || DRUM_STAMP_MIDI[`${detail.channel}:${detail.note}`];
+      if (detail.type !== "noteon") return;
+      const lane = detail.lane || PROOF_STAMP_MIDI[`${detail.channel}:${detail.note}`];
       emitPulse(lane, {
         id: detail.id,
         strength: detail.velocity,
@@ -3083,7 +3086,7 @@ function useDrumLanePulses() {
     };
     window.addEventListener("resume-midi-event", onMidiEvent);
     window.__resumeProofStampPulse = (lane = "kick") => {
-      const midiKey = Object.keys(DRUM_STAMP_MIDI).find((key) => DRUM_STAMP_MIDI[key] === lane) || "1:36";
+      const midiKey = Object.keys(PROOF_STAMP_MIDI).find((key) => PROOF_STAMP_MIDI[key] === lane) || "1:36";
       const [channel, note] = midiKey.split(":").map(Number);
       window.dispatchEvent(new CustomEvent("resume-midi-event", {
         detail: {
@@ -3175,7 +3178,7 @@ function ProofStamp({ item, pulse }) {
 }
 
 function ProofStampRow({ items, compact, className = "" }) {
-  const pulses = useDrumLanePulses();
+  const pulses = useProofStampPulses();
   return (
     <ul className={`proof-stamps ${compact ? "proof-stamps--compact" : ""} ${className}`}>
       {items.map((item, index) => (

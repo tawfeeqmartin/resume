@@ -149,8 +149,12 @@ Current channel map:
 
 Award/proof stamp behavior:
 
-- HELP and Blackbird award stamps listen to drum lane MIDI events.
-- Each award stamp maps to a specific drum lane rather than a generic music pulse.
+- HELP and Blackbird award stamps listen to normalized `resume-midi-event`
+  lane events, not just old drum-only events.
+- Each award stamp maps to a specific current-song lane rather than a
+  generic music pulse.
+- Current HELP row mapping: `chord`, `lead`, `bass`, `snare`.
+- Current Blackbird row mapping: `kick`, `bass`, `lead`.
 - Stamp color fills are normally transparent and snap on when their lane is active.
 - The fills use direct SVG `fill` switching, not `opacity` or `fill-opacity`, because Chrome did not reliably apply those properties on the SVG stamp paths during testing.
 - The line drawings remain visible; only the interior Byrne/Bauhaus color fills pulse between no fill and full fill.
@@ -158,11 +162,15 @@ Award/proof stamp behavior:
 Verification performed:
 
 - Manual `window.__resumeProofStampPulse('kick')` produced visible color fills.
-- Live Strudel playback produced normalized drum events on separate channels:
+- Manual calls also support current mapped lanes such as `chord`, `bass`, and `lead`.
+- Live Strudel playback produced normalized lane events on separate channels:
   - kick: channel 1 / note 36
   - snare: channel 2 / note 38
   - hat: channel 3 / note 42
   - perc: channel 4 / note 39
+  - bass: channel 5 / note 36
+  - chord: channel 6 / note 48
+  - lead: channel 9 / note 76
 - Live stamps lit from real Strudel lane events after replacing inline anonymous trigger callbacks with the global lane trigger registry.
 
 Future scroll-composition idea:

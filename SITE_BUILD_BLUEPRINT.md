@@ -188,20 +188,23 @@ Current subscribers:
 
 - Header drawings react to melody, harmony, and drum lanes.
 - Discovery word/line timing is tied to music timing.
-- Award proof stamps listen to drum lane events.
+- Award proof stamps listen to normalized MIDI lane events.
 
 Award stamp behavior:
 
 - HELP and Blackbird award stamps use small Elements-of-Euclid-inspired diagrams.
 - The line art is always visible.
 - Interior fills are transparent at rest.
-- On the mapped drum hit, the fill snaps to yellow/blue/red.
+- On the mapped lane hit, the fill snaps to yellow/blue/red.
+- Keep stamp mappings aligned to the current default song. Current mappings:
+  HELP = `chord`, `lead`, `bass`, `snare`; Blackbird = `kick`, `bass`, `lead`.
 - Use direct SVG `fill` switching for stamp fills. Do not rely on `opacity` or `fill-opacity`; Chrome did not apply those reliably on these SVG paths during testing.
 
 Manual test hook:
 
 ```js
 window.__resumeProofStampPulse("kick")
+window.__resumeProofStampPulse("lead")
 ```
 
 ## Scroll Composition
