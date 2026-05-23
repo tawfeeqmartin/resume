@@ -169,6 +169,7 @@ function getResumeStrudelAudioEngine() {
   let currentAutoplayChordKey = '';
   let chordReturnTimer = null;
   let playGeneration = 0;
+  let arrangementStartedAtMs = 0;
   let bassTriggerId = 0;
   let melodyTriggerId = 0;
   let drumTriggerId = 0;
@@ -229,6 +230,15 @@ function getResumeStrudelAudioEngine() {
     solos:  Object.fromEntries(composeLanes.map((l) => [l, false])),
   };
   const VISUAL_SYNC_AHEAD_MS = 36;
+  const ARRANGEMENT_SECTIONS = [
+    { name: 'intro', cycles: 4 },
+    { name: 'chorus', cycles: 8 },
+    { name: 'verse', cycles: 8 },
+    { name: 'preChorus', cycles: 4 },
+    { name: 'chorus', cycles: 8 },
+    { name: 'breakdown', cycles: 8 },
+  ];
+  const ARRANGEMENT_TOTAL_CYCLES = ARRANGEMENT_SECTIONS.reduce((sum, section) => sum + section.cycles, 0);
   const clearScrollTransitionTimers = () => {
     scrollTransitionTimers.forEach((timer) => window.clearTimeout(timer));
     scrollTransitionTimers = [];
@@ -803,10 +813,29 @@ function getResumeStrudelAudioEngine() {
     return 0;
   };
 
+  const currentArrangementSection = (nowMs = performance.now()) => {
+    const song = songPresets[songIndex] || {};
+    if (!song.composition || !arrangementStartedAtMs) return 'loop';
+    const cycleMs = 60000 / Math.max(1, song.bpm / 4);
+    const arrangementMs = cycleMs * ARRANGEMENT_TOTAL_CYCLES;
+    const elapsed = ((nowMs - arrangementStartedAtMs) % arrangementMs + arrangementMs) % arrangementMs;
+    let cursor = 0;
+    for (const section of ARRANGEMENT_SECTIONS) {
+      cursor += section.cycles * cycleMs;
+      if (elapsed < cursor) return section.name;
+    }
+    return 'loop';
+  };
+
   const dispatchSyncedMusicEvent = (eventName, detail) => {
     const delayMs = Math.max(0, syncedDelayMs(detail.scheduledTime) - VISUAL_SYNC_AHEAD_MS);
     window.setTimeout(() => {
-      window.dispatchEvent(new CustomEvent(eventName, { detail }));
+      window.dispatchEvent(new CustomEvent(eventName, {
+        detail: {
+          ...detail,
+          section: detail.section || currentArrangementSection(),
+        },
+      }));
     }, delayMs);
   };
 
@@ -1194,6 +1223,7 @@ function getResumeStrudelAudioEngine() {
           .replace(/\.detune\(\s*sine\.range\([^)]*\)\.slow\([^)]*\)\s*\)/g, '');
       }
       const evaluatedPattern = await module.evaluate(pattern, true);
+      if (resetTransport || !arrangementStartedAtMs) arrangementStartedAtMs = performance.now();
       // Expose the active pattern + source for the live-code REPL feature.
       // It uses pattern.draw(...) to highlight currently-playing tokens
       // and aligns flashes to its overlay using the evaluated source.
@@ -1689,6 +1719,7 @@ function getResumeStrudelAudioEngine() {
         activeWASD = '';
         activeChordKey = '';
         currentAutoplayChordKey = '';
+        arrangementStartedAtMs = 0;
         videoDucked = false;
         videoDuckedWasEnabled = false;
         activeVideoAudioIds.clear();
@@ -3749,6 +3780,13 @@ function StrudelReplFeature() {
       ? laneTokens.filter((span) => eventTokens.includes(span.dataset.token || ''))
       : [];
     if (!candidates.length) candidates = laneTokens;
+    const section = String(detail.section || '').trim();
+    if (section) {
+      const sectionCandidates = candidates.filter((span) => (
+        String(span.dataset.sections || '').split(/\s+/).includes(section)
+      ));
+      if (sectionCandidates.length) candidates = sectionCandidates;
+    }
     const key = `${lane}:${eventTokens.join('|') || '*'}`;
     const cursor = tokenCursorRef.current[key] || 0;
     const span = candidates[cursor % candidates.length];
@@ -3940,10 +3978,23 @@ function StrudelReplFeature() {
       const trigger = block.match(/\.onTrigger\(\s*T\.([A-Za-z0-9_]+)\s*,\s*false\s*\)/)?.[1];
       return triggerToLane[trigger] || '';
     };
+    const sectionsForStringAt = (src, offset) => {
+      const prevSemi = src.lastIndexOf(';', offset);
+      const nextSemi = src.indexOf(';', offset);
+      const block = src.slice(prevSemi === -1 ? 0 : prevSemi + 1, nextSemi === -1 ? src.length : nextSemi + 1);
+      const constName = block.match(/\bconst\s+([A-Za-z0-9_]+)/)?.[1] || '';
+      if (/preChorus/i.test(constName)) return ['preChorus'];
+      if (/Chorus/.test(constName)) return ['intro', 'chorus'];
+      if (/Verse/.test(constName)) return ['verse'];
+      if (/Break|outro/i.test(constName)) return ['breakdown'];
+      if (constName === 'subBass') return ['chorus', 'verse'];
+      if (/^kick$/.test(constName)) return ['chorus'];
+      return [];
+    };
     // Wrap individual mini-notation tokens inside "..." so they can be
     // targeted by hap source-positions during playback. Each `data-start`
     // attribute carries the absolute character offset in `code`.
-    const tokeniseString = (lit, baseOffset, lane = '') => {
+    const tokeniseString = (lit, baseOffset, lane = '', sections = []) => {
       // lit includes the surrounding double-quotes
       let out = '<span class="sr-str">"';
       let k = 1; // skip opening quote
@@ -3966,6 +4017,7 @@ function StrudelReplFeature() {
             `data-end="${baseOffset + m}"`,
             `data-token="${normalizeReplToken(tok)}"`,
             lane ? `data-lane="${lane}"` : '',
+            sections.length ? `data-sections="${sections.join(' ')}"` : '',
           ].filter(Boolean).join(' ');
           out += `<span class="sr-tok" ${attrs}>${esc(tok)}</span>`;
           k = m;
@@ -3992,7 +4044,7 @@ function StrudelReplFeature() {
         let j = i + 1;
         while (j < src.length && src[j] !== '"' && src[j] !== '\n') j++;
         const stop = j < src.length && src[j] === '"' ? j + 1 : j;
-        out += tokeniseString(src.slice(i, stop), i, laneForStringAt(src, i));
+        out += tokeniseString(src.slice(i, stop), i, laneForStringAt(src, i), sectionsForStringAt(src, i));
         i = stop;
       } else {
         let j = i;
