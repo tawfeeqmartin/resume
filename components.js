@@ -4834,7 +4834,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     const px = (value) => Math.round(value);
     ctx2d.save();
     ctx2d.imageSmoothingEnabled = false;
-    ctx2d.fillStyle = '#f8f7ee';
+    const desktopPaper = '#f8f7ee';
+    ctx2d.fillStyle = desktopPaper;
     ctx2d.fillRect(0, 0, w, h);
 
     const black = '#000000';
@@ -4843,7 +4844,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     const uiFont = '"Chicago", Geneva, "Lucida Grande", Arial, sans-serif';
     const monoFont = 'Monaco, "Courier New", monospace';
 
-    ctx2d.fillStyle = paper;
+    ctx2d.fillStyle = desktopPaper;
     ctx2d.fillRect(0, 0, w, menuH);
     ctx2d.fillStyle = black;
     ctx2d.fillRect(0, menuH - 2, w, 2);
@@ -6291,9 +6292,28 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
           .filter(Boolean);
         const mouseBody = allMeshes.find((m) => m.name === 'Mesh70');
         const mouseButton = allMeshes.find((m) => m.name === 'Mesh284');
+        const makeStickerTexture = (draw) => {
+          const c = document.createElement('canvas');
+          c.width = 256;
+          c.height = 96;
+          const cx = c.getContext('2d');
+          draw(cx, c.width, c.height);
+          const texture = new THREE.CanvasTexture(c);
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+          texture.minFilter = renderer.capabilities.isWebGL2 ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+          texture.generateMipmaps = !!renderer.capabilities.isWebGL2;
+          return texture;
+        };
         if (floppyParts.length) {
           // Use the front mesh (Mesh84) to size the eject distance.
           const front = floppyParts[0];
+          front.material = new THREE.MeshStandardMaterial({
+            color: 0xd9be2f,
+            roughness: 0.86,
+            metalness: 0,
+          });
           front.geometry.computeBoundingBox();
           const fb = front.geometry.boundingBox;
           // Eject only ~75% of disk depth so a sliver stays in the slot.
@@ -6348,6 +6368,35 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         const box = new THREE.Box3().setFromObject(model);
         const ctr = box.getCenter(new THREE.Vector3());
         const size = box.getSize(new THREE.Vector3());
+        if (stateRef.current.deviceMode === 'mac') {
+          const sideTexture = makeStickerTexture((cx, w, h) => {
+            cx.fillStyle = '#e9e5d5';
+            cx.fillRect(0, 0, w, h);
+            cx.fillStyle = '#d9251d';
+            cx.fillRect(0, 0, Math.floor(w * 0.2), h);
+            cx.fillStyle = '#2157a4';
+            cx.fillRect(Math.floor(w * 0.2), 0, Math.floor(w * 0.18), h);
+            cx.fillStyle = '#111';
+            cx.globalAlpha = 0.52;
+            cx.fillRect(Math.floor(w * 0.48), Math.floor(h * 0.28), Math.floor(w * 0.38), 5);
+            cx.fillRect(Math.floor(w * 0.48), Math.floor(h * 0.48), Math.floor(w * 0.28), 5);
+            cx.globalAlpha = 0.18;
+            cx.fillRect(0, h - 5, w, 5);
+            cx.globalAlpha = 1;
+          });
+          const sideSticker = new THREE.Mesh(
+            new THREE.PlaneGeometry(size.z * 0.18, size.y * 0.052),
+            new THREE.MeshBasicMaterial({
+              map: sideTexture,
+              toneMapped: false,
+              side: THREE.DoubleSide,
+            })
+          );
+          sideSticker.name = 'MacSideProductionSticker';
+          sideSticker.position.set(box.max.x + size.x * 0.006, ctr.y - size.y * 0.04, ctr.z + size.z * 0.18);
+          sideSticker.rotation.set(0, Math.PI / 2, -0.035);
+          model.add(sideSticker);
+        }
         console.info('[TvHero] bbox center:', ctr, 'size:', size);
         stateRef.current.bbox = { box, ctr };
         stateRef.current.frameModel = () => frameModel(box);
@@ -7259,55 +7308,35 @@ function ReferenceAvatar({ item, index, shapes }) {
   );
 }
 
-function ReferenceMessage({ item, index, shapes, large = false }) {
+function ReferenceMessage({ item, index, shapes }) {
   return (
-    <div className={`refs__message ${large ? 'refs__message--large' : ''}`}>
+    <article className="refs__message">
       <ReferenceAvatar item={item} index={index} shapes={shapes} />
       <div className="refs__message-stack">
-        <div className="refs__sender mono">{item.name}</div>
+        <div className="refs__sender">{item.name}</div>
         <div className="refs__credential">
           <div className="refs__title mono">{item.title}</div>
           {item.sub && <div className="refs__sub mono dim">{item.sub}</div>}
         </div>
-        <div className="refs__bubble">
-          <blockquote className="refs__text serif">
-            {item.quote}
-          </blockquote>
-        </div>
+        <blockquote className="refs__text serif">
+          {item.quote}
+        </blockquote>
       </div>
-    </div>
+    </article>
   );
 }
 
 function References({ items }) {
-  const [active, setActive] = useState(0);
   const refShapes = ['triangle', 'circle', 'square'];
   return (
     <Section id="refs" label="09 · REFERENCES">
-      <div className="refs">
-        <div className="refs__quote">
-          <ReferenceMessage item={items[active]} index={active} shapes={refShapes} large />
-        </div>
-        <ol className="refs__list">
-          {items.map((r, i) => (
-            <li key={i}>
-              <button
-                className={`refs__chip ${i===active?'is-on':''}`}
-                onClick={() => setActive(i)}
-              >
-                <span className="refs__chip-num mono">{String(i+1).padStart(2,'0')}</span>
-                <ReferenceAvatar item={r} index={i} shapes={refShapes} />
-                <span className="refs__chip-name">{r.name}</span>
-                <span className="refs__chip-title mono dim">{r.title}</span>
-                {r.sub && <span className="refs__chip-sub mono dim">{r.sub}</span>}
-              </button>
-              <div className={`refs__inline-quote ${i === active ? 'is-active' : ''}`}>
-                <ReferenceMessage item={r} index={i} shapes={refShapes} />
-              </div>
-            </li>
-          ))}
-        </ol>
-      </div>
+      <ol className="refs">
+        {items.map((item, index) => (
+          <li key={item.name}>
+            <ReferenceMessage item={item} index={index} shapes={refShapes} />
+          </li>
+        ))}
+      </ol>
     </Section>
   );
 }
