@@ -5525,7 +5525,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       pushMacTerminalLine('PLAY     insert disk and run song');
       pushMacTerminalLine('DOOM     boot fullscreen Doom');
       pushMacTerminalLine('STATUS   print audio engine state');
-      pushMacTerminalLine('RESET    restore default Strudel code');
+      pushMacTerminalLine('RESET    restore last-good source');
       pushMacTerminalLine('CLEAR    clear terminal');
       pushMacTerminalLine('ABOUT    describe this system');
       drawMacOffScreen();
@@ -5539,7 +5539,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     }
     if (lower === 'about') {
       pushMacTerminalLine('Poetry in Proof: browser-native');
-      pushMacTerminalLine('Strudel audio + Web MIDI + Three.js');
+      pushMacTerminalLine('live audio + MIDI + picture');
       pushMacTerminalLine('one clock drives sound and image.');
       drawMacOffScreen();
       return;
@@ -5554,7 +5554,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     if (lower === 'reset') {
       if (engine?.resetCompositionSource) {
         engine.resetCompositionSource({ resetTransport: false });
-        pushMacTerminalLine('default Strudel source restored.');
+        pushMacTerminalLine('last-good source restored.');
       } else {
         pushMacTerminalLine('audio engine not ready.');
       }
