@@ -20,6 +20,12 @@ const padChorus = note("<[f4 d4 a3 f4 d4 a3 f4 d4] [e4 c4 a3 e4 c4 a3 e4 c4]>")
   .room(0.85).sz(0.95).gain(0.35)
   .onTrigger(T.harmonyChord, false);
 
+const leadIntro = note("<[~ d5 ~ d5 ~ g5 ~ ~] [~ e5 ~ ~ ~ a5 g5 ~]>")
+  .s("triangle").legato(1.7).vibrato(6, 0.35)
+  .lpf(sine.range(1100, 2500).slow(4))
+  .room(0.85).sz(0.95).gain(0.72)
+  .onTrigger(T.melodyLead, false);
+
 const leadChorus = note("<[~ f5 ~ d5 ~ g5 ~ ~] [~ e5 ~ c5 ~ a5 g5 ~]>")
   .s("triangle").legato(1.7).vibrato(6, 0.35)
   .lpf(sine.range(1100, 2500).slow(4))
@@ -83,7 +89,7 @@ const hatVerse = s("hh hh hh hh")
   .bank("RolandTR808").fast(2).lpf(4000).gain(0.3)
   .onTrigger(T.drumHat, false);
 
-const intro      = stack(padChorus, leadChorus);
+const intro      = stack(padChorus, leadIntro);
 const chorus     = stack(padChorus, leadChorus, subBass, kick, clapChorus, hatChorus);
 const verse      = stack(padChorus, leadVerse, subBass, clapVerse, hatVerse);
 const preChorus  = stack(padPreChorus, leadPreChorus);
@@ -98,7 +104,7 @@ arrange(
   [8,  breakdown]
 )`;
 
-const POETRY_IN_PROOF_STORAGE_VERSION = 'v2-comfy-arrangement';
+const POETRY_IN_PROOF_STORAGE_VERSION = 'v3-intro-lead';
 const POETRY_IN_PROOF_SOURCE_STORAGE_KEY = `resume.poetryInProofSource.${POETRY_IN_PROOF_STORAGE_VERSION}`;
 const POETRY_IN_PROOF_DRAFT_STORAGE_KEY = `resume.poetryInProofDraft.${POETRY_IN_PROOF_STORAGE_VERSION}`;
 const POETRY_IN_PROOF_LAST_GOOD_STORAGE_KEY = `resume.poetryInProofLastGood.${POETRY_IN_PROOF_STORAGE_VERSION}`;
