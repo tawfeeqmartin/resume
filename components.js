@@ -1081,21 +1081,47 @@ function getResumeStrudelAudioEngine() {
   const installStrudelCompat = (module) => {
     const proto = module?.Pattern?.prototype;
     if (!proto) return;
-    const scopeDefaults = (options = {}) => {
-      const id = options?.id ?? 1;
-      const ctx = options.ctx
-        || window.__resumeStrudelScopeContexts?.get?.(String(id))
+    const takeInlineWidgetContext = (kind, options = {}) => {
+      const requestedId = options?.id == null ? '' : String(options.id);
+      const queue = window.__resumeStrudelWidgetQueue;
+      if (Array.isArray(queue)) {
+        const index = queue.findIndex((entry) => (
+          entry
+          && !entry.used
+          && entry.kind === kind
+          && (!requestedId || entry.userId === requestedId)
+          && entry.ctx
+        ));
+        if (index !== -1) {
+          queue[index].used = true;
+          return {
+            ctx: queue[index].ctx,
+            id: queue[index].drawId,
+          };
+        }
+      }
+      const ctx = window.__resumeStrudelScopeContexts?.get?.(`${kind}:${requestedId || 1}`)
+        || window.__resumeStrudelScopeContexts?.get?.(requestedId || '1')
         || window.__resumeStrudelScopeContext;
-      if (!ctx || options.ctx) return options;
+      return ctx ? { ctx, id: options?.id ?? (requestedId || 1) } : null;
+    };
+    const widgetDefaults = (kind, options = {}) => {
+      if (options.ctx) return options;
+      const widgetContext = takeInlineWidgetContext(kind, options);
+      if (!widgetContext?.ctx) return options;
       return {
-        id,
+        id: widgetContext.id,
         color: '#ffd840',
+        active: '#ffd840',
+        inactive: 'rgba(255, 216, 64, 0.24)',
+        playheadColor: '#ffffff',
         thickness: 1.5,
         scale: 0.48,
         pos: 0.5,
         smear: 0.12,
         ...options,
-        ctx,
+        id: widgetContext.id,
+        ctx: widgetContext.ctx,
       };
     };
     const normalizeScopeOptions = (idOrOptions = {}, maybeOptions = {}) => {
@@ -1104,20 +1130,54 @@ function getResumeStrudelAudioEngine() {
       }
       return { ...maybeOptions, id: idOrOptions == null ? maybeOptions.id : idOrOptions };
     };
-    for (const name of ['scope', 'tscope', 'fscope', 'spectrum']) {
+    for (const name of ['scope', 'tscope', 'fscope', 'spectrum', 'pianoroll']) {
       const original = proto[name];
       if (typeof original !== 'function' || original.__resumeWrapped) continue;
       proto[name] = function resumeScopedWidget(idOrOptions = {}, maybeOptions = {}) {
-        return original.call(this, scopeDefaults(normalizeScopeOptions(idOrOptions, maybeOptions)));
+        return original.call(this, widgetDefaults(name, normalizeScopeOptions(idOrOptions, maybeOptions)));
       };
       proto[name].__resumeWrapped = true;
     }
-    const widgetAliases = {
+    if (typeof proto.punchcard === 'function' && !proto.punchcard.__resumeWrapped) {
+      const originalPunchcard = proto.punchcard;
+      proto.punchcard = function resumePunchcardWidget(idOrOptions = {}, maybeOptions = {}) {
+        const options = widgetDefaults('punchcard', normalizeScopeOptions(idOrOptions, maybeOptions));
+        if (options.ctx && typeof this.pianoroll === 'function') {
+          return this.pianoroll({
+            cycles: 4,
+            vertical: 1,
+            labels: 1,
+            stroke: 0,
+            fillActive: 1,
+            active: '#ffd840',
+            inactive: 'rgba(255, 216, 64, 0.24)',
+            ...options,
+          });
+        }
+        return originalPunchcard.call(this, options);
+      };
+      proto.punchcard.__resumeWrapped = true;
+    }
+    const inlineWidgetAliases = {
       _scope: 'scope',
+      _tscope: 'tscope',
       _fscope: 'fscope',
       _spectrum: 'spectrum',
       _pianoroll: 'pianoroll',
       _punchcard: 'punchcard',
+    };
+    for (const [alias, target] of Object.entries(inlineWidgetAliases)) {
+      if (typeof proto[alias] === 'function' || typeof proto[target] !== 'function') continue;
+      proto[alias] = function strudelInlineWidgetAlias(idOrOptions = {}, maybeOptions = {}) {
+        const kind = target === 'tscope' ? 'tscope' : target;
+        const options = widgetDefaults(kind, normalizeScopeOptions(idOrOptions, maybeOptions));
+        if (options.ctx && typeof this.tag === 'function') {
+          return this.tag(options.id)[target](options);
+        }
+        return this[target](options);
+      };
+    }
+    const widgetAliases = {
       _wordfall: 'wordfall',
       _spiral: 'spiral',
       _pitchwheel: 'pitchwheel',
@@ -1125,7 +1185,7 @@ function getResumeStrudelAudioEngine() {
     for (const [alias, target] of Object.entries(widgetAliases)) {
       if (typeof proto[alias] === 'function' || typeof proto[target] !== 'function') continue;
       proto[alias] = function strudelWidgetAlias(idOrOptions = {}, maybeOptions = {}) {
-        return this[target](scopeDefaults(normalizeScopeOptions(idOrOptions, maybeOptions)));
+        return this[target](normalizeScopeOptions(idOrOptions, maybeOptions));
       };
     }
   };
@@ -3346,10 +3406,54 @@ function BlackbirdFeature({ innovationSrc, behindScenesSrc }) {
 // ────────────────────────────────────────────────────────────────────
 
 const STRUDEL_REPL_INITIAL_CODE = POETRY_IN_PROOF_SOURCE;
-const REPL_SCOPE_SPACER_LINES = 4;
-const REPL_SCOPE_CALL_RE = /\.(?:_?scope|_?tscope|_?fscope|_?spectrum)\s*\([^)]*\)\s*;?\s*(?:\/\/.*)?$/;
+const REPL_WIDGET_LIMIT = 8;
+const REPL_WIDGET_TYPES = {
+  scope: { lineSpan: 4 },
+  tscope: { lineSpan: 4 },
+  fscope: { lineSpan: 4 },
+  spectrum: { lineSpan: 4 },
+  pianoroll: { lineSpan: 10 },
+  punchcard: { lineSpan: 10 },
+};
+const REPL_WIDGET_CALL_RE = /\.(_?(scope|tscope|fscope|spectrum|pianoroll|punchcard))\s*\(([^)]*)\)/g;
 
-function reserveReplScopeSpacing(source, selectionStart = null, selectionEnd = selectionStart) {
+function normalizeReplWidgetKind(kind = '') {
+  return String(kind || '').replace(/^_/, '');
+}
+
+function getReplWidgetId(args = '') {
+  const objectId = args.match(/\bid\s*:\s*['"]?([A-Za-z0-9_-]+)['"]?/)?.[1];
+  if (objectId) return String(objectId);
+  const firstArg = args.match(/^\s*['"]?([A-Za-z0-9_-]+)['"]?\s*(?:,|$)/)?.[1];
+  return firstArg ? String(firstArg) : '1';
+}
+
+function parseReplWidgets(source) {
+  const lines = String(source || '').split('\n');
+  const widgets = [];
+  lines.forEach((line, lineIndex) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('//')) return;
+    REPL_WIDGET_CALL_RE.lastIndex = 0;
+    let match;
+    while ((match = REPL_WIDGET_CALL_RE.exec(line)) !== null) {
+      const kind = normalizeReplWidgetKind(match[2]);
+      const config = REPL_WIDGET_TYPES[kind];
+      if (!config) continue;
+      const id = getReplWidgetId(match[3] || '');
+      widgets.push({
+        kind,
+        id,
+        key: `${lineIndex}-${match.index}-${kind}-${id}`,
+        lineIndex,
+        lineSpan: config.lineSpan,
+      });
+    }
+  });
+  return widgets;
+}
+
+function reserveReplWidgetSpacing(source, selectionStart = null, selectionEnd = selectionStart) {
   const lines = String(source || '').split('\n');
   const out = [];
   let changed = false;
@@ -3364,15 +3468,18 @@ function reserveReplScopeSpacing(source, selectionStart = null, selectionEnd = s
     out.push(line);
     sourceOffset = lineEnd + (i < lines.length - 1 ? 1 : 0);
 
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('//') || !REPL_SCOPE_CALL_RE.test(line)) continue;
+    const widgets = parseReplWidgets(line);
+    const lineSpan = widgets.length
+      ? Math.max(...widgets.map((widget) => widget.lineSpan))
+      : 0;
+    if (!lineSpan) continue;
 
     let blankCount = 0;
-    for (let j = i + 1; j < lines.length && blankCount < REPL_SCOPE_SPACER_LINES; j++) {
+    for (let j = i + 1; j < lines.length && blankCount < lineSpan; j++) {
       if (lines[j].trim()) break;
       blankCount++;
     }
-    const missing = REPL_SCOPE_SPACER_LINES - blankCount;
+    const missing = lineSpan - blankCount;
     if (missing <= 0) continue;
 
     changed = true;
@@ -3813,7 +3920,7 @@ function StrudelReplFeature() {
   const [editStatus, setEditStatus] = React.useState('ready');
   const [errorMsg, setErrorMsg] = React.useState('');
   const [code, setCode] = React.useState(() => (
-    reserveReplScopeSpacing(getStoredPoetryInProofDraftSource()).source
+    reserveReplWidgetSpacing(getStoredPoetryInProofDraftSource()).source
   ));
   codeRef.current = code;
   // Source string the engine actually evaluated. Drives the highlight
@@ -3822,24 +3929,7 @@ function StrudelReplFeature() {
   const [engineSource, setEngineSource] = React.useState(null);
 
   const scopeWidgets = React.useMemo(() => {
-    const lines = code.split('\n');
-    const widgets = [];
-    const scopeRe = /\.(?:_?scope|_?tscope|_?fscope|_?spectrum)\s*\(([^)]*)\)/g;
-    lines.forEach((line, lineIndex) => {
-      let match;
-      while ((match = scopeRe.exec(line)) !== null) {
-        const args = match[1] || '';
-        const objectId = args.match(/\bid\s*:\s*['"]?([A-Za-z0-9_-]+)['"]?/)?.[1];
-        const firstArg = args.match(/^\s*['"]?([A-Za-z0-9_-]+)['"]?\s*(?:,|\)|$)/)?.[1];
-        const id = objectId || firstArg || '1';
-        widgets.push({
-          id: String(id),
-          key: `${lineIndex}-${match.index}-${id}`,
-          lineIndex,
-        });
-      }
-    });
-    return widgets.slice(0, 4);
+    return parseReplWidgets(code).slice(0, REPL_WIDGET_LIMIT);
   }, [code]);
 
   const positionScopeWidgets = React.useCallback(() => {
@@ -3857,10 +3947,13 @@ function StrudelReplFeature() {
     layer.querySelectorAll('.strudel-repl__scope-widget').forEach((canvas) => {
       const lineIndex = Number(canvas.dataset.line || 0);
       const top = padTop + (lineIndex + 1) * lineHeight - ta.scrollTop + 3;
+      const lineSpan = Math.max(1, Number(canvas.dataset.lineSpan || 4));
+      const widgetHeight = Math.max(28, Math.round(lineHeight * lineSpan - 5));
       canvas.style.left = `${padLeft - ta.scrollLeft}px`;
       canvas.style.top = `${top}px`;
       canvas.style.width = `${width}px`;
-      const height = Math.max(1, canvas.clientHeight || 44);
+      canvas.style.height = `${widgetHeight}px`;
+      const height = Math.max(1, widgetHeight);
       const pxWidth = Math.max(1, Math.round(width * dpr));
       const pxHeight = Math.max(1, Math.round(height * dpr));
       if (canvas.width !== pxWidth) canvas.width = pxWidth;
@@ -3878,6 +3971,43 @@ function StrudelReplFeature() {
       }
     });
   }, []);
+
+  const prepareReplWidgetQueue = React.useCallback((source) => {
+    const layer = scopeLayerRef.current;
+    if (!layer) return [];
+    positionScopeWidgets();
+    const widgets = parseReplWidgets(source).slice(0, REPL_WIDGET_LIMIT);
+    const canvases = [...layer.querySelectorAll('.strudel-repl__scope-widget')];
+    const canvasByKey = new Map(canvases.map((canvas) => [canvas.dataset.widgetKey, canvas]));
+    const usedCanvases = new Set();
+    const contexts = new Map();
+    const queue = widgets.map((widget, index) => {
+      let canvas = canvasByKey.get(widget.key);
+      if (!canvas || usedCanvases.has(canvas)) {
+        canvas = canvases.find((candidate) => !usedCanvases.has(candidate)) || null;
+      }
+      if (canvas) usedCanvases.add(canvas);
+      const ctx = canvas?.getContext?.('2d', { willReadFrequently: true }) || canvas?.getContext?.('2d') || null;
+      const userId = String(widget.id || '1');
+      const drawId = userId === '1' ? `resume-${widget.kind}-${index + 1}` : userId;
+      if (ctx) {
+        contexts.set(`${widget.kind}:${userId}`, ctx);
+        contexts.set(`${widget.kind}:${drawId}`, ctx);
+        if (!contexts.has(userId)) contexts.set(userId, ctx);
+        contexts.set(drawId, ctx);
+      }
+      return {
+        kind: widget.kind,
+        userId,
+        drawId,
+        ctx,
+      };
+    });
+    window.__resumeStrudelWidgetQueue = queue;
+    window.__resumeStrudelScopeContexts = contexts;
+    window.__resumeStrudelScopeContext = queue.find((entry) => entry.ctx)?.ctx || null;
+    return queue;
+  }, [positionScopeWidgets]);
 
   const syncScroll = React.useCallback(() => {
     const ta = textareaRef.current;
@@ -3899,7 +4029,11 @@ function StrudelReplFeature() {
       const contexts = new Map();
       layer.querySelectorAll('.strudel-repl__scope-widget').forEach((canvas) => {
         const ctx = canvas.getContext('2d');
-        if (ctx) contexts.set(String(canvas.dataset.scopeId || '1'), ctx);
+        if (!ctx) return;
+        const kind = String(canvas.dataset.widgetKind || 'scope');
+        const id = String(canvas.dataset.scopeId || '1');
+        contexts.set(`${kind}:${id}`, ctx);
+        if (!contexts.has(id)) contexts.set(id, ctx);
       });
       window.__resumeStrudelScopeContexts = contexts;
       window.__resumeStrudelScopeContext = contexts.get('1') || contexts.values().next().value || null;
@@ -3948,9 +4082,30 @@ function StrudelReplFeature() {
     try {
       setStatus('loading');
       pulseReplEvaluate();
+      let sourceToEvaluate = codeRef.current || code;
+      const textarea = textareaRef.current;
+      const spaced = reserveReplWidgetSpacing(
+        textarea?.value ?? sourceToEvaluate,
+        textarea?.selectionStart ?? null,
+        textarea?.selectionEnd ?? null
+      );
+      sourceToEvaluate = spaced.source;
+      if (sourceToEvaluate !== codeRef.current) {
+        setCode(sourceToEvaluate);
+        savePoetryInProofDraftSource(sourceToEvaluate);
+        codeRef.current = sourceToEvaluate;
+        if (textarea && spaced.selectionStart !== null) {
+          window.requestAnimationFrame(() => {
+            if (document.activeElement !== textarea) return;
+            textarea.setSelectionRange(spaced.selectionStart, spaced.selectionEnd ?? spaced.selectionStart);
+          });
+        }
+      }
+      await new Promise((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve)));
+      prepareReplWidgetQueue(sourceToEvaluate);
       // Match Strudel REPL semantics: evaluating while the transport is
       // running swaps the pattern in-place instead of restarting from 0.
-      const result = await engine.setCompositionSource(code, {
+      const result = await engine.setCompositionSource(sourceToEvaluate, {
         resetTransport: false,
         start: true,
       });
@@ -3964,7 +4119,7 @@ function StrudelReplFeature() {
         if (result?.fallbackSource) setEngineSource(result.fallbackSource);
         return;
       }
-      setEngineSource(code);
+      setEngineSource(sourceToEvaluate);
       setEditStatus('applied');
       setStatus('playing');
     } catch (error) {
@@ -3972,7 +4127,7 @@ function StrudelReplFeature() {
       setEditStatus('error');
       setErrorMsg((error && error.message) || String(error));
     }
-  }, [code, pulseReplEvaluate]);
+  }, [code, prepareReplWidgetQueue, pulseReplEvaluate]);
 
   const resetCode = React.useCallback(() => {
     setErrorMsg('');
@@ -4023,7 +4178,7 @@ function StrudelReplFeature() {
 
   const handleCodeChange = React.useCallback((event) => {
     const rawNext = event.target.value;
-    const spaced = reserveReplScopeSpacing(
+    const spaced = reserveReplWidgetSpacing(
       rawNext,
       event.target.selectionStart,
       event.target.selectionEnd
@@ -4595,8 +4750,11 @@ function StrudelReplFeature() {
                     <canvas
                       key={widget.key}
                       className="strudel-repl__scope-widget"
+                      data-widget-key={widget.key}
+                      data-widget-kind={widget.kind}
                       data-scope-id={widget.id}
                       data-line={widget.lineIndex}
+                      data-line-span={widget.lineSpan}
                     />
                   ))}
                 </div>
