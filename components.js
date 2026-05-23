@@ -4808,8 +4808,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         cursorOn: true,
         focused: true,
         lines: [
-          'MacTerminal 2.0',
-          'System 6 terminal session',
+          'MacTerminal 1.1',
+          'System 1 Finder session',
           '',
           'Type HELP for commands.',
         ],
@@ -4833,34 +4833,90 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     const term = ensureMacTerminal();
     const px = (value) => Math.round(value);
     ctx2d.save();
-    ctx2d.imageSmoothingEnabled = true;
-    ctx2d.fillStyle = '#050505';
+    ctx2d.imageSmoothingEnabled = false;
+    ctx2d.fillStyle = '#f8f7ee';
     ctx2d.fillRect(0, 0, w, h);
 
-    const menuH = px(h * 0.068);
-    ctx2d.fillStyle = '#fbfbf8';
-    ctx2d.fillRect(0, 0, w, menuH);
-    ctx2d.fillStyle = '#050505';
-    ctx2d.fillRect(0, menuH - 2, w, 2);
-    ctx2d.font = `${px(h * 0.031)}px "SF Mono", Monaco, Menlo, monospace`;
-    ctx2d.fillText('■  MacTerminal  File  Edit  Session', px(w * 0.025), px(menuH * 0.68));
+    const black = '#000000';
+    const paper = '#f8f7ee';
+    const menuH = px(h * 0.052);
+    const uiFont = '"Chicago", Geneva, "Lucida Grande", Arial, sans-serif';
+    const monoFont = 'Monaco, "Courier New", monospace';
 
-    const tx = px(w * 0.065);
-    const ty = menuH + px(h * 0.07);
-    const tw = w - tx * 2;
-    const th = h - ty - px(h * 0.07);
-    ctx2d.strokeStyle = '#f7f7f2';
+    ctx2d.fillStyle = paper;
+    ctx2d.fillRect(0, 0, w, menuH);
+    ctx2d.fillStyle = black;
+    ctx2d.fillRect(0, menuH - 2, w, 2);
+    const uiTextOffset = Math.max(1, px(h * 0.0005));
+    const drawUiText = (text, x, baseline) => {
+      ctx2d.fillText(text, x, baseline);
+      ctx2d.fillText(text, x + uiTextOffset, baseline);
+    };
+    ctx2d.font = `bold ${px(h * 0.023)}px ${uiFont}`;
+    drawUiText('▣', px(w * 0.025), px(menuH * 0.69));
+    ctx2d.font = `${px(h * 0.022)}px ${uiFont}`;
+    drawUiText('MacTerminal   File   Edit   Session   Window', px(w * 0.073), px(menuH * 0.69));
+
+    // A compact classic-Mac window: white field, black hairlines, title-bar
+    // stripes, close box, and a small scroll bar. The original display was
+    // 1-bit, so this stays black/white instead of a modern dark terminal.
+    const wx = px(w * 0.085);
+    const wy = menuH + px(h * 0.058);
+    const ww = px(w * 0.83);
+    const wh = px(h * 0.71);
+    const titleH = px(h * 0.048);
+    ctx2d.fillStyle = paper;
+    ctx2d.fillRect(wx, wy, ww, wh);
+    ctx2d.strokeStyle = black;
+    ctx2d.lineWidth = 3;
+    ctx2d.strokeRect(wx, wy, ww, wh);
     ctx2d.lineWidth = 2;
-    ctx2d.strokeRect(tx - px(w * 0.02), ty - px(h * 0.035), tw + px(w * 0.04), th + px(h * 0.07));
+    ctx2d.strokeRect(wx + 5, wy + 5, ww - 10, wh - 10);
+
+    const titleY = wy + 6;
+    const titleText = 'MacTerminal';
+    ctx2d.save();
+    ctx2d.beginPath();
+    ctx2d.rect(wx + 8, titleY, ww - 16, titleH - 8);
+    ctx2d.clip();
+    ctx2d.strokeStyle = black;
+    ctx2d.lineWidth = 2;
+    for (let y = titleY + 4; y < titleY + titleH - 8; y += 8) {
+      ctx2d.beginPath();
+      ctx2d.moveTo(wx + 12, y);
+      ctx2d.lineTo(wx + ww - 12, y);
+      ctx2d.stroke();
+    }
+    ctx2d.restore();
+    ctx2d.fillStyle = paper;
+    const titleW = px(w * 0.17);
+    const titleX = px(wx + ww / 2 - titleW / 2);
+    ctx2d.fillRect(titleX, wy + 6, titleW, titleH - 8);
+    ctx2d.font = `bold ${px(h * 0.021)}px ${uiFont}`;
+    ctx2d.fillStyle = black;
+    ctx2d.textAlign = 'center';
+    ctx2d.fillText(titleText, wx + ww / 2, wy + px(titleH * 0.68));
+    ctx2d.fillText(titleText, wx + ww / 2 + uiTextOffset, wy + px(titleH * 0.68));
+    ctx2d.textAlign = 'left';
+
+    const closeSize = px(h * 0.024);
+    ctx2d.strokeRect(wx + px(w * 0.018), wy + px(h * 0.015), closeSize, closeSize);
+    ctx2d.strokeRect(wx + ww - px(w * 0.034), wy + titleH + 4, px(w * 0.015), wh - titleH - px(h * 0.043));
+    ctx2d.fillRect(wx + ww - px(w * 0.034), wy + titleH + 4, px(w * 0.015), 2);
+    ctx2d.fillRect(wx + ww - px(w * 0.034), wy + wh - px(h * 0.04), px(w * 0.015), 2);
 
     ctx2d.save();
     ctx2d.beginPath();
+    const tx = wx + px(w * 0.034);
+    const ty = wy + titleH + px(h * 0.034);
+    const tw = ww - px(w * 0.088);
+    const th = wh - titleH - px(h * 0.072);
     ctx2d.rect(tx, ty, tw, th);
     ctx2d.clip();
-    ctx2d.fillStyle = '#f7f7f2';
-    const fontSize = px(h * 0.055);
-    const lineHeight = px(fontSize * 1.45);
-    ctx2d.font = `${fontSize}px "SF Mono", Monaco, Menlo, monospace`;
+    ctx2d.fillStyle = black;
+    const fontSize = px(h * 0.038);
+    const lineHeight = px(fontSize * 1.42);
+    ctx2d.font = `${fontSize}px ${monoFont}`;
     const prompt = 'tawfeeq$ ';
     const allLines = [
       ...term.lines,
@@ -4869,24 +4925,28 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     const visibleCount = Math.max(6, Math.floor(th / lineHeight));
     const visible = allLines.slice(-visibleCount);
     const textX = tx;
+    const drawTerminalText = (line, x, baseline) => {
+      ctx2d.fillText(line, x, baseline);
+      ctx2d.fillText(line, x + Math.max(1, px(fontSize * 0.018)), baseline);
+    };
     let y = ty + fontSize;
     for (const line of visible) {
-      ctx2d.fillText(line, textX, y);
+      drawTerminalText(line, textX, y);
       y += lineHeight;
     }
     if (term.cursorOn) {
       const current = `${prompt}${term.input}`;
-      const cursorX = textX + Math.min(tw - px(w * 0.08), ctx2d.measureText(current).width);
+      const cursorX = textX + Math.min(tw - px(w * 0.04), ctx2d.measureText(current).width);
       const cursorY = y - lineHeight - px(fontSize * 0.78);
-      ctx2d.fillStyle = '#f7f7f2';
-      ctx2d.fillRect(cursorX + 3, cursorY, px(fontSize * 0.58), px(fontSize * 1.05));
+      ctx2d.fillStyle = black;
+      ctx2d.fillRect(cursorX + 2, cursorY, px(fontSize * 0.58), px(fontSize * 1.05));
     }
     ctx2d.restore();
 
     ctx2d.globalCompositeOperation = 'source-over';
     const vg = ctx2d.createRadialGradient(w / 2, h / 2, w * 0.28, w / 2, h / 2, w * 0.68);
-    vg.addColorStop(0, 'rgba(255,255,255,0)');
-    vg.addColorStop(1, 'rgba(0,0,0,0.22)');
+    vg.addColorStop(0, 'rgba(255,255,255,0.015)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.08)');
     ctx2d.fillStyle = vg;
     ctx2d.fillRect(0, 0, w, h);
     ctx2d.globalCompositeOperation = 'source-over';
@@ -5459,7 +5519,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     }
     if (lower === 'clear' || lower === 'cls') {
       const term = ensureMacTerminal();
-      term.lines = ['MacTerminal 2.0', 'System 6 terminal session', '', 'Type HELP for commands.'];
+      term.lines = ['MacTerminal 1.1', 'System 1 Finder session', '', 'Type HELP for commands.'];
       drawMacOffScreen();
       return;
     }
@@ -5970,7 +6030,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       if (!wrap || !canvas) return;
 
       const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-      renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
+      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
       // Use the canvas's CSS dimensions (which include the negative-top
       // overflow). Renderer setSize is called inside the tick loop too,
       // so the seed value here doesn't matter much.
@@ -6029,21 +6089,21 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 
       // Offscreen canvas for the screen content
       const screenCanvas = document.createElement('canvas');
-      // Keep this modest: the CRT screen is a small part of the page,
-      // and this canvas is uploaded to WebGL whenever video/effects update.
-      // 1024x768 preserves the 4:3 source shape while avoiding 3MP texture
-      // uploads every frame.
-      screenCanvas.width = 1024; screenCanvas.height = 768;
+      // Keep the CRT texture high enough for text, but below the previous
+      // 2048x1536 path that made video uploads expensive.
+      screenCanvas.width = 1536; screenCanvas.height = 1152;
       const ctx2d = screenCanvas.getContext('2d');
-      ctx2d.fillStyle = '#000';
+      ctx2d.fillStyle = '#f8f7ee';
       ctx2d.fillRect(0, 0, screenCanvas.width, screenCanvas.height);
       const screenTex = new THREE.CanvasTexture(screenCanvas);
       screenTex.colorSpace = THREE.SRGBColorSpace;
       screenTex.flipY = false;
       screenTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-      screenTex.minFilter = THREE.LinearFilter;
+      screenTex.wrapS = THREE.ClampToEdgeWrapping;
+      screenTex.wrapT = THREE.ClampToEdgeWrapping;
+      screenTex.minFilter = renderer.capabilities.isWebGL2 ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter;
       screenTex.magFilter = THREE.LinearFilter;
-      screenTex.generateMipmaps = false;
+      screenTex.generateMipmaps = !!renderer.capabilities.isWebGL2;
 
       stateRef.current.three = THREE;
       stateRef.current.renderer = renderer;
@@ -6098,7 +6158,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
             ? (sumZ - tiltZPerY * sumY) / positions.count
             : center.z;
           const fittedCenterZ = tiltZPerY * (center.y - screenMesh.position.y) + interceptZ + screenMesh.position.z;
-          const geo = new THREE.PlaneGeometry(width, height, 36, 28);
+          const geo = new THREE.PlaneGeometry(width, height, 1, 1);
           const pos = geo.attributes.position;
           for (let i = 0; i < pos.count; i++) {
             pos.setZ(i, tiltZPerY * pos.getY(i));
