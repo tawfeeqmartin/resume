@@ -1231,13 +1231,15 @@ function getResumeStrudelAudioEngine() {
       // Expose the active pattern + source for the live-code REPL feature.
       // It uses pattern.draw(...) to highlight currently-playing tokens
       // and aligns flashes to its overlay using the evaluated source.
+      const rawSource = rawComposition || pattern;
       window.__resumeActivePattern = evaluatedPattern;
       window.__resumeActiveSource = pattern;
+      window.__resumeActiveRawSource = rawSource;
       if (rawComposition && songIndex === 0) rememberGoodComposition(rawComposition);
       window.dispatchEvent(new CustomEvent('resume-pattern-ready', {
-        detail: { pattern: evaluatedPattern, source: pattern, rawSource: rawComposition || pattern, songIndex },
+        detail: { pattern: evaluatedPattern, source: pattern, rawSource, songIndex },
       }));
-      return { ok: true, source: rawComposition || pattern, evaluatedSource: pattern, songIndex };
+      return { ok: true, source: rawSource, evaluatedSource: pattern, songIndex };
     } catch (error) {
       console.warn('Strudel pattern failed', error);
       window.dispatchEvent(new CustomEvent('resume-pattern-error', {
@@ -1622,6 +1624,8 @@ function getResumeStrudelAudioEngine() {
         } else if (enabled) {
           result = await playCurrent({ resetTransport: Boolean(options.resetTransport) });
         } else {
+          window.__resumeActiveSource = source;
+          window.__resumeActiveRawSource = source;
           window.dispatchEvent(new CustomEvent('resume-pattern-ready', {
             detail: { pattern: window.__resumeActivePattern || null, source, rawSource: source, songIndex },
           }));
@@ -1636,9 +1640,18 @@ function getResumeStrudelAudioEngine() {
       rememberGoodComposition(POETRY_IN_PROOF_SOURCE);
       if (songIndex === 0) {
         if (enabled) playCurrent({ resetTransport: Boolean(options.resetTransport) });
-        window.dispatchEvent(new CustomEvent('resume-pattern-ready', {
-          detail: { pattern: window.__resumeActivePattern || null, source: POETRY_IN_PROOF_SOURCE, rawSource: POETRY_IN_PROOF_SOURCE, songIndex },
-        }));
+        else {
+          window.__resumeActiveSource = POETRY_IN_PROOF_SOURCE;
+          window.__resumeActiveRawSource = POETRY_IN_PROOF_SOURCE;
+          window.dispatchEvent(new CustomEvent('resume-pattern-ready', {
+            detail: {
+              pattern: window.__resumeActivePattern || null,
+              source: POETRY_IN_PROOF_SOURCE,
+              rawSource: POETRY_IN_PROOF_SOURCE,
+              songIndex,
+            },
+          }));
+        }
       }
       return POETRY_IN_PROOF_SOURCE;
     },
@@ -3634,6 +3647,9 @@ function StrudelReplFeature() {
   const textareaRef = React.useRef(null);
   const overlayRef = React.useRef(null);
   const tokenCursorRef = React.useRef({});
+  const highlightGenerationRef = React.useRef(0);
+  const activeHighlightSourceRef = React.useRef('');
+  const flashTimersRef = React.useRef(new Set());
   const [status, setStatus] = React.useState('idle'); // idle | loading | playing | error
   const [editStatus, setEditStatus] = React.useState('ready');
   const [errorMsg, setErrorMsg] = React.useState('');
@@ -3714,12 +3730,31 @@ function StrudelReplFeature() {
     }
   }, []);
 
+  const clearReplTokenFlashes = React.useCallback(() => {
+    for (const timer of flashTimersRef.current) window.clearTimeout(timer);
+    flashTimersRef.current.clear();
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+    overlay.querySelectorAll('.sr-tok.is-flash, .sr-tok[data-flashing="1"]').forEach((span) => {
+      span.classList.remove('is-flash');
+      delete span.dataset.flashing;
+    });
+  }, []);
+
+  const resetReplHighlighter = React.useCallback((source = '') => {
+    highlightGenerationRef.current += 1;
+    activeHighlightSourceRef.current = source || '';
+    tokenCursorRef.current = {};
+    clearReplTokenFlashes();
+  }, [clearReplTokenFlashes]);
+
   const handleCodeChange = React.useCallback((event) => {
     const next = event.target.value;
     setCode(next);
     savePoetryInProofDraftSource(next);
     setEditStatus('dirty');
-  }, []);
+    resetReplHighlighter('');
+  }, [resetReplHighlighter]);
 
   const handleEditorKeyDown = React.useCallback((event) => {
     if (event.key === 'Escape') {
@@ -3727,15 +3762,20 @@ function StrudelReplFeature() {
     }
   }, []);
 
-  const flashReplTokenSpan = React.useCallback((span, duration = 150) => {
+  const flashReplTokenSpan = React.useCallback((span, duration = 150, generation = highlightGenerationRef.current) => {
     if (!span) return false;
+    if (generation !== highlightGenerationRef.current) return false;
     if (span.dataset.flashing === '1') return true;
     span.dataset.flashing = '1';
     span.classList.add('is-flash');
-    window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
+      flashTimersRef.current.delete(timer);
+      if (generation !== highlightGenerationRef.current) return;
+      if (!span.isConnected) return;
       span.classList.remove('is-flash');
       delete span.dataset.flashing;
     }, Math.max(80, Math.min(260, duration)));
+    flashTimersRef.current.add(timer);
     return true;
   }, []);
 
@@ -3842,11 +3882,19 @@ function StrudelReplFeature() {
   // When the engine evaluates a pattern, capture its source so the
   // highlight overlay knows which characters to flash.
   React.useEffect(() => {
-    const onReady = (e) => setEngineSource(e.detail?.rawSource ?? e.detail?.source ?? null);
-    if (window.__resumeActiveSource) setEngineSource(window.__resumeActiveSource);
+    const onReady = (e) => {
+      const nextSource = e.detail?.rawSource ?? e.detail?.source ?? '';
+      setEngineSource(nextSource || null);
+      resetReplHighlighter(nextSource || '');
+    };
+    const initialSource = window.__resumeActiveRawSource || window.__resumeActiveSource || '';
+    if (initialSource) {
+      setEngineSource(initialSource);
+      resetReplHighlighter(initialSource);
+    }
     window.addEventListener('resume-pattern-ready', onReady);
     return () => window.removeEventListener('resume-pattern-ready', onReady);
-  }, []);
+  }, [resetReplHighlighter]);
 
   React.useEffect(() => {
     const onError = (event) => {
@@ -3872,10 +3920,14 @@ function StrudelReplFeature() {
       // the visible editor text; let the MIDI-event fallback drive token
       // flashes instead so we do not highlight the wrong note.
       if (window.__resumeActiveSource && window.__resumeActiveSource !== code) return;
+      const generation = highlightGenerationRef.current;
+      const visibleSource = code;
       // Replace any previous draw registration with same id.
       try {
         pattern.draw((haps, time) => {
           if (cancelled) return;
+          if (generation !== highlightGenerationRef.current) return;
+          if (activeHighlightSourceRef.current !== visibleSource) return;
           const overlay = overlayRef.current;
           if (!overlay) return;
           for (const hap of haps) {
@@ -3890,7 +3942,7 @@ function StrudelReplFeature() {
             if (!loc || typeof loc.start !== 'number') continue;
             const span = findTokenSpanForLocation(overlay, loc);
             const dur = Math.max(80, Math.min(220, (end - beg) * 1000 * 0.8));
-            flashReplTokenSpan(span, dur);
+            flashReplTokenSpan(span, dur, generation);
           }
         }, { id: 'strudel-repl-flash', lookahead: 0.02, lookbehind: 0 });
       } catch (err) {
@@ -3910,6 +3962,7 @@ function StrudelReplFeature() {
     const onMidi = (event) => {
       const detail = event.detail || {};
       if (detail.source === 'webmidi') return;
+      if (activeHighlightSourceRef.current !== code) return;
       // If the evaluated Strudel source matches the editor, pattern.draw
       // has exact source locations. Do not also run the approximate MIDI
       // fallback, because repeated notes across sections can flash the
