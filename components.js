@@ -1081,6 +1081,28 @@ function getResumeStrudelAudioEngine() {
   const installStrudelCompat = (module) => {
     const proto = module?.Pattern?.prototype;
     if (!proto) return;
+    const scopeDefaults = (options = {}) => {
+      const ctx = window.__resumeStrudelScopeContext;
+      if (!ctx || options.ctx) return options;
+      return {
+        id: 1,
+        color: '#ffd840',
+        thickness: 1.5,
+        scale: 0.32,
+        pos: 0.55,
+        smear: 0.12,
+        ...options,
+        ctx,
+      };
+    };
+    for (const name of ['scope', 'tscope', 'fscope', 'spectrum']) {
+      const original = proto[name];
+      if (typeof original !== 'function' || original.__resumeWrapped) continue;
+      proto[name] = function resumeScopedWidget(options = {}) {
+        return original.call(this, scopeDefaults(options));
+      };
+      proto[name].__resumeWrapped = true;
+    }
     const widgetAliases = {
       _scope: 'scope',
       _fscope: 'fscope',
@@ -1094,7 +1116,7 @@ function getResumeStrudelAudioEngine() {
     for (const [alias, target] of Object.entries(widgetAliases)) {
       if (typeof proto[alias] === 'function' || typeof proto[target] !== 'function') continue;
       proto[alias] = function strudelWidgetAlias(options = {}) {
-        return this[target](options);
+        return this[target](scopeDefaults(options));
       };
     }
   };
@@ -3698,6 +3720,7 @@ const STRUDEL_REPL_LINE_PATTERNS = [
 function StrudelReplFeature() {
   const textareaRef = React.useRef(null);
   const overlayRef = React.useRef(null);
+  const scopeCanvasRef = React.useRef(null);
   const tokenCursorRef = React.useRef({});
   const highlightGenerationRef = React.useRef(0);
   const activeHighlightSourceRef = React.useRef('');
@@ -3719,6 +3742,35 @@ function StrudelReplFeature() {
       ov.scrollTop = ta.scrollTop;
       ov.scrollLeft = ta.scrollLeft;
     }
+  }, []);
+
+  React.useLayoutEffect(() => {
+    const canvas = scopeCanvasRef.current;
+    if (!canvas) return undefined;
+    const ctx = canvas.getContext('2d');
+    let frame = 0;
+    const resize = () => {
+      frame = 0;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const width = Math.max(1, Math.round(canvas.clientWidth * dpr));
+      const height = Math.max(1, Math.round(canvas.clientHeight * dpr));
+      if (canvas.width !== width) canvas.width = width;
+      if (canvas.height !== height) canvas.height = height;
+      window.__resumeStrudelScopeContext = ctx;
+    };
+    const queueResize = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(resize);
+    };
+    resize();
+    window.addEventListener('resize', queueResize);
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener('resize', queueResize);
+      if (window.__resumeStrudelScopeContext === ctx) {
+        window.__resumeStrudelScopeContext = null;
+      }
+    };
   }, []);
 
   const pulseReplEvaluate = React.useCallback(() => {
@@ -3827,8 +3879,7 @@ function StrudelReplFeature() {
     setCode(next);
     savePoetryInProofDraftSource(next);
     setEditStatus('dirty');
-    resetReplHighlighter('');
-  }, [resetReplHighlighter]);
+  }, []);
 
   const handleEditorKeyDown = React.useCallback((event) => {
     if (event.key === 'Escape') {
@@ -3871,6 +3922,47 @@ function StrudelReplFeature() {
     }
     if (matches.length) return [...new Set(matches)];
     return exact ? [exact] : [];
+  }, []);
+
+  const mapLocationToCurrentCode = React.useCallback((loc, fromSource = '', toSource = '') => {
+    if (!loc || typeof loc.start !== 'number') return null;
+    if (!fromSource || !toSource || fromSource === toSource) return loc;
+    const start = loc.start;
+    const end = typeof loc.end === 'number' ? loc.end : start + 1;
+    let prefix = 0;
+    const minLen = Math.min(fromSource.length, toSource.length);
+    while (prefix < minLen && fromSource[prefix] === toSource[prefix]) prefix++;
+    let oldSuffix = fromSource.length;
+    let newSuffix = toSource.length;
+    while (
+      oldSuffix > prefix
+      && newSuffix > prefix
+      && fromSource[oldSuffix - 1] === toSource[newSuffix - 1]
+    ) {
+      oldSuffix--;
+      newSuffix--;
+    }
+    if (end <= prefix) return loc;
+    const delta = newSuffix - oldSuffix;
+    if (start >= oldSuffix) {
+      return { ...loc, start: Math.max(0, start + delta), end: Math.max(0, end + delta) };
+    }
+    const text = fromSource.slice(start, end);
+    if (!text || text.length > 180) return null;
+    const expected = Math.max(0, Math.min(toSource.length - text.length, start + delta));
+    let best = -1;
+    let bestDistance = Infinity;
+    let index = toSource.indexOf(text);
+    while (index !== -1) {
+      const distance = Math.abs(index - expected);
+      if (distance < bestDistance) {
+        best = index;
+        bestDistance = distance;
+      }
+      index = toSource.indexOf(text, index + 1);
+    }
+    if (best === -1) return null;
+    return { ...loc, start: best, end: best + text.length };
   }, []);
 
   const normalizeReplToken = React.useCallback((value) => (
@@ -3982,11 +4074,12 @@ function StrudelReplFeature() {
   // highlight overlay knows which characters to flash.
   React.useEffect(() => {
     const onReady = (e) => {
-      const nextSource = e.detail?.rawSource ?? e.detail?.source ?? '';
-      setEngineSource(nextSource || null);
-      resetReplHighlighter(nextSource || '');
+      const rawSource = e.detail?.rawSource ?? e.detail?.source ?? '';
+      const locationSource = e.detail?.source ?? rawSource;
+      setEngineSource(rawSource || null);
+      resetReplHighlighter(locationSource || '');
     };
-    const initialSource = window.__resumeActiveRawSource || window.__resumeActiveSource || '';
+    const initialSource = window.__resumeActiveSource || window.__resumeActiveRawSource || '';
     if (initialSource) {
       setEngineSource(initialSource);
       resetReplHighlighter(initialSource);
@@ -4014,19 +4107,15 @@ function StrudelReplFeature() {
     const setup = () => {
       const pattern = window.__resumeActivePattern;
       if (!pattern || typeof pattern.draw !== 'function') return;
-      // The engine can rewrite the evaluated source to apply mixer gains.
-      // When that happens, Strudel location offsets no longer line up with
-      // the visible editor text, so skip exact highlights rather than
-      // flashing the wrong note.
-      if (window.__resumeActiveSource && window.__resumeActiveSource !== code) return;
       const generation = highlightGenerationRef.current;
+      const locationSource = window.__resumeActiveSource || activeHighlightSourceRef.current || code;
       const visibleSource = code;
       // Replace any previous draw registration with same id.
       try {
         pattern.draw((haps, time) => {
           if (cancelled) return;
           if (generation !== highlightGenerationRef.current) return;
-          if (activeHighlightSourceRef.current !== visibleSource) return;
+          if (activeHighlightSourceRef.current !== locationSource) return;
           const overlay = overlayRef.current;
           if (!overlay) return;
           const flashed = new Set();
@@ -4043,7 +4132,9 @@ function StrudelReplFeature() {
               const key = `${loc.start}:${loc.end ?? ''}`;
               if (flashed.has(key)) continue;
               flashed.add(key);
-              const spans = findTokenSpansForLocation(overlay, loc);
+              const mappedLoc = mapLocationToCurrentCode(loc, locationSource, visibleSource);
+              if (!mappedLoc) continue;
+              const spans = findTokenSpansForLocation(overlay, mappedLoc);
               spans.forEach((span) => flashReplTokenSpan(span, dur, generation));
             }
           }
@@ -4059,13 +4150,13 @@ function StrudelReplFeature() {
       cancelled = true;
       window.removeEventListener('resume-pattern-ready', onReady);
     };
-  }, [code, findTokenSpansForLocation, flashReplTokenSpan]);
+  }, [code, findTokenSpansForLocation, flashReplTokenSpan, mapLocationToCurrentCode]);
 
   React.useEffect(() => {
     const onMidi = (event) => {
       const detail = event.detail || {};
       if (detail.source === 'webmidi') return;
-      if (activeHighlightSourceRef.current !== code) return;
+      if (!activeHighlightSourceRef.current) return;
       // Normal Strudel audio should be highlighted from hap source
       // locations above. The fallback is only for custom site-only lanes
       // that are not actually sounded by the evaluated Strudel pattern,
@@ -4315,6 +4406,11 @@ function StrudelReplFeature() {
                   ref={overlayRef}
                   aria-hidden="true"
                   dangerouslySetInnerHTML={{ __html: highlighted }}
+                />
+                <canvas
+                  ref={scopeCanvasRef}
+                  className="strudel-repl__scope"
+                  aria-hidden="true"
                 />
                 <textarea
                   ref={textareaRef}

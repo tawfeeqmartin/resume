@@ -1563,6 +1563,18 @@ html.has-doom-overlay body {
   min-height: 420px;
   background: var(--vscode-bg);
 }
+.strudel-repl__scope {
+  position: absolute;
+  left: clamp(8px, 1.2vw, 13px);
+  right: clamp(8px, 1.2vw, 13px);
+  bottom: clamp(7px, 1vw, 11px);
+  width: calc(100% - clamp(16px, 2.4vw, 26px));
+  height: clamp(32px, 4.6vw, 52px);
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0.86;
+  mix-blend-mode: screen;
+}
 .strudel-repl__macbook .strudel-repl__editor {
   min-height: 0;
   background: transparent;
@@ -3470,8 +3482,8 @@ html.has-doom-overlay body {
 // rendering code off the startup path until a component actually asks.
 window.__loadStrudelModule = () => {
   window.__resumeStrudelReady ||= import('./vendor/strudel-web.mjs').then(async (module) => {
-    const { initStrudel, initAudio, getAudioContext, evaluate, hush, resumeSetMasterGate, samples } = module;
-    window.__resumeStrudelModule = { initAudio, getAudioContext, evaluate, hush, resumeSetMasterGate, samples };
+    const { initStrudel, initAudio, getAudioContext, evaluate, hush, resumeSetMasterGate, samples, Pattern } = module;
+    window.__resumeStrudelModule = { initAudio, getAudioContext, evaluate, hush, resumeSetMasterGate, samples, Pattern };
     // Load the tidal drum-machines bank so `s("bd").bank("RolandTR808")`
     // patterns can find rolandtr808_bd, rolandtr808_cp, rolandtr808_hh.
     await initStrudel({
@@ -3496,6 +3508,6 @@ window.__loadThreeBundle = () => {
   return window.__threePromise;
 };
 </script>
-<script type="module" src="dist/app.js?v=20260523-strudel-highlight"></script>
+<script type="module" src="dist/app.js?v=20260523-strudel-edit-scope"></script>
 </body>
 </html>
