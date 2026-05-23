@@ -1,5 +1,6 @@
 const PRODUCTION_MEDIA_ORIGIN = "https://media.tawfeeqmartin.com";
 const IS_LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
+const ENABLE_LOCAL_VOICE_OVER = IS_LOCAL_PREVIEW;
 const mediaUrl = (path) => {
   if (IS_LOCAL_PREVIEW) return path;
   return `${PRODUCTION_MEDIA_ORIGIN}/${path.replace(/^media\//, '')}`;
@@ -533,12 +534,15 @@ const CURATED_VOCAL_SAMPLE_SOURCES = CURATED_VOCAL_LINES.map((line) => ({
   weight: 1,
   lanes: ['vocal'],
 }));
+const ACTIVE_VOCAL_SAMPLE_SOURCES = ENABLE_LOCAL_VOICE_OVER
+  ? CURATED_VOCAL_SAMPLE_SOURCES
+  : [];
 const TV_VIDEO_SOURCES = [
   ...CLEARED_TRAILER_SOURCES,
 ];
 window.RESUME_TV_CLIP_POOLS = {
   visual: CLEARED_TRAILER_SOURCES,
-  vocal: CURATED_VOCAL_SAMPLE_SOURCES,
+  vocal: ACTIVE_VOCAL_SAMPLE_SOURCES,
 };
 const MOBILE_RESUME_QUERY = '(max-width: 760px), (pointer: coarse)';
 
@@ -937,7 +941,7 @@ function App() {
             </h1>
           </div>
           <aside className="hero-stack__sticky">
-            <TvHero sources={TV_VIDEO_SOURCES} vocalSamples={CURATED_VOCAL_SAMPLE_SOURCES} />
+            <TvHero sources={TV_VIDEO_SOURCES} vocalSamples={ACTIVE_VOCAL_SAMPLE_SOURCES} />
           </aside>
           <div className="hero-stack__flow">
             <Summary text={RESUME.summary} />
