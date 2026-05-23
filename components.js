@@ -1839,18 +1839,25 @@ function AudioScope({ enabled }) {
     let raf = 0;
     let phase = 0;
     let last = performance.now();
+    let lastPaint = 0;
     const dpr = Math.max(1, window.devicePixelRatio || 1);
 
     const resize = () => {
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = Math.max(1, Math.round(rect.width * dpr));
-      canvas.height = Math.max(1, Math.round(rect.height * dpr));
+      const width = Math.max(1, Math.round(canvas.clientWidth * dpr));
+      const height = Math.max(1, Math.round(canvas.clientHeight * dpr));
+      if (canvas.width !== width) canvas.width = width;
+      if (canvas.height !== height) canvas.height = height;
     };
 
     const tick = (now) => {
+      const minFrameMs = enabled ? 1000 / 30 : 1000 / 20;
+      if (now - lastPaint < minFrameMs) {
+        raf = window.requestAnimationFrame(tick);
+        return;
+      }
+      lastPaint = now;
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      resize();
       const w = canvas.width;
       const h = canvas.height;
       ctx.clearRect(0, 0, w, h);
@@ -6421,7 +6428,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       if (!wrap || !canvas) return;
 
       const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+      renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
       // Use the canvas's CSS dimensions (which include the negative-top
       // overflow). Renderer setSize is called inside the tick loop too,
       // so the seed value here doesn't matter much.
@@ -6492,9 +6499,11 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       screenTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
       screenTex.wrapS = THREE.ClampToEdgeWrapping;
       screenTex.wrapT = THREE.ClampToEdgeWrapping;
-      screenTex.minFilter = renderer.capabilities.isWebGL2 ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter;
+      // This texture changes on video frames, bass rolls, and terminal
+      // redraws. Mipmap generation on each upload was a major GPU cost.
+      screenTex.minFilter = THREE.LinearFilter;
       screenTex.magFilter = THREE.LinearFilter;
-      screenTex.generateMipmaps = !!renderer.capabilities.isWebGL2;
+      screenTex.generateMipmaps = false;
 
       stateRef.current.three = THREE;
       stateRef.current.renderer = renderer;
