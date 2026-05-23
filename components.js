@@ -3598,6 +3598,7 @@ const STRUDEL_REPL_LINE_PATTERNS = [
 function StrudelReplFeature() {
   const textareaRef = React.useRef(null);
   const overlayRef = React.useRef(null);
+  const tokenCursorRef = React.useRef({});
   const [status, setStatus] = React.useState('idle'); // idle | loading | playing | error
   const [editStatus, setEditStatus] = React.useState('ready');
   const [errorMsg, setErrorMsg] = React.useState('');
@@ -3691,6 +3692,70 @@ function StrudelReplFeature() {
     }
   }, []);
 
+  const flashReplTokenSpan = React.useCallback((span, duration = 150) => {
+    if (!span) return false;
+    if (span.dataset.flashing === '1') return true;
+    span.dataset.flashing = '1';
+    span.classList.add('is-flash');
+    window.setTimeout(() => {
+      span.classList.remove('is-flash');
+      delete span.dataset.flashing;
+    }, Math.max(80, Math.min(260, duration)));
+    return true;
+  }, []);
+
+  const findTokenSpanForLocation = React.useCallback((overlay, loc) => {
+    if (!overlay || !loc || typeof loc.start !== 'number') return null;
+    const exact = overlay.querySelector(`[data-start="${loc.start}"]`);
+    if (exact) return exact;
+    const locStart = loc.start;
+    const locEnd = typeof loc.end === 'number' ? loc.end : locStart + 1;
+    const tokens = overlay.querySelectorAll('.sr-tok[data-start][data-end]');
+    for (const span of tokens) {
+      const start = Number(span.dataset.start);
+      const end = Number(span.dataset.end);
+      if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
+      const startInsideToken = start <= locStart && locStart < end;
+      const tokenInsideLocation = locStart <= start && start < locEnd;
+      if (startInsideToken || tokenInsideLocation) return span;
+    }
+    return null;
+  }, []);
+
+  const normalizeReplToken = React.useCallback((value) => (
+    String(value ?? '')
+      .replace(/^RolandTR\d+_/i, '')
+      .trim()
+      .toLowerCase()
+  ), []);
+
+  const getMidiDetailTokens = React.useCallback((detail = {}) => {
+    const raw = detail.raw || {};
+    const source = raw.note ?? raw.n ?? raw.midinote ?? raw.s ?? raw.value ?? '';
+    const values = Array.isArray(source) ? source : [source];
+    return values.map(normalizeReplToken).filter(Boolean);
+  }, [normalizeReplToken]);
+
+  const flashMidiTokenFallback = React.useCallback((detail = {}) => {
+    const overlay = overlayRef.current;
+    if (!overlay) return false;
+    const laneAliases = { wasdChord: 'chord', snare: 'snare', hat: 'hat', kick: 'kick' };
+    const lane = laneAliases[detail.lane] || detail.lane || '';
+    if (!lane) return false;
+    const eventTokens = getMidiDetailTokens(detail);
+    const laneTokens = [...overlay.querySelectorAll(`.sr-tok[data-lane="${lane}"]`)];
+    if (!laneTokens.length) return false;
+    let candidates = eventTokens.length
+      ? laneTokens.filter((span) => eventTokens.includes(span.dataset.token || ''))
+      : [];
+    if (!candidates.length) candidates = laneTokens;
+    const key = `${lane}:${eventTokens.join('|') || '*'}`;
+    const cursor = tokenCursorRef.current[key] || 0;
+    const span = candidates[cursor % candidates.length];
+    tokenCursorRef.current[key] = cursor + 1;
+    return flashReplTokenSpan(span, detail.duration ? Math.min(220, detail.duration) : 145);
+  }, [flashReplTokenSpan, getMidiDetailTokens]);
+
   React.useEffect(() => {
     const inReplShortcutScope = () => {
       const section = document.getElementById('strudel');
@@ -3760,6 +3825,11 @@ function StrudelReplFeature() {
     const setup = () => {
       const pattern = window.__resumeActivePattern;
       if (!pattern || typeof pattern.draw !== 'function') return;
+      // The engine can rewrite the evaluated source to apply mixer gains.
+      // When that happens, Strudel location offsets no longer line up with
+      // the visible editor text; let the MIDI-event fallback drive token
+      // flashes instead so we do not highlight the wrong note.
+      if (window.__resumeActiveSource && window.__resumeActiveSource !== code) return;
       // Replace any previous draw registration with same id.
       try {
         pattern.draw((haps, time) => {
@@ -3776,15 +3846,9 @@ function StrudelReplFeature() {
             // Innermost location is the most specific (individual token).
             const loc = locs[locs.length - 1];
             if (!loc || typeof loc.start !== 'number') continue;
-            const span = overlay.querySelector(`[data-start="${loc.start}"]`);
-            if (!span || span.dataset.flashing === '1') continue;
-            span.dataset.flashing = '1';
-            span.classList.add('is-flash');
+            const span = findTokenSpanForLocation(overlay, loc);
             const dur = Math.max(80, Math.min(220, (end - beg) * 1000 * 0.8));
-            window.setTimeout(() => {
-              span.classList.remove('is-flash');
-              delete span.dataset.flashing;
-            }, dur);
+            flashReplTokenSpan(span, dur);
           }
         }, { id: 'strudel-repl-flash', lookahead: 0.02, lookbehind: 0 });
       } catch (err) {
@@ -3798,7 +3862,17 @@ function StrudelReplFeature() {
       cancelled = true;
       window.removeEventListener('resume-pattern-ready', onReady);
     };
-  }, [code]);
+  }, [code, findTokenSpanForLocation, flashReplTokenSpan]);
+
+  React.useEffect(() => {
+    const onMidi = (event) => {
+      const detail = event.detail || {};
+      if (detail.source === 'webmidi') return;
+      flashMidiTokenFallback(detail);
+    };
+    window.addEventListener('resume-midi-event', onMidi);
+    return () => window.removeEventListener('resume-midi-event', onMidi);
+  }, [flashMidiTokenFallback]);
 
   const handlePlay = React.useCallback(async () => {
     setErrorMsg('');
@@ -3842,10 +3916,34 @@ function StrudelReplFeature() {
       h = h.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="sr-num">$1</span>');
       return h;
     };
+    const triggerToLane = {
+      harmonyChord: 'chord',
+      harmonyWasdChord: 'chord',
+      bassBass: 'bass',
+      drumKick: 'kick',
+      drumSnare: 'snare',
+      drumHat: 'hat',
+      drumPerc: 'perc',
+      melodyLead: 'lead',
+      melodyLift: 'lead',
+      melodyChop: 'lead',
+      melodyAngel: 'lead',
+      melodyBuild: 'lead',
+      melodySwitch: 'lead',
+      melodyGhost: 'lead',
+      melodyDust: 'lead',
+    };
+    const laneForStringAt = (src, offset) => {
+      const prevSemi = src.lastIndexOf(';', offset);
+      const nextSemi = src.indexOf(';', offset);
+      const block = src.slice(prevSemi === -1 ? 0 : prevSemi + 1, nextSemi === -1 ? src.length : nextSemi + 1);
+      const trigger = block.match(/\.onTrigger\(\s*T\.([A-Za-z0-9_]+)\s*,\s*false\s*\)/)?.[1];
+      return triggerToLane[trigger] || '';
+    };
     // Wrap individual mini-notation tokens inside "..." so they can be
     // targeted by hap source-positions during playback. Each `data-start`
     // attribute carries the absolute character offset in `code`.
-    const tokeniseString = (lit, baseOffset) => {
+    const tokeniseString = (lit, baseOffset, lane = '') => {
       // lit includes the surrounding double-quotes
       let out = '<span class="sr-str">"';
       let k = 1; // skip opening quote
@@ -3862,7 +3960,14 @@ function StrudelReplFeature() {
         while (m < lit.length - 1 && /[A-Za-z0-9#.\/\-]/.test(lit[m])) m++;
         if (m > k) {
           const tok = lit.slice(k, m);
-          out += `<span class="sr-tok" data-start="${baseOffset + k}">${esc(tok)}</span>`;
+          const start = baseOffset + k;
+          const attrs = [
+            `data-start="${start}"`,
+            `data-end="${baseOffset + m}"`,
+            `data-token="${normalizeReplToken(tok)}"`,
+            lane ? `data-lane="${lane}"` : '',
+          ].filter(Boolean).join(' ');
+          out += `<span class="sr-tok" ${attrs}>${esc(tok)}</span>`;
           k = m;
         } else {
           out += esc(c);
@@ -3887,7 +3992,7 @@ function StrudelReplFeature() {
         let j = i + 1;
         while (j < src.length && src[j] !== '"' && src[j] !== '\n') j++;
         const stop = j < src.length && src[j] === '"' ? j + 1 : j;
-        out += tokeniseString(src.slice(i, stop), i);
+        out += tokeniseString(src.slice(i, stop), i, laneForStringAt(src, i));
         i = stop;
       } else {
         let j = i;
@@ -3901,7 +4006,7 @@ function StrudelReplFeature() {
       }
     }
     return out + '\n';
-  }, [code]);
+  }, [code, normalizeReplToken]);
 
   useEffect(() => {
     const section = document.getElementById('strudel');
