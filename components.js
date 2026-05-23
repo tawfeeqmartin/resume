@@ -5162,12 +5162,27 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     term.lines = [...term.lines, line].slice(-12);
   }, [ensureMacTerminal]);
 
+  const setScreenTextureSampling = React.useCallback((mode = 'media') => {
+    const state = stateRef.current;
+    const THREE = state.three;
+    const tex = state.screenTex;
+    if (!THREE || !tex) return;
+    const filter = mode === 'terminal' ? THREE.NearestFilter : THREE.LinearFilter;
+    if (tex.minFilter !== filter || tex.magFilter !== filter || tex.generateMipmaps) {
+      tex.minFilter = filter;
+      tex.magFilter = filter;
+      tex.generateMipmaps = false;
+      tex.needsUpdate = true;
+    }
+  }, []);
+
   // Paint the Mac's inactive screen as a period-ish monochrome terminal.
   // Draw directly at texture resolution so the UI keeps the vintage shape
   // without turning into a jagged low-res texture on the curved screen.
   const drawMacOffScreen = React.useCallback(() => {
     const { ctx2d, screenCanvas, screenTex } = stateRef.current;
     if (!ctx2d || !screenCanvas) return;
+    setScreenTextureSampling('terminal');
     const w = screenCanvas.width, h = screenCanvas.height;
     const term = ensureMacTerminal();
     const px = (value) => Math.round(value);
@@ -5208,7 +5223,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     ctx2d.fillStyle = paper;
     ctx2d.fillRect(wx, wy, ww, wh);
     ctx2d.strokeStyle = black;
-    ctx2d.lineWidth = 3;
+    ctx2d.lineWidth = 2;
     ctx2d.strokeRect(wx, wy, ww, wh);
     ctx2d.lineWidth = 2;
     ctx2d.strokeRect(wx + 5, wy + 5, ww - 10, wh - 10);
@@ -5295,12 +5310,13 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       screenTex.needsUpdate = true;
       stateRef.current.requestRender?.();
     }
-  }, [ensureMacTerminal]);
+  }, [ensureMacTerminal, setScreenTextureSampling]);
 
   // Draw a source image to the offscreen screen canvas with a light wash.
   const drawSourceToCanvas = React.useCallback((img, effect = null) => {
     const { ctx2d, screenCanvas, screenTex } = stateRef.current;
     if (!ctx2d || !screenCanvas) return;
+    setScreenTextureSampling('media');
     const w = screenCanvas.width, h = screenCanvas.height;
     ctx2d.fillStyle = '#000';
     ctx2d.fillRect(0, 0, w, h);
