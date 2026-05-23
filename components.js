@@ -3316,6 +3316,47 @@ function BlackbirdFeature({ innovationSrc, behindScenesSrc }) {
 // ────────────────────────────────────────────────────────────────────
 
 const STRUDEL_REPL_INITIAL_CODE = POETRY_IN_PROOF_SOURCE;
+const REPL_SCOPE_SPACER_LINES = 4;
+const REPL_SCOPE_CALL_RE = /\.(?:_?scope|_?tscope|_?fscope|_?spectrum)\s*\([^)]*\)\s*;?\s*(?:\/\/.*)?$/;
+
+function reserveReplScopeSpacing(source, selectionStart = null, selectionEnd = selectionStart) {
+  const lines = String(source || '').split('\n');
+  const out = [];
+  let changed = false;
+  let sourceOffset = 0;
+  let nextStart = Number.isFinite(selectionStart) ? selectionStart : null;
+  let nextEnd = Number.isFinite(selectionEnd) ? selectionEnd : nextStart;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lineStart = sourceOffset;
+    const lineEnd = lineStart + line.length;
+    out.push(line);
+    sourceOffset = lineEnd + (i < lines.length - 1 ? 1 : 0);
+
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('//') || !REPL_SCOPE_CALL_RE.test(line)) continue;
+
+    let blankCount = 0;
+    for (let j = i + 1; j < lines.length && blankCount < REPL_SCOPE_SPACER_LINES; j++) {
+      if (lines[j].trim()) break;
+      blankCount++;
+    }
+    const missing = REPL_SCOPE_SPACER_LINES - blankCount;
+    if (missing <= 0) continue;
+
+    changed = true;
+    for (let j = 0; j < missing; j++) out.push('');
+    if (nextStart !== null && selectionStart >= lineEnd) nextStart += missing;
+    if (nextEnd !== null && selectionEnd >= lineEnd) nextEnd += missing;
+  }
+
+  return {
+    source: changed ? out.join('\n') : source,
+    selectionStart: nextStart,
+    selectionEnd: nextEnd,
+  };
+}
 
 // Lanes shown in the MIDI bus monitor below the editor. The `lane` value
 // matches the lane id from SCENE_MIDI_MAP in the audio engine, which is
@@ -3740,7 +3781,9 @@ function StrudelReplFeature() {
   const [status, setStatus] = React.useState('idle'); // idle | loading | playing | error
   const [editStatus, setEditStatus] = React.useState('ready');
   const [errorMsg, setErrorMsg] = React.useState('');
-  const [code, setCode] = React.useState(() => getStoredPoetryInProofDraftSource());
+  const [code, setCode] = React.useState(() => (
+    reserveReplScopeSpacing(getStoredPoetryInProofDraftSource()).source
+  ));
   codeRef.current = code;
   // Source string the engine actually evaluated. Drives the highlight
   // overlay: hap locations refer to positions in this string, not the
@@ -3947,11 +3990,25 @@ function StrudelReplFeature() {
   }, [clearReplTokenFlashes]);
 
   const handleCodeChange = React.useCallback((event) => {
-    const next = event.target.value;
+    const rawNext = event.target.value;
+    const spaced = reserveReplScopeSpacing(
+      rawNext,
+      event.target.selectionStart,
+      event.target.selectionEnd
+    );
+    const next = spaced.source;
     setCode(next);
     savePoetryInProofDraftSource(next);
     setEditStatus('dirty');
-  }, []);
+    if (next !== rawNext && spaced.selectionStart !== null) {
+      window.requestAnimationFrame(() => {
+        const textarea = textareaRef.current;
+        if (!textarea || document.activeElement !== textarea) return;
+        textarea.setSelectionRange(spaced.selectionStart, spaced.selectionEnd ?? spaced.selectionStart);
+        syncScroll();
+      });
+    }
+  }, [syncScroll]);
 
   const handleEditorKeyDown = React.useCallback((event) => {
     if (event.key === 'Escape') {
