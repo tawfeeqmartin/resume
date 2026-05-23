@@ -5,7 +5,8 @@ const mediaUrl = (path) => {
   return `${PRODUCTION_MEDIA_ORIGIN}/${path.replace(/^media\//, '')}`;
 };
 const withCacheKey = (url, key) => `${url}${url.includes('?') ? '&' : '?'}v=${key}`;
-const TV_CLIP_CACHE_KEY = '20260521-mando-grogu-no-titles';
+const TV_CLIP_CACHE_KEY = '20260522-mando-snake-laugh-chops';
+const VOCAL_SAMPLE_CACHE_KEY = '20260522-joker-laugh-111235';
 const SITE_MODE_STORAGE_KEY = 'resume.desktop.mode';
 const IS_MOBILE_MEDIA_TARGET = window.matchMedia('(max-width: 900px), (pointer: coarse)').matches;
 const helpMeshSource = (path) => ({
@@ -30,56 +31,61 @@ const BLACKBIRD_VIDEO_URL = mediaUrl("media/blackbird.mp4");
 
 const CLEARED_TRAILER_GROUPS = [
   {
+    slug: 'mandalorian-grogu',
+    project: 'The Mandalorian and Grogu',
+    takes: [
+      70, 1, 10, 11, 12, 13, 14, 17, 18, 21, 25, 26, 27, 28, 29, 34, 38, 39,
+      41, 47, 49, 51, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66,
+      67, 68, 69,
+    ],
+    weight: 18,
+    lanes: ['kick', 'snare', 'bass', 'lead', 'switch', 'angel', 'idle', 'init'],
+  },
+  {
     slug: 'mandalorian-s3',
     project: 'The Mandalorian Season 3',
     sourceUrl: 'https://www.youtube.com/watch?v=Znsa4Deavgg',
-    weight: 8,
+    takes: [5, 7, 8],
+    weight: 5,
     lanes: ['kick', 'snare', 'bass', 'lead', 'lift', 'switch', 'angel', 'idle', 'init'],
   },
   {
     slug: 'obi-wan',
     project: 'Obi-Wan Kenobi',
     sourceUrl: 'https://www.youtube.com/watch?v=3Yh_6_zItPU',
-    takes: 6,
-    weight: 12,
+    takes: [7],
+    weight: 5,
     lanes: ['kick', 'snare', 'bass', 'lead', 'lift', 'build', 'ghost', 'idle', 'init'],
-  },
-  {
-    slug: 'mandalorian-grogu',
-    project: 'The Mandalorian and Grogu',
-    takes: 52,
-    weight: 7,
-    lanes: ['kick', 'snare', 'bass', 'lead', 'switch', 'angel', 'idle', 'init'],
-  },
-  {
-    slug: 'skeleton-crew',
-    project: 'Skeleton Crew',
-    weight: 7,
-    lanes: ['kick', 'snare', 'lead', 'lift', 'build', 'ghost', 'idle'],
-  },
-  {
-    slug: 'creator',
-    project: 'The Creator',
-    weight: 7,
-    lanes: ['snare', 'bass', 'lead', 'lift', 'switch', 'angel', 'idle'],
   },
   {
     slug: 'joker',
     project: 'Joker: Folie A Deux',
-    weight: 4,
+    takes: [5, 6, 7, 8, 9],
+    reelGroup: 'guest',
+    weight: 6,
     lanes: ['snare', 'lead', 'lift', 'ghost', 'idle'],
+  },
+  {
+    slug: 'creator',
+    project: 'The Creator',
+    takes: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+    reelGroup: 'guest',
+    weight: 5,
+    lanes: ['snare', 'bass', 'lead', 'lift', 'switch', 'angel', 'idle'],
   },
   {
     slug: 'andor-s2',
     project: 'Andor Season 2',
     sourceUrl: 'https://www.youtube.com/watch?v=QHAu5XHsDhQ',
-    takes: 6,
+    takes: [6],
     weight: 9,
     lanes: ['kick', 'snare', 'bass', 'lead', 'lift', 'build', 'ghost', 'idle', 'init'],
   },
   {
     slug: 'big-bold',
     project: 'A Big Bold Beautiful Journey',
+    takes: [2, 4],
+    reelGroup: 'guest',
     weight: 5,
     lanes: ['kick', 'snare', 'lead', 'lift', 'ghost', 'idle'],
   },
@@ -87,9 +93,14 @@ const CLEARED_TRAILER_GROUPS = [
 // Sources with more dead bars baked into the trailer file get an extra
 // punch-in on the Mac so the cinematic content fills the CRT.
 const CLEARED_TRAILER_PUNCH_IN = { creator: 1.34 };
-const CLEARED_TRAILER_SOURCES = CLEARED_TRAILER_GROUPS.flatMap((group) =>
-  Array.from({ length: group.takes || 4 }, (_, index) => {
-    const take = String(index + 1).padStart(2, '0');
+const CLEARED_TRAILER_SOURCES = CLEARED_TRAILER_GROUPS.flatMap((group) => {
+  const skipped = new Set(group.skip || []);
+  const takes = Array.isArray(group.takes)
+    ? group.takes
+    : Array.from({ length: group.takes || 4 }, (_, index) => index + 1);
+  return takes.map((takeId) => {
+    if (skipped.has(takeId)) return null;
+    const take = String(takeId).padStart(2, '0');
     return {
       url: withCacheKey(mediaUrl(`media/tv-clips/cleared-${group.slug}-${take}.mp4`), TV_CLIP_CACHE_KEY),
       kind: 'video',
@@ -101,48 +112,364 @@ const CLEARED_TRAILER_SOURCES = CLEARED_TRAILER_GROUPS.flatMap((group) =>
       cue: `cleared trailer phrase ${take}`,
       sampleKey: `${group.slug}-trailer-${take}`,
       sourceUrl: group.sourceUrl || '',
+      reelGroup: group.reelGroup || 'star-wars',
       weight: group.weight,
       lanes: group.lanes,
     };
-  })
-);
-const CLEARED_TRAILER_HOOK_GROUPS = [
-  { slug: 'mandalorian-s3', project: 'The Mandalorian Season 3', takes: 3, weight: 8 },
-  { slug: 'obi-wan', project: 'Obi-Wan Kenobi', takes: 3, weight: 12 },
-  { slug: 'mandalorian-grogu', project: 'The Mandalorian and Grogu', takes: 3, weight: 7 },
-  { slug: 'skeleton-crew', project: 'Skeleton Crew', takes: 3, weight: 7 },
-  { slug: 'creator', project: 'The Creator', takes: 3, weight: 7 },
-  { slug: 'joker', project: 'Joker: Folie A Deux', takes: 3, weight: 4 },
-  { slug: 'andor-s2', project: 'Andor Season 2', takes: 4, weight: 9 },
-  { slug: 'big-bold', project: 'A Big Bold Beautiful Journey', takes: 3, weight: 5 },
+  }).filter(Boolean);
+});
+const CURATED_VOCAL_LINES = [
+  {
+    file: 'vocal-mando-stand-for.m4a',
+    project: 'The Mandalorian Season 3',
+    cue: 'What do we stand for',
+    sampleKey: 'vocal-mando-stand-for',
+    responseSampleKey: 'vocal-mando-way-01',
+    callPhrases: [
+      { label: 'What do we stand for?', offset: 0, duration: 2.18, gain: 0.74 },
+    ],
+    callPattern: [
+      { target: 'selected', beat: 0, mode: 'call', pan: -0.08 },
+    ],
+    phrase: { label: 'What do we stand for?', offset: 0, duration: 2.18, gain: 0.88 },
+    chops: [
+      { label: 'what do we stand for', offset: 0, duration: 2.18, gain: 0.56, rate: 0.98 },
+    ],
+  },
+  {
+    file: 'vocal-mando-way-01.m4a',
+    project: 'The Mandalorian Season 3',
+    cue: 'This is the way',
+    sampleKey: 'vocal-mando-way-01',
+    answerPhrases: [
+      { label: 'This is the way.', offset: 0, duration: 1.3, gain: 0.78 },
+    ],
+    answerPattern: [
+      { target: 'selected', beat: 0.25, mode: 'answer', pan: 0.08, rate: 0.98 },
+    ],
+    phrase: { label: 'This is the way.', offset: 0, duration: 1.3, gain: 0.9 },
+    chops: [
+      { label: 'this is the way', offset: 0, duration: 1.3, gain: 0.64, rate: 0.96 },
+    ],
+  },
+  {
+    file: 'vocal-obi-kenobi-gone.m4a',
+    project: 'Obi-Wan Kenobi',
+    cue: "Kenobi is gone",
+    sampleKey: 'vocal-obi-kenobi-gone',
+    answerPhrases: [
+      { label: "It's gone.", offset: 0, duration: 2, gain: 0.5 },
+    ],
+    answerPattern: [
+      { target: 'selected', beat: 0.25, mode: 'answer', pan: -0.1, texture: 'dust' },
+    ],
+    phrase: { label: "It's gone.", offset: 0, duration: 2, gain: 0.62 },
+    chops: [
+      { label: "it's gone", offset: 0, duration: 2, gain: 0.42, rate: 0.94 },
+    ],
+  },
+  {
+    file: 'vocal-obi-cant-run.m4a',
+    project: 'Obi-Wan Kenobi',
+    cue: "You can't run",
+    sampleKey: 'vocal-obi-cant-run',
+    answerPhrases: [
+      { label: "You can't escape.", offset: 5.82, duration: 1.7, gain: 0.68 },
+    ],
+    answerPattern: [
+      { target: 'selected', beat: 0.25, mode: 'answer', pan: 0.1, rate: 0.98 },
+    ],
+    phrase: { label: "You can't escape him.", offset: 5.82, duration: 1.7, gain: 0.8 },
+    chops: [
+      { label: "you can't escape", offset: 5.82, duration: 1.7, gain: 0.54, rate: 0.96 },
+    ],
+  },
+  {
+    file: 'vocal-andor-revolution.m4a',
+    project: 'Andor Season 2',
+    cue: 'Rebellion starts now',
+    sampleKey: 'vocal-andor-revolution',
+    responseSampleKey: 'vocal-andor-fight',
+    phrase: { label: 'Rebellion starts now.', offset: 0, duration: 2.96, gain: 0.58 },
+  },
+  {
+    file: 'vocal-andor-fight.m4a',
+    project: 'Andor Season 2',
+    cue: "You're ready to fight",
+    sampleKey: 'vocal-andor-fight',
+    answerPhrases: [
+      { label: "You're here, and you're ready to fight.", offset: 5.32, duration: 2.5, gain: 0.66 },
+      { label: 'Remember this moment.', offset: 0, duration: 1.36, gain: 0.58 },
+    ],
+    answerPattern: [
+      { label: 'remember this moment', beat: 0, mode: 'chop', pan: -0.16, texture: 'ghost', gain: 0.78 },
+      { label: "you're ready to fight", beat: 2.5, mode: 'chop', pan: 0.14, rate: 0.96 },
+      { target: 'selected', beat: 4.25, mode: 'answer', pan: 0.02 },
+    ],
+    phrase: { label: "You're here, and you're ready to fight.", offset: 5.32, duration: 2.5, gain: 0.78 },
+    chops: [
+      { label: 'remember this moment', offset: 0, duration: 1.36, gain: 0.46, rate: 0.96 },
+      { label: "you're ready to fight", offset: 7, duration: 0.84, gain: 0.56, rate: 0.94 },
+    ],
+  },
+  {
+    file: 'vocal-jobs-secrets-life-clean.m4a',
+    project: 'Steve Jobs Secrets of Life',
+    sourceUrl: 'https://www.youtube.com/watch?v=kYfNvmF0Bqw&t=39s',
+    cue: 'Build your own things',
+    sampleKey: 'vocal-jobs-secrets-life',
+    volume: 0.88,
+    priority: 4,
+    breakdownModes: ['answer', 'rest', 'chop', 'rest'],
+    callPhrases: [
+      { label: 'Life can be much broader once you discover one simple fact.', offset: 2.72, duration: 3.44, gain: 0.68 },
+      { label: 'Everything around you that you call life was made up by people that were no smarter than you.', offset: 7.2, duration: 6.18, gain: 0.72 },
+      { label: 'You can change it. You can influence it.', offset: 14.02, duration: 2.42, gain: 0.7 },
+      { label: 'Can poke life.', offset: 22.76, duration: 1.12, gain: 0.62 },
+    ],
+    callPattern: [
+      { target: 'selected', beat: 0, mode: 'call', pan: -0.06 },
+      { label: 'change it', beat: 5.5, mode: 'chop', pan: 0.18, texture: 'ghost', gain: 0.58, rate: 1.04 },
+    ],
+    answerPhrases: [
+      { label: 'You can build your own things that other people can use.', offset: 16.7, duration: 3.32, gain: 0.84 },
+      { label: 'Other people can use.', offset: 18.72, duration: 1.3, gain: 0.66 },
+      { label: 'You can change it. You can mold it.', offset: 28.22, duration: 2.08, gain: 0.66 },
+    ],
+    answerPattern: [
+      { label: 'made up by people', beat: 0, mode: 'chop', pan: -0.18, rate: 1.02 },
+      { label: 'made up by people', beat: 1.25, mode: 'chop', pan: 0.16, rate: 1.08, texture: 'dust', gain: 0.72 },
+      { label: 'no smarter than you', beat: 2.75, mode: 'chop', pan: -0.05, rate: 0.96 },
+      { target: 'selected', beat: 4.5, mode: 'answer', pan: 0.04 },
+    ],
+    phrases: [
+      { label: 'Everything around you that you call life was made up by people that were no smarter than you.', offset: 7.2, duration: 6.18, gain: 0.82 },
+      { label: 'You can build your own things that other people can use.', offset: 16.7, duration: 3.32, gain: 0.92 },
+      { label: 'You can change it. You can influence it.', offset: 14.02, duration: 2.42, gain: 0.82 },
+      { label: 'Life can be much broader once you discover one simple fact.', offset: 2.72, duration: 3.44, gain: 0.76 },
+      { label: 'Poke life, push in, and something can pop out the other side.', offset: 21.4, duration: 6.56, gain: 0.72 },
+    ],
+    phrase: { label: 'You can build your own things that other people can use.', offset: 16.7, duration: 3.32, gain: 0.92 },
+    chopPattern: [
+      { label: 'made up by people', beat: 0 },
+      { label: 'made up by people', beat: 1 },
+      { label: 'no smarter than you', beat: 2.5 },
+      { label: 'change it', beat: 4.5 },
+      { label: 'build your own things', beat: 6 },
+      { label: 'other people can use', beat: 8 },
+    ],
+    chopLandingBeat: 10.5,
+    chops: [
+      { label: 'made up by people', offset: 10.0, duration: 1.28, gain: 0.52, rate: 1.0 },
+      { label: 'no smarter than you', offset: 11.78, duration: 1.58, gain: 0.52, rate: 0.96 },
+      { label: 'change it', offset: 14.64, duration: 0.72, gain: 0.5, rate: 1.04 },
+      { label: 'build your own things', offset: 17.36, duration: 1.18, gain: 0.58, rate: 1.0 },
+      { label: 'other people can use', offset: 18.72, duration: 1.3, gain: 0.5, rate: 0.92 },
+    ],
+  },
+  {
+    file: 'vocal-kanye-answers-sway-clean.m4a',
+    project: 'Kanye West / Sway interview clip',
+    sourceUrl: 'https://www.youtube.com/watch?v=2RcAzPMhdB0',
+    cue: "You ain't got the answers",
+    sampleKey: 'vocal-kanye-answers-sway',
+    volume: 0.66,
+    priority: 3,
+    callPhrases: [
+      { label: "You ain't got the answers.", offset: 8.72, duration: 1.12, gain: 0.58 },
+    ],
+    callPattern: [
+      { target: 'selected', beat: 0, mode: 'call', pan: -0.12 },
+      { label: "you ain't got the answer", beat: 2.25, mode: 'chop', pan: 0.14, texture: 'ghost', gain: 0.72, rate: 1.06 },
+    ],
+    answerPhrases: [
+      { label: "I've been doing this more than you.", offset: 13.92, duration: 2.08, gain: 0.58 },
+      { label: "You ain't been doing the education.", offset: 21.88, duration: 1.6, gain: 0.52 },
+    ],
+    answerPattern: [
+      { label: "you ain't got the answer", beat: 0, mode: 'chop', pan: -0.2, rate: 1.04 },
+      { label: 'got the answers', beat: 1.5, mode: 'chop', pan: 0.15, rate: 0.98 },
+      { label: 'education', beat: 2.75, mode: 'chop', pan: -0.02, texture: 'dust', gain: 0.72, rate: 0.94 },
+      { target: 'selected', beat: 4.25, mode: 'answer', pan: 0.08 },
+    ],
+    phrases: [
+      { label: "You ain't got the answers, man.", offset: 6.96, duration: 1.46, gain: 0.66 },
+      { label: "You ain't got the answers.", offset: 8.72, duration: 1.12, gain: 0.66 },
+      { label: "I've been doing this more than you.", offset: 13.92, duration: 2.08, gain: 0.64 },
+      { label: "You ain't been doing the education.", offset: 21.88, duration: 1.6, gain: 0.6 },
+      { label: "You don't have the answers.", offset: 26.2, duration: 0.92, gain: 0.58 },
+    ],
+    phrase: { label: "I've been doing this more than you.", offset: 13.92, duration: 2.08, gain: 0.64 },
+    chops: [
+      { label: "you ain't got the answer", offset: 8.72, duration: 1.12, gain: 0.42, rate: 1.02 },
+      { label: 'got the answers', offset: 10.66, duration: 0.96, gain: 0.4, rate: 0.96 },
+      { label: 'education', offset: 22.4, duration: 1.08, gain: 0.38, rate: 0.92 },
+    ],
+  },
+  {
+    file: 'vocal-jobs-crazy-ones.m4a',
+    project: 'Apple Think Different',
+    sourceUrl: 'https://www.youtube.com/watch?v=-z4NS2zdrZc',
+    cue: 'Change things',
+    sampleKey: 'vocal-jobs-crazy-ones',
+    volume: 0.78,
+    priority: 3,
+    callPhrases: [
+      { label: 'Here is to the crazy ones.', offset: 3.96, duration: 2.62, gain: 0.62 },
+      { label: 'The ones who see things differently.', offset: 15.94, duration: 2.24, gain: 0.68 },
+      { label: 'The misfits, the rebels, the troublemakers.', offset: 6.78, duration: 5.38, gain: 0.58 },
+      { label: 'The round pegs in the square holes.', offset: 12.36, duration: 3.2, gain: 0.58 },
+      { label: 'You can quote them, disagree with them.', offset: 24.64, duration: 2.86, gain: 0.58 },
+      { label: 'The only thing you cannot do is ignore them.', offset: 30.84, duration: 2.78, gain: 0.62 },
+      { label: 'The people who are crazy enough to think they can change the world.', offset: 47.54, duration: 4.72, gain: 0.68 },
+    ],
+    callPattern: [
+      { target: 'selected', beat: 0, mode: 'call', pan: -0.08 },
+      { label: 'round pegs', beat: 4.25, mode: 'chop', pan: 0.16, texture: 'ghost', gain: 0.68, rate: 1.02 },
+      { label: 'square holes', beat: 5.25, mode: 'chop', pan: -0.12, texture: 'dust', gain: 0.66, rate: 0.96 },
+      { label: 'status quo', beat: 6.5, mode: 'chop', pan: 0.12, texture: 'ghost', gain: 0.58, rate: 1.04 },
+    ],
+    answerPhrases: [
+      { label: 'Ignore them, because they change things.', offset: 32.72, duration: 3.28, gain: 0.72 },
+      { label: 'Because they change things.', offset: 34.26, duration: 1.82, gain: 0.72 },
+      { label: 'They push the human race forward.', offset: 36.62, duration: 3.84, gain: 0.7 },
+      { label: 'We see genius.', offset: 44.32, duration: 3.05, gain: 0.62 },
+      { label: 'They can change the world.', offset: 49.48, duration: 2.82, gain: 0.68 },
+    ],
+    answerPattern: [
+      { label: 'ignore them', beat: 0, mode: 'chop', pan: -0.18, texture: 'ghost', gain: 0.72, rate: 1.02 },
+      { label: 'change things', beat: 1.25, mode: 'chop', pan: 0.14, gain: 0.72, rate: 1.02 },
+      { label: 'human race', beat: 2.5, mode: 'chop', pan: -0.08, texture: 'dust', gain: 0.68, rate: 0.96 },
+      { label: 'genius', beat: 3.5, mode: 'chop', pan: 0.18, texture: 'ghost', gain: 0.58, rate: 1.08 },
+      { target: 'selected', beat: 4.75, mode: 'answer', pan: 0.02 },
+    ],
+    phrases: [
+      { label: 'Here is to the crazy ones.', offset: 3.96, duration: 2.62, gain: 0.72 },
+      { label: 'The misfits, the rebels, the troublemakers.', offset: 6.78, duration: 5.38, gain: 0.68 },
+      { label: 'The round pegs in the square holes.', offset: 12.36, duration: 3.2, gain: 0.68 },
+      { label: 'The ones who see things differently.', offset: 15.94, duration: 2.24, gain: 0.78 },
+      { label: 'They have no respect for the status quo.', offset: 20.84, duration: 3.2, gain: 0.66 },
+      { label: 'You can quote them, disagree with them.', offset: 24.64, duration: 2.86, gain: 0.68 },
+      { label: 'Glorify or vilify them.', offset: 27.58, duration: 1.78, gain: 0.64 },
+      { label: 'The only thing you cannot do is ignore them.', offset: 30.84, duration: 2.78, gain: 0.72 },
+      { label: 'Because they change things.', offset: 34.26, duration: 1.82, gain: 0.82 },
+      { label: 'They push the human race forward.', offset: 36.62, duration: 3.84, gain: 0.8 },
+      { label: 'We see genius.', offset: 44.32, duration: 3.05, gain: 0.7 },
+      { label: 'The people who are crazy enough to think they can change the world.', offset: 47.54, duration: 4.72, gain: 0.78 },
+      { label: 'They can change the world.', offset: 49.48, duration: 2.82, gain: 0.78 },
+    ],
+    phrase: { label: 'Because they change things.', offset: 34.26, duration: 1.82, gain: 0.82 },
+    chopPattern: [
+      { label: 'crazy ones', beat: 0, pan: -0.16, rate: 0.98 },
+      { label: 'the misfits', beat: 0.75, pan: 0.14, texture: 'ghost', gain: 0.76, rate: 1.04 },
+      { label: 'the rebels', beat: 1.5, pan: -0.08, rate: 0.98 },
+      { label: 'the troublemakers', beat: 2.25, pan: 0.18, texture: 'dust', gain: 0.72, rate: 1.06 },
+      { label: 'round pegs', beat: 3.5, pan: -0.12, rate: 1.0 },
+      { label: 'square holes', beat: 4.25, pan: 0.12, texture: 'ghost', gain: 0.72, rate: 0.94 },
+      { label: 'status quo', beat: 5.75, pan: -0.16, texture: 'dust', gain: 0.66, rate: 1.04 },
+      { label: 'quote them', beat: 6.5, pan: 0.14, gain: 0.62, rate: 0.98 },
+      { label: 'disagree with them', beat: 7.25, pan: -0.04, texture: 'ghost', gain: 0.62, rate: 1.02 },
+      { label: 'glorify', beat: 8.25, pan: 0.16, gain: 0.58, rate: 1.08 },
+      { label: 'vilify them', beat: 9, pan: -0.12, texture: 'dust', gain: 0.58, rate: 0.96 },
+      { label: 'ignore them', beat: 10.25, pan: 0.08, gain: 0.68, rate: 1.0 },
+      { label: 'change things', beat: 11.25, pan: -0.16, gain: 0.74, rate: 1.02 },
+      { label: 'genius', beat: 12.5, pan: 0.18, texture: 'ghost', gain: 0.62, rate: 1.08 },
+      { label: 'change the world', beat: 13.25, pan: 0.02, gain: 0.72, rate: 0.96 },
+    ],
+    chopLandingBeat: 14.75,
+    chops: [
+      { label: 'crazy ones', offset: 4.56, duration: 1.9, gain: 0.42, rate: 0.98 },
+      { label: 'the misfits', offset: 6.78, duration: 0.92, gain: 0.48, rate: 1.03 },
+      { label: 'the rebels', offset: 8.66, duration: 0.52, gain: 0.5, rate: 0.98 },
+      { label: 'the troublemakers', offset: 10.4, duration: 0.9, gain: 0.46, rate: 1.08 },
+      { label: 'round pegs', offset: 12.36, duration: 0.72, gain: 0.46, rate: 1.0 },
+      { label: 'square holes', offset: 14.76, duration: 0.82, gain: 0.46, rate: 0.94 },
+      { label: 'see things differently', offset: 16.54, duration: 1.64, gain: 0.48, rate: 0.92 },
+      { label: 'not fond of rules', offset: 19.1, duration: 1.24, gain: 0.45, rate: 0.95 },
+      { label: 'no respect', offset: 20.82, duration: 0.94, gain: 0.42, rate: 0.96 },
+      { label: 'status quo', offset: 22.14, duration: 1.76, gain: 0.42, rate: 1.02 },
+      { label: 'quote them', offset: 24.96, duration: 0.62, gain: 0.38, rate: 0.98 },
+      { label: 'disagree with them', offset: 25.92, duration: 1.06, gain: 0.38, rate: 1.02 },
+      { label: 'glorify', offset: 27.58, duration: 0.58, gain: 0.36, rate: 1.08 },
+      { label: 'vilify them', offset: 28.48, duration: 0.82, gain: 0.36, rate: 0.96 },
+      { label: 'ignore them', offset: 32.68, duration: 0.86, gain: 0.48, rate: 1.0 },
+      { label: 'change things', offset: 35.02, duration: 1.02, gain: 0.54, rate: 1.02 },
+      { label: 'human race', offset: 37.22, duration: 0.84, gain: 0.48, rate: 0.92 },
+      { label: 'forward', offset: 39.52, duration: 0.72, gain: 0.38, rate: 0.92 },
+      { label: 'some may see them', offset: 40.56, duration: 0.96, gain: 0.36, rate: 1.0 },
+      { label: 'we see', offset: 44.32, duration: 0.86, gain: 0.36, rate: 1.04 },
+      { label: 'genius', offset: 46.5, duration: 0.86, gain: 0.44, rate: 1.08 },
+      { label: 'crazy enough', offset: 48.48, duration: 0.58, gain: 0.42, rate: 0.98 },
+      { label: 'change the world', offset: 49.48, duration: 2.82, gain: 0.5, rate: 0.94 },
+    ],
+  },
+  {
+    file: 'vocal-joker-laugh-clean.m4a',
+    project: 'Joker: Folie A Deux',
+    sourceUrl: 'https://www.youtube.com/watch?v=onGdcH0vW50',
+    cue: 'Joker laugh hit',
+    sampleKey: 'vocal-joker-laugh',
+    volume: 1.16,
+    priority: 3,
+    breakdownModes: ['chop', 'rest', 'chop', 'rest'],
+    answerPhrases: [
+      { label: 'Tight laugh hit.', offset: 0, duration: 1.28, gain: 0.58 },
+    ],
+    answerPattern: [
+      { label: 'laugh bite', beat: 0, mode: 'chop', pan: -0.16, gain: 1.34, rate: 0.96 },
+      { label: 'laugh bite', beat: 0.5, mode: 'chop', pan: 0.12, gain: 1.22, rate: 1.08 },
+      { label: 'laugh accent', beat: 1, mode: 'chop', pan: -0.06, gain: 1.28, rate: 0.9 },
+      { label: 'laugh exclaim', beat: 1.75, mode: 'chop', pan: 0.18, gain: 1.38, rate: 1.16 },
+    ],
+    chopPattern: [
+      { label: 'laugh bite', beat: 0, pan: -0.2, gain: 1.36, rate: 0.94 },
+      { label: 'laugh bite', beat: 0.5, pan: 0.16, gain: 1.2, rate: 1.08 },
+      { label: 'laugh bite', beat: 1, pan: -0.08, gain: 1.26, rate: 0.98 },
+      { label: 'laugh accent', beat: 1.5, pan: 0.18, gain: 1.34, rate: 1.14 },
+      { label: 'laugh bite', beat: 2.25, pan: -0.14, gain: 1.18, rate: 0.88 },
+      { label: 'laugh exclaim', beat: 3, pan: 0.18, gain: 1.42, rate: 1.18 },
+      { label: 'joker laugh', beat: 4.5, pan: -0.04, gain: 1.08, rate: 0.94 },
+    ],
+    chops: [
+      { label: 'laugh bite', offset: 0.02, duration: 0.24, gain: 0.98, rate: 0.98 },
+      { label: 'laugh accent', offset: 0.18, duration: 0.34, gain: 1.0, rate: 1.04 },
+      { label: 'laugh exclaim', offset: 0.32, duration: 0.4, gain: 1.0, rate: 1.12 },
+      { label: 'joker laugh', offset: 0.14, duration: 0.68, gain: 0.92, rate: 1.0 },
+      { label: 'laugh tail', offset: 0.74, duration: 0.42, gain: 0.78, rate: 0.92 },
+    ],
+  },
 ];
-const CLEARED_TRAILER_HOOK_SOURCES = CLEARED_TRAILER_HOOK_GROUPS.flatMap((group) =>
-  Array.from({ length: group.takes }, (_, index) => {
-    const take = String(index + 1).padStart(2, '0');
-    return {
-      url: withCacheKey(mediaUrl(`media/tv-clips/cleared-${group.slug}-hook-${take}.mp4`), TV_CLIP_CACHE_KEY),
-      kind: 'video',
-      fit: 'contain',
-      matteAspect: 2.39,
-      punchIn: CLEARED_TRAILER_PUNCH_IN[group.slug] || 1,
-      optional: true,
-      pool: 'vocal-hook',
-      hasAudio: true,
-      project: group.project,
-      cue: `vocal hook ${take}`,
-      sampleKey: `${group.slug}-hook-${take}`,
-      weight: group.weight,
-      lanes: ['vocal'],
-    };
-  })
-);
+const CURATED_VOCAL_SAMPLE_SOURCES = CURATED_VOCAL_LINES.map((line) => ({
+  url: withCacheKey(mediaUrl(`media/audio/vocal-stems/${line.file}`), VOCAL_SAMPLE_CACHE_KEY),
+  kind: 'audio',
+  optional: true,
+  pool: 'vocal-sample',
+  volume: line.volume ?? 0.78,
+  project: line.project,
+  sourceUrl: line.sourceUrl || '',
+  cue: line.cue,
+  sampleKey: line.sampleKey,
+  responseSampleKey: line.responseSampleKey,
+  priority: line.priority || 1,
+  breakdownModes: line.breakdownModes,
+  chopPattern: line.chopPattern,
+  chopLandingBeat: line.chopLandingBeat,
+  callPattern: line.callPattern,
+  answerPattern: line.answerPattern,
+  callPhrases: line.callPhrases,
+  answerPhrases: line.answerPhrases,
+  phrases: line.phrases,
+  phrase: line.phrase,
+  chops: line.chops,
+  weight: 1,
+  lanes: ['vocal'],
+}));
 const TV_VIDEO_SOURCES = [
   ...CLEARED_TRAILER_SOURCES,
-  ...CLEARED_TRAILER_HOOK_SOURCES,
 ];
 window.RESUME_TV_CLIP_POOLS = {
   visual: CLEARED_TRAILER_SOURCES,
-  vocal: CLEARED_TRAILER_HOOK_SOURCES,
+  vocal: CURATED_VOCAL_SAMPLE_SOURCES,
 };
 const MOBILE_RESUME_QUERY = '(max-width: 760px), (pointer: coarse)';
 
@@ -197,7 +524,6 @@ function DesktopModeToggle({ mode, onModeChange }) {
         aria-pressed={mode === 'read-only'}
         onClick={() => switchMode('read-only')}
       >
-        <span className="site-mode-toggle__mark site-mode-toggle__mark--triangle" aria-hidden="true"></span>
         read-only
       </button>
       <button
@@ -206,7 +532,6 @@ function DesktopModeToggle({ mode, onModeChange }) {
         aria-pressed={mode === 'more-than-words'}
         onClick={() => switchMode('more-than-words')}
       >
-        <span className="site-mode-toggle__mark site-mode-toggle__mark--square" aria-hidden="true"></span>
         more-than-words
       </button>
     </div>
@@ -544,7 +869,7 @@ function App() {
             </h1>
           </div>
           <aside className="hero-stack__sticky">
-            <TvHero sources={TV_VIDEO_SOURCES} />
+            <TvHero sources={TV_VIDEO_SOURCES} vocalSamples={CURATED_VOCAL_SAMPLE_SOURCES} />
           </aside>
           <div className="hero-stack__flow">
             <Summary text={RESUME.summary} />

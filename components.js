@@ -282,6 +282,7 @@ function getResumeStrudelAudioEngine() {
     switch: { channel: 13, note: 71, group: 'melody', label: 'switch' },
     ghost: { channel: 14, note: 74, group: 'melody', label: 'ghost' },
     dust: { channel: 15, note: 96, group: 'melody', label: 'dust' },
+    vocal: { channel: 16, note: 60, group: 'vocal', label: 'vocal chop' },
   };
   const phraseSteps = 32;
   const songPresets = [
@@ -809,6 +810,24 @@ function getResumeStrudelAudioEngine() {
     }, delayMs);
   };
 
+  const normalizedTriggerVelocity = (value = {}, fallback = 1) => {
+    if (typeof value === 'number') return Math.max(0, Math.min(1.6, value));
+    const candidates = [
+      value?.velocity,
+      value?.vel,
+      value?.amp,
+      value?.amplitude,
+      value?.gain,
+      value?.sustain,
+      value?.volume,
+    ];
+    for (const candidate of candidates) {
+      const numeric = Number(candidate?.valueOf?.() ?? candidate);
+      if (Number.isFinite(numeric)) return Math.max(0, Math.min(1.6, numeric));
+    }
+    return fallback;
+  };
+
   const sendMidiOut = (detail) => {
     if (!midiOutputEnabled || !midiOutput || detail.type !== 'noteon' || !Number.isFinite(detail.note)) return;
     const channel = Math.max(1, Math.min(16, detail.channel || 10)) - 1;
@@ -882,19 +901,34 @@ function getResumeStrudelAudioEngine() {
     const timing = visualTimingFor();
     const id = ++bassTriggerId;
     const duration = Math.max(120, timing.stepMs * 1.35);
+    const soloActive = mixChannels.some((channel) => mixChannelState.solo[channel]);
+    const bassFader = mixChannelState.mute.bass || (soloActive && !mixChannelState.solo.bass)
+      ? 0
+      : (mixSettings.bass ?? 1);
+    // Keep visual response tied to the audible bass fader/master, but do
+    // not let scroll-layer fades fully suppress the CRT hit. Otherwise the
+    // bass lane can still be playing while the screen gets no event at all.
+    const bassLayer = Math.max(0.42, Math.min(1, scrollLayerState.harmony ?? 1));
+    const masterLevel = mixSettings.master ?? 1;
+    const triggerVelocity = normalizedTriggerVelocity(value, 1);
+    const audibleBassLevel = Math.max(0, bassFader * bassLayer * masterLevel);
+    if (bassFader * masterLevel <= 0.01) return;
+    const volumeDrive = Math.pow(Math.max(0.18, Math.min(3.0, audibleBassLevel)) / 1.35, 0.74);
+    const visualStrength = Math.max(0.68, Math.min(1.9, volumeDrive * triggerVelocity));
     dispatchLaneMidiEvent(lane, {
       id,
       scheduledTime,
       duration,
       raw: value,
-      velocity: 0.78,
+      velocity: Math.max(0.05, Math.min(1, visualStrength / 1.7)),
     });
     dispatchSyncedMusicEvent('resume-bass-hit', {
       id,
       lane,
       scheduledTime,
       duration,
-      strength: 0.9,
+      strength: visualStrength,
+      bassLevel: audibleBassLevel,
     });
   };
 
@@ -1423,6 +1457,9 @@ function getResumeStrudelAudioEngine() {
     get sceneMidiMap() { return { ...SCENE_MIDI_MAP }; },
     get drumMidiMap() {
       return Object.fromEntries(Object.entries(SCENE_MIDI_MAP).filter(([, value]) => value.group === 'drums'));
+    },
+    emitSceneLane(lane, detail = {}) {
+      dispatchLaneMidiEvent(lane, detail);
     },
     get midiOutputEnabled() { return midiOutputEnabled; },
     get midiOutputId() { return midiOutput?.id || ''; },
@@ -2162,9 +2199,9 @@ function HelpPlayer({ src }) {
   const keyboardStartPendingRef = useRef(false);
   const resizeTimerRef = useRef(null);
 
-  const forceRendererResize = React.useCallback(() => {
-    const renderer = rendererRef.current;
-    if (!renderer?.resize) return;
+	  const forceRendererResize = React.useCallback(() => {
+	    const renderer = rendererRef.current;
+	    if (!renderer?.resize) return;
     renderer.resize();
     requestAnimationFrame(() => {
       rendererRef.current?.resize?.();
@@ -2174,11 +2211,56 @@ function HelpPlayer({ src }) {
     resizeTimerRef.current = window.setTimeout(() => {
       resizeTimerRef.current = null;
       rendererRef.current?.resize?.();
-    }, 260);
-  }, []);
+	    }, 260);
+	  }, []);
 
-  useEffect(() => {
-    const host = hostRef.current;
+	  const getVideoUrl = React.useCallback((candidate) => {
+	    if (typeof candidate === 'string') return candidate;
+	    return candidate.videoUrl || candidate.src || candidate.url;
+	  }, []);
+
+	  const canPlaySource = React.useCallback((candidate) => {
+	    const clean = String(getVideoUrl(candidate)).split('?')[0].toLowerCase();
+	    const probeVideo = document.createElement('video');
+	    if (clean.endsWith('.mp4')) return probeVideo.canPlayType('video/mp4') !== '';
+	    if (clean.endsWith('.webm')) {
+	      return probeVideo.canPlayType('video/webm; codecs="vp9, opus"') !== ''
+	        || probeVideo.canPlayType('video/webm') !== '';
+	    }
+	    return true;
+	  }, [getVideoUrl]);
+
+	  useEffect(() => {
+	    let cancelled = false;
+	    let idleId = 0;
+	    let timerId = 0;
+	    const sources = Array.isArray(src) ? src : [src];
+	    const warm = async () => {
+	      try {
+	        const candidate = sources.find(canPlaySource);
+	        if (!candidate) return;
+	        const spotlightLoader = window.__loadSpotlightBundle || (() => window.__spotlightBundlePromise);
+	        const mod = await spotlightLoader();
+	        if (cancelled) return;
+	        await mod.preloadSpotlightSource?.(candidate);
+	      } catch (error) {
+	        console.warn('[help-player] preload failed', error);
+	      }
+	    };
+	    if ('requestIdleCallback' in window) {
+	      idleId = window.requestIdleCallback(warm, { timeout: 1400 });
+	    } else {
+	      timerId = window.setTimeout(warm, 900);
+	    }
+	    return () => {
+	      cancelled = true;
+	      if (idleId) window.cancelIdleCallback?.(idleId);
+	      if (timerId) window.clearTimeout(timerId);
+	    };
+	  }, [src, canPlaySource]);
+
+	  useEffect(() => {
+	    const host = hostRef.current;
     const slot = host?.closest('.help-player');
     if (!slot || typeof IntersectionObserver === 'undefined') {
       setShouldLoad(true);
@@ -2190,31 +2272,15 @@ function HelpPlayer({ src }) {
         setShouldLoad(true);
         observer.disconnect();
       },
-      { rootMargin: '520px 0px', threshold: 0.01 }
-    );
+	      { rootMargin: '1600px 0px', threshold: 0.01 }
+	    );
     observer.observe(slot);
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    if (!shouldLoad) return undefined;
-    let cancelled = false;
-    const probeVideo = document.createElement('video');
-    const getVideoUrl = (candidate) => {
-      if (typeof candidate === 'string') return candidate;
-      return candidate.videoUrl || candidate.src || candidate.url;
-    };
-    const canPlaySource = (candidate) => {
-      const clean = String(getVideoUrl(candidate)).split('?')[0].toLowerCase();
-      if (clean.endsWith('.mp4')) return probeVideo.canPlayType('video/mp4') !== '';
-      if (clean.endsWith('.webm')) {
-        // Accept any non-empty canPlayType for WebM (covers Chrome,
-        // Firefox, Safari Mac which returns 'maybe').
-        return probeVideo.canPlayType('video/webm; codecs="vp9, opus"') !== ''
-          || probeVideo.canPlayType('video/webm') !== '';
-      }
-      return true;
-    };
+	  useEffect(() => {
+	    if (!shouldLoad) return undefined;
+	    let cancelled = false;
     async function go() {
       try {
         const sources = Array.isArray(src) ? src : [src];
@@ -2278,7 +2344,7 @@ function HelpPlayer({ src }) {
         resizeTimerRef.current = null;
       }
     };
-  }, [src, shouldLoad, forceRendererResize]);
+	  }, [src, shouldLoad, forceRendererResize, canPlaySource, getVideoUrl]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -4132,7 +4198,7 @@ function getMacTerminalCharacter(code, shiftKey = false) {
 
 const TV_HERO_VIDEO_CACHE_LIMIT = 12;
 
-function TvHero({ sources = [], children }) {
+function TvHero({ sources = [], vocalSamples = [], children }) {
   const wrapRef = React.useRef(null);
   const canvasRef = React.useRef(null);
   const stateRef = React.useRef({
@@ -4155,6 +4221,15 @@ function TvHero({ sources = [], children }) {
     currentContentRect: null,
     currentActiveRect: null,
     videoCache: new Map(),
+    vocalSampleCache: new Map(),
+    vocalSampleNodes: new Set(),
+    vocalSampleCursor: 0,
+    vocalSampleRecent: [],
+    vocalSampleLoop: -1,
+    vocalSampleSection: '',
+    lastVocalCallKey: '',
+    vocalSampleSlots: new Set(),
+    vocalRegionCursors: new Map(),
     videoRaf: 0,
     videoFrameRequest: 0,
     tracking: { activeUntil: 0, seed: 0, strength: 0 },
@@ -4168,6 +4243,8 @@ function TvHero({ sources = [], children }) {
     recent: [],
     recentProjects: [],
     laneCursors: new Map(),
+    songStartedAt: 0,
+    rhythmCutCount: 0,
     lastCutAt: 0,
     lastRhythmCutAt: 0,
     lastSparseCutAt: 0,
@@ -4202,6 +4279,18 @@ function TvHero({ sources = [], children }) {
 
   const RECENT_WINDOW = 28;
   const RECENT_PROJECT_WINDOW = 3;
+  const VOCAL_HOOK_VOLUME = 0.78;
+  const ARRANGEMENT_CYCLES = 40;
+  const PRECHORUS_START_CYCLES = 20;
+  const PRECHORUS_END_CYCLES = 24;
+  const BREAKDOWN_START_CYCLES = 32;
+  const BREAKDOWN_END_CYCLES = 40;
+  const ARRANGEMENT_CYCLE_MS = 60000 / (153 / 4);
+  const ARRANGEMENT_MS = ARRANGEMENT_CYCLE_MS * ARRANGEMENT_CYCLES;
+  const PRECHORUS_START_MS = ARRANGEMENT_CYCLE_MS * PRECHORUS_START_CYCLES;
+  const PRECHORUS_END_MS = ARRANGEMENT_CYCLE_MS * PRECHORUS_END_CYCLES;
+  const BREAKDOWN_START_MS = ARRANGEMENT_CYCLE_MS * BREAKDOWN_START_CYCLES;
+  const BREAKDOWN_END_MS = ARRANGEMENT_CYCLE_MS * BREAKDOWN_END_CYCLES;
 
   const pickIndex = React.useCallback((lane, options = {}) => {
     if (!availableSources.length) return 0;
@@ -4211,13 +4300,33 @@ function TvHero({ sources = [], children }) {
       const laneEligible = availableSources
         .map((s, i) => ({ s, i }))
         .filter(({ s, i }) => (!s.lanes || s.lanes.includes(pickLane)) && !activeBlockedIndexes.has(i));
-      const eligible = laneEligible.length
+      let eligible = laneEligible.length
         ? laneEligible
         : availableSources
             .map((s, i) => ({ s, i }))
             .filter(({ s }) => !s.lanes || s.lanes.includes(pickLane));
       if (!eligible.length) return currentIdxRef.current >= 0 ? currentIdxRef.current : 0;
       const state = stateRef.current;
+      let activeReelMode = 'open';
+      if ((state.guestReelRemaining || 0) > 0) {
+        const guestEligible = eligible.filter(({ s }) => s.reelGroup === 'guest');
+        if (guestEligible.length) {
+          eligible = guestEligible;
+          activeReelMode = 'guest-block';
+          state.guestReelRemaining = Math.max(0, (state.guestReelRemaining || 0) - 1);
+        } else {
+          state.guestReelRemaining = 0;
+        }
+      } else if ((state.guestReelCooldown || 0) > 0) {
+        const starWarsEligible = eligible.filter(({ s }) => (s.reelGroup || 'star-wars') !== 'guest');
+        if (starWarsEligible.length) {
+          eligible = starWarsEligible;
+          activeReelMode = 'star-wars-cooldown';
+          state.guestReelCooldown = Math.max(0, (state.guestReelCooldown || 0) - 1);
+        } else {
+          state.guestReelCooldown = 0;
+        }
+      }
       const recent = new Set(state.recent);
       const recentProjects = new Set([
         ...(state.recentProjects || []).slice(-RECENT_PROJECT_WINDOW),
@@ -4235,17 +4344,28 @@ function TvHero({ sources = [], children }) {
       const picked = finalPool[cursor].i;
       state.laneCursors.set(cursorKey, (cursor + 1) % Math.max(1, finalPool.length));
       const project = availableSources[picked]?.project || '';
+      const reelGroup = availableSources[picked]?.reelGroup || 'star-wars';
       state.recent = [...state.recent, picked].slice(-RECENT_WINDOW);
       if (project) state.recentProjects = [...(state.recentProjects || []), project].slice(-RECENT_PROJECT_WINDOW);
+      if (reelGroup === 'guest') {
+        if (activeReelMode === 'guest-block') {
+          if (!(state.guestReelRemaining > 0)) state.guestReelCooldown = 4;
+        } else {
+          state.guestReelRemaining = 1;
+        }
+      } else if (activeReelMode !== 'guest-block') {
+        state.guestReelRemaining = 0;
+      }
       return picked;
     };
 
     if (options.mode === 'sparse') {
       const state = stateRef.current;
       const now = performance.now();
-      const motifLane = lane === 'bass' ? 'bass' : 'lead';
+      const motifLane = options.vocal ? 'vocal' : lane === 'bass' ? 'bass' : 'lead';
       let motif = state.sparseMotif;
       const stale = !motif
+        || motif.lane !== motifLane
         || motif.expiresAt <= now
         || !motif.indexes?.length
         || motif.cutsRemaining <= 0;
@@ -4262,6 +4382,7 @@ function TvHero({ sources = [], children }) {
           if (project) blockedProjects.add(project);
         }
         motif = {
+          lane: motifLane,
           indexes,
           cursor: 0,
           cutsRemaining: Math.max(3, indexes.length * 3),
@@ -4292,6 +4413,390 @@ function TvHero({ sources = [], children }) {
       try { video.pause(); } catch {}
     }
   }, []);
+
+  const getMusicAudioContext = React.useCallback(() => (
+    window.__resumeStrudelModule?.getAudioContext?.() || null
+  ), []);
+
+  const stopVocalSamples = React.useCallback((fadeMs = 28) => {
+    const state = stateRef.current;
+    const context = getMusicAudioContext();
+    const now = context?.currentTime || 0;
+    for (const voice of state.vocalSampleNodes || []) {
+      try {
+        if (context && voice.gain?.gain) {
+          voice.gain.gain.cancelScheduledValues(now);
+          voice.gain.gain.setTargetAtTime(0.0001, now, Math.max(0.006, fadeMs / 3000));
+        }
+        voice.source?.stop?.(context ? now + fadeMs / 1000 + 0.018 : 0);
+      } catch {}
+      window.setTimeout(() => {
+        try { voice.source?.disconnect?.(); } catch {}
+        try { voice.highpass?.disconnect?.(); } catch {}
+        try { voice.lowpass?.disconnect?.(); } catch {}
+        try { voice.pan?.disconnect?.(); } catch {}
+        try { voice.gain?.disconnect?.(); } catch {}
+        state.vocalSampleNodes.delete(voice);
+      }, fadeMs + 90);
+    }
+  }, [getMusicAudioContext]);
+
+  const loadVocalSampleBuffer = React.useCallback(async (sample) => {
+    const context = getMusicAudioContext();
+    if (!context || !sample?.url) return null;
+    const cache = stateRef.current.vocalSampleCache;
+    const cached = cache.get(sample.url);
+    if (cached?.buffer) return cached.buffer;
+    if (cached?.promise) return cached.promise;
+    const promise = fetch(sample.url)
+      .then((response) => {
+        if (!response.ok) throw new Error(`Unable to load vocal sample: ${sample.url}`);
+        return response.arrayBuffer();
+      })
+      .then((arrayBuffer) => context.decodeAudioData(arrayBuffer.slice(0)))
+      .then((buffer) => {
+        cache.set(sample.url, { buffer });
+        return buffer;
+      })
+      .catch((error) => {
+        cache.delete(sample.url);
+        console.warn('Vocal sample load failed', error);
+        return null;
+      });
+    cache.set(sample.url, { promise });
+    return promise;
+  }, [getMusicAudioContext]);
+
+  const pickVocalSample = React.useCallback((mode = 'phrase') => {
+    if (!vocalSamples.length) return null;
+    const state = stateRef.current;
+    if (mode === 'answer' && state.lastVocalCallKey) {
+      const callSample = vocalSamples.find((sample) => sample.sampleKey === state.lastVocalCallKey);
+      const responseKey = callSample?.responseSampleKey || callSample?.sampleKey;
+      const paired = vocalSamples.find((sample) => sample.sampleKey === responseKey && sample.answerPhrases?.length);
+      if (paired) return paired;
+    }
+    const craftPool = vocalSamples.filter((sample) => (sample.priority || 1) >= 3);
+    const modePool = mode === 'call'
+      ? vocalSamples.filter((sample) => sample.callPhrases?.length)
+      : mode === 'answer'
+        ? vocalSamples.filter((sample) => sample.answerPhrases?.length)
+        : null;
+    const strongKeys = new Set([
+      'vocal-jobs-secrets-life',
+      'vocal-mando-way-01',
+      'vocal-mando-stand-for',
+      'vocal-obi-cant-run',
+      'vocal-andor-fight',
+    ]);
+    const preferred = modePool
+      ? modePool
+      : mode === 'phrase'
+      ? (craftPool.length ? craftPool : vocalSamples.filter((sample) => strongKeys.has(sample.sampleKey)))
+      : (craftPool.length ? craftPool : vocalSamples);
+    const pool = preferred.length
+      ? preferred
+      : vocalSamples;
+    const recent = new Set(state.vocalSampleRecent || []);
+    const fresh = pool.filter((sample) => !recent.has(sample.sampleKey));
+    const finalPool = fresh.length ? fresh : pool;
+    const picked = finalPool[(state.vocalSampleCursor || 0) % finalPool.length];
+    state.vocalSampleCursor = (state.vocalSampleCursor || 0) + 1;
+    if (picked?.sampleKey) {
+      state.vocalSampleRecent = [...(state.vocalSampleRecent || []), picked.sampleKey].slice(-4);
+    }
+    return picked;
+  }, [vocalSamples]);
+
+  const pickVocalRegion = React.useCallback((sample, mode = 'phrase') => {
+    if (!sample) return null;
+    const regions = mode === 'call'
+      ? (sample.callPhrases?.length ? sample.callPhrases : sample.phrases || [sample.phrase].filter(Boolean))
+      : mode === 'answer'
+        ? (sample.answerPhrases?.length ? sample.answerPhrases : sample.phrases || [sample.phrase].filter(Boolean))
+        : mode === 'phrase'
+          ? (sample.phrases?.length ? sample.phrases : [sample.phrase].filter(Boolean))
+          : (sample.chops?.length ? sample.chops : sample.phrases || [sample.phrase].filter(Boolean));
+    if (!regions.length) return null;
+    const key = `${sample.sampleKey || sample.url}:${mode}`;
+    const cursors = stateRef.current.vocalRegionCursors;
+    const cursor = cursors.get(key) || 0;
+    cursors.set(key, (cursor + 1) % regions.length);
+    return regions[((cursor % regions.length) + regions.length) % regions.length];
+  }, []);
+
+  const emitVocalMidi = React.useCallback((sample, detail = {}) => {
+    const engine = window.__resumeStrudelAudioEngine;
+    engine?.emitSceneLane?.('vocal', {
+      scheduledTime: detail.scheduledTime,
+      duration: detail.duration,
+      velocity: detail.velocity ?? 0.7,
+      raw: {
+        sampleKey: sample?.sampleKey || '',
+        cue: sample?.cue || '',
+        mode: detail.mode || 'phrase',
+      },
+    });
+  }, []);
+
+  const playVocalRegion = React.useCallback(async (sample, region = {}, detail = {}) => {
+    if (!sample || stateRef.current.tabVisible === false || stateRef.current.tvVisible === false) return;
+    if (!window.__resumeStrudelAudioEngine?.enabled) return;
+    const context = getMusicAudioContext();
+    if (!context) return;
+    try { await context.resume?.(); } catch {}
+    const buffer = await loadVocalSampleBuffer(sample);
+    if (!buffer) return;
+    const mode = detail.mode || 'phrase';
+    const phraseLike = mode === 'phrase' || mode === 'call' || mode === 'answer';
+    const now = context.currentTime;
+    const scheduled = Number.isFinite(detail.scheduledTime) ? detail.scheduledTime + (detail.delaySec || 0) : now + 0.018;
+    const when = Math.max(now + 0.012, scheduled);
+    const offset = Math.max(0, Math.min(buffer.duration - 0.02, region.offset || 0));
+    const duration = Math.max(0.06, Math.min(region.duration || 0.4, buffer.duration - offset));
+    const source = context.createBufferSource();
+    const highpass = context.createBiquadFilter();
+    const lowpass = context.createBiquadFilter();
+    const gain = context.createGain();
+    const pan = context.createStereoPanner ? context.createStereoPanner() : null;
+    const texture = detail.texture || region.texture || '';
+    const textureGain = texture === 'ghost' ? 0.48 : texture === 'dust' ? 0.7 : 1;
+    const level = Math.max(0, Math.min(1, (sample.volume ?? VOCAL_HOOK_VOLUME) * (region.gain ?? 1) * (detail.gain ?? 1) * textureGain * (phraseLike ? 0.78 : 0.58)));
+    const attackSec = phraseLike ? 0.018 : 0.012;
+    const releaseSec = phraseLike ? 0.09 : 0.045;
+    const eventScheduledTime = Number.isFinite(detail.scheduledTime)
+      ? detail.scheduledTime + (detail.delaySec || 0)
+      : undefined;
+    source.buffer = buffer;
+    source.playbackRate.setValueAtTime(region.rate || detail.rate || 1, when);
+    highpass.type = 'highpass';
+    highpass.frequency.setValueAtTime(texture === 'dust' ? 240 : phraseLike ? 115 : 180, when);
+    lowpass.type = 'lowpass';
+    lowpass.frequency.setValueAtTime(texture === 'ghost' ? 4300 : texture === 'dust' ? 5600 : phraseLike ? 9800 : 6200, when);
+    gain.gain.setValueAtTime(0.0001, when);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, level), when + attackSec);
+    gain.gain.setValueAtTime(Math.max(0.0002, level), Math.max(when + attackSec, when + duration - releaseSec));
+    gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+    source.connect(highpass);
+    highpass.connect(lowpass);
+    lowpass.connect(gain);
+    if (pan) {
+      pan.pan.setValueAtTime(detail.pan ?? 0, when);
+      gain.connect(pan);
+      pan.connect(context.destination);
+    } else {
+      gain.connect(context.destination);
+    }
+    const voice = { source, highpass, lowpass, gain, pan };
+    stateRef.current.vocalSampleNodes.add(voice);
+    source.onended = () => {
+      try { source.disconnect(); } catch {}
+      try { highpass.disconnect(); } catch {}
+      try { lowpass.disconnect(); } catch {}
+      try { gain.disconnect(); } catch {}
+      try { pan?.disconnect?.(); } catch {}
+      stateRef.current.vocalSampleNodes.delete(voice);
+    };
+    source.start(when, offset, duration);
+    source.stop(when + duration + 0.02);
+    emitVocalMidi(sample, {
+      scheduledTime: eventScheduledTime,
+      duration: duration * 1000,
+      velocity: level,
+      mode,
+    });
+    window.dispatchEvent(new CustomEvent('resume-vocal-sample-cue', {
+      detail: {
+        mode,
+        sampleKey: sample.sampleKey || '',
+        cue: sample.cue || '',
+        project: sample.project || '',
+        region: region.label || '',
+        offset,
+        duration,
+        scheduledTime: eventScheduledTime,
+        texture,
+      },
+    }));
+  }, [VOCAL_HOOK_VOLUME, emitVocalMidi, getMusicAudioContext, loadVocalSampleBuffer]);
+
+  const playVocalMoment = React.useCallback((sample, mode, scheduledTime, slotIndex = 0) => {
+    if (!sample) return;
+    const beatSec = 60 / 153;
+    const dillaNudges = [0.034, -0.018, 0.046, -0.029, 0.021, 0.039, -0.011, 0.027, -0.024, 0.014];
+    const getPocketDelay = (beat = 0, index = 0, intensity = 1) => Math.max(
+      0,
+      (beat * beatSec) + (dillaNudges[index % dillaNudges.length] * intensity)
+    );
+    const buildRegionMap = () => {
+      const pairs = [
+        ...(sample.callPhrases || []),
+        ...(sample.answerPhrases || []),
+        ...(sample.phrases || []),
+        sample.phrase,
+        ...(sample.chops || []),
+      ].filter(Boolean).filter((region) => region.label);
+      return new Map(pairs.map((region) => [region.label, region]));
+    };
+    const phraseLike = mode === 'phrase' || mode === 'call' || mode === 'answer';
+    if (mode === 'call' && sample.sampleKey) {
+      stateRef.current.lastVocalCallKey = sample.sampleKey;
+    }
+    const phrasePattern = mode === 'call'
+      ? sample.callPattern
+      : mode === 'answer'
+        ? sample.answerPattern
+        : null;
+    if (phraseLike && phrasePattern?.length) {
+      stopVocalSamples(18);
+      const selectedRegion = pickVocalRegion(sample, mode) || {};
+      const regionsByLabel = buildRegionMap();
+      phrasePattern.forEach((entry, index) => {
+        const entryMode = entry.mode || (entry.target === 'selected' ? mode : 'chop');
+        const region = entry.target === 'selected'
+          ? selectedRegion
+          : entry.label && regionsByLabel.has(entry.label)
+            ? regionsByLabel.get(entry.label)
+            : pickVocalRegion(sample, entryMode);
+        if (!region) return;
+        playVocalRegion(sample, region, {
+          mode: entryMode,
+          scheduledTime,
+          delaySec: getPocketDelay(entry.beat ?? 0, index, entry.pocket ?? (entryMode === 'chop' ? 1 : 0.65)),
+          pan: entry.pan ?? [-0.12, 0.1, -0.04, 0.16][index % 4],
+          rate: entry.rate,
+          gain: entry.gain,
+          texture: entry.texture,
+        });
+      });
+      return;
+    }
+    if (phraseLike) {
+      stopVocalSamples(18);
+      playVocalRegion(sample, pickVocalRegion(sample, mode) || {}, {
+        mode,
+        scheduledTime,
+        delaySec: getPocketDelay(0, slotIndex, mode === 'call' ? 0.75 : 0.55),
+        pan: slotIndex % 2 ? 0.08 : -0.06,
+      });
+      return;
+    }
+    const regionsByLabel = new Map((sample.chops || []).map((region) => [region.label, region]));
+    const pattern = sample.chopPattern?.length
+      ? sample.chopPattern
+      : [0, 1, 2, 3, 4, 5, 6, 7].map((beat) => ({ beat }));
+    pattern.forEach((entry, index) => {
+      const region = entry.label && regionsByLabel.has(entry.label)
+        ? regionsByLabel.get(entry.label)
+        : pickVocalRegion(sample, mode);
+      playVocalRegion(sample, region, {
+        mode,
+        scheduledTime,
+        delaySec: getPocketDelay(entry.beat ?? index, index, entry.pocket ?? 1),
+        pan: [-0.18, 0.12, -0.05, 0.2][index % 4],
+        rate: entry.rate,
+        gain: entry.gain,
+        texture: entry.texture,
+      });
+    });
+    if (sample.chopLandingBeat !== undefined && sample.phrase) {
+      playVocalRegion(sample, sample.phrase, {
+        mode: 'phrase',
+        scheduledTime,
+        delaySec: getPocketDelay(sample.chopLandingBeat, pattern.length, 0.45),
+        pan: 0.04,
+      });
+    }
+  }, [pickVocalRegion, playVocalRegion, stopVocalSamples]);
+
+  const getBreakdownPosition = React.useCallback((now = performance.now()) => {
+    const state = stateRef.current;
+    if (!state.songStartedAt || !ARRANGEMENT_MS) return { active: false };
+    const elapsed = Math.max(0, now - state.songStartedAt);
+    const loopIndex = Math.floor(elapsed / ARRANGEMENT_MS);
+    const loopMs = ((elapsed % ARRANGEMENT_MS) + ARRANGEMENT_MS) % ARRANGEMENT_MS;
+    const active = loopMs >= BREAKDOWN_START_MS && loopMs < BREAKDOWN_END_MS;
+    const breakdownMs = active ? loopMs - BREAKDOWN_START_MS : -1;
+    return {
+      active,
+      elapsed,
+      loopIndex,
+      loopMs,
+      breakdownMs,
+      cycleIndex: active ? Math.floor(breakdownMs / ARRANGEMENT_CYCLE_MS) : -1,
+      slotIndex: active ? Math.floor(breakdownMs / (ARRANGEMENT_CYCLE_MS * 2)) : -1,
+    };
+  }, [ARRANGEMENT_CYCLE_MS, ARRANGEMENT_MS, BREAKDOWN_END_MS, BREAKDOWN_START_MS]);
+
+  const getVocalSectionPosition = React.useCallback((now = performance.now()) => {
+    const state = stateRef.current;
+    if (!state.songStartedAt || !ARRANGEMENT_MS) return { active: false };
+    const elapsed = Math.max(0, now - state.songStartedAt);
+    const loopIndex = Math.floor(elapsed / ARRANGEMENT_MS);
+    const loopMs = ((elapsed % ARRANGEMENT_MS) + ARRANGEMENT_MS) % ARRANGEMENT_MS;
+    const inPreChorus = loopMs >= PRECHORUS_START_MS && loopMs < PRECHORUS_END_MS;
+    const inBreakdown = loopMs >= BREAKDOWN_START_MS && loopMs < BREAKDOWN_END_MS;
+    if (!inPreChorus && !inBreakdown) return { active: false, elapsed, loopIndex, loopMs };
+    const section = inPreChorus ? 'preChorus' : 'breakdown';
+    const sectionStart = inPreChorus ? PRECHORUS_START_MS : BREAKDOWN_START_MS;
+    const sectionMs = loopMs - sectionStart;
+    return {
+      active: true,
+      section,
+      elapsed,
+      loopIndex,
+      loopMs,
+      sectionMs,
+      cycleIndex: Math.floor(sectionMs / ARRANGEMENT_CYCLE_MS),
+      slotIndex: Math.floor(sectionMs / (ARRANGEMENT_CYCLE_MS * 2)),
+    };
+  }, [ARRANGEMENT_CYCLE_MS, ARRANGEMENT_MS, BREAKDOWN_END_MS, BREAKDOWN_START_MS, PRECHORUS_END_MS, PRECHORUS_START_MS]);
+
+  const triggerSectionVocal = React.useCallback((lane, event) => {
+    if (!engineEnabled || !vocalSamples.length) return;
+    const position = getVocalSectionPosition();
+    if (!position.active) return;
+    const state = stateRef.current;
+    const sectionKey = `${position.loopIndex}:${position.section}`;
+    if (state.vocalSampleLoop !== position.loopIndex || state.vocalSampleSection !== sectionKey) {
+      state.vocalSampleLoop = position.loopIndex;
+      state.vocalSampleSection = sectionKey;
+      state.vocalSampleSlots.clear();
+    }
+    const slotIndex = Math.max(0, Math.min(position.section === 'preChorus' ? 1 : 3, position.slotIndex));
+    if (position.section === 'preChorus') {
+      if (!['lead', 'angel', 'build', 'switch', 'ghost'].includes(lane)) return;
+      const key = `${position.loopIndex}:preChorus:${slotIndex}:call`;
+      if (state.vocalSampleSlots.has(key)) return;
+      state.vocalSampleSlots.add(key);
+      const sample = pickVocalSample('call');
+      playVocalMoment(sample, 'call', event.detail?.scheduledTime, slotIndex);
+      return;
+    }
+    const storySample = vocalSamples.find((sample) => (sample.priority || 1) >= 3 && sample.breakdownModes?.length);
+    const mode = storySample?.breakdownModes?.[slotIndex] || (slotIndex === 0 ? 'answer' : slotIndex === 2 ? 'chop' : 'rest');
+    if (mode === 'rest') {
+      state.vocalSampleSlots.add(`${position.loopIndex}:${slotIndex}:rest`);
+      return;
+    }
+    const phraseLike = mode === 'phrase' || mode === 'answer';
+    const canLeadPhrase = phraseLike && slotIndex >= 3 && ['lead', 'angel', 'build', 'switch', 'ghost'].includes(lane);
+    if (phraseLike && lane !== 'bass' && !canLeadPhrase) return;
+    if (mode === 'chop' && !['lead', 'angel', 'build', 'switch', 'ghost'].includes(lane)) return;
+    const key = `${position.loopIndex}:${slotIndex}:${mode}`;
+    if (state.vocalSampleSlots.has(key)) return;
+    state.vocalSampleSlots.add(key);
+    const sample = pickVocalSample(mode);
+    playVocalMoment(sample, mode, event.detail?.scheduledTime, slotIndex);
+    if (mode === 'chop') {
+      const jokerSample = vocalSamples.find((entry) => entry.sampleKey === 'vocal-joker-laugh');
+      const jokerKey = `${position.loopIndex}:${slotIndex}:joker-laugh`;
+      if (jokerSample && jokerSample !== sample && !state.vocalSampleSlots.has(jokerKey)) {
+        state.vocalSampleSlots.add(jokerKey);
+        playVocalMoment(jokerSample, 'chop', event.detail?.scheduledTime, slotIndex + 1);
+      }
+    }
+  }, [engineEnabled, getVocalSectionPosition, pickVocalSample, playVocalMoment, vocalSamples]);
 
   const trimVideoCache = React.useCallback((keepSrc = '') => {
     const state = stateRef.current;
@@ -4622,26 +5127,60 @@ function TvHero({ sources = [], children }) {
     drawSourceToCanvas(media);
     const s = Math.max(0, Math.min(1.4, strength));
     if (s <= 0.01) return;
-    // Bass: a fast-sweeping under-exposed (dim) band. Image stays put;
-    // band slams in on the bass attack and fades quickly.
+    // Bass: a fast-sweeping under-exposed (dim) band plus a small image
+    // shake. The roll phase is advanced by bass events, so the bar reads as
+    // locked to the bassline rather than as a free-running CRT artifact.
     if (kind === 'bass') {
       const rollPhase = state.macBloom?.rollPhase ?? 0;
-      const bandH = Math.max(60, Math.floor(h * 0.18));
-      const yCenter = rollPhase;
+      const bandH = Math.max(54, Math.floor(h * 0.15));
+      const span = h + bandH * 2;
+      const yCenter = (((rollPhase % span) + span) % span) - bandH;
       const yTop = yCenter - bandH / 2;
       const yBottom = yCenter + bandH / 2;
+      const elapsed = Math.max(0, performance.now() - (state.macBloom?.started || performance.now()));
+      const duration = Math.max(1, state.macBloom?.duration || 180);
+      const hitT = Math.min(1, elapsed / duration);
+      const shakeCurve = Math.pow(1 - hitT, 2.2);
+      const seed = state.macBloom?.shakeSeed || 1;
+      const hitStrength = Math.max(0.68, Math.min(1.9, state.macBloom?.hitStrength || s));
+      const horizontalShake = 0.022 + hitStrength * 0.024;
+      const verticalShake = 0.0022 + hitStrength * 0.0014;
+      const shakeX = Math.round((
+        Math.sin(seed * 0.71 + elapsed * 0.095) * 0.72 +
+        Math.sin(seed * 1.37 + elapsed * 0.173) * 0.28
+      ) * w * horizontalShake * s * shakeCurve);
+      const shakeY = Math.round(Math.sin(seed * 0.53 + elapsed * 0.12) * h * verticalShake * s * shakeCurve);
+      if (shakeX || shakeY) {
+        if (!state.rollBuffer) state.rollBuffer = document.createElement('canvas');
+        if (state.rollBuffer.width !== w || state.rollBuffer.height !== h) {
+          state.rollBuffer.width = w;
+          state.rollBuffer.height = h;
+        }
+        const rctx = state.rollBuffer.getContext('2d');
+        rctx.clearRect(0, 0, w, h);
+        rctx.drawImage(screenCanvas, 0, 0, w, h);
+        ctx2d.save();
+        ctx2d.clearRect(0, 0, w, h);
+        ctx2d.fillStyle = '#050505';
+        ctx2d.fillRect(0, 0, w, h);
+        ctx2d.drawImage(state.rollBuffer, shakeX, shakeY, w, h);
+        ctx2d.restore();
+      }
       if (yBottom > 0 && yTop < h) {
         ctx2d.save();
         const grad = ctx2d.createLinearGradient(0, yTop, 0, yBottom);
         ctx2d.globalCompositeOperation = 'multiply';
         // Peak alpha pushed harder so the dim band lands prominently
         // on the bass attack, then drops off with the strength curve.
-        const peak = Math.min(0.95, 0.7 + s * 0.4);
+        const peak = Math.min(0.96, 0.62 + s * 0.36);
         grad.addColorStop(0,   `rgba(0, 0, 0, 0)`);
         grad.addColorStop(0.5, `rgba(0, 0, 0, ${peak})`);
         grad.addColorStop(1,   `rgba(0, 0, 0, 0)`);
         ctx2d.fillStyle = grad;
         ctx2d.fillRect(0, yTop, w, bandH);
+        ctx2d.globalCompositeOperation = 'source-over';
+        ctx2d.fillStyle = `rgba(255,255,255,${0.06 * s})`;
+        ctx2d.fillRect(0, Math.round(yCenter - 1), w, 1);
         ctx2d.restore();
       }
     }
@@ -4839,17 +5378,21 @@ function TvHero({ sources = [], children }) {
 	    tick();
 	  }, []);
 
-	  const animateMacBloomBurst = React.useCallback((kind = 'bass') => {
-    const state = stateRef.current;
-    cancelAnimationFrame(state.macBloomRaf);
-    const duration = kind === 'clap' ? 180 : kind === 'powerOn' ? 220 : 200;
-    const screenH = state.screenCanvas?.height || 1536;
-    const dirToggle = !state.lastBandDirDown;
-    state.lastBandDirDown = dirToggle;
-    const bassStart = dirToggle ? -screenH * 0.2 : screenH * 1.2;
-    const bassEnd   = dirToggle ?  screenH * 1.2 : -screenH * 0.2;
-    const clapRollDir = state.lastClapRollDir === 1 ? -1 : 1;
-    state.lastClapRollDir = clapRollDir;
+		  const animateMacBloomBurst = React.useCallback((kind = 'bass', options = {}) => {
+	    const state = stateRef.current;
+	    cancelAnimationFrame(state.macBloomRaf);
+	    const bassHitStrength = Math.max(0.68, Math.min(1.9, Number(options.strength) || 1));
+	    const bassDuration = Math.max(130, Math.min(260, (options.duration || 180) * 0.82));
+	    const duration = kind === 'clap' ? 180 : kind === 'powerOn' ? 220 : bassDuration;
+	    const screenH = state.screenCanvas?.height || 1536;
+	    const bassSpan = screenH * 1.32;
+	    const bassCurrent = Number.isFinite(state.bassRollPhase) ? state.bassRollPhase : -screenH * 0.18;
+	    const bassStep = screenH * (0.24 + Math.min(0.12, duration / 1200));
+	    const bassStart = bassCurrent;
+	    const bassEnd = bassCurrent + bassStep;
+	    state.bassRollPhase = ((bassEnd % bassSpan) + bassSpan) % bassSpan - screenH * 0.18;
+	    const clapRollDir = state.lastClapRollDir === 1 ? -1 : 1;
+	    state.lastClapRollDir = clapRollDir;
     const clapStart = 0;
     const clapEnd   = screenH * 1.1 * clapRollDir;
     // Power-on / power-off roll: a single fast sweep through one screen
@@ -4862,15 +5405,18 @@ function TvHero({ sources = [], children }) {
     else { start = bassStart; end = bassEnd; }
     state.macBloom = {
       activeUntil: performance.now() + duration,
-      strength: kind === 'clap' ? 1.35 : kind === 'powerOn' ? 1.0 : 1.05,
+	      strength: kind === 'clap' ? 1.35 : kind === 'powerOn' ? 1.0 : Math.min(1.4, bassHitStrength),
       kind,
-      duration,
-      started: performance.now(),
-      bandStart: start,
-      bandEnd: end,
-      bandPolarity: 'dim',
-      rollPhase: start,
-    };
+	      duration,
+	      started: performance.now(),
+	      bandStart: start,
+	      bandEnd: end,
+	      bandPolarity: 'dim',
+	      rollPhase: start,
+	      hitStrength: bassHitStrength,
+	      bassLevel: options.bassLevel,
+	      shakeSeed: options.id || Math.floor(performance.now()),
+	    };
     if (state.currentVideo && state.currentMedia === state.currentVideo) {
       return new Promise((resolve) => window.setTimeout(resolve, duration));
     }
@@ -5207,6 +5753,7 @@ function TvHero({ sources = [], children }) {
       cancelAnimationFrame(state.raf);
       state.raf = 0;
       cancelVideoCallbacks();
+      stopVocalSamples(12);
       if (state.currentVideo) {
         state.powerPausedVideo = state.currentVideo;
         try { state.currentVideo.pause(); } catch {}
@@ -5251,7 +5798,7 @@ function TvHero({ sources = [], children }) {
       document.removeEventListener('visibilitychange', onVisibility);
       observer?.disconnect();
     };
-  }, [drawVideoLoop, engineEnabled, pauseAllCachedVideos]);
+  }, [drawVideoLoop, engineEnabled, pauseAllCachedVideos, stopVocalSamples]);
 
   const animateChannelFlip = React.useCallback((detail = {}) => {
     const state = stateRef.current;
@@ -5337,6 +5884,7 @@ function TvHero({ sources = [], children }) {
         }
         const previousVideo = stateRef.current.currentVideo;
         if (previousVideo && previousVideo !== video) {
+          previousVideo.muted = true;
           try { previousVideo.pause(); } catch {}
         }
         stateRef.current.currentImage = null;
@@ -5345,6 +5893,9 @@ function TvHero({ sources = [], children }) {
         stateRef.current.currentMatteAspect = source.matteAspect || null;
         stateRef.current.currentPunchIn = source.punchIn || 1;
         video.loop = false;
+        video.muted = true;
+        video.defaultMuted = true;
+        video.volume = 0;
         video.onended = () => {
           const state = stateRef.current;
           if (state.currentVideo !== video || state.currentMedia !== video) return;
@@ -5356,7 +5907,9 @@ function TvHero({ sources = [], children }) {
         };
         try { video.currentTime = source.start ?? 0; } catch {}
         const playPromise = video.play?.();
-        if (playPromise?.catch) playPromise.catch(() => {});
+        if (playPromise?.catch) {
+          playPromise.catch(() => {});
+        }
         drawVideoLoop(video);
         window.dispatchEvent(new CustomEvent('resume-tv-clip-cue', {
           detail: {
@@ -5365,6 +5918,10 @@ function TvHero({ sources = [], children }) {
             project: source.project || '',
             cue: source.cue || '',
             sampleKey: source.sampleKey || '',
+            pool: source.pool || '',
+            hasAudio: false,
+            muted: video.muted,
+            volume: video.volume,
             index: idx,
           },
         }));
@@ -5796,6 +6353,8 @@ function TvHero({ sources = [], children }) {
         } catch {}
       }
       s.videoCache.clear();
+      stopVocalSamples(1);
+      s.vocalSampleCache.clear();
       window.clearTimeout(s.channelCutTimer);
       if (onResize) window.removeEventListener('resize', onResize);
       s.requestRender = null;
@@ -5821,6 +6380,17 @@ function TvHero({ sources = [], children }) {
     window.addEventListener('resume-audio-change', sync);
     return () => window.removeEventListener('resume-audio-change', sync);
   }, [syncMacFloppyToAudio]);
+
+  React.useEffect(() => {
+    if (!engineEnabled || !vocalSamples.length) {
+      stopVocalSamples(10);
+      return undefined;
+    }
+    vocalSamples.forEach((sample) => {
+      loadVocalSampleBuffer(sample);
+    });
+    return undefined;
+  }, [engineEnabled, loadVocalSampleBuffer, stopVocalSamples, vocalSamples]);
 
   // Inactive Mac screen terminal: when the music is off and the hero is in
   // view, normal keyboard input goes to the monochrome terminal on the CRT.
@@ -5914,7 +6484,12 @@ function TvHero({ sources = [], children }) {
         // Mac path: heavy phosphor bloom + vertical rolling hum.
         // Works during video playback too — the video tick reads
         // state.macBloom and routes through drawMacBloom.
-        animateMacBloomBurst('bass');
+        animateMacBloomBurst('bass', {
+          id: event.detail?.id,
+          duration: event.detail?.duration,
+          strength: event.detail?.strength,
+          bassLevel: event.detail?.bassLevel,
+        });
         return;
       }
       const duration = Math.max(95, Math.min(165, event.detail?.duration || 120));
@@ -5934,6 +6509,7 @@ function TvHero({ sources = [], children }) {
       if (event.detail?.lane !== 'snare') return;
       if (stateRef.current.tabVisible === false || stateRef.current.tvVisible === false) return;
       stateRef.current.lastRhythmCutAt = performance.now();
+      stateRef.current.rhythmCutCount = (stateRef.current.rhythmCutCount || 0) + 1;
       stateRef.current.sparseMotif = null;
       if (stateRef.current.deviceMode === 'mac') {
         // Mac path: hard bloom flash + spacebar press + clean cut.
@@ -5960,15 +6536,24 @@ function TvHero({ sources = [], children }) {
       const now = performance.now();
       if (now - state.lastRhythmCutAt < 1700) return;
       if (now - state.lastCutAt < 2200) return;
-      if (now - state.lastSparseCutAt < 2600) return;
+      const breakdownActive = getBreakdownPosition(now).active;
+      if (now - state.lastSparseCutAt < (breakdownActive ? 3300 : 2600)) return;
       state.lastSparseCutAt = now;
       cutRef.current?.(lane, { mode: 'sparse' });
     };
     const onMelody = (event) => {
-      if (event.detail?.lane === 'lead') trySparseCut('lead');
+      if (event.detail?.lane === 'lead') {
+        triggerSectionVocal(event.detail.lane, event);
+        trySparseCut('lead');
+      } else if (['angel', 'build', 'switch', 'ghost'].includes(event.detail?.lane)) {
+        triggerSectionVocal(event.detail.lane, event);
+      }
     };
     const onBass = (event) => {
-      if (event.detail?.lane === 'bass') trySparseCut('bass');
+      if (event.detail?.lane === 'bass') {
+        triggerSectionVocal('bass', event);
+        trySparseCut('bass');
+      }
     };
     window.addEventListener('resume-melody-note', onMelody);
     window.addEventListener('resume-bass-hit', onBass);
@@ -5976,7 +6561,7 @@ function TvHero({ sources = [], children }) {
       window.removeEventListener('resume-melody-note', onMelody);
       window.removeEventListener('resume-bass-hit', onBass);
     };
-  }, [engineEnabled, availableSources]);
+  }, [engineEnabled, availableSources, getBreakdownPosition, triggerSectionVocal]);
 
 	  // Click the Mac's physical controls to slide the floppy and toggle
 	  // audio + picture. The screen itself is display-only.
@@ -6115,10 +6700,14 @@ function TvHero({ sources = [], children }) {
     stateRef.current.recent = [];
     stateRef.current.recentProjects = [];
     stateRef.current.laneCursors.clear();
+    stateRef.current.songStartedAt = performance.now();
+    stateRef.current.rhythmCutCount = 0;
     stateRef.current.lastCutAt = 0;
     stateRef.current.lastRhythmCutAt = 0;
     stateRef.current.lastSparseCutAt = 0;
     stateRef.current.sparseMotif = null;
+    stateRef.current.vocalSampleLoop = -1;
+    stateRef.current.vocalSampleSlots.clear();
     if (!stateRef.current.currentMedia) cutRef.current?.('init');
   }, [engineEnabled, availableSources]);
 
@@ -6134,6 +6723,7 @@ function TvHero({ sources = [], children }) {
       }
       stateRef.current.videoFrameRequest = 0;
       pauseAllCachedVideos();
+      stopVocalSamples(10);
       stateRef.current.currentVideo = null;
       stateRef.current.currentMedia = null;
       stateRef.current.currentImage = null;
@@ -6144,7 +6734,7 @@ function TvHero({ sources = [], children }) {
     cutRef.current?.('idle');
     const t = setInterval(() => cutRef.current?.('idle'), 3500);
     return () => clearInterval(t);
-  }, [engineEnabled, availableSources, drawMacOffScreen, pauseAllCachedVideos]);
+  }, [engineEnabled, availableSources, drawMacOffScreen, pauseAllCachedVideos, stopVocalSamples]);
 
   return (
     <div ref={wrapRef} className={`tv-hero ${engineEnabled ? 'is-live' : 'is-idle'}`}>

@@ -345,6 +345,18 @@ function normalizeSource(source) {
   };
 }
 
+const sourcePreloadCache = new Map();
+
+function sourceCacheKey(source) {
+  const normalized = normalizeSource(source);
+  return [
+    normalized.videoUrl,
+    normalized.projectionUrl,
+    normalized.requireMesh ? 'mesh' : 'fallback-ok',
+    normalized.inlineVideoFallback ? 'inline' : 'webgl',
+  ].join('|');
+}
+
 async function loadFromUrl(source) {
   const normalized = normalizeSource(source);
   const { videoUrl, projectionUrl, requireMesh } = normalized;
@@ -468,7 +480,7 @@ class SpotlightRenderer {
       this.current.loaded.dispose();
     }
     this.host.appendChild(loaded.video);
-    loaded.video.load();
+    if (loaded.video.readyState < HTMLMediaElement.HAVE_METADATA) loaded.video.load();
     const tex = new THREE.VideoTexture(loaded.video);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.minFilter = THREE.LinearFilter;
@@ -705,10 +717,32 @@ class SpotlightRenderer {
 //  Public API
 // ────────────────────────────────────────────────────────────────────
 
+export async function preloadSpotlightSource(source) {
+  const key = sourceCacheKey(source);
+  if (!sourcePreloadCache.has(key)) {
+    const promise = loadFromUrl(source)
+      .then((loaded) => {
+        try { loaded.video.load(); } catch (_) {}
+        return loaded;
+      })
+      .catch((error) => {
+        sourcePreloadCache.delete(key);
+        throw error;
+      });
+    sourcePreloadCache.set(key, promise);
+  }
+  const loaded = await sourcePreloadCache.get(key);
+  return { projection: loaded.projection };
+}
+
 export async function mountSpotlight(host, url) {
   const r = new SpotlightRenderer(host);
   try {
-    const loaded = await loadFromUrl(url);
+    const key = sourceCacheKey(url);
+    const loaded = sourcePreloadCache.has(key)
+      ? await sourcePreloadCache.get(key)
+      : await loadFromUrl(url);
+    sourcePreloadCache.delete(key);
     r.attach(loaded);
     return { renderer: r, projection: loaded.projection };
   } catch (err) {

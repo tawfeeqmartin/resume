@@ -34,14 +34,24 @@ http://127.0.0.1:8021/Resume.html
 
 The site currently favors an offline-friendly static workflow so design iteration stays fast and portable. If this becomes a repeatable framework later, the first migration target should be a lightweight build step that preserves the same component boundaries.
 
+## Standing Documentation Rule
+
+Any custom workflow, media pipeline, toolchain install, browser behavior, reusable animation system, MIDI/audio mapping, or one-off conversion that may be useful again must be documented here before the task is considered finished. Include:
+
+- The reason it exists.
+- The canonical local paths.
+- The exact command or function entry point to reuse.
+- Any production upload/cache step required after local generation.
+- Any failure mode already encountered and how to avoid repeating it.
+
 ## Visual System
 
 Design direction:
 
 - Frontier white is the default theme.
 - Backgrounds should read as actual white, not green-tinted gradients.
-- Bauhaus/Oliver Byrne color language is the accent system: yellow, blue, red, black, white.
-- Use geometric forms as functional marks, not decoration.
+- Apple/editorial white is the base system; Bauhaus/Oliver Byrne color language is reserved for functional interactions, proof marks, and technical diagrams.
+- Use geometric forms as functional marks, not decoration. Avoid repeating the primary shapes as generic bullets, separators, or section confetti.
 - Keep linework crisp. Avoid glow, soft marker-like strokes, and thick fuzzy drawing lines.
 - Technical drawings must be credible, referenced, labeled cleanly, and never feel hallucinated.
 - Labels should be small and standardized; drawing titles should be larger and placed consistently.
@@ -49,8 +59,8 @@ Design direction:
 
 Functional visual motifs:
 
-- Section rails.
-- Filled Bauhaus shape markers.
+- Quiet section rails.
+- Filled Bauhaus shape markers only when they control or demonstrate something.
 - Byrne-style colored proof fills.
 - Dotted connector lines between boxed discovery words.
 - Terminal blocks and code blocks that look intentionally formatted, not generic cards.
@@ -169,6 +179,7 @@ Current channel map:
 13 switch    note 71  melody
 14 ghost     note 74  melody
 15 dust      note 96  melody
+16 vocal     note 60  vocal
 ```
 
 ## Music-Reactive Visuals
@@ -279,25 +290,127 @@ Current behavior:
 - Active trailer snippets and inactive local work clips live in `media/tv-clips/`.
 - Current CRT rotation is trailer-only; Blackbird and HELP snippets are kept on disk but not included in `TV_VIDEO_SOURCES`.
 - Cleared trailer snippets are normalized to a consistent 960x540 file with a fixed 2.39:1 active image and no added titles.
-- Cleared media is split into two pools:
+- Cleared media is split into separate systems:
   - Visual pool: silent, image-first trailer cuts for normal TV rotation.
-  - Vocal-hook pool: audio-bearing cuts gated to a future explicit `vocal` lane.
-- Current active pool sizes are 36 visual clips and 25 vocal-hook clips.
+  - Vocal sample pool: audio-only stems/chops triggered by the explicit `vocal` lane.
+- Current TV video pool is visual-only; vocal sample counts live in `app.jsx`.
 - Winter Olympics and Santa Clauses derivatives are kept on disk but inactive for now.
-- Obi-Wan contributes extra Vader-heavy takes and is weighted higher in the TV pool.
+- Star Wars clips are the dominant reel language. The active manifest starts on the curated Mando/Grogu trailer reel, not an episodic/title-card cut. Non-Star-Wars clips are tagged as a `guest` reel and grouped into two-clip blocks by the picker, then forced back to Star Wars with a cooldown so the TV never gets stuck in guest mode.
+- May 22 curation removed weak character-head and title-card cuts from the active manifest, including the non-graphic Obi-Wan closeup `cleared-obi-wan-06`, the Obi-Wan `cleared-obi-wan-08` saber-to-character beat, the Mando/Grogu table-room beat `cleared-mandalorian-grogu-08`, the front-of-trailer Obi-Wan villain shot, the `On March 1` Mandalorian S3 title card, the Creator glasses/person cuts, the Andor corridor/object inserts, and the alien/person cut around the Grogu pod beat. The Mando/Grogu trailer now uses explicit selected take numbers so the new snake-dragon pull `cleared-mandalorian-grogu-70`, Hutt closeup, swamp creature, Grogu swamp beat, water-creature beat, explosion, cockpit, and space-flight clips are favored over weaker episodic clips. The Creator guest reel was rebuilt from stronger graphic/wide/action pulls: laser fire, mountain wreckage, tech interiors, base-scale wides, convoy action, water explosions, low-flying ships, boat combat, and the final silhouette explosion before the title. The app manifest can use explicit `takes` arrays or `skip` entries so stale files on R2 do not come back into rotation.
 - Rights-cleared trailer import slots live in `media/cleared/`.
 - Optional cleared trailer sources are probed with `HEAD` on load. Missing files are skipped quietly.
 - The TV emits `resume-tv-clip-cue` when a video clip mounts, carrying `project`, `cue`, `sampleKey`, and `lane`.
 - Bass lane hits drive CRT tracking/noise.
 - Snare/clap lane hits drive full static channel flips and choose a new trailer clip from the cleared video pool.
 - Clap/snare flips use extreme CRT tracking tears with a lighter noise layer rather than a full-screen static card; the clip that lands afterward returns to the normalized cinematic matte.
+- Bass lane hits drive horizontal CRT image shake and the rolling black sync band. The visual amplitude is derived from the audible bass path: bass fader, master fader, mute/solo state, a floored scroll-layer gain, and any trigger velocity from Strudel. Do not hard-gate the event on scroll-layer volume; keep a floor so the CRT still responds when bass is present.
+
+Clip curation workflow:
+
+- Generate review contact sheets into `review/contact-sheets/` from active `media/tv-clips/` cuts before removing or adding clips.
+- Keep rejected clips reversible by moving them to `review/removed-tv-clips-YYYY-MM-DD/`.
+- If old files may still exist on R2, exclude them through `skip` entries in `CLEARED_TRAILER_GROUPS`; do not rely on missing local files.
+- Normalize new silent Mac/TV video cuts as 960x540, 24 fps, grayscale, no audio, with the source trailer's cinematic matte preserved:
+
+```bash
+ffmpeg -y -ss <start> -t <duration> -i <source.mp4> -an \
+  -vf "fps=24,scale=960:540:force_original_aspect_ratio=increase,crop=960:540,hue=s=0,format=yuv420p" \
+  -c:v libx264 -preset medium -crf 22 -movflags +faststart \
+  media/tv-clips/<clip-name>.mp4
+```
 
 Rules:
 
 - Do not rip YouTube/IP trailers directly into the repo.
 - Use user-provided or licensed downloadable files for any trailer samples.
-- Keep TV clips muted by default; Strudel owns the site score and future vocal-sample layer.
-- For now, keep the CRT montage video-only. Trailer vocal chops can come back later as explicit Strudel sample lanes once the composition is stable.
+- Keep TV clips muted by default; Strudel owns the site score and the separate vocal-sample lane.
+- Do not play dialogue as TV video clips. Vocal hooks are audio-only samples so the screen never freezes on a bad/title frame after a line.
+
+## Stem-Separated Vocal Sample Pipeline
+
+Purpose:
+
+The vocal layer should feel like part of the authored world, not random trailer audio. Use it as a Kanye/Fred-again-inspired sampler lane: speech fragments, phrase-first hooks, short micro-chops, pitch/rate variation, call-and-response with the instrumental, and deliberate breakdown-only placement.
+
+Current implementation:
+
+- Source downloads and full-quality working cuts live in `media/source-vocals/`.
+- Demucs outputs live in `media/stems/`.
+- Web-ready isolated vocal stems live in `media/audio/vocal-stems/`.
+- These paths are gitignored. Production deployment requires uploading the final web stems to R2 under the same `media/audio/vocal-stems/` path.
+- `app.jsx` defines `CURATED_VOCAL_LINES` with `phrases` and `chops` metadata. Offsets are seconds into the isolated vocal-stem file.
+- Vocal metadata can also define `callPhrases`, `answerPhrases`, and `responseSampleKey`. The pre-chorus triggers call phrases; the breakdown answers with the paired response sample when available, otherwise with the same sample's answer pool.
+- Vocal metadata can define `callPattern` and `answerPattern` for produced arrangements. Pattern entries can trigger the selected phrase, a named chop, rate/pan changes, and dusty or ghost textures.
+- Run a Whisper pass across the full stem before authoring regions, then render every configured chop to temp audio and transcribe those snippets again. If Whisper cannot identify the intended word or phrase, lengthen the cut to a musical word group or remove that chop.
+- `TvHero` receives `vocalSamples` separately from `sources`. The Mac/TV visual pool remains silent.
+- Vocal playback uses Web Audio buffer sources so a phrase can start/stop at exact offsets without seeking a `<video>` element.
+- Vocal cues emit the normalized MIDI lane `vocal` on channel 16 so future hardware, visualizers, and external MIDI routing can follow the sample events.
+- Current breakdown window follows the active Strudel arrangement: 40 cycles total, breakdown starts at cycle 32 and ends at cycle 40.
+- Mac screen bass response uses the `bass` lane event directly: each bass hit advances a persistent CRT roll phase, draws a short black sync band, and applies a brief image shake from the same scheduled hit so the motion feels locked to the bassline.
+
+Tooling:
+
+- Primary separator: Demucs `htdemucs_ft`, open-source PyTorch source separation from Meta/Facebook Research.
+- Current reusable local runner: `review/.venv-demucs/bin/python -m demucs`. The venv is intentionally under `review/` so it stays ignored and reusable without polluting the project.
+- The current Homebrew Python is externally managed, so do not reinstall Demucs globally. Reuse the local venv, or recreate it under `review/.venv-demucs` if that folder is missing.
+- Reusable local command:
+
+```bash
+review/.venv-demucs/bin/python -m demucs \
+  -n htdemucs_ft \
+  --two-stems vocals \
+  -o media/stems/<session-name> \
+  media/source-vocals/<source-cut>.m4a
+```
+
+- Alternate disposable runner if the local venv is unavailable:
+
+```bash
+uvx --python 3.10 --with torchcodec demucs \
+  -n htdemucs_ft \
+  --two-stems vocals \
+  -o media/stems/<session-name> \
+  media/source-vocals/<source-cut>.m4a
+```
+
+- Render a browser-ready isolated vocal stem:
+
+```bash
+ffmpeg -y \
+  -i media/stems/<session-name>/htdemucs_ft/<source-cut>/vocals.wav \
+  -ac 1 -ar 48000 -c:a aac -b:a 160k \
+  -af "highpass=f=110,lowpass=f=11200,acompressor=threshold=0.05:ratio=2.2:attack=4:release=90:makeup=1.5,loudnorm=I=-18:TP=-1.4:LRA=8" \
+  media/audio/vocal-stems/<sample-key>.m4a
+```
+
+Current craft/inspiration sample:
+
+- Source: `Steve Jobs Secrets of Life`, timestamp around `00:39`.
+- Local source cut: `media/source-vocals/jobs-secrets-life-39.m4a`.
+- Stem output: `media/stems/jobs-secrets-life/htdemucs_ft/jobs-secrets-life-39/vocals.wav`.
+- Web stem: `media/audio/vocal-stems/vocal-jobs-secrets-life-clean.m4a`.
+- Phrase/chop metadata lives in `app.jsx` under sample key `vocal-jobs-secrets-life`.
+- Editorial thesis for this sample: things are made by people no smarter than you, so you can make the tools, worlds, and systems you want to see.
+- Current breakdown edit: full phrase `everything ... was made up by people that were no smarter than you`, chopped echo `made up by people / no smarter than you / change it / build your own things / other people can use`, then the landing phrase `you can build your own things that other people can use`.
+- Current call/response behavior: pre-chorus asks with phrases like `life can be much broader`, `what do we stand for`, or `the ones who see things differently`; breakdown answers with `you can build your own things`, `this is the way`, `you're ready to fight`, `because they change things`, or other paired response phrases.
+- Current produced chop pattern uses phrase-level word groups instead of brittle one-word cuts. Repeated fragments are intentional: they make the speech behave like an instrument before completing the thought, while keeping starts and endings clean.
+- Producer translation: Dilla-inspired microtiming is handled as small per-hit offsets rather than a global quantize. Madlib-inspired texture is handled with lower-gain ghost/dust fragments and filtered edges. Kanye-inspired hook construction is handled with obvious call/response, pitched/rate-shifted repeats, and a landing phrase that resolves the thought.
+- Word chops must be retimed against caption word boundaries and rendered with short fades. Avoid letting a chop bleed into the next sentence just because it feels musically long.
+- Additional processed sources: `Apple Think Different` / `Here's To The Crazy Ones`, web stem `media/audio/vocal-stems/vocal-jobs-crazy-ones.m4a`, sample key `vocal-jobs-crazy-ones`; `Kanye West / Sway interview clip`, clean speech stem `media/audio/vocal-stems/vocal-kanye-answers-sway-clean.m4a`, sample key `vocal-kanye-answers-sway`.
+- Joker laugh texture source: local cut `media/source-vocals/joker-laugh-011-long.m4a`, stem output `media/stems/joker-laugh-long/htdemucs_ft/joker-laugh-011-long/vocals.wav`, web stem `media/audio/vocal-stems/vocal-joker-laugh-clean.m4a`, sample key `vocal-joker-laugh`. The shipped stem now uses the original trailer `11.00s-12.35s` laugh only, rendered from `0.85s-2.20s` of the separated long vocal stem into a tight 1.35-second hit with short fades and less pre-laugh noise.
+- The Joker laugh is not left to random sample rotation. The breakdown `chop` slot explicitly layers `vocal-joker-laugh` as a produced hit alongside the primary craft sample: short dry laugh bites on beats `0`, `0.5`, `1`, `1.5`, `2.25`, and `3`, followed by a longer laugh answer around beat `4.5`. Keep it percussive and attention-grabbing rather than a long ambience texture.
+- Comedic or overtly referential dialogue sources, including the `Silicon Valley` Jobs/Wozniak exchange, should remain local experiments until they prove they support the thesis rather than turning the public resume into a wink.
+- `vocal-jobs-crazy-ones` is authored as a fuller phrase kit rather than a single quote: call phrases establish outsider/creator identity, answer phrases land on consequence and agency, and the chop pattern recombines short word groups rhythmically without losing the source meaning.
+
+Design rules:
+
+- Prefer meaningful spoken fragments related to craft, authorship, making, technology, and creative agency.
+- Start with the message. Chops are there to compress, repeat, and rhythmically underline the idea, not to prove the sampler works.
+- Cut phrases at the start of the spoken word, not at rough video timestamps.
+- Use full phrases sparingly on strong downbeats during breakdowns.
+- Use micro-chops as syncopated fills, never as a constant chatter layer.
+- Keep title-card/video visuals out of the vocal system.
+- If a vocal sounds iconic but visually bad, keep the audio stem and pair it with an unrelated silent TV cut.
 
 ## Media And Hosting
 
