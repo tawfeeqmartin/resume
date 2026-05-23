@@ -3788,6 +3788,17 @@ function StrudelReplFeature() {
       const pxHeight = Math.max(1, Math.round(height * dpr));
       if (canvas.width !== pxWidth) canvas.width = pxWidth;
       if (canvas.height !== pxHeight) canvas.height = pxHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx && canvas.dataset.scopePrimed !== '1') {
+        canvas.dataset.scopePrimed = '1';
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'rgba(255, 216, 64, 0.62)';
+        ctx.lineWidth = Math.max(1, dpr);
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height * 0.5);
+        ctx.lineTo(canvas.width, canvas.height * 0.5);
+        ctx.stroke();
+      }
     });
   }, []);
 
@@ -4183,7 +4194,6 @@ function StrudelReplFeature() {
         pattern.draw((haps, time) => {
           if (cancelled) return;
           if (generation !== highlightGenerationRef.current) return;
-          if (activeHighlightSourceRef.current !== locationSource) return;
           const overlay = overlayRef.current;
           if (!overlay) return;
           const flashed = new Set();
