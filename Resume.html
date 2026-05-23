@@ -1563,15 +1563,18 @@ html.has-doom-overlay body {
   min-height: 420px;
   background: var(--vscode-bg);
 }
-.strudel-repl__scope {
+.strudel-repl__scope-layer {
   position: absolute;
-  left: clamp(8px, 1.2vw, 13px);
-  right: clamp(8px, 1.2vw, 13px);
-  bottom: clamp(7px, 1vw, 11px);
-  width: calc(100% - clamp(16px, 2.4vw, 26px));
-  height: clamp(32px, 4.6vw, 52px);
+  inset: 0;
   z-index: 3;
   pointer-events: none;
+  overflow: hidden;
+}
+.strudel-repl__scope-widget {
+  position: absolute;
+  height: clamp(30px, 4.2vw, 48px);
+  border: 1px solid rgba(255, 216, 64, 0.18);
+  background: rgba(30, 30, 30, 0.9);
   opacity: 0.86;
   mix-blend-mode: screen;
 }
@@ -3508,6 +3511,6 @@ window.__loadThreeBundle = () => {
   return window.__threePromise;
 };
 </script>
-<script type="module" src="dist/app.js?v=20260523-strudel-edit-scope"></script>
+<script type="module" src="dist/app.js?v=20260523-inline-scope-tokenfix"></script>
 </body>
 </html>

@@ -1082,24 +1082,33 @@ function getResumeStrudelAudioEngine() {
     const proto = module?.Pattern?.prototype;
     if (!proto) return;
     const scopeDefaults = (options = {}) => {
-      const ctx = window.__resumeStrudelScopeContext;
+      const id = options?.id ?? 1;
+      const ctx = options.ctx
+        || window.__resumeStrudelScopeContexts?.get?.(String(id))
+        || window.__resumeStrudelScopeContext;
       if (!ctx || options.ctx) return options;
       return {
-        id: 1,
+        id,
         color: '#ffd840',
         thickness: 1.5,
-        scale: 0.32,
-        pos: 0.55,
+        scale: 0.48,
+        pos: 0.5,
         smear: 0.12,
         ...options,
         ctx,
       };
     };
+    const normalizeScopeOptions = (idOrOptions = {}, maybeOptions = {}) => {
+      if (idOrOptions && typeof idOrOptions === 'object' && !Array.isArray(idOrOptions)) {
+        return idOrOptions;
+      }
+      return { ...maybeOptions, id: idOrOptions == null ? maybeOptions.id : idOrOptions };
+    };
     for (const name of ['scope', 'tscope', 'fscope', 'spectrum']) {
       const original = proto[name];
       if (typeof original !== 'function' || original.__resumeWrapped) continue;
-      proto[name] = function resumeScopedWidget(options = {}) {
-        return original.call(this, scopeDefaults(options));
+      proto[name] = function resumeScopedWidget(idOrOptions = {}, maybeOptions = {}) {
+        return original.call(this, scopeDefaults(normalizeScopeOptions(idOrOptions, maybeOptions)));
       };
       proto[name].__resumeWrapped = true;
     }
@@ -1115,8 +1124,8 @@ function getResumeStrudelAudioEngine() {
     };
     for (const [alias, target] of Object.entries(widgetAliases)) {
       if (typeof proto[alias] === 'function' || typeof proto[target] !== 'function') continue;
-      proto[alias] = function strudelWidgetAlias(options = {}) {
-        return this[target](scopeDefaults(options));
+      proto[alias] = function strudelWidgetAlias(idOrOptions = {}, maybeOptions = {}) {
+        return this[target](scopeDefaults(normalizeScopeOptions(idOrOptions, maybeOptions)));
       };
     }
   };
@@ -3720,7 +3729,7 @@ const STRUDEL_REPL_LINE_PATTERNS = [
 function StrudelReplFeature() {
   const textareaRef = React.useRef(null);
   const overlayRef = React.useRef(null);
-  const scopeCanvasRef = React.useRef(null);
+  const scopeLayerRef = React.useRef(null);
   const tokenCursorRef = React.useRef({});
   const highlightGenerationRef = React.useRef(0);
   const activeHighlightSourceRef = React.useRef('');
@@ -3735,6 +3744,53 @@ function StrudelReplFeature() {
   // user-editable textarea.
   const [engineSource, setEngineSource] = React.useState(null);
 
+  const scopeWidgets = React.useMemo(() => {
+    const lines = code.split('\n');
+    const widgets = [];
+    const scopeRe = /\.(?:_?scope|_?tscope|_?fscope|_?spectrum)\s*\(([^)]*)\)/g;
+    lines.forEach((line, lineIndex) => {
+      let match;
+      while ((match = scopeRe.exec(line)) !== null) {
+        const args = match[1] || '';
+        const objectId = args.match(/\bid\s*:\s*['"]?([A-Za-z0-9_-]+)['"]?/)?.[1];
+        const firstArg = args.match(/^\s*['"]?([A-Za-z0-9_-]+)['"]?\s*(?:,|\)|$)/)?.[1];
+        const id = objectId || firstArg || '1';
+        widgets.push({
+          id: String(id),
+          key: `${lineIndex}-${match.index}-${id}`,
+          lineIndex,
+        });
+      }
+    });
+    return widgets.slice(0, 4);
+  }, [code]);
+
+  const positionScopeWidgets = React.useCallback(() => {
+    const ta = textareaRef.current;
+    const layer = scopeLayerRef.current;
+    if (!ta || !layer) return;
+    const style = window.getComputedStyle(ta);
+    const fontSize = parseFloat(style.fontSize) || 12;
+    const lineHeight = parseFloat(style.lineHeight) || fontSize * 1.42;
+    const padTop = parseFloat(style.paddingTop) || 0;
+    const padLeft = parseFloat(style.paddingLeft) || 0;
+    const padRight = parseFloat(style.paddingRight) || 0;
+    const width = Math.max(1, ta.clientWidth - padLeft - padRight);
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    layer.querySelectorAll('.strudel-repl__scope-widget').forEach((canvas) => {
+      const lineIndex = Number(canvas.dataset.line || 0);
+      const top = padTop + (lineIndex + 1) * lineHeight - ta.scrollTop + 3;
+      canvas.style.left = `${padLeft - ta.scrollLeft}px`;
+      canvas.style.top = `${top}px`;
+      canvas.style.width = `${width}px`;
+      const height = Math.max(1, canvas.clientHeight || 44);
+      const pxWidth = Math.max(1, Math.round(width * dpr));
+      const pxHeight = Math.max(1, Math.round(height * dpr));
+      if (canvas.width !== pxWidth) canvas.width = pxWidth;
+      if (canvas.height !== pxHeight) canvas.height = pxHeight;
+    });
+  }, []);
+
   const syncScroll = React.useCallback(() => {
     const ta = textareaRef.current;
     const ov = overlayRef.current;
@@ -3742,36 +3798,37 @@ function StrudelReplFeature() {
       ov.scrollTop = ta.scrollTop;
       ov.scrollLeft = ta.scrollLeft;
     }
-  }, []);
+    positionScopeWidgets();
+  }, [positionScopeWidgets]);
 
   React.useLayoutEffect(() => {
-    const canvas = scopeCanvasRef.current;
-    if (!canvas) return undefined;
-    const ctx = canvas.getContext('2d');
+    const layer = scopeLayerRef.current;
+    if (!layer) return undefined;
     let frame = 0;
-    const resize = () => {
+    const update = () => {
       frame = 0;
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
-      const width = Math.max(1, Math.round(canvas.clientWidth * dpr));
-      const height = Math.max(1, Math.round(canvas.clientHeight * dpr));
-      if (canvas.width !== width) canvas.width = width;
-      if (canvas.height !== height) canvas.height = height;
-      window.__resumeStrudelScopeContext = ctx;
+      positionScopeWidgets();
+      const contexts = new Map();
+      layer.querySelectorAll('.strudel-repl__scope-widget').forEach((canvas) => {
+        const ctx = canvas.getContext('2d');
+        if (ctx) contexts.set(String(canvas.dataset.scopeId || '1'), ctx);
+      });
+      window.__resumeStrudelScopeContexts = contexts;
+      window.__resumeStrudelScopeContext = contexts.get('1') || contexts.values().next().value || null;
     };
-    const queueResize = () => {
+    const queueUpdate = () => {
       if (frame) return;
-      frame = window.requestAnimationFrame(resize);
+      frame = window.requestAnimationFrame(update);
     };
-    resize();
-    window.addEventListener('resize', queueResize);
+    update();
+    window.addEventListener('resize', queueUpdate);
     return () => {
       if (frame) window.cancelAnimationFrame(frame);
-      window.removeEventListener('resize', queueResize);
-      if (window.__resumeStrudelScopeContext === ctx) {
-        window.__resumeStrudelScopeContext = null;
-      }
+      window.removeEventListener('resize', queueUpdate);
+      window.__resumeStrudelScopeContexts = new Map();
+      window.__resumeStrudelScopeContext = null;
     };
-  }, []);
+  }, [scopeWidgets, positionScopeWidgets]);
 
   const pulseReplEvaluate = React.useCallback(() => {
     const overlay = overlayRef.current;
@@ -3904,24 +3961,35 @@ function StrudelReplFeature() {
     return true;
   }, []);
 
-  const findTokenSpansForLocation = React.useCallback((overlay, loc) => {
-    if (!overlay || !loc || typeof loc.start !== 'number') return [];
+  const findTokenSpanForLocation = React.useCallback((overlay, loc) => {
+    if (!overlay || !loc || typeof loc.start !== 'number') return null;
+    const isDenseStringToken = (span) => (
+      span?.classList?.contains('sr-tok--string')
+      && /[\s<>\[\]()*~,!?]/.test(span.dataset.token || span.textContent || '')
+    );
     const exact = overlay.querySelector(`[data-start="${loc.start}"]`);
+    if (exact && !isDenseStringToken(exact)) return exact;
+    const allowContainedTokens = !(exact && isDenseStringToken(exact));
     const locStart = loc.start;
     const locEnd = typeof loc.end === 'number' ? loc.end : locStart + 1;
     const tokens = overlay.querySelectorAll('.sr-tok[data-start][data-end]');
-    const matches = [];
+    let best = null;
+    let bestSize = Infinity;
     for (const span of tokens) {
       const start = Number(span.dataset.start);
       const end = Number(span.dataset.end);
       if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
+      if (isDenseStringToken(span)) continue;
       const startInsideToken = start <= locStart && locStart < end;
-      const tokenInsideLocation = locStart <= start && start < locEnd;
-      const overlapsLocation = locStart < end && start < locEnd;
-      if (startInsideToken || tokenInsideLocation || overlapsLocation) matches.push(span);
+      const tokenInsideLocation = allowContainedTokens && locStart <= start && start < locEnd;
+      if (!startInsideToken && !tokenInsideLocation) continue;
+      const size = end - start;
+      if (size < bestSize) {
+        best = span;
+        bestSize = size;
+      }
     }
-    if (matches.length) return [...new Set(matches)];
-    return exact ? [exact] : [];
+    return best;
   }, []);
 
   const mapLocationToCurrentCode = React.useCallback((loc, fromSource = '', toSource = '') => {
@@ -4134,8 +4202,8 @@ function StrudelReplFeature() {
               flashed.add(key);
               const mappedLoc = mapLocationToCurrentCode(loc, locationSource, visibleSource);
               if (!mappedLoc) continue;
-              const spans = findTokenSpansForLocation(overlay, mappedLoc);
-              spans.forEach((span) => flashReplTokenSpan(span, dur, generation));
+              const span = findTokenSpanForLocation(overlay, mappedLoc);
+              flashReplTokenSpan(span, dur, generation);
             }
           }
         }, { id: 'strudel-repl-flash', lookahead: 0.02, lookbehind: 0 });
@@ -4150,7 +4218,7 @@ function StrudelReplFeature() {
       cancelled = true;
       window.removeEventListener('resume-pattern-ready', onReady);
     };
-  }, [code, findTokenSpansForLocation, flashReplTokenSpan, mapLocationToCurrentCode]);
+  }, [code, findTokenSpanForLocation, flashReplTokenSpan, mapLocationToCurrentCode]);
 
   React.useEffect(() => {
     const onMidi = (event) => {
@@ -4407,11 +4475,16 @@ function StrudelReplFeature() {
                   aria-hidden="true"
                   dangerouslySetInnerHTML={{ __html: highlighted }}
                 />
-                <canvas
-                  ref={scopeCanvasRef}
-                  className="strudel-repl__scope"
-                  aria-hidden="true"
-                />
+                <div ref={scopeLayerRef} className="strudel-repl__scope-layer" aria-hidden="true">
+                  {scopeWidgets.map((widget) => (
+                    <canvas
+                      key={widget.key}
+                      className="strudel-repl__scope-widget"
+                      data-scope-id={widget.id}
+                      data-line={widget.lineIndex}
+                    />
+                  ))}
+                </div>
                 <textarea
                   ref={textareaRef}
                   className="strudel-repl__textarea"

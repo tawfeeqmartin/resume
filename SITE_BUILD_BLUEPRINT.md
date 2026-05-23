@@ -380,8 +380,8 @@ Current implementation:
 - The site adds compatibility aliases for common Strudel CodeMirror widget
   helpers such as `._scope()` so live-edited code can use familiar Strudel
   syntax even though this page is not embedding Strudel's full editor UI.
-  `_scope()`, `scope()`, `fscope()`, and `_fscope()` draw into the small
-  oscilloscope strip mounted over the MacBook REPL screen.
+  `_scope()`, `scope()`, `fscope()`, and `_fscope()` create an inline-style
+  oscilloscope canvas beneath the line where the scope call appears.
 - Current breakdown window follows the active Strudel arrangement: 40 cycles total, breakdown starts at cycle 32 and ends at cycle 40.
 - Mac screen bass response uses the `bass` lane event directly: each bass hit advances a persistent CRT roll phase, draws a short black sync band, and applies a brief, strong sideways tracking shake from the same scheduled hit so the motion feels locked to the bassline.
 
