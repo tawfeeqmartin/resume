@@ -4198,6 +4198,89 @@ function getMacTerminalCharacter(code, shiftKey = false) {
 
 const TV_HERO_VIDEO_CACHE_LIMIT = 12;
 
+const TV_EDIT_SECTION_PROFILES = {
+  idle: { prefer: ['hero', 'iconic', 'establishing', 'wide'], avoid: ['guest'], energy: 3 },
+  intro: { prefer: ['hero', 'iconic', 'establishing', 'wide', 'silhouette'], avoid: ['guest', 'explosion'], energy: 2.8 },
+  chorus: { prefer: ['action', 'impact', 'saber', 'vehicle', 'creature', 'epic'], energy: 4.5 },
+  verse: { prefer: ['character', 'close', 'gesture', 'object', 'screen'], energy: 3 },
+  preChorus: { prefer: ['silhouette', 'screen', 'shatter', 'motion', 'wide'], energy: 3.6 },
+  breakdown: { prefer: ['close', 'screen', 'gesture', 'noir', 'warm', 'silhouette'], energy: 3.1 },
+};
+const TV_EDIT_LANE_PROFILES = {
+  init: { prefer: ['hero', 'iconic', 'wide'] },
+  idle: { prefer: ['hero', 'iconic', 'wide', 'establishing'] },
+  snare: { prefer: ['impact', 'action', 'saber', 'shatter', 'explosion'] },
+  bass: { prefer: ['wide', 'scale', 'vehicle', 'creature', 'motion'] },
+  lead: { prefer: ['close', 'character', 'gesture', 'silhouette'] },
+  angel: { prefer: ['wide', 'silhouette', 'warm', 'atmosphere'] },
+  build: { prefer: ['motion', 'saber', 'vehicle', 'screen'] },
+  switch: { prefer: ['impact', 'vehicle', 'motion', 'shatter'] },
+  ghost: { prefer: ['silhouette', 'noir', 'atmosphere'] },
+  vocal: { prefer: ['close', 'gesture', 'screen'] },
+};
+const TV_EDIT_MATCH_TAGS = [
+  'wide', 'close', 'character', 'gesture', 'screen', 'saber',
+  'vehicle', 'creature', 'silhouette', 'impact', 'motion', 'noir',
+];
+
+function uniqueEditTags(tags) {
+  return [...new Set((tags || []).filter(Boolean))];
+}
+
+function getSourceEditTags(source) {
+  return uniqueEditTags(source?.visualTags || source?.tags || []);
+}
+
+function makeTvEditProfile(section = 'idle', lane = 'idle', mode = 'normal') {
+  const sectionProfile = TV_EDIT_SECTION_PROFILES[section] || TV_EDIT_SECTION_PROFILES.idle;
+  const laneProfile = TV_EDIT_LANE_PROFILES[lane] || TV_EDIT_LANE_PROFILES.idle;
+  return {
+    section,
+    lane,
+    mode,
+    prefer: uniqueEditTags([...(sectionProfile.prefer || []), ...(laneProfile.prefer || [])]),
+    avoid: uniqueEditTags([...(sectionProfile.avoid || []), ...(laneProfile.avoid || [])]),
+    energy: laneProfile.energy ?? sectionProfile.energy ?? 3,
+  };
+}
+
+function scoreTvEditCandidate(source, profile, previousSource) {
+  if (!source || !profile) return 0;
+  const tags = getSourceEditTags(source);
+  const tagSet = new Set(tags);
+  let score = Math.log2(Math.max(1, source.weight || 1));
+  for (const tag of profile.prefer) {
+    if (tagSet.has(tag)) score += 2.6;
+  }
+  for (const tag of profile.avoid) {
+    if (tagSet.has(tag)) score -= 3.2;
+  }
+  if (Number.isFinite(source.energy) && Number.isFinite(profile.energy)) {
+    score -= Math.abs(source.energy - profile.energy) * 0.9;
+  }
+  if (previousSource) {
+    const previousTags = new Set(getSourceEditTags(previousSource));
+    for (const tag of TV_EDIT_MATCH_TAGS) {
+      if (tagSet.has(tag) && previousTags.has(tag)) score += 0.8;
+    }
+    if (source.shotSize && source.shotSize === previousSource.shotSize) score += 0.7;
+    if (source.project && source.project === previousSource.project && profile.lane === 'snare') score += 0.6;
+  }
+  if (profile.mode === 'sparse' && tagSet.has('impact')) score -= 1.4;
+  return score;
+}
+
+function rankTvEditCandidates(candidates, profile, previousSource) {
+  if (!candidates.length || !profile) return candidates;
+  const scored = candidates
+    .map((entry) => ({ ...entry, editScore: scoreTvEditCandidate(entry.s, profile, previousSource) }))
+    .sort((a, b) => b.editScore - a.editScore || a.i - b.i);
+  const best = scored[0]?.editScore ?? 0;
+  const windowSize = profile.mode === 'sparse' ? 2.1 : 3.4;
+  const shortlist = scored.filter((entry) => entry.editScore >= best - windowSize);
+  return shortlist.length ? shortlist : scored;
+}
+
 function TvHero({ sources = [], vocalSamples = [], children }) {
   const wrapRef = React.useRef(null);
   const canvasRef = React.useRef(null);
@@ -4213,6 +4296,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     currentImage: null,
     currentMedia: null,
     currentVideo: null,
+    currentSource: null,
     currentLane: 'idle',
     currentCutMode: 'normal',
     lastVideoFrameTime: -1,
@@ -4248,7 +4332,11 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     lastCutAt: 0,
     lastRhythmCutAt: 0,
     lastSparseCutAt: 0,
+    lastHatStutterAt: 0,
+    lastVocalPunchAt: 0,
     sparseMotif: null,
+    liveEdit: { punchUntil: 0, punchScale: 1 },
+    liveEditTimer: 0,
     cutToken: 0,
     raf: 0,
     bbox: null,
@@ -4292,8 +4380,23 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
   const BREAKDOWN_START_MS = ARRANGEMENT_CYCLE_MS * BREAKDOWN_START_CYCLES;
   const BREAKDOWN_END_MS = ARRANGEMENT_CYCLE_MS * BREAKDOWN_END_CYCLES;
 
+  const getEditSection = React.useCallback((now = performance.now()) => {
+    const state = stateRef.current;
+    if (!state.songStartedAt || !ARRANGEMENT_MS) return 'idle';
+    const elapsed = Math.max(0, now - state.songStartedAt);
+    const loopMs = ((elapsed % ARRANGEMENT_MS) + ARRANGEMENT_MS) % ARRANGEMENT_MS;
+    if (loopMs < ARRANGEMENT_CYCLE_MS * 4) return 'intro';
+    if (loopMs < ARRANGEMENT_CYCLE_MS * 12) return 'chorus';
+    if (loopMs < ARRANGEMENT_CYCLE_MS * 20) return 'verse';
+    if (loopMs < PRECHORUS_END_MS) return 'preChorus';
+    if (loopMs < BREAKDOWN_START_MS) return 'chorus';
+    if (loopMs < BREAKDOWN_END_MS) return 'breakdown';
+    return 'idle';
+  }, [ARRANGEMENT_CYCLE_MS, ARRANGEMENT_MS, BREAKDOWN_END_MS, BREAKDOWN_START_MS, PRECHORUS_END_MS]);
+
   const pickIndex = React.useCallback((lane, options = {}) => {
     if (!availableSources.length) return 0;
+    const profile = makeTvEditProfile(getEditSection(), lane || 'idle', options.mode || 'normal');
     const chooseFresh = (pickLane, blockedIndexes = new Set(), blockedProjects = new Set(), cursorKey = pickLane) => {
       const activeBlockedIndexes = new Set(blockedIndexes);
       if (currentIdxRef.current >= 0) activeBlockedIndexes.add(currentIdxRef.current);
@@ -4339,7 +4442,11 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         : fresh.length
           ? fresh
           : eligible.filter(({ i }) => i !== currentIdxRef.current);
-      const finalPool = pool.length ? pool : eligible;
+      const finalPool = rankTvEditCandidates(
+        pool.length ? pool : eligible,
+        profile,
+        state.currentSource,
+      );
       const cursor = (state.laneCursors.get(cursorKey) || 0) % finalPool.length;
       const picked = finalPool[cursor].i;
       state.laneCursors.set(cursorKey, (cursor + 1) % Math.max(1, finalPool.length));
@@ -4396,8 +4503,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       return picked;
     }
 
-    return chooseFresh(lane);
-  }, [availableSources]);
+    return chooseFresh(lane || 'idle');
+  }, [availableSources, getEditSection]);
 
   const disposeCachedVideo = React.useCallback((video) => {
     if (!video) return;
@@ -4997,7 +5104,11 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     const macMattePunchIn = isMac && sourceMatteAspect
       ? Math.max(1, sourceMatteAspect / ar)
       : 1;
-    const punchIn = Math.max(sourcePunchIn, macMattePunchIn);
+    const liveEdit = stateRef.current.liveEdit;
+    const livePunch = liveEdit && performance.now() < liveEdit.punchUntil
+      ? liveEdit.punchScale || 1
+      : 1;
+    const punchIn = Math.max(sourcePunchIn, macMattePunchIn) * livePunch;
     if (punchIn !== 1) {
       const cx = w / 2, cy = h / 2;
       dx = cx - (cx - dx) * punchIn;
@@ -5806,6 +5917,43 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     state.currentVideo = null;
   }, []);
 
+  const triggerEditPunch = React.useCallback((scale = 1.035, duration = 160) => {
+    const state = stateRef.current;
+    window.clearTimeout(state.liveEditTimer);
+    state.liveEdit = {
+      punchUntil: performance.now() + duration,
+      punchScale: scale,
+    };
+    const media = state.currentMedia || state.currentImage;
+    if (media && !state.currentVideo) drawSourceToCanvas(media);
+    state.liveEditTimer = window.setTimeout(() => {
+      state.liveEdit = { punchUntil: 0, punchScale: 1 };
+      const current = state.currentMedia || state.currentImage;
+      if (current && !state.currentVideo) drawSourceToCanvas(current);
+    }, duration + 24);
+  }, [drawSourceToCanvas]);
+
+  const applyHatStutter = React.useCallback((detail = {}) => {
+    const state = stateRef.current;
+    if (state.tabVisible === false || state.tvVisible === false) return;
+    if (state.channelFlipping || !state.currentVideo || state.currentVideo.paused) return;
+    const now = performance.now();
+    if (now - state.lastHatStutterAt < 1450) return;
+    if ((detail.id || 0) % 4 !== 1) return;
+    state.lastHatStutterAt = now;
+    const video = state.currentVideo;
+    const holdMs = Math.max(38, Math.min(58, (detail.duration || 90) * 0.45));
+    try { video.pause(); } catch {}
+    window.setTimeout(() => {
+      if (state.currentVideo !== video || state.tabVisible === false || state.tvVisible === false) return;
+      if (!window.__resumeStrudelAudioEngine?.enabled) return;
+      try {
+        const playPromise = video.play?.();
+        if (playPromise?.catch) playPromise.catch(() => {});
+      } catch {}
+    }, holdMs);
+  }, []);
+
   React.useEffect(() => {
     const state = stateRef.current;
     const cancelVideoCallbacks = () => {
@@ -5956,6 +6104,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         }
         stateRef.current.currentImage = null;
         stateRef.current.currentMedia = video;
+        stateRef.current.currentSource = source;
         stateRef.current.currentFit = source.fit || 'contain';
         stateRef.current.currentMatteAspect = source.matteAspect || null;
         stateRef.current.currentPunchIn = source.punchIn || 1;
@@ -6015,6 +6164,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       if (stateRef.current.cutToken !== cutToken) return;
       stateRef.current.currentImage = img;
       stateRef.current.currentMedia = img;
+      stateRef.current.currentSource = source;
       stateRef.current.currentFit = source.fit || 'cover';
       stateRef.current.currentMatteAspect = source.matteAspect || null;
       drawSourceToCanvas(img);
@@ -6023,6 +6173,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         if (stateRef.current.cutToken !== cutToken) return;
         stateRef.current.currentImage = img;
         stateRef.current.currentMedia = img;
+        stateRef.current.currentSource = source;
         stateRef.current.currentFit = source.fit || 'cover';
         stateRef.current.currentMatteAspect = source.matteAspect || null;
       stateRef.current.currentPunchIn = source.punchIn || 1;
@@ -6471,6 +6622,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       stopVocalSamples(1);
       s.vocalSampleCache.clear();
       window.clearTimeout(s.channelCutTimer);
+      window.clearTimeout(s.liveEditTimer);
       if (onResize) window.removeEventListener('resize', onResize);
       s.requestRender = null;
       try { s.renderer?.dispose(); } catch {}
@@ -6621,6 +6773,10 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 
   React.useEffect(() => {
     const onDrumHit = (event) => {
+      if (event.detail?.lane === 'hat') {
+        applyHatStutter(event.detail);
+        return;
+      }
       if (event.detail?.lane !== 'snare') return;
       if (stateRef.current.tabVisible === false || stateRef.current.tvVisible === false) return;
       stateRef.current.lastRhythmCutAt = performance.now();
@@ -6637,7 +6793,19 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     };
     window.addEventListener('resume-drum-hit', onDrumHit);
     return () => window.removeEventListener('resume-drum-hit', onDrumHit);
-  }, [animateChannelFlip, animateMacBloomBurst, animateKeyPress]);
+  }, [animateChannelFlip, animateMacBloomBurst, animateKeyPress, applyHatStutter]);
+
+  React.useEffect(() => {
+    const onVocalCue = (event) => {
+      if (stateRef.current.tabVisible === false || stateRef.current.tvVisible === false) return;
+      const now = performance.now();
+      if (now - stateRef.current.lastVocalPunchAt < 420) return;
+      stateRef.current.lastVocalPunchAt = now;
+      triggerEditPunch(event.detail?.mode === 'chop' ? 1.055 : 1.035, 210);
+    };
+    window.addEventListener('resume-vocal-sample-cue', onVocalCue);
+    return () => window.removeEventListener('resume-vocal-sample-cue', onVocalCue);
+  }, [triggerEditPunch]);
 
   // Intro + breakdown have no clap/snare lane, so without a secondary
   // cue the short trailer clips loop visibly. Let sparse melody/bass
@@ -6820,6 +6988,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     stateRef.current.lastCutAt = 0;
     stateRef.current.lastRhythmCutAt = 0;
     stateRef.current.lastSparseCutAt = 0;
+    stateRef.current.lastHatStutterAt = 0;
+    stateRef.current.lastVocalPunchAt = 0;
     stateRef.current.sparseMotif = null;
     stateRef.current.vocalSampleLoop = -1;
     stateRef.current.vocalSampleSlots.clear();

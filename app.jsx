@@ -93,6 +93,106 @@ const CLEARED_TRAILER_GROUPS = [
 // Sources with more dead bars baked into the trailer file get an extra
 // punch-in on the Mac so the cinematic content fills the CRT.
 const CLEARED_TRAILER_PUNCH_IN = { creator: 1.34 };
+const CLIP_GROUP_EDIT_TAGS = {
+  'mandalorian-grogu': ['star-wars', 'iconic', 'action', 'epic', 'motion'],
+  'mandalorian-s3': ['star-wars', 'action', 'saber', 'impact'],
+  'obi-wan': ['star-wars', 'saber', 'character', 'impact'],
+  joker: ['guest', 'noir', 'close', 'screen', 'shatter'],
+  creator: ['guest', 'scale', 'wide', 'vehicle', 'action'],
+  'andor-s2': ['star-wars', 'silhouette', 'character', 'atmosphere'],
+  'big-bold': ['guest', 'warm', 'character', 'gesture'],
+};
+const CLIP_TAKE_EDIT_TAGS = {
+  'mandalorian-grogu': {
+    31: ['hero', 'creature', 'wide', 'scale'],
+    69: ['hero', 'creature', 'wide', 'scale'],
+    70: ['hero', 'creature', 'wide', 'impact'],
+    1: ['establishing', 'wide'],
+    10: ['saber', 'action', 'character'],
+    11: ['saber', 'action', 'character'],
+    12: ['saber', 'action', 'character'],
+    13: ['saber', 'action', 'character'],
+    14: ['saber', 'action', 'character'],
+    17: ['saber', 'action', 'impact'],
+    18: ['saber', 'action', 'impact'],
+    21: ['saber', 'action', 'impact'],
+    25: ['vehicle', 'wide', 'motion'],
+    26: ['vehicle', 'wide', 'motion'],
+    27: ['vehicle', 'wide', 'motion'],
+    28: ['vehicle', 'wide', 'motion'],
+    29: ['vehicle', 'wide', 'motion'],
+    34: ['close', 'character', 'gesture'],
+    38: ['close', 'character', 'gesture'],
+    39: ['close', 'character', 'gesture'],
+    41: ['close', 'character', 'gesture'],
+    47: ['close', 'character', 'gesture'],
+    49: ['close', 'character', 'gesture'],
+    51: ['close', 'character', 'gesture'],
+    53: ['creature', 'wide', 'scale'],
+    54: ['creature', 'wide', 'scale'],
+    58: ['vehicle', 'space', 'wide', 'motion'],
+    59: ['vehicle', 'space', 'wide', 'motion'],
+    60: ['vehicle', 'space', 'wide', 'motion'],
+    61: ['vehicle', 'space', 'wide', 'motion'],
+    62: ['vehicle', 'space', 'wide', 'motion'],
+    63: ['vehicle', 'space', 'wide', 'motion'],
+    64: ['vehicle', 'space', 'wide', 'motion'],
+    65: ['vehicle', 'space', 'wide', 'motion'],
+    66: ['vehicle', 'space', 'wide', 'motion'],
+    67: ['vehicle', 'space', 'wide', 'motion'],
+    68: ['vehicle', 'space', 'wide', 'motion'],
+  },
+  'mandalorian-s3': {
+    5: ['action', 'impact', 'wide'],
+    7: ['saber', 'character', 'impact'],
+    8: ['vehicle', 'wide', 'motion'],
+  },
+  'obi-wan': {
+    7: ['saber', 'character', 'impact'],
+  },
+  joker: {
+    5: ['screen', 'close', 'noir'],
+    6: ['shatter', 'impact', 'gesture'],
+    7: ['silhouette', 'wide', 'noir'],
+    8: ['close', 'character', 'noir'],
+    9: ['impact', 'gesture', 'noir'],
+  },
+  creator: {
+    5: ['wide', 'scale', 'impact'],
+    6: ['vehicle', 'motion', 'wide'],
+    7: ['object', 'tech', 'close'],
+    8: ['wide', 'scale', 'silhouette'],
+    9: ['vehicle', 'action', 'motion'],
+    10: ['explosion', 'impact', 'wide'],
+    11: ['vehicle', 'water', 'motion'],
+    12: ['action', 'water', 'impact'],
+    13: ['vehicle', 'wide', 'motion'],
+    14: ['silhouette', 'explosion', 'impact'],
+  },
+  'andor-s2': {
+    6: ['character', 'silhouette', 'atmosphere'],
+  },
+  'big-bold': {
+    2: ['warm', 'character', 'gesture'],
+    4: ['warm', 'wide', 'atmosphere'],
+  },
+};
+const getClipEditTags = (group, takeId) => [
+  ...(CLIP_GROUP_EDIT_TAGS[group.slug] || []),
+  ...(CLIP_TAKE_EDIT_TAGS[group.slug]?.[takeId] || []),
+];
+const getClipShotSize = (tags) => {
+  if (tags.includes('close')) return 'close';
+  if (tags.includes('wide') || tags.includes('scale')) return 'wide';
+  return 'medium';
+};
+const getClipEnergy = (tags) => {
+  if (tags.includes('impact') || tags.includes('explosion')) return 5;
+  if (tags.includes('action') || tags.includes('motion') || tags.includes('saber')) return 4;
+  if (tags.includes('gesture') || tags.includes('screen') || tags.includes('vehicle')) return 3;
+  if (tags.includes('atmosphere') || tags.includes('warm')) return 2;
+  return 3;
+};
 const CLEARED_TRAILER_SOURCES = CLEARED_TRAILER_GROUPS.flatMap((group) => {
   const skipped = new Set(group.skip || []);
   const takes = Array.isArray(group.takes)
@@ -101,12 +201,16 @@ const CLEARED_TRAILER_SOURCES = CLEARED_TRAILER_GROUPS.flatMap((group) => {
   return takes.map((takeId) => {
     if (skipped.has(takeId)) return null;
     const take = String(takeId).padStart(2, '0');
+    const visualTags = getClipEditTags(group, takeId);
     return {
       url: withCacheKey(mediaUrl(`media/tv-clips/cleared-${group.slug}-${take}.mp4`), TV_CLIP_CACHE_KEY),
       kind: 'video',
       fit: 'contain',
       matteAspect: 2.39,
       punchIn: CLEARED_TRAILER_PUNCH_IN[group.slug] || 1,
+      visualTags,
+      shotSize: getClipShotSize(visualTags),
+      energy: getClipEnergy(visualTags),
       optional: true,
       project: group.project,
       cue: `cleared trailer phrase ${take}`,

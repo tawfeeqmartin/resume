@@ -278,6 +278,10 @@ The HELP player should stream media. It should not fetch the entire full-quality
 
 Used for the sticky Sony Trinitron hero.
 
+Detailed edit rules live in `EDIT_GRAMMAR.md`. That document is the source of
+truth for music-lane behavior, clip tags, and what must be pre-baked rather
+than computed live.
+
 Purpose:
 
 - Treat the TV as a music-synced montage surface.
@@ -310,6 +314,7 @@ Clip curation workflow:
 - Generate review contact sheets into `review/contact-sheets/` from active `media/tv-clips/` cuts before removing or adding clips.
 - Keep rejected clips reversible by moving them to `review/removed-tv-clips-YYYY-MM-DD/`.
 - If old files may still exist on R2, exclude them through `skip` entries in `CLEARED_TRAILER_GROUPS`; do not rely on missing local files.
+- After every manifest or clip curation pass, run `npm run check:tv-clips` before shipping. The check expands the active app manifest, verifies every local file exists, and HEAD-checks every production R2 URL for `200`, byte-range support, and immutable cache headers.
 - Normalize new silent Mac/TV video cuts as 960x540, 24 fps, grayscale, no audio, with the source trailer's cinematic matte preserved:
 
 ```bash
