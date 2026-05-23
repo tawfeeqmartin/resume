@@ -4128,8 +4128,8 @@ function StrudelReplFeature() {
                 />
                 <textarea
                   ref={textareaRef}
-                  className="strudel-repl__textarea mono"
-	                  value={code}
+                  className="strudel-repl__textarea"
+                  value={code}
 	                  spellCheck={false}
 	                  wrap="off"
 	                  onChange={handleCodeChange}

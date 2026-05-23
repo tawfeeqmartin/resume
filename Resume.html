@@ -1574,6 +1574,10 @@ html.has-doom-overlay body {
   margin: 0;
   padding: 16px 18px;
   font: 13px / 1.55 var(--mono);
+  letter-spacing: 0;
+  text-transform: none;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
   white-space: pre;
   tab-size: 2;
   border: 0;
@@ -1618,16 +1622,16 @@ html.has-doom-overlay body {
 .strudel-repl .sr-fn { color: var(--vscode-fn); }
 .strudel-repl .sr-num { color: var(--vscode-number); }
 .strudel-repl .sr-tok {
-  display: inline-block;
+  display: inline;
   border-radius: 0;
-  padding: 0 1px;
-  margin: 0 -1px;
+  padding: 0;
+  margin: 0;
   transition: background-color 0.055s ease-out, color 0.055s ease-out, box-shadow 0.055s ease-out;
 }
 .strudel-repl .sr-tok.is-flash {
   background: #ffd840;
   color: #111;
-  box-shadow: 0 0 0 1px rgba(255, 216, 64, 0.82), 0 0 10px rgba(255, 216, 64, 0.42);
+  box-shadow: 0 0 0 1px rgba(255, 216, 64, 0.7);
 }
 .strudel-repl__error {
   padding: 10px 14px;
