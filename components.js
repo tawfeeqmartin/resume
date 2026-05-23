@@ -4782,20 +4782,12 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     const phraseLike = mode === 'phrase' || mode === 'answer';
     const canLeadPhrase = phraseLike && slotIndex >= 3 && ['lead', 'angel', 'build', 'switch', 'ghost'].includes(lane);
     if (phraseLike && lane !== 'bass' && !canLeadPhrase) return;
-    if (mode === 'chop' && !['lead', 'angel', 'build', 'switch', 'ghost'].includes(lane)) return;
+    if (mode === 'chop' && !['bass', 'lead', 'angel', 'build', 'switch', 'ghost'].includes(lane)) return;
     const key = `${position.loopIndex}:${slotIndex}:${mode}`;
     if (state.vocalSampleSlots.has(key)) return;
     state.vocalSampleSlots.add(key);
     const sample = pickVocalSample(mode);
     playVocalMoment(sample, mode, event.detail?.scheduledTime, slotIndex);
-    if (mode === 'chop') {
-      const jokerSample = vocalSamples.find((entry) => entry.sampleKey === 'vocal-joker-laugh');
-      const jokerKey = `${position.loopIndex}:${slotIndex}:joker-laugh`;
-      if (jokerSample && jokerSample !== sample && !state.vocalSampleSlots.has(jokerKey)) {
-        state.vocalSampleSlots.add(jokerKey);
-        playVocalMoment(jokerSample, 'chop', event.detail?.scheduledTime, slotIndex + 1);
-      }
-    }
   }, [engineEnabled, getVocalSectionPosition, pickVocalSample, playVocalMoment, vocalSamples]);
 
   const trimVideoCache = React.useCallback((keepSrc = '') => {
@@ -5142,9 +5134,9 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       const hitT = Math.min(1, elapsed / duration);
       const shakeCurve = Math.pow(1 - hitT, 2.2);
       const seed = state.macBloom?.shakeSeed || 1;
-      const hitStrength = Math.max(0.68, Math.min(1.9, state.macBloom?.hitStrength || s));
-      const horizontalShake = 0.022 + hitStrength * 0.024;
-      const verticalShake = 0.0022 + hitStrength * 0.0014;
+      const hitStrength = Math.max(0.82, Math.min(2.35, state.macBloom?.hitStrength || s));
+      const horizontalShake = 0.034 + hitStrength * 0.036;
+      const verticalShake = 0.0016 + hitStrength * 0.001;
       const shakeX = Math.round((
         Math.sin(seed * 0.71 + elapsed * 0.095) * 0.72 +
         Math.sin(seed * 1.37 + elapsed * 0.173) * 0.28
@@ -5381,7 +5373,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 		  const animateMacBloomBurst = React.useCallback((kind = 'bass', options = {}) => {
 	    const state = stateRef.current;
 	    cancelAnimationFrame(state.macBloomRaf);
-	    const bassHitStrength = Math.max(0.68, Math.min(1.9, Number(options.strength) || 1));
+	    const bassHitStrength = Math.max(0.82, Math.min(2.35, Number(options.strength) || 1));
 	    const bassDuration = Math.max(130, Math.min(260, (options.duration || 180) * 0.82));
 	    const duration = kind === 'clap' ? 180 : kind === 'powerOn' ? 220 : bassDuration;
 	    const screenH = state.screenCanvas?.height || 1536;
@@ -5405,7 +5397,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     else { start = bassStart; end = bassEnd; }
     state.macBloom = {
       activeUntil: performance.now() + duration,
-	      strength: kind === 'clap' ? 1.35 : kind === 'powerOn' ? 1.0 : Math.min(1.4, bassHitStrength),
+	      strength: kind === 'clap' ? 1.35 : kind === 'powerOn' ? 1.0 : Math.min(1.75, bassHitStrength),
       kind,
 	      duration,
 	      started: performance.now(),

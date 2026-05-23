@@ -5,8 +5,8 @@ const mediaUrl = (path) => {
   return `${PRODUCTION_MEDIA_ORIGIN}/${path.replace(/^media\//, '')}`;
 };
 const withCacheKey = (url, key) => `${url}${url.includes('?') ? '&' : '?'}v=${key}`;
-const TV_CLIP_CACHE_KEY = '20260522-mando-snake-laugh-chops';
-const VOCAL_SAMPLE_CACHE_KEY = '20260522-joker-laugh-111235';
+const TV_CLIP_CACHE_KEY = '20260522-bass-track-no-laugh';
+const VOCAL_SAMPLE_CACHE_KEY = '20260522-vocal-rotation-no-laugh';
 const SITE_MODE_STORAGE_KEY = 'resume.desktop.mode';
 const IS_MOBILE_MEDIA_TARGET = window.matchMedia('(max-width: 900px), (pointer: coarse)').matches;
 const helpMeshSource = (path) => ({
@@ -34,7 +34,7 @@ const CLEARED_TRAILER_GROUPS = [
     slug: 'mandalorian-grogu',
     project: 'The Mandalorian and Grogu',
     takes: [
-      70, 1, 10, 11, 12, 13, 14, 17, 18, 21, 25, 26, 27, 28, 29, 34, 38, 39,
+      31, 69, 70, 1, 10, 11, 12, 13, 14, 17, 18, 21, 25, 26, 27, 28, 29, 34, 38, 39,
       41, 47, 49, 51, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66,
       67, 68, 69,
     ],
@@ -401,41 +401,6 @@ const CURATED_VOCAL_LINES = [
       { label: 'genius', offset: 46.5, duration: 0.86, gain: 0.44, rate: 1.08 },
       { label: 'crazy enough', offset: 48.48, duration: 0.58, gain: 0.42, rate: 0.98 },
       { label: 'change the world', offset: 49.48, duration: 2.82, gain: 0.5, rate: 0.94 },
-    ],
-  },
-  {
-    file: 'vocal-joker-laugh-clean.m4a',
-    project: 'Joker: Folie A Deux',
-    sourceUrl: 'https://www.youtube.com/watch?v=onGdcH0vW50',
-    cue: 'Joker laugh hit',
-    sampleKey: 'vocal-joker-laugh',
-    volume: 1.16,
-    priority: 3,
-    breakdownModes: ['chop', 'rest', 'chop', 'rest'],
-    answerPhrases: [
-      { label: 'Tight laugh hit.', offset: 0, duration: 1.28, gain: 0.58 },
-    ],
-    answerPattern: [
-      { label: 'laugh bite', beat: 0, mode: 'chop', pan: -0.16, gain: 1.34, rate: 0.96 },
-      { label: 'laugh bite', beat: 0.5, mode: 'chop', pan: 0.12, gain: 1.22, rate: 1.08 },
-      { label: 'laugh accent', beat: 1, mode: 'chop', pan: -0.06, gain: 1.28, rate: 0.9 },
-      { label: 'laugh exclaim', beat: 1.75, mode: 'chop', pan: 0.18, gain: 1.38, rate: 1.16 },
-    ],
-    chopPattern: [
-      { label: 'laugh bite', beat: 0, pan: -0.2, gain: 1.36, rate: 0.94 },
-      { label: 'laugh bite', beat: 0.5, pan: 0.16, gain: 1.2, rate: 1.08 },
-      { label: 'laugh bite', beat: 1, pan: -0.08, gain: 1.26, rate: 0.98 },
-      { label: 'laugh accent', beat: 1.5, pan: 0.18, gain: 1.34, rate: 1.14 },
-      { label: 'laugh bite', beat: 2.25, pan: -0.14, gain: 1.18, rate: 0.88 },
-      { label: 'laugh exclaim', beat: 3, pan: 0.18, gain: 1.42, rate: 1.18 },
-      { label: 'joker laugh', beat: 4.5, pan: -0.04, gain: 1.08, rate: 0.94 },
-    ],
-    chops: [
-      { label: 'laugh bite', offset: 0.02, duration: 0.24, gain: 0.98, rate: 0.98 },
-      { label: 'laugh accent', offset: 0.18, duration: 0.34, gain: 1.0, rate: 1.04 },
-      { label: 'laugh exclaim', offset: 0.32, duration: 0.4, gain: 1.0, rate: 1.12 },
-      { label: 'joker laugh', offset: 0.14, duration: 0.68, gain: 0.92, rate: 1.0 },
-      { label: 'laugh tail', offset: 0.74, duration: 0.42, gain: 0.78, rate: 0.92 },
     ],
   },
 ];
