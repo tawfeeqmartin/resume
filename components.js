@@ -4330,6 +4330,8 @@ function Experience({ items }) {
 
 const TV_MODEL_URL = 'media/3d/apple_macintosh.glb';
 const DOOM_TERMINAL_COMMANDS = new Set(['doom', 'doom.exe', './doom', 'run doom', 'launch doom', 'open doom']);
+const MAC_SCREEN_MEDIA_SIZE = { width: 1536, height: 1152 };
+const MAC_SCREEN_TERMINAL_SIZE = { width: 2048, height: 1536 };
 
 function getDoomIframeUrl() {
   return new URL('doom.html', window.location.href).href;
@@ -5167,13 +5169,27 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     const THREE = state.three;
     const tex = state.screenTex;
     if (!THREE || !tex) return;
-    const filter = mode === 'terminal' ? THREE.NearestFilter : THREE.LinearFilter;
-    if (tex.minFilter !== filter || tex.magFilter !== filter || tex.generateMipmaps) {
-      tex.minFilter = filter;
-      tex.magFilter = filter;
-      tex.generateMipmaps = false;
+    const terminal = mode === 'terminal';
+    const minFilter = terminal && state.renderer?.capabilities?.isWebGL2
+      ? THREE.LinearMipmapLinearFilter
+      : THREE.LinearFilter;
+    const magFilter = THREE.LinearFilter;
+    const generateMipmaps = terminal && !!state.renderer?.capabilities?.isWebGL2;
+    if (tex.minFilter !== minFilter || tex.magFilter !== magFilter || tex.generateMipmaps !== generateMipmaps) {
+      tex.minFilter = minFilter;
+      tex.magFilter = magFilter;
+      tex.generateMipmaps = generateMipmaps;
       tex.needsUpdate = true;
     }
+  }, []);
+
+  const setScreenCanvasSize = React.useCallback((mode = 'media') => {
+    const state = stateRef.current;
+    const canvas = state.screenCanvas;
+    if (!canvas) return;
+    const target = mode === 'terminal' ? MAC_SCREEN_TERMINAL_SIZE : MAC_SCREEN_MEDIA_SIZE;
+    if (canvas.width !== target.width) canvas.width = target.width;
+    if (canvas.height !== target.height) canvas.height = target.height;
   }, []);
 
   // Paint the Mac's inactive screen as a period-ish monochrome terminal.
@@ -5182,6 +5198,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
   const drawMacOffScreen = React.useCallback(() => {
     const { ctx2d, screenCanvas, screenTex } = stateRef.current;
     if (!ctx2d || !screenCanvas) return;
+    setScreenCanvasSize('terminal');
     setScreenTextureSampling('terminal');
     const w = screenCanvas.width, h = screenCanvas.height;
     const term = ensureMacTerminal();
@@ -5299,23 +5316,18 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     ctx2d.restore();
 
     ctx2d.globalCompositeOperation = 'source-over';
-    const vg = ctx2d.createRadialGradient(w / 2, h / 2, w * 0.28, w / 2, h / 2, w * 0.68);
-    vg.addColorStop(0, 'rgba(255,255,255,0.015)');
-    vg.addColorStop(1, 'rgba(0,0,0,0.08)');
-    ctx2d.fillStyle = vg;
-    ctx2d.fillRect(0, 0, w, h);
-    ctx2d.globalCompositeOperation = 'source-over';
     ctx2d.restore();
     if (screenTex) {
       screenTex.needsUpdate = true;
       stateRef.current.requestRender?.();
     }
-  }, [ensureMacTerminal, setScreenTextureSampling]);
+  }, [ensureMacTerminal, setScreenCanvasSize, setScreenTextureSampling]);
 
   // Draw a source image to the offscreen screen canvas with a light wash.
   const drawSourceToCanvas = React.useCallback((img, effect = null) => {
     const { ctx2d, screenCanvas, screenTex } = stateRef.current;
     if (!ctx2d || !screenCanvas) return;
+    setScreenCanvasSize('media');
     setScreenTextureSampling('media');
     const w = screenCanvas.width, h = screenCanvas.height;
     ctx2d.fillStyle = '#000';
@@ -5503,7 +5515,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       screenTex.needsUpdate = true;
       stateRef.current.requestRender?.();
     }
-  }, []);
+  }, [setScreenCanvasSize, setScreenTextureSampling]);
 
   const animateTrackingBurst = React.useCallback(() => {
     cancelAnimationFrame(stateRef.current.trackingRaf);
@@ -6505,9 +6517,10 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 
       // Offscreen canvas for the screen content
       const screenCanvas = document.createElement('canvas');
-      // Keep the CRT texture high enough for text, but below the previous
-      // 2048x1536 path that made video uploads expensive.
-      screenCanvas.width = 1536; screenCanvas.height = 1152;
+      // Video uses the lighter media size. The inactive terminal can
+      // temporarily switch to a larger static texture for cleaner UI lines.
+      screenCanvas.width = MAC_SCREEN_MEDIA_SIZE.width;
+      screenCanvas.height = MAC_SCREEN_MEDIA_SIZE.height;
       const ctx2d = screenCanvas.getContext('2d');
       ctx2d.fillStyle = '#f8f7ee';
       ctx2d.fillRect(0, 0, screenCanvas.width, screenCanvas.height);
