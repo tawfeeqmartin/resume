@@ -1783,8 +1783,9 @@ function getResumeStrudelAudioEngine() {
       if (typeof source !== 'string' || !source.trim()) {
         return { ok: false, error: new Error('Empty source.') };
       }
-      songPresets[0].composition = source;
-      savePoetryInProofDraftSource(source);
+      const sourceForEval = reserveReplWidgetSpacing(source).source;
+      songPresets[0].composition = sourceForEval;
+      savePoetryInProofDraftSource(sourceForEval);
       let result = { ok: true, skipped: !enabled && !options.start };
       if (songIndex === 0) {
         if (options.start && !enabled) {
@@ -1801,14 +1802,14 @@ function getResumeStrudelAudioEngine() {
         } else if (enabled) {
           result = await playCurrent({ resetTransport: Boolean(options.resetTransport) });
         } else {
-          window.__resumeActiveSource = source;
-          window.__resumeActiveRawSource = source;
+          window.__resumeActiveSource = sourceForEval;
+          window.__resumeActiveRawSource = sourceForEval;
           window.dispatchEvent(new CustomEvent('resume-pattern-ready', {
-            detail: { pattern: window.__resumeActivePattern || null, source, rawSource: source, songIndex },
+            detail: { pattern: window.__resumeActivePattern || null, source: sourceForEval, rawSource: sourceForEval, songIndex },
           }));
         }
       }
-      if (result?.ok && !result?.skipped) rememberGoodComposition(source);
+      if (result?.ok && !result?.skipped) rememberGoodComposition(sourceForEval);
       return result;
     },
     resetCompositionSource(options = {}) {
@@ -3444,29 +3445,37 @@ function getReplWidgetId(args = '') {
 }
 
 function parseReplWidgets(source) {
-  const lines = String(source || '').split('\n');
+  const text = String(source || '');
+  const lines = text.split('\n');
   const widgets = [];
+  let sourceOffset = 0;
   lines.forEach((line, lineIndex) => {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('//')) return;
-    REPL_WIDGET_CALL_RE.lastIndex = 0;
-    let match;
-    let lineOffset = 0;
-    while ((match = REPL_WIDGET_CALL_RE.exec(line)) !== null) {
-      const kind = normalizeReplWidgetKind(match[2]);
-      const config = REPL_WIDGET_TYPES[kind];
-      if (!config) continue;
-      const id = getReplWidgetId(match[3] || '');
-      widgets.push({
-        kind,
-        id,
-        key: `${lineIndex}-${match.index}-${kind}-${id}`,
-        lineIndex,
-        visualLineIndex: lineIndex + lineOffset,
-        lineSpan: config.lineSpan,
-      });
-      lineOffset += config.lineSpan;
+    if (trimmed && !trimmed.startsWith('//')) {
+      REPL_WIDGET_CALL_RE.lastIndex = 0;
+      let match;
+      let lineOffset = 0;
+      while ((match = REPL_WIDGET_CALL_RE.exec(line)) !== null) {
+        const kind = normalizeReplWidgetKind(match[2]);
+        const config = REPL_WIDGET_TYPES[kind];
+        if (!config) continue;
+        const id = getReplWidgetId(match[3] || '');
+        const start = sourceOffset + match.index;
+        const end = start + match[0].length;
+        widgets.push({
+          kind,
+          id,
+          key: `${lineIndex}-${match.index}-${kind}-${id}`,
+          lineIndex,
+          visualLineIndex: lineIndex + lineOffset,
+          lineSpan: config.lineSpan,
+          start,
+          end,
+        });
+        lineOffset += config.lineSpan;
+      }
     }
+    sourceOffset += line.length + (lineIndex < lines.length - 1 ? 1 : 0);
   });
   return widgets;
 }
@@ -3946,6 +3955,10 @@ function StrudelReplFeature() {
   // user-editable textarea.
   const [engineSource, setEngineSource] = React.useState(null);
 
+  React.useEffect(() => {
+    savePoetryInProofDraftSource(codeRef.current || code);
+  }, []);
+
   const scopeWidgets = React.useMemo(() => {
     return parseReplWidgets(code).slice(0, REPL_WIDGET_LIMIT);
   }, [code]);
@@ -4037,7 +4050,7 @@ function StrudelReplFeature() {
     positionScopeWidgets();
   }, [positionScopeWidgets]);
 
-  const scrollReplWidgetIntoView = React.useCallback(() => {
+  const scrollReplWidgetIntoView = React.useCallback((targetOffset = null) => {
     const ta = textareaRef.current;
     const layer = scopeLayerRef.current;
     if (!ta || !layer) return;
@@ -4045,13 +4058,29 @@ function StrudelReplFeature() {
     const canvases = [...layer.querySelectorAll('.strudel-repl__scope-widget')];
     if (!canvases.length) return;
     const viewportBottom = ta.clientHeight;
-    const visible = canvases.some((canvas) => {
-      const top = parseFloat(canvas.style.top || '0');
-      const height = parseFloat(canvas.style.height || `${canvas.clientHeight || 0}`);
-      return top < viewportBottom - 8 && top + height > 8;
-    });
-    if (visible) return;
-    const target = canvases[0];
+    const finiteTarget = Number.isFinite(targetOffset) ? Number(targetOffset) : null;
+    let target = canvases[0];
+    if (finiteTarget !== null) {
+      let bestDistance = Infinity;
+      for (const canvas of canvases) {
+        const start = Number(canvas.dataset.start);
+        const end = Number(canvas.dataset.end);
+        if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
+        const point = start <= finiteTarget && finiteTarget <= end
+          ? finiteTarget
+          : finiteTarget >= end
+          ? end
+          : start;
+        const distance = Math.abs(finiteTarget - point);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          target = canvas;
+        }
+      }
+    }
+    const targetTop = parseFloat(target.style.top || '0');
+    const targetHeight = parseFloat(target.style.height || `${target.clientHeight || 0}`);
+    if (targetTop >= 8 && targetTop + targetHeight <= viewportBottom - 8) return;
     const style = window.getComputedStyle(ta);
     const fontSize = parseFloat(style.fontSize) || 12;
     const lineHeight = parseFloat(style.lineHeight) || fontSize * 1.42;
@@ -4126,10 +4155,12 @@ function StrudelReplFeature() {
       pulseReplEvaluate();
       let sourceToEvaluate = codeRef.current || code;
       const textarea = textareaRef.current;
+      const rawSelectionStart = Number.isFinite(textarea?.selectionStart) ? textarea.selectionStart : null;
+      const rawSelectionEnd = Number.isFinite(textarea?.selectionEnd) ? textarea.selectionEnd : rawSelectionStart;
       const spaced = reserveReplWidgetSpacing(
         textarea?.value ?? sourceToEvaluate,
-        textarea?.selectionStart ?? null,
-        textarea?.selectionEnd ?? null
+        rawSelectionStart,
+        rawSelectionEnd
       );
       sourceToEvaluate = spaced.source;
       if (sourceToEvaluate !== codeRef.current) {
@@ -4144,7 +4175,8 @@ function StrudelReplFeature() {
         }
       }
       await new Promise((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve)));
-      scrollReplWidgetIntoView();
+      const targetWidgetOffset = rawSelectionStart ?? spaced.selectionStart ?? sourceToEvaluate.length;
+      scrollReplWidgetIntoView(targetWidgetOffset);
       prepareReplWidgetQueue(sourceToEvaluate);
       // Match Strudel REPL semantics: evaluating while the transport is
       // running swaps the pattern in-place instead of restarting from 0.
@@ -4170,7 +4202,7 @@ function StrudelReplFeature() {
       setEditStatus('error');
       setErrorMsg((error && error.message) || String(error));
     }
-  }, [code, prepareReplWidgetQueue, pulseReplEvaluate]);
+  }, [code, prepareReplWidgetQueue, pulseReplEvaluate, scrollReplWidgetIntoView]);
 
   const resetCode = React.useCallback(() => {
     setErrorMsg('');
@@ -4799,6 +4831,8 @@ function StrudelReplFeature() {
                       data-line={widget.lineIndex}
                       data-visual-line={widget.visualLineIndex}
                       data-line-span={widget.lineSpan}
+                      data-start={widget.start}
+                      data-end={widget.end}
                     />
                   ))}
                 </div>
