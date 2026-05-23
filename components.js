@@ -1566,28 +1566,47 @@ function getResumeStrudelAudioEngine() {
   // evaluation on return so accumulated scheduling state gets reset.
   let wasPlayingBeforeHidden = false;
   let pendingGestureResume = false;
-  const audioContextIsSuspended = () => {
+  const getStrudelAudioContextState = () => {
     try {
       const context = strudel?.getAudioContext?.();
-      return context?.state === 'suspended';
+      return context?.state || '';
     } catch {
-      return false;
+      return '';
     }
   };
-  const resumeAfterUserGesture = async () => {
-    if ((!pendingGestureResume && !audioContextIsSuspended()) || !enabled || videoDucked) return;
+  const audioContextNeedsResume = () => {
+    const state = getStrudelAudioContextState();
+    return Boolean(state && state !== 'running');
+  };
+  const resumeAudioAfterReturn = async ({ resetTransport = false, requirePending = false } = {}) => {
+    if (!enabled || videoDucked) return false;
+    if (requirePending && !pendingGestureResume && !audioContextNeedsResume()) return true;
     pendingGestureResume = false;
     try {
       const module = await ensureStrudel();
       if (module.initAudio) await module.initAudio();
       const context = module.getAudioContext?.();
-      if (context?.state === 'suspended') await context.resume();
-      await playCurrent({ resetTransport: false });
+      if (context && context.state !== 'running') await context.resume();
+      const result = await playCurrent({ resetTransport });
+      const resumedState = module.getAudioContext?.()?.state || '';
+      if (resumedState && resumedState !== 'running') pendingGestureResume = true;
       window.dispatchEvent(new CustomEvent('resume-audio-change'));
+      return Boolean(result?.ok !== false && !pendingGestureResume);
     } catch (error) {
       pendingGestureResume = true;
-      console.warn('Strudel gesture resume failed', error);
+      console.warn('Strudel resume failed', error);
+      return false;
     }
+  };
+  const resumeAfterUserGesture = () => {
+    resumeAudioAfterReturn({ resetTransport: false, requirePending: true });
+  };
+  const resumeAfterPageReturn = () => {
+    if (document.hidden) return;
+    if (!wasPlayingBeforeHidden && !pendingGestureResume && !(enabled && audioContextNeedsResume())) return;
+    wasPlayingBeforeHidden = false;
+    pendingGestureResume = true;
+    resumeAudioAfterReturn({ resetTransport: true });
   };
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
@@ -1597,16 +1616,12 @@ function getResumeStrudelAudioEngine() {
         [...liveChordVoices.keys()].forEach((key) => releaseLiveChord(key));
         hushCurrent(true);
       }
-    } else if (wasPlayingBeforeHidden) {
-      wasPlayingBeforeHidden = false;
-      if (enabled && !videoDucked) {
-        playCurrent({ resetTransport: true }).then(() => {
-          if (!audioContextIsSuspended()) pendingGestureResume = false;
-          window.dispatchEvent(new CustomEvent('resume-audio-change'));
-        });
-      }
+    } else {
+      resumeAfterPageReturn();
     }
   });
+  window.addEventListener('focus', resumeAfterPageReturn);
+  window.addEventListener('pageshow', resumeAfterPageReturn);
   window.addEventListener('pointerdown', resumeAfterUserGesture, true);
   window.addEventListener('keydown', resumeAfterUserGesture, true);
 
@@ -3436,6 +3451,7 @@ function parseReplWidgets(source) {
     if (!trimmed || trimmed.startsWith('//')) return;
     REPL_WIDGET_CALL_RE.lastIndex = 0;
     let match;
+    let lineOffset = 0;
     while ((match = REPL_WIDGET_CALL_RE.exec(line)) !== null) {
       const kind = normalizeReplWidgetKind(match[2]);
       const config = REPL_WIDGET_TYPES[kind];
@@ -3446,8 +3462,10 @@ function parseReplWidgets(source) {
         id,
         key: `${lineIndex}-${match.index}-${kind}-${id}`,
         lineIndex,
+        visualLineIndex: lineIndex + lineOffset,
         lineSpan: config.lineSpan,
       });
+      lineOffset += config.lineSpan;
     }
   });
   return widgets;
@@ -3470,7 +3488,7 @@ function reserveReplWidgetSpacing(source, selectionStart = null, selectionEnd = 
 
     const widgets = parseReplWidgets(line);
     const lineSpan = widgets.length
-      ? Math.max(...widgets.map((widget) => widget.lineSpan))
+      ? widgets.reduce((sum, widget) => sum + widget.lineSpan, 0)
       : 0;
     if (!lineSpan) continue;
 
@@ -3945,7 +3963,7 @@ function StrudelReplFeature() {
     const width = Math.max(1, ta.clientWidth - padLeft - padRight);
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     layer.querySelectorAll('.strudel-repl__scope-widget').forEach((canvas) => {
-      const lineIndex = Number(canvas.dataset.line || 0);
+      const lineIndex = Number(canvas.dataset.visualLine || canvas.dataset.line || 0);
       const top = padTop + (lineIndex + 1) * lineHeight - ta.scrollTop + 3;
       const lineSpan = Math.max(1, Number(canvas.dataset.lineSpan || 4));
       const widgetHeight = Math.max(28, Math.round(lineHeight * lineSpan - 5));
@@ -4018,6 +4036,30 @@ function StrudelReplFeature() {
     }
     positionScopeWidgets();
   }, [positionScopeWidgets]);
+
+  const scrollReplWidgetIntoView = React.useCallback(() => {
+    const ta = textareaRef.current;
+    const layer = scopeLayerRef.current;
+    if (!ta || !layer) return;
+    positionScopeWidgets();
+    const canvases = [...layer.querySelectorAll('.strudel-repl__scope-widget')];
+    if (!canvases.length) return;
+    const viewportBottom = ta.clientHeight;
+    const visible = canvases.some((canvas) => {
+      const top = parseFloat(canvas.style.top || '0');
+      const height = parseFloat(canvas.style.height || `${canvas.clientHeight || 0}`);
+      return top < viewportBottom - 8 && top + height > 8;
+    });
+    if (visible) return;
+    const target = canvases[0];
+    const style = window.getComputedStyle(ta);
+    const fontSize = parseFloat(style.fontSize) || 12;
+    const lineHeight = parseFloat(style.lineHeight) || fontSize * 1.42;
+    const padTop = parseFloat(style.paddingTop) || 0;
+    const visualLine = Number(target.dataset.visualLine || target.dataset.line || 0);
+    ta.scrollTop = Math.max(0, padTop + visualLine * lineHeight - ta.clientHeight * 0.34);
+    syncScroll();
+  }, [positionScopeWidgets, syncScroll]);
 
   React.useLayoutEffect(() => {
     const layer = scopeLayerRef.current;
@@ -4102,6 +4144,7 @@ function StrudelReplFeature() {
         }
       }
       await new Promise((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve)));
+      scrollReplWidgetIntoView();
       prepareReplWidgetQueue(sourceToEvaluate);
       // Match Strudel REPL semantics: evaluating while the transport is
       // running swaps the pattern in-place instead of restarting from 0.
@@ -4754,6 +4797,7 @@ function StrudelReplFeature() {
                       data-widget-kind={widget.kind}
                       data-scope-id={widget.id}
                       data-line={widget.lineIndex}
+                      data-visual-line={widget.visualLineIndex}
                       data-line-span={widget.lineSpan}
                     />
                   ))}
