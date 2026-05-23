@@ -361,6 +361,21 @@ Current implementation:
   `vocalAnswer`, and `vocalChops` patterns. They do not duplicate audio;
   they document the current WebAudio vocal-sampler composition and give
   real vocal MIDI events words to highlight in the editor.
+- REPL baseline behavior should match Strudel live coding unless a feature
+  is impossible in Strudel or is explicitly part of this site's custom
+  visual/MIDI layer. Apply / Ctrl+Enter evaluates the new pattern without
+  stop/hush/reset when audio is already playing. Ctrl+. hushes. Only a
+  cold start should reset the transport. Error recovery should also keep
+  the current transport position unless the caller explicitly requested a
+  reset.
+- Evaluate flashes the whole editor briefly, matching Strudel's REPL
+  feedback. Runtime token highlights come from `pattern.draw(...)` hap
+  source locations, including every active location Strudel attaches to
+  the event. MIDI fallback highlighting is reserved for custom site-only
+  lanes such as the WebAudio vocal sampler bridge.
+- The site adds compatibility aliases for common Strudel CodeMirror widget
+  helpers such as `._scope()` so live-edited code can use familiar Strudel
+  syntax even though this page is not embedding Strudel's full editor UI.
 - Current breakdown window follows the active Strudel arrangement: 40 cycles total, breakdown starts at cycle 32 and ends at cycle 40.
 - Mac screen bass response uses the `bass` lane event directly: each bass hit advances a persistent CRT roll phase, draws a short black sync band, and applies a brief, strong sideways tracking shake from the same scheduled hit so the motion feels locked to the bassline.
 

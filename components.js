@@ -1078,6 +1078,27 @@ function getResumeStrudelAudioEngine() {
     };
   };
 
+  const installStrudelCompat = (module) => {
+    const proto = module?.Pattern?.prototype;
+    if (!proto) return;
+    const widgetAliases = {
+      _scope: 'scope',
+      _fscope: 'fscope',
+      _spectrum: 'spectrum',
+      _pianoroll: 'pianoroll',
+      _punchcard: 'punchcard',
+      _wordfall: 'wordfall',
+      _spiral: 'spiral',
+      _pitchwheel: 'pitchwheel',
+    };
+    for (const [alias, target] of Object.entries(widgetAliases)) {
+      if (typeof proto[alias] === 'function' || typeof proto[target] !== 'function') continue;
+      proto[alias] = function strudelWidgetAlias(options = {}) {
+        return this[target](options);
+      };
+    }
+  };
+
   const ensureStrudel = async () => {
     if (strudel) return strudel;
     if (!initPromise) {
@@ -1091,6 +1112,7 @@ function getResumeStrudelAudioEngine() {
           });
       initPromise = initPromise.then((module) => {
         strudel = module;
+        installStrudelCompat(module);
         try {
           installMasterBus(module.getAudioContext?.());
         } catch (error) {
@@ -1268,7 +1290,7 @@ function getResumeStrudelAudioEngine() {
         const fallbackSource = getRecoveryComposition(rawComposition);
         songPresets[0].composition = fallbackSource;
         savePoetryInProofSource(fallbackSource);
-        const fallbackResult = await evaluateCurrent({ resetTransport: true, recovery: true });
+        const fallbackResult = await evaluateCurrent({ resetTransport, recovery: true });
         return {
           ok: false,
           recovered: Boolean(fallbackResult?.ok),
@@ -3680,6 +3702,7 @@ function StrudelReplFeature() {
   const highlightGenerationRef = React.useRef(0);
   const activeHighlightSourceRef = React.useRef('');
   const flashTimersRef = React.useRef(new Set());
+  const evalFlashTimerRef = React.useRef(null);
   const [status, setStatus] = React.useState('idle'); // idle | loading | playing | error
   const [editStatus, setEditStatus] = React.useState('ready');
   const [errorMsg, setErrorMsg] = React.useState('');
@@ -3698,6 +3721,24 @@ function StrudelReplFeature() {
     }
   }, []);
 
+  const pulseReplEvaluate = React.useCallback(() => {
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+    if (evalFlashTimerRef.current) window.clearTimeout(evalFlashTimerRef.current);
+    overlay.classList.remove('is-evaluating');
+    // Force the class change to restart the animation on repeated Ctrl+Enter.
+    void overlay.offsetWidth;
+    overlay.classList.add('is-evaluating');
+    evalFlashTimerRef.current = window.setTimeout(() => {
+      evalFlashTimerRef.current = null;
+      if (overlay.isConnected) overlay.classList.remove('is-evaluating');
+    }, 210);
+  }, []);
+
+  React.useEffect(() => () => {
+    if (evalFlashTimerRef.current) window.clearTimeout(evalFlashTimerRef.current);
+  }, []);
+
   const applyCode = React.useCallback(async () => {
     setErrorMsg('');
     const engine = getResumeAudioEngine();
@@ -3709,8 +3750,11 @@ function StrudelReplFeature() {
     }
     try {
       setStatus('loading');
+      pulseReplEvaluate();
+      // Match Strudel REPL semantics: evaluating while the transport is
+      // running swaps the pattern in-place instead of restarting from 0.
       const result = await engine.setCompositionSource(code, {
-        resetTransport: engine.enabled,
+        resetTransport: false,
         start: true,
       });
       if (!result?.ok) {
@@ -3731,13 +3775,13 @@ function StrudelReplFeature() {
       setEditStatus('error');
       setErrorMsg((error && error.message) || String(error));
     }
-  }, [code]);
+  }, [code, pulseReplEvaluate]);
 
   const resetCode = React.useCallback(() => {
     setErrorMsg('');
     const engine = getResumeAudioEngine();
     const source = engine?.resetCompositionSource
-      ? engine.resetCompositionSource({ resetTransport: engine.enabled })
+      ? engine.resetCompositionSource({ resetTransport: false })
       : STRUDEL_REPL_INITIAL_CODE;
     setCode(source);
     setEngineSource(source);
@@ -3809,22 +3853,24 @@ function StrudelReplFeature() {
     return true;
   }, []);
 
-  const findTokenSpanForLocation = React.useCallback((overlay, loc) => {
-    if (!overlay || !loc || typeof loc.start !== 'number') return null;
+  const findTokenSpansForLocation = React.useCallback((overlay, loc) => {
+    if (!overlay || !loc || typeof loc.start !== 'number') return [];
     const exact = overlay.querySelector(`[data-start="${loc.start}"]`);
-    if (exact) return exact;
     const locStart = loc.start;
     const locEnd = typeof loc.end === 'number' ? loc.end : locStart + 1;
     const tokens = overlay.querySelectorAll('.sr-tok[data-start][data-end]');
+    const matches = [];
     for (const span of tokens) {
       const start = Number(span.dataset.start);
       const end = Number(span.dataset.end);
       if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
       const startInsideToken = start <= locStart && locStart < end;
       const tokenInsideLocation = locStart <= start && start < locEnd;
-      if (startInsideToken || tokenInsideLocation) return span;
+      const overlapsLocation = locStart < end && start < locEnd;
+      if (startInsideToken || tokenInsideLocation || overlapsLocation) matches.push(span);
     }
-    return null;
+    if (matches.length) return [...new Set(matches)];
+    return exact ? [exact] : [];
   }, []);
 
   const normalizeReplToken = React.useCallback((value) => (
@@ -3901,7 +3947,8 @@ function StrudelReplFeature() {
       return rect.top < viewportH * 0.65 && rect.bottom > viewportH * 0.2;
     };
     const onShortcut = (event) => {
-      if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+      const hasEvalModifier = event.ctrlKey || event.metaKey || event.altKey;
+      if (!hasEvalModifier) return;
       const key = event.key.toLowerCase();
       if (event.key !== 'Enter' && key !== '.') return;
       if (!inReplShortcutScope()) return;
@@ -3960,8 +4007,8 @@ function StrudelReplFeature() {
   }, []);
 
   // Strudel-style active-token highlights. Each hap carries source
-  // locations; we look up the matching span in the overlay (tagged with
-  // data-start) and add an `is-flash` class for a brief moment.
+  // locations; like Strudel's CodeMirror highlighter, we consider every
+  // active location on the hap, not only the innermost mini token.
   React.useEffect(() => {
     let cancelled = false;
     const setup = () => {
@@ -3969,8 +4016,8 @@ function StrudelReplFeature() {
       if (!pattern || typeof pattern.draw !== 'function') return;
       // The engine can rewrite the evaluated source to apply mixer gains.
       // When that happens, Strudel location offsets no longer line up with
-      // the visible editor text; let the MIDI-event fallback drive token
-      // flashes instead so we do not highlight the wrong note.
+      // the visible editor text, so skip exact highlights rather than
+      // flashing the wrong note.
       if (window.__resumeActiveSource && window.__resumeActiveSource !== code) return;
       const generation = highlightGenerationRef.current;
       const visibleSource = code;
@@ -3982,6 +4029,7 @@ function StrudelReplFeature() {
           if (activeHighlightSourceRef.current !== visibleSource) return;
           const overlay = overlayRef.current;
           if (!overlay) return;
+          const flashed = new Set();
           for (const hap of haps) {
             // Active during this frame? whole.{begin,end} are Fractions of cycles.
             const beg = hap.whole?.begin?.valueOf?.();
@@ -3989,12 +4037,15 @@ function StrudelReplFeature() {
             if (beg == null || end == null) continue;
             if (time < beg || time >= end) continue;
             const locs = hap.context?.locations || [];
-            // Innermost location is the most specific (individual token).
-            const loc = locs[locs.length - 1];
-            if (!loc || typeof loc.start !== 'number') continue;
-            const span = findTokenSpanForLocation(overlay, loc);
             const dur = Math.max(80, Math.min(220, (end - beg) * 1000 * 0.8));
-            flashReplTokenSpan(span, dur, generation);
+            for (const loc of locs) {
+              if (!loc || typeof loc.start !== 'number') continue;
+              const key = `${loc.start}:${loc.end ?? ''}`;
+              if (flashed.has(key)) continue;
+              flashed.add(key);
+              const spans = findTokenSpansForLocation(overlay, loc);
+              spans.forEach((span) => flashReplTokenSpan(span, dur, generation));
+            }
           }
         }, { id: 'strudel-repl-flash', lookahead: 0.02, lookbehind: 0 });
       } catch (err) {
@@ -4008,18 +4059,18 @@ function StrudelReplFeature() {
       cancelled = true;
       window.removeEventListener('resume-pattern-ready', onReady);
     };
-  }, [code, findTokenSpanForLocation, flashReplTokenSpan]);
+  }, [code, findTokenSpansForLocation, flashReplTokenSpan]);
 
   React.useEffect(() => {
     const onMidi = (event) => {
       const detail = event.detail || {};
       if (detail.source === 'webmidi') return;
       if (activeHighlightSourceRef.current !== code) return;
-      // If the evaluated Strudel source matches the editor, pattern.draw
-      // has exact source locations. Do not also run the approximate MIDI
-      // fallback, because repeated notes across sections can flash the
-      // wrong block.
-      if (window.__resumeActiveSource === code) return;
+      // Normal Strudel audio should be highlighted from hap source
+      // locations above. The fallback is only for custom site-only lanes
+      // that are not actually sounded by the evaluated Strudel pattern,
+      // currently the WebAudio vocal sampler bridge.
+      if (detail.lane !== 'vocal' && detail.group !== 'vocal') return;
       flashMidiTokenFallback(detail);
     };
     window.addEventListener('resume-midi-event', onMidi);
@@ -4056,18 +4107,12 @@ function StrudelReplFeature() {
   // Syntax-highlighted overlay rendered from current code state.
   // Walks the source classifying regions as comment / string / code so the
   // keyword/number regex never runs over the inside of a comment or string.
-  // Inside string literals, individual mini-notation tokens (bd, hh, f4,
+  // Inside quoted string literals, individual mini-notation tokens (bd, hh, f4,
   // c1, ~, etc.) get their own <span class="sr-tok" data-start="N"> so the
   // pattern-draw loop can flash exactly the token that's sounding.
   const highlighted = React.useMemo(() => {
     const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;' })[c]);
-    const highlightCode = (txt) => {
-      let h = esc(txt);
-      h = h.replace(/\b(setcpm|stack|note|arrange|const|sine)\b/g, '<span class="sr-kw">$1</span>');
-      h = h.replace(/\.([a-zA-Z][a-zA-Z0-9]*)(?=\()/g, '.<span class="sr-fn">$1</span>');
-      h = h.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="sr-num">$1</span>');
-      return h;
-    };
+    const escAttr = (s) => esc(String(s)).replace(/"/g, '&quot;');
     const triggerToLane = {
       harmonyChord: 'chord',
       harmonyWasdChord: 'chord',
@@ -4109,34 +4154,66 @@ function StrudelReplFeature() {
       if (/^kick$/.test(constName)) return ['chorus'];
       return [];
     };
+    const attrsForToken = (start, end, token, lane = '', sections = []) => ([
+      `data-start="${start}"`,
+      `data-end="${end}"`,
+      `data-token="${escAttr(normalizeReplToken(token))}"`,
+      lane ? `data-lane="${escAttr(lane)}"` : '',
+      sections.length ? `data-sections="${escAttr(sections.join(' '))}"` : '',
+    ].filter(Boolean).join(' '));
+    const highlightCode = (txt, baseOffset = 0) => {
+      const re = /(\.)([A-Za-z_][A-Za-z0-9_]*)(?=\s*\()|\b(setcpm|stack|note|s|arrange|sine)\b(?=\s*\()|\b(const|globalThis)\b|(-?\d+(?:\.\d+)?)/g;
+      let out = '';
+      let last = 0;
+      let match;
+      while ((match = re.exec(txt)) !== null) {
+        const index = match.index;
+        out += esc(txt.slice(last, index));
+        const abs = baseOffset + index;
+        const lane = laneForStringAt(src, abs);
+        const sections = sectionsForStringAt(src, abs);
+        if (match[1]) {
+          const dot = match[1];
+          const fn = match[2];
+          const start = abs + dot.length;
+          out += `${dot}<span class="sr-fn sr-tok" ${attrsForToken(start, start + fn.length, fn, lane, sections)}>${esc(fn)}</span>`;
+        } else if (match[3]) {
+          const word = match[3];
+          out += `<span class="sr-kw sr-tok" ${attrsForToken(abs, abs + word.length, word, lane, sections)}>${esc(word)}</span>`;
+        } else if (match[4]) {
+          out += `<span class="sr-kw">${esc(match[4])}</span>`;
+        } else {
+          const num = match[5];
+          out += `<span class="sr-num sr-tok" ${attrsForToken(abs, abs + num.length, num, lane, sections)}>${esc(num)}</span>`;
+        }
+        last = index + match[0].length;
+      }
+      out += esc(txt.slice(last));
+      return out;
+    };
     // Wrap individual mini-notation tokens inside "..." so they can be
     // targeted by hap source-positions during playback. Each `data-start`
     // attribute carries the absolute character offset in `code`.
     const tokeniseString = (lit, baseOffset, lane = '', sections = []) => {
-      // lit includes the surrounding double-quotes
-      let out = '<span class="sr-str">"';
+      // lit includes the surrounding quotes
+      const body = lit.slice(1, -1);
+      let out = `<span class="sr-str sr-tok sr-tok--string" ${attrsForToken(baseOffset, baseOffset + lit.length, body, lane, sections)}>${esc(lit[0])}`;
       let k = 1; // skip opening quote
       while (k < lit.length - 1) {
         const c = lit[k];
         // Skip whitespace, brackets, modifiers — render verbatim
-        if (/[\s<>\[\]()*~,!?:]/.test(c)) {
+        if (/[\s<>\[\]()*~,!?]/.test(c)) {
           out += esc(c);
           k++;
           continue;
         }
         // Read run of token characters (letters, digits, decimal points, sharps/flats markers, slashes)
         let m = k;
-        while (m < lit.length - 1 && /[A-Za-z0-9#.\/\-]/.test(lit[m])) m++;
+        while (m < lit.length - 1 && /[A-Za-z0-9#.:_\/\-]/.test(lit[m])) m++;
         if (m > k) {
           const tok = lit.slice(k, m);
           const start = baseOffset + k;
-          const attrs = [
-            `data-start="${start}"`,
-            `data-end="${baseOffset + m}"`,
-            `data-token="${normalizeReplToken(tok)}"`,
-            lane ? `data-lane="${lane}"` : '',
-            sections.length ? `data-sections="${sections.join(' ')}"` : '',
-          ].filter(Boolean).join(' ');
+          const attrs = attrsForToken(start, baseOffset + m, tok, lane, sections);
           out += `<span class="sr-tok" ${attrs}>${esc(tok)}</span>`;
           k = m;
         } else {
@@ -4144,7 +4221,7 @@ function StrudelReplFeature() {
           k++;
         }
       }
-      out += '"</span>';
+      out += `${esc(lit[lit.length - 1] || '')}</span>`;
       return out;
     };
     let out = '';
@@ -4158,20 +4235,24 @@ function StrudelReplFeature() {
         const stop = end === -1 ? src.length : end;
         out += '<span class="sr-cm">' + esc(src.slice(i, stop)) + '</span>';
         i = stop;
-      } else if (ch === '"') {
+      } else if (ch === '"' || ch === "'") {
+        const quote = ch;
         let j = i + 1;
-        while (j < src.length && src[j] !== '"' && src[j] !== '\n') j++;
-        const stop = j < src.length && src[j] === '"' ? j + 1 : j;
+        while (j < src.length && src[j] !== quote && src[j] !== '\n') {
+          if (src[j] === '\\') j += 2;
+          else j++;
+        }
+        const stop = j < src.length && src[j] === quote ? j + 1 : j;
         out += tokeniseString(src.slice(i, stop), i, laneForStringAt(src, i), sectionsForStringAt(src, i));
         i = stop;
       } else {
         let j = i;
         while (j < src.length) {
-          if (src[j] === '"') break;
+          if (src[j] === '"' || src[j] === "'") break;
           if (src[j] === '/' && src[j + 1] === '/') break;
           j++;
         }
-        out += highlightCode(src.slice(i, j));
+        out += highlightCode(src.slice(i, j), i);
         i = j;
       }
     }
