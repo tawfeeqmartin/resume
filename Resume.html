@@ -1321,6 +1321,8 @@ html.has-pseudo-fullscreen body {
   margin-top: -6.5rem;
 }
 .hero-stack__sticky {
+  --mac-monitor-top-pad: clamp(2.75rem, 6vh, 4.5rem);
+  --mac-canvas-lift: 600px;
   grid-column: 2;
   grid-row: 1 / span 2;
   position: sticky;
@@ -1364,10 +1366,10 @@ html.has-pseudo-fullscreen body {
   /* Canvas is a replaced element, so give Three an explicit viewport.
      The camera handles model framing; this only keeps the hero canvas
      high enough to sit with the top strip without clipping. */
-  top: -600px;
+  top: calc((var(--mac-canvas-lift, 600px) * -1) + var(--mac-monitor-top-pad, 0px));
   left: 0; right: 0;
   width: 100%;
-  height: calc(100vh + 600px);
+  height: calc(100vh + var(--mac-canvas-lift, 600px) - var(--mac-monitor-top-pad, 0px));
   min-height: 780px;
   display: block;
 }
@@ -1470,6 +1472,8 @@ html.has-doom-overlay body {
     order: 0;
   }
   .hero-stack__sticky {
+    --mac-monitor-top-pad: 0px;
+    --mac-canvas-lift: 5.4rem;
     order: 1;
     position: relative;
     top: auto;

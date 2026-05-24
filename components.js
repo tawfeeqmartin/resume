@@ -5013,6 +5013,21 @@ const TV_MODEL_URL = 'media/3d/apple_macintosh.glb';
 const DOOM_TERMINAL_COMMANDS = new Set(['doom', 'doom.exe', './doom', 'run doom', 'launch doom', 'open doom']);
 const MAC_SCREEN_MEDIA_SIZE = { width: 1536, height: 1152 };
 const MAC_SCREEN_TERMINAL_SIZE = { width: 2048, height: 1536 };
+const MAC_TERMINAL_COMMAND_LINES = [
+  'PLAY     play interactive reel',
+  'DOOM     boot fullscreen Doom',
+  'STATUS   print audio engine state',
+  'RESET    restore last-good source',
+  'CLEAR    clear terminal',
+  'ABOUT    describe this system',
+];
+const MAC_TERMINAL_BOOT_LINES = [
+  'MacTerminal 1.1',
+  'System 1 Finder session',
+  '',
+  'COMMANDS',
+  ...MAC_TERMINAL_COMMAND_LINES,
+];
 
 function getDoomIframeUrl() {
   return new URL('doom.html', window.location.href).href;
@@ -5833,12 +5848,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         input: '',
         cursorOn: true,
         focused: true,
-        lines: [
-          'MacTerminal 1.1',
-          'System 1 Finder session',
-          '',
-          'Type HELP for commands.',
-        ],
+        lines: [...MAC_TERMINAL_BOOT_LINES],
       };
     }
     return state.terminal;
@@ -6746,18 +6756,14 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       return;
     }
     if (lower === 'help' || lower === '?') {
-      pushMacTerminalLine('PLAY: play interactive reel');
-      pushMacTerminalLine('DOOM     boot fullscreen Doom');
-      pushMacTerminalLine('STATUS   print audio engine state');
-      pushMacTerminalLine('RESET    restore last-good source');
-      pushMacTerminalLine('CLEAR    clear terminal');
-      pushMacTerminalLine('ABOUT    describe this system');
+      pushMacTerminalLine('COMMANDS');
+      MAC_TERMINAL_COMMAND_LINES.forEach(pushMacTerminalLine);
       drawMacOffScreen();
       return;
     }
     if (lower === 'clear' || lower === 'cls') {
       const term = ensureMacTerminal();
-      term.lines = ['MacTerminal 1.1', 'System 1 Finder session', '', 'Type HELP for commands.'];
+      term.lines = [...MAC_TERMINAL_BOOT_LINES];
       drawMacOffScreen();
       return;
     }
@@ -8291,8 +8297,8 @@ function HelpFeature({ src }) {
             360° camera rig, <strong>Mill Stitch™</strong>, and the on-set and post-production
             technology that enabled this first-of-its-kind deliverable. Mill Stitch was the
             real-time 360° pipeline that let the director see the surround action live during
-            principal photography in the LA River basin. Use <span className="mono">W A S D</span>
-            or drag to look around.
+            principal photography in the LA River basin. Use <span className="mono">W / A / S / D</span>{' '}
+            keys or drag to look around.
           </p>
         </div>
         <div className="help-hero__player">
