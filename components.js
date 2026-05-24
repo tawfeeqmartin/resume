@@ -5886,51 +5886,76 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     if (!context) return;
     const now = context.currentTime + 0.001;
     const isLargeKey = code === 'Space' || code === 'Enter' || code === 'Backspace';
-    const duration = isLargeKey ? 0.06 : 0.044;
+    const duration = isLargeKey ? 0.078 : 0.058;
     const length = Math.max(1, Math.floor(context.sampleRate * duration));
     const buffer = context.createBuffer(1, length, context.sampleRate);
     const data = buffer.getChannelData(0);
     for (let i = 0; i < length; i++) {
       const t = i / Math.max(1, length - 1);
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 2.6);
+      const bodyEnv = Math.pow(1 - t, 2.05);
+      const tapEnv = Math.pow(1 - t, 8.5);
+      data[i] = (Math.random() * 2 - 1) * (bodyEnv * 0.82 + tapEnv * 0.55);
     }
 
     const noise = context.createBufferSource();
-    const band = context.createBiquadFilter();
-    const gain = context.createGain();
-    band.type = 'bandpass';
-    band.frequency.setValueAtTime(isLargeKey ? 940 : 1850, now);
-    band.Q.setValueAtTime(isLargeKey ? 0.72 : 0.9, now);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(isLargeKey ? 0.34 : 0.255, now + 0.004);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    const lowBody = context.createBiquadFilter();
+    const midKnock = context.createBiquadFilter();
+    const highClick = context.createBiquadFilter();
+    const thock = context.createOscillator();
+    const bodyGain = context.createGain();
+    const knockGain = context.createGain();
+    const clickGain = context.createGain();
+    const thockGain = context.createGain();
+    lowBody.type = 'bandpass';
+    lowBody.frequency.setValueAtTime(isLargeKey ? 270 : 330, now);
+    lowBody.Q.setValueAtTime(0.68, now);
+    midKnock.type = 'bandpass';
+    midKnock.frequency.setValueAtTime(isLargeKey ? 760 : 920, now);
+    midKnock.Q.setValueAtTime(1.05, now);
+    highClick.type = 'bandpass';
+    highClick.frequency.setValueAtTime(isLargeKey ? 1850 : 2400, now);
+    highClick.Q.setValueAtTime(0.82, now);
+    thock.type = 'triangle';
+    thock.frequency.setValueAtTime(isLargeKey ? 128 : 176, now);
+    thock.frequency.exponentialRampToValueAtTime(isLargeKey ? 88 : 118, now + (isLargeKey ? 0.044 : 0.032));
+    bodyGain.gain.setValueAtTime(0.0001, now);
+    bodyGain.gain.exponentialRampToValueAtTime(isLargeKey ? 0.28 : 0.21, now + 0.004);
+    bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + (isLargeKey ? 0.074 : 0.055));
+    knockGain.gain.setValueAtTime(0.0001, now);
+    knockGain.gain.exponentialRampToValueAtTime(isLargeKey ? 0.18 : 0.145, now + 0.0025);
+    knockGain.gain.exponentialRampToValueAtTime(0.0001, now + (isLargeKey ? 0.03 : 0.023));
+    clickGain.gain.setValueAtTime(0.0001, now);
+    clickGain.gain.exponentialRampToValueAtTime(isLargeKey ? 0.08 : 0.065, now + 0.0015);
+    clickGain.gain.exponentialRampToValueAtTime(0.0001, now + (isLargeKey ? 0.014 : 0.011));
+    thockGain.gain.setValueAtTime(0.0001, now);
+    thockGain.gain.exponentialRampToValueAtTime(isLargeKey ? 0.135 : 0.09, now + 0.003);
+    thockGain.gain.exponentialRampToValueAtTime(0.0001, now + (isLargeKey ? 0.042 : 0.03));
     noise.buffer = buffer;
-    noise.connect(band);
-    band.connect(gain);
-    gain.connect(context.destination);
+    noise.connect(lowBody);
+    noise.connect(midKnock);
+    noise.connect(highClick);
+    lowBody.connect(bodyGain);
+    midKnock.connect(knockGain);
+    highClick.connect(clickGain);
+    thock.connect(thockGain);
+    bodyGain.connect(context.destination);
+    knockGain.connect(context.destination);
+    clickGain.connect(context.destination);
+    thockGain.connect(context.destination);
     noise.start(now);
+    thock.start(now);
     noise.stop(now + duration + 0.006);
+    thock.stop(now + duration + 0.006);
     noise.onended = () => {
       try { noise.disconnect(); } catch {}
-      try { band.disconnect(); } catch {}
-      try { gain.disconnect(); } catch {}
-    };
-
-    const body = context.createOscillator();
-    const bodyGain = context.createGain();
-    body.type = 'triangle';
-    body.frequency.setValueAtTime(isLargeKey ? 132 : 205, now);
-    body.frequency.exponentialRampToValueAtTime(isLargeKey ? 78 : 138, now + (isLargeKey ? 0.052 : 0.038));
-    bodyGain.gain.setValueAtTime(0.0001, now);
-    bodyGain.gain.exponentialRampToValueAtTime(isLargeKey ? 0.14 : 0.07, now + 0.004);
-    bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + (isLargeKey ? 0.07 : 0.052));
-    body.connect(bodyGain);
-    bodyGain.connect(context.destination);
-    body.start(now);
-    body.stop(now + (isLargeKey ? 0.078 : 0.06));
-    body.onended = () => {
-      try { body.disconnect(); } catch {}
+      try { lowBody.disconnect(); } catch {}
+      try { midKnock.disconnect(); } catch {}
+      try { highClick.disconnect(); } catch {}
+      try { thock.disconnect(); } catch {}
       try { bodyGain.disconnect(); } catch {}
+      try { knockGain.disconnect(); } catch {}
+      try { clickGain.disconnect(); } catch {}
+      try { thockGain.disconnect(); } catch {}
     };
   }, [getMacKeyAudioContext]);
 
@@ -6560,6 +6585,15 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     else setFloppyInsertedInstant(shouldInsert, visible);
   }, [animateFloppy, setFloppyInsertedInstant]);
 
+  const setKeyPressOffset = (keyState, offset) => {
+    const parts = keyState.parts?.length
+      ? keyState.parts
+      : [{ mesh: keyState.mesh, homeY: keyState.homeY }];
+    for (const part of parts) {
+      if (part?.mesh) part.mesh.position.y = part.homeY + offset;
+    }
+  };
+
   // Press a Mac keyboard key (by label: 'space' | 'W' | 'A' | 'S' | 'D')
   // briefly. Each key has its own raf so multiple keys can animate at once.
 	  const animateKeyPress = React.useCallback((label) => {
@@ -6575,12 +6609,12 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       const t = now - start;
       if (t < downMs) {
         const u = t / downMs;
-        k.mesh.position.y = k.homeY - k.depth * (1 - Math.pow(1 - u, 2));
+        setKeyPressOffset(k, -k.depth * (1 - Math.pow(1 - u, 2)));
       } else if (t < downMs + upMs) {
         const u = (t - downMs) / upMs;
-        k.mesh.position.y = k.homeY - k.depth * (1 - u) * (1 - u);
+        setKeyPressOffset(k, -k.depth * (1 - u) * (1 - u));
       } else {
-        k.mesh.position.y = k.homeY;
+        setKeyPressOffset(k, 0);
         k.raf = 0;
         stateRef.current.requestRender?.();
         return;
@@ -7493,6 +7527,63 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         for (const m of keycapMeshes) {
           m.material = makeKeycapMaterial(m);
         }
+        const getMeshWorldMetrics = (mesh) => {
+          mesh.updateWorldMatrix(true, false);
+          const box = new THREE.Box3().setFromObject(mesh);
+          return {
+            mesh,
+            box,
+            center: box.getCenter(new THREE.Vector3()),
+            size: box.getSize(new THREE.Vector3()),
+          };
+        };
+        const keycapInfos = keycapMeshes.map(getMeshWorldMetrics);
+        const keyFootprint = keycapInfos.reduce((acc, info) => ({
+          minX: Math.min(acc.minX, info.box.min.x),
+          maxX: Math.max(acc.maxX, info.box.max.x),
+          minY: Math.min(acc.minY, info.box.min.y),
+          maxY: Math.max(acc.maxY, info.box.max.y),
+          minZ: Math.min(acc.minZ, info.box.min.z),
+          maxZ: Math.max(acc.maxZ, info.box.max.z),
+        }), { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity, minZ: Infinity, maxZ: -Infinity });
+        const isKeyLegendMesh = (mesh) => {
+          const match = mesh.name.match(/^Mesh(\d+)$/);
+          if (!match) return false;
+          const id = Number(match[1]);
+          return id >= 134 && id <= 272;
+        };
+        const keyPartsByName = new Map(keycapMeshes.map((mesh) => ([
+          mesh.name,
+          [{ mesh, homeY: mesh.position.y }],
+        ])));
+        let groupedLegendCount = 0;
+        for (const legend of allMeshes.filter(isKeyLegendMesh)) {
+          const legendInfo = getMeshWorldMetrics(legend);
+          const { center, size } = legendInfo;
+          const inKeyboardFootprint = center.x >= keyFootprint.minX - 0.35
+            && center.x <= keyFootprint.maxX + 0.35
+            && center.z >= keyFootprint.minZ - 0.35
+            && center.z <= keyFootprint.maxZ + 0.35
+            && center.y >= keyFootprint.minY - 0.08
+            && center.y <= keyFootprint.maxY + 0.85
+            && size.x < 1.15
+            && size.z < 0.8;
+          if (!inKeyboardFootprint) continue;
+          let best = null;
+          for (const key of keycapInfos) {
+            const dx = Math.abs(center.x - key.center.x);
+            const dz = Math.abs(center.z - key.center.z);
+            const xLimit = Math.max(0.18, key.size.x * 0.82);
+            const zLimit = Math.max(0.16, key.size.z * 0.92);
+            if (dx > xLimit || dz > zLimit) continue;
+            const score = dx / xLimit + dz / zLimit;
+            if (!best || score < best.score) best = { key, score };
+          }
+          const parts = best ? keyPartsByName.get(best.key.mesh.name) : null;
+          if (!parts) continue;
+          parts.push({ mesh: legend, homeY: legend.position.y });
+          groupedLegendCount += 1;
+        }
         // Capture the full keyboard. Mesh names are laid out in QWERTY
         // order in the GLB, so physical KeyboardEvent.code values and
         // onscreen clicks can drive the same key travel animation.
@@ -7508,6 +7599,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
           const depthScale = code === 'Space' ? 0.38 : def.action === 'modifier' ? 0.78 : 0.95;
           stateRef.current.keys[code] = {
             mesh,
+            parts: keyPartsByName.get(mesh.name) || [{ mesh, homeY: mesh.position.y }],
             homeY: mesh.position.y,
             depth: (gb.max.y - gb.min.y) * depthScale,
             raf: 0,
@@ -7516,7 +7608,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         for (const [alias, code] of Object.entries(MAC_KEY_ALIASES)) {
           if (stateRef.current.keys[code]) stateRef.current.keys[alias] = stateRef.current.keys[code];
         }
-        console.info('[TvHero] keys ready:', Object.keys(stateRef.current.keys));
+        console.info('[TvHero] keys ready:', Object.keys(stateRef.current.keys), 'legend parts:', groupedLegendCount);
         // Floppy disk = Mesh84 (front label sliver) + Mesh273 (disk body
         // inside the case). Both translate together so the whole disk
         // ejects/inserts as one unit.
@@ -7591,7 +7683,10 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         keycapMeshes.forEach((m) => addHitTarget(m, 'key'));
         for (const code of Object.keys(MAC_KEY_DEFS)) {
           const key = stateRef.current.keys?.[code];
-          if (key) addHitTarget(key.mesh, 'key', code);
+          if (key) {
+            const parts = key.parts?.length ? key.parts : [{ mesh: key.mesh }];
+            parts.forEach((part) => addHitTarget(part.mesh, 'key', code));
+          }
         }
         const hitMeshPool = [...allMeshes, ...screenMeshes];
         stateRef.current.macHitMeshes = Array.from(hitTargets.keys())
