@@ -3965,7 +3965,8 @@ function StrudelReplFeature() {
     const padTop = parseFloat(style.paddingTop) || 0;
     const padLeft = parseFloat(style.paddingLeft) || 0;
     const padRight = parseFloat(style.paddingRight) || 0;
-    const width = Math.max(1, ta.clientWidth - padLeft - padRight);
+    const layerWidth = layer.clientWidth || ta.clientWidth;
+    const width = Math.max(1, layerWidth - padLeft - padRight);
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const canvases = [...layer.querySelectorAll('.strudel-repl__scope-widget')];
     const stickyCanvases = canvases.filter((canvas) => canvas.dataset.sticky === '1');
@@ -3989,16 +3990,20 @@ function StrudelReplFeature() {
       const widgetHeight = isSticky
         ? stickyHeight
         : Math.max(28, Math.round(lineHeight * lineSpan - 5));
-      canvas.style.left = `${isSticky ? padLeft : padLeft - ta.scrollLeft}px`;
       if (isSticky) {
+        canvas.style.left = `${padLeft}px`;
+        canvas.style.right = 'auto';
+        canvas.style.width = `${width}px`;
         canvas.style.top = 'auto';
         canvas.style.bottom = `${stickyGap + (stickyCanvases.length - stickyIndex - 1) * (stickyHeight + stickyGap)}px`;
       } else {
+        canvas.style.left = `${padLeft - ta.scrollLeft}px`;
+        canvas.style.right = 'auto';
+        canvas.style.width = `${width}px`;
         const top = padTop + (lineIndex + 1) * lineHeight - ta.scrollTop + 3;
         canvas.style.top = `${top}px`;
         canvas.style.bottom = 'auto';
       }
-      canvas.style.width = `${width}px`;
       canvas.style.height = `${widgetHeight}px`;
       const height = Math.max(1, widgetHeight);
       const pxWidth = Math.max(1, Math.round(width * dpr));
@@ -4107,13 +4112,15 @@ function StrudelReplFeature() {
     syncScroll();
   }, [positionScopeWidgets, syncScroll]);
 
-  React.useLayoutEffect(() => {
-    const layer = scopeLayerRef.current;
-    if (!layer) return undefined;
-    let frame = 0;
-    const update = () => {
-      frame = 0;
-      positionScopeWidgets();
+	  React.useLayoutEffect(() => {
+	    const layer = scopeLayerRef.current;
+	    if (!layer) return undefined;
+	    const editor = layer.parentElement;
+	    const ta = textareaRef.current;
+	    let frame = 0;
+	    const update = () => {
+	      frame = 0;
+	      positionScopeWidgets();
       const contexts = new Map();
       layer.querySelectorAll('.strudel-repl__scope-widget').forEach((canvas) => {
         const ctx = canvas.getContext('2d');
@@ -4126,17 +4133,26 @@ function StrudelReplFeature() {
       window.__resumeStrudelScopeContexts = contexts;
       window.__resumeStrudelScopeContext = contexts.get('1') || contexts.values().next().value || null;
     };
-    const queueUpdate = () => {
-      if (frame) return;
-      frame = window.requestAnimationFrame(update);
-    };
-    update();
-    window.addEventListener('resize', queueUpdate);
-    return () => {
-      if (frame) window.cancelAnimationFrame(frame);
-      window.removeEventListener('resize', queueUpdate);
-      window.__resumeStrudelScopeContexts = new Map();
-      window.__resumeStrudelScopeContext = null;
+	    const queueUpdate = () => {
+	      if (frame) return;
+	      frame = window.requestAnimationFrame(update);
+	    };
+	    update();
+	    queueUpdate();
+	    window.requestAnimationFrame(() => window.requestAnimationFrame(queueUpdate));
+	    const observer = typeof ResizeObserver === 'function'
+	      ? new ResizeObserver(queueUpdate)
+	      : null;
+	    observer?.observe(layer);
+	    if (editor) observer?.observe(editor);
+	    if (ta) observer?.observe(ta);
+	    window.addEventListener('resize', queueUpdate);
+	    return () => {
+	      if (frame) window.cancelAnimationFrame(frame);
+	      observer?.disconnect();
+	      window.removeEventListener('resize', queueUpdate);
+	      window.__resumeStrudelScopeContexts = new Map();
+	      window.__resumeStrudelScopeContext = null;
     };
   }, [scopeWidgets, positionScopeWidgets]);
 
