@@ -89,19 +89,6 @@ const hatVerse = s("hh hh hh hh")
   .bank("RolandTR808").fast(2).lpf(4000).gain(0.3)
   .onTrigger(T.drumHat, false);
 
-// Vocal score for the site sampler bridge.
-// The cleaned voice stems are triggered by page code from the same
-// Strudel clock; these inert patterns document the current call /
-// answer / chop composition and give the REPL real words to light up.
-const vocalCall = s("life broader stand for crazy ones")
-  .gain(0);
-
-const vocalAnswer = s("build your own things this is the way change things")
-  .gain(0);
-
-const vocalChops = s("made up by people no smarter than you change it")
-  .gain(0);
-
 const intro      = stack(padChorus, leadIntro);
 const chorus     = stack(padChorus, leadChorus, subBass, kick, clapChorus, hatChorus);
 const verse      = stack(padChorus, leadVerse, subBass, clapVerse, hatVerse);
@@ -115,9 +102,9 @@ arrange(
   [4,  preChorus],
   [8, chorus],
   [8,  breakdown]
-)`;
+)._scope()`;
 
-const POETRY_IN_PROOF_STORAGE_VERSION = 'v4-vocal-score';
+const POETRY_IN_PROOF_STORAGE_VERSION = 'v5-no-vocal-default';
 const POETRY_IN_PROOF_SOURCE_STORAGE_KEY = `resume.poetryInProofSource.${POETRY_IN_PROOF_STORAGE_VERSION}`;
 const POETRY_IN_PROOF_DRAFT_STORAGE_KEY = `resume.poetryInProofDraft.${POETRY_IN_PROOF_STORAGE_VERSION}`;
 const POETRY_IN_PROOF_LAST_GOOD_STORAGE_KEY = `resume.poetryInProofLastGood.${POETRY_IN_PROOF_STORAGE_VERSION}`;
