@@ -96,7 +96,7 @@ const preChorus  = stack(padPreChorus, leadPreChorus);
 const breakdown  = stack(padBreak, leadBreak, outroBass);
 
 arrange(
-  [4,  intro],
+  [4, intro],
   [8, chorus],
   [8,  verse],
   [4,  preChorus],
@@ -104,7 +104,7 @@ arrange(
   [8,  breakdown]
 )._scope()`;
 
-const POETRY_IN_PROOF_STORAGE_VERSION = 'v6-sticky-scope';
+const POETRY_IN_PROOF_STORAGE_VERSION = 'v7-default-arrangement';
 const POETRY_IN_PROOF_SOURCE_STORAGE_KEY = `resume.poetryInProofSource.${POETRY_IN_PROOF_STORAGE_VERSION}`;
 const POETRY_IN_PROOF_DRAFT_STORAGE_KEY = `resume.poetryInProofDraft.${POETRY_IN_PROOF_STORAGE_VERSION}`;
 const POETRY_IN_PROOF_LAST_GOOD_STORAGE_KEY = `resume.poetryInProofLastGood.${POETRY_IN_PROOF_STORAGE_VERSION}`;
