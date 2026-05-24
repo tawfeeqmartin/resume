@@ -5885,7 +5885,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     const context = getMacKeyAudioContext();
     if (!context) return;
     const now = context.currentTime + 0.001;
-    const duration = code === 'Space' ? 0.052 : 0.038;
+    const isLargeKey = code === 'Space' || code === 'Enter' || code === 'Backspace';
+    const duration = isLargeKey ? 0.06 : 0.044;
     const length = Math.max(1, Math.floor(context.sampleRate * duration));
     const buffer = context.createBuffer(1, length, context.sampleRate);
     const data = buffer.getChannelData(0);
@@ -5897,10 +5898,9 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     const noise = context.createBufferSource();
     const band = context.createBiquadFilter();
     const gain = context.createGain();
-    const isLargeKey = code === 'Space' || code === 'Enter' || code === 'Backspace';
     band.type = 'bandpass';
-    band.frequency.setValueAtTime(isLargeKey ? 1050 : 2450, now);
-    band.Q.setValueAtTime(isLargeKey ? 0.78 : 1.18, now);
+    band.frequency.setValueAtTime(isLargeKey ? 940 : 1850, now);
+    band.Q.setValueAtTime(isLargeKey ? 0.72 : 0.9, now);
     gain.gain.setValueAtTime(0.0001, now);
     gain.gain.exponentialRampToValueAtTime(isLargeKey ? 0.34 : 0.255, now + 0.004);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
@@ -5916,24 +5916,22 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       try { gain.disconnect(); } catch {}
     };
 
-    if (isLargeKey) {
-      const thud = context.createOscillator();
-      const thudGain = context.createGain();
-      thud.type = 'triangle';
-      thud.frequency.setValueAtTime(code === 'Space' ? 118 : 145, now);
-      thud.frequency.exponentialRampToValueAtTime(72, now + 0.035);
-      thudGain.gain.setValueAtTime(0.0001, now);
-      thudGain.gain.exponentialRampToValueAtTime(0.14, now + 0.004);
-      thudGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
-      thud.connect(thudGain);
-      thudGain.connect(context.destination);
-      thud.start(now);
-      thud.stop(now + 0.052);
-      thud.onended = () => {
-        try { thud.disconnect(); } catch {}
-        try { thudGain.disconnect(); } catch {}
-      };
-    }
+    const body = context.createOscillator();
+    const bodyGain = context.createGain();
+    body.type = 'triangle';
+    body.frequency.setValueAtTime(isLargeKey ? 132 : 205, now);
+    body.frequency.exponentialRampToValueAtTime(isLargeKey ? 78 : 138, now + (isLargeKey ? 0.052 : 0.038));
+    bodyGain.gain.setValueAtTime(0.0001, now);
+    bodyGain.gain.exponentialRampToValueAtTime(isLargeKey ? 0.14 : 0.07, now + 0.004);
+    bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + (isLargeKey ? 0.07 : 0.052));
+    body.connect(bodyGain);
+    bodyGain.connect(context.destination);
+    body.start(now);
+    body.stop(now + (isLargeKey ? 0.078 : 0.06));
+    body.onended = () => {
+      try { body.disconnect(); } catch {}
+      try { bodyGain.disconnect(); } catch {}
+    };
   }, [getMacKeyAudioContext]);
 
   const setScreenTextureSampling = React.useCallback((mode = 'media') => {
