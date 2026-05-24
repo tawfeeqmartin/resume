@@ -5846,11 +5846,30 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     term.lines = [...term.lines, line].slice(-12);
   }, [ensureMacTerminal]);
 
+  const getMacKeyAudioContext = React.useCallback(() => {
+    if (stateRef.current.deviceMode !== 'mac') return null;
+    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextCtor) return null;
+    const state = stateRef.current;
+    let audio = state.macKeyAudio;
+    if (!audio?.context || audio.context.state === 'closed') {
+      try {
+        audio = { context: new AudioContextCtor() };
+        state.macKeyAudio = audio;
+      } catch {
+        return null;
+      }
+    }
+    try { audio.context.resume?.(); } catch {}
+    return audio.context.state === 'closed' ? null : audio.context;
+  }, []);
+
   const captureMacKeyboard = React.useCallback(() => {
     if (stateRef.current.deviceMode !== 'mac') return;
     const term = ensureMacTerminal();
     term.focused = true;
     term.cursorOn = true;
+    getMacKeyAudioContext();
     const active = document.activeElement;
     if (active && active !== keyboardCaptureRef.current && active !== document.body) {
       try { active.blur?.(); } catch {}
@@ -5860,31 +5879,13 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       try { capture.focus({ preventScroll: true }); }
       catch { capture.focus?.(); }
     }
-  }, [ensureMacTerminal]);
+  }, [ensureMacTerminal, getMacKeyAudioContext]);
 
   const playMacKeyClick = React.useCallback((code = '') => {
-    if (stateRef.current.deviceMode !== 'mac') return;
-    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextCtor) return;
-    const state = stateRef.current;
-    let audio = state.macKeyAudio;
-    if (!audio?.context) {
-      try {
-        audio = { context: new AudioContextCtor() };
-        state.macKeyAudio = audio;
-      } catch {
-        return;
-      }
-    }
-    const context = audio.context;
-    try { context.resume?.(); } catch {}
-    if (context.state === 'closed') {
-      state.macKeyAudio = null;
-      return;
-    }
-
+    const context = getMacKeyAudioContext();
+    if (!context) return;
     const now = context.currentTime + 0.001;
-    const duration = code === 'Space' ? 0.042 : 0.032;
+    const duration = code === 'Space' ? 0.052 : 0.038;
     const length = Math.max(1, Math.floor(context.sampleRate * duration));
     const buffer = context.createBuffer(1, length, context.sampleRate);
     const data = buffer.getChannelData(0);
@@ -5898,10 +5899,10 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     const gain = context.createGain();
     const isLargeKey = code === 'Space' || code === 'Enter' || code === 'Backspace';
     band.type = 'bandpass';
-    band.frequency.setValueAtTime(isLargeKey ? 1150 : 1850, now);
-    band.Q.setValueAtTime(isLargeKey ? 0.72 : 0.92, now);
+    band.frequency.setValueAtTime(isLargeKey ? 1050 : 2450, now);
+    band.Q.setValueAtTime(isLargeKey ? 0.78 : 1.18, now);
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(isLargeKey ? 0.044 : 0.028, now + 0.004);
+    gain.gain.exponentialRampToValueAtTime(isLargeKey ? 0.09 : 0.065, now + 0.004);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
     noise.buffer = buffer;
     noise.connect(band);
@@ -5922,7 +5923,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       thud.frequency.setValueAtTime(code === 'Space' ? 118 : 145, now);
       thud.frequency.exponentialRampToValueAtTime(72, now + 0.035);
       thudGain.gain.setValueAtTime(0.0001, now);
-      thudGain.gain.exponentialRampToValueAtTime(0.018, now + 0.004);
+      thudGain.gain.exponentialRampToValueAtTime(0.04, now + 0.004);
       thudGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
       thud.connect(thudGain);
       thudGain.connect(context.destination);
@@ -5933,7 +5934,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         try { thudGain.disconnect(); } catch {}
       };
     }
-  }, []);
+  }, [getMacKeyAudioContext]);
 
   const setScreenTextureSampling = React.useCallback((mode = 'media') => {
     const state = stateRef.current;
@@ -7765,7 +7766,10 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       if (document.activeElement !== keyboardCaptureRef.current) return;
       const code = getMacKeyCodeFromEvent(event);
       if (code) animateKeyPress(code);
-      if (window.__resumeStrudelAudioEngine?.enabled) return;
+      if (window.__resumeStrudelAudioEngine?.enabled) {
+        if (code) playMacKeyClick(code);
+        return;
+      }
       if (event.shiftKey && ['Digit1', 'Digit2', 'Digit3'].includes(event.code)) return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       const term = ensureMacTerminal();
@@ -7787,7 +7791,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [animateKeyPress, applyMacTerminalKey, drawMacOffScreen, ensureMacTerminal]);
+  }, [animateKeyPress, applyMacTerminalKey, drawMacOffScreen, ensureMacTerminal, playMacKeyClick]);
 
   React.useEffect(() => {
     if (stateRef.current.deviceMode !== 'mac') return undefined;
