@@ -5902,7 +5902,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     band.frequency.setValueAtTime(isLargeKey ? 1050 : 2450, now);
     band.Q.setValueAtTime(isLargeKey ? 0.78 : 1.18, now);
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(isLargeKey ? 0.09 : 0.065, now + 0.004);
+    gain.gain.exponentialRampToValueAtTime(isLargeKey ? 0.115 : 0.083, now + 0.004);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
     noise.buffer = buffer;
     noise.connect(band);
@@ -5923,7 +5923,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       thud.frequency.setValueAtTime(code === 'Space' ? 118 : 145, now);
       thud.frequency.exponentialRampToValueAtTime(72, now + 0.035);
       thudGain.gain.setValueAtTime(0.0001, now);
-      thudGain.gain.exponentialRampToValueAtTime(0.04, now + 0.004);
+      thudGain.gain.exponentialRampToValueAtTime(0.05, now + 0.004);
       thudGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
       thud.connect(thudGain);
       thudGain.connect(context.destination);
