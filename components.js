@@ -11,7 +11,7 @@ const PAGE_DWELL_TAIL_STEPS = 0;
 // displays + highlights it). Keeping the strings identical lets the
 // REPL map hap source-positions directly to display positions for the
 // strudel.cc-style active-token highlights.
-const POETRY_IN_PROOF_SOURCE = `// "Poetry in Proof" — 153 BPM halftime trap
+const POETRY_IN_PROOF_SOURCE = `// "Poetry in Proof"
 setcpm(153 / 4);
 const T = globalThis.__resumeLaneTriggers;
 
