@@ -3524,7 +3524,6 @@ const REPL_MIDI_LANES = [
   { lane: 'kick',      short: 'kick',    group: 'drums'   },
   { lane: 'snare',     short: 'snare',   group: 'drums'   },
   { lane: 'hat',       short: 'hat',     group: 'drums'   },
-  { lane: 'vocal',     short: 'vox',     group: 'vocal'   },
 ];
 
 function MidiBusMonitor({ compact = false } = {}) {
@@ -5197,6 +5196,7 @@ function rankTvEditCandidates(candidates, profile, previousSource) {
 function TvHero({ sources = [], vocalSamples = [], children }) {
   const wrapRef = React.useRef(null);
   const canvasRef = React.useRef(null);
+  const keyboardCaptureRef = React.useRef(null);
   const stateRef = React.useRef({
     three: null,
     renderer: null,
@@ -5262,6 +5262,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    requestRender: null,
 	    powerPausedVideo: null,
 	    powerToggleInFlight: false,
+	    macKeyAudio: null,
 	    terminal: null,
 	  });
   const [engineEnabled, setEngineEnabled] = React.useState(false);
@@ -5845,6 +5846,95 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     term.lines = [...term.lines, line].slice(-12);
   }, [ensureMacTerminal]);
 
+  const captureMacKeyboard = React.useCallback(() => {
+    if (stateRef.current.deviceMode !== 'mac') return;
+    const term = ensureMacTerminal();
+    term.focused = true;
+    term.cursorOn = true;
+    const active = document.activeElement;
+    if (active && active !== keyboardCaptureRef.current && active !== document.body) {
+      try { active.blur?.(); } catch {}
+    }
+    const capture = keyboardCaptureRef.current;
+    if (capture) {
+      try { capture.focus({ preventScroll: true }); }
+      catch { capture.focus?.(); }
+    }
+  }, [ensureMacTerminal]);
+
+  const playMacKeyClick = React.useCallback((code = '') => {
+    if (stateRef.current.deviceMode !== 'mac') return;
+    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextCtor) return;
+    const state = stateRef.current;
+    let audio = state.macKeyAudio;
+    if (!audio?.context) {
+      try {
+        audio = { context: new AudioContextCtor() };
+        state.macKeyAudio = audio;
+      } catch {
+        return;
+      }
+    }
+    const context = audio.context;
+    try { context.resume?.(); } catch {}
+    if (context.state === 'closed') {
+      state.macKeyAudio = null;
+      return;
+    }
+
+    const now = context.currentTime + 0.001;
+    const duration = code === 'Space' ? 0.042 : 0.032;
+    const length = Math.max(1, Math.floor(context.sampleRate * duration));
+    const buffer = context.createBuffer(1, length, context.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i++) {
+      const t = i / Math.max(1, length - 1);
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 2.6);
+    }
+
+    const noise = context.createBufferSource();
+    const band = context.createBiquadFilter();
+    const gain = context.createGain();
+    const isLargeKey = code === 'Space' || code === 'Enter' || code === 'Backspace';
+    band.type = 'bandpass';
+    band.frequency.setValueAtTime(isLargeKey ? 1150 : 1850, now);
+    band.Q.setValueAtTime(isLargeKey ? 0.72 : 0.92, now);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(isLargeKey ? 0.044 : 0.028, now + 0.004);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    noise.buffer = buffer;
+    noise.connect(band);
+    band.connect(gain);
+    gain.connect(context.destination);
+    noise.start(now);
+    noise.stop(now + duration + 0.006);
+    noise.onended = () => {
+      try { noise.disconnect(); } catch {}
+      try { band.disconnect(); } catch {}
+      try { gain.disconnect(); } catch {}
+    };
+
+    if (isLargeKey) {
+      const thud = context.createOscillator();
+      const thudGain = context.createGain();
+      thud.type = 'triangle';
+      thud.frequency.setValueAtTime(code === 'Space' ? 118 : 145, now);
+      thud.frequency.exponentialRampToValueAtTime(72, now + 0.035);
+      thudGain.gain.setValueAtTime(0.0001, now);
+      thudGain.gain.exponentialRampToValueAtTime(0.018, now + 0.004);
+      thudGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
+      thud.connect(thudGain);
+      thudGain.connect(context.destination);
+      thud.start(now);
+      thud.stop(now + 0.052);
+      thud.onended = () => {
+        try { thud.disconnect(); } catch {}
+        try { thudGain.disconnect(); } catch {}
+      };
+    }
+  }, []);
+
   const setScreenTextureSampling = React.useCallback((mode = 'media') => {
     const state = stateRef.current;
     const THREE = state.three;
@@ -5971,9 +6061,50 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     const lineHeight = px(fontSize * 1.42);
     ctx2d.font = `${fontSize}px ${monoFont}`;
     const prompt = 'tawfeeq$ ';
+    const maxTextWidth = tw - px(fontSize * 0.7);
+    const continuation = ' '.repeat(prompt.length);
+    const wrapText = (value, width) => {
+      const text = String(value ?? '');
+      if (!text) return [''];
+      const rows = [];
+      let remaining = text;
+      while (remaining.length) {
+        let take = remaining.length;
+        while (take > 1 && ctx2d.measureText(remaining.slice(0, take)).width > width) take--;
+        if (take < remaining.length) {
+          const space = remaining.lastIndexOf(' ', take);
+          if (space > 0 && ctx2d.measureText(remaining.slice(0, space)).width <= width) {
+            take = space + 1;
+          }
+        }
+        rows.push(remaining.slice(0, take).replace(/\s+$/g, ''));
+        remaining = remaining.slice(take).replace(/^\s+/g, '');
+      }
+      return rows.length ? rows : [''];
+    };
+    const wrapPromptInput = () => {
+      const input = String(term.input ?? '');
+      const firstWidth = Math.max(fontSize * 2, maxTextWidth - ctx2d.measureText(prompt).width);
+      const nextWidth = Math.max(fontSize * 2, maxTextWidth - ctx2d.measureText(continuation).width);
+      const chunks = [];
+      let remaining = input;
+      let width = firstWidth;
+      if (!remaining) return [{ text: prompt, cursor: true }];
+      while (remaining.length) {
+        let take = remaining.length;
+        while (take > 1 && ctx2d.measureText(remaining.slice(0, take)).width > width) take--;
+        chunks.push(remaining.slice(0, take));
+        remaining = remaining.slice(take);
+        width = nextWidth;
+      }
+      return chunks.map((chunk, index) => ({
+        text: `${index === 0 ? prompt : continuation}${chunk}`,
+        cursor: index === chunks.length - 1,
+      }));
+    };
     const allLines = [
-      ...term.lines,
-      `${prompt}${term.input}`,
+      ...term.lines.flatMap((line) => wrapText(line, maxTextWidth).map((text) => ({ text }))),
+      ...wrapPromptInput(),
     ];
     const visibleCount = Math.max(6, Math.floor(th / lineHeight));
     const visible = allLines.slice(-visibleCount);
@@ -5983,16 +6114,20 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       ctx2d.fillText(line, x + Math.max(1, px(fontSize * 0.018)), baseline);
     };
     let y = ty + fontSize;
-    for (const line of visible) {
-      drawTerminalText(line, textX, y);
+    let cursor = null;
+    for (const row of visible) {
+      drawTerminalText(row.text, textX, y);
+      if (row.cursor) {
+        cursor = {
+          x: textX + Math.min(maxTextWidth, ctx2d.measureText(row.text).width),
+          y: y - px(fontSize * 0.78),
+        };
+      }
       y += lineHeight;
     }
-    if (term.cursorOn) {
-      const current = `${prompt}${term.input}`;
-      const cursorX = textX + Math.min(tw - px(w * 0.04), ctx2d.measureText(current).width);
-      const cursorY = y - lineHeight - px(fontSize * 0.78);
+    if (term.cursorOn && cursor) {
       ctx2d.fillStyle = black;
-      ctx2d.fillRect(cursorX + 2, cursorY, px(fontSize * 0.58), px(fontSize * 1.05));
+      ctx2d.fillRect(cursor.x + 2, cursor.y, px(fontSize * 0.58), px(fontSize * 1.05));
     }
     ctx2d.restore();
 
@@ -6575,7 +6710,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       return;
     }
     if (lower === 'help' || lower === '?') {
-      pushMacTerminalLine('PLAY     insert disk and run song');
+      pushMacTerminalLine('PLAY: play interactive reel');
       pushMacTerminalLine('DOOM     boot fullscreen Doom');
       pushMacTerminalLine('STATUS   print audio engine state');
       pushMacTerminalLine('RESET    restore last-good source');
@@ -6669,12 +6804,14 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     const def = MAC_KEY_DEFS[code];
     if (!def) return false;
     if (def.action === 'enter') {
+      playMacKeyClick(code);
       const cmd = term.input;
       term.input = '';
       runMacTerminalCommand(cmd);
       return true;
     }
     if (def.action === 'backspace') {
+      playMacKeyClick(code);
       term.input = term.input.slice(0, -1);
       term.cursorOn = true;
       drawMacOffScreen();
@@ -6687,11 +6824,12 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       ? charOverride
       : getMacTerminalCharacter(code, shiftKey);
     if (!nextChar) return false;
-    term.input = (term.input + nextChar).slice(-64);
+    playMacKeyClick(code);
+    term.input = (term.input + nextChar).slice(-160);
     term.cursorOn = true;
     drawMacOffScreen();
     return true;
-  }, [drawMacOffScreen, ensureMacTerminal, runMacTerminalCommand]);
+  }, [drawMacOffScreen, ensureMacTerminal, playMacKeyClick, runMacTerminalCommand]);
 
   const drawChannelStatic = React.useCallback((seed = 1, strength = 1) => {
     const state = stateRef.current;
@@ -7624,6 +7762,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       if (stateRef.current.deviceMode !== 'mac') return;
       if (!heroVisible()) return;
       if (isEditableTarget(event.target)) return;
+      if (document.activeElement !== keyboardCaptureRef.current) return;
       const code = getMacKeyCodeFromEvent(event);
       if (code) animateKeyPress(code);
       if (window.__resumeStrudelAudioEngine?.enabled) return;
@@ -7793,7 +7932,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
   }, [engineEnabled, availableSources, getBreakdownPosition, triggerSectionVocal]);
 
 	  // Click the Mac's physical controls to slide the floppy and toggle
-	  // audio + picture. The screen itself is display-only.
+	  // audio + picture. Any Mac hit also captures keyboard focus so the
+	  // REPL textarea never receives terminal typing by accident.
 	  React.useEffect(() => {
 	    if (stateRef.current.deviceMode !== 'mac') return;
 	    const canvas = canvasRef.current;
@@ -7813,8 +7953,15 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       );
 	      raycaster.setFromCamera(ndc, camera);
 	      const hits = raycaster.intersectObjects(hitMeshes, false);
-	      if (!hits.length) return;
+	      const macHits = hits.length
+	        ? hits
+	        : state.frameModel
+	          ? raycaster.intersectObjects([state.frameModel], true)
+	          : [];
+	      if (!macHits.length) return;
 	      event.preventDefault();
+	      captureMacKeyboard();
+	      if (!hits.length) return;
 	      if (state.powerToggleInFlight) return;
 	      const hit = hits[0];
 	      const target = state.macHitTargets?.get(hit.object.uuid) || { type: 'mouse' };
@@ -7887,7 +8034,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.style.cursor = '';
     };
-  }, [animateMouseButton, animateKeyPress, animateKeyMeshPress, animateFloppy, animateMacBloomBurst, applyMacTerminalKey, drawMacOffScreen, ensureMacTerminal, pushMacTerminalLine]);
+  }, [animateMouseButton, animateKeyPress, animateKeyMeshPress, animateFloppy, animateMacBloomBurst, applyMacTerminalKey, captureMacKeyboard, drawMacOffScreen, ensureMacTerminal, pushMacTerminalLine]);
 
   React.useEffect(() => {
     if (stateRef.current.deviceMode !== 'mac') return;
@@ -7969,6 +8116,12 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 
   return (
     <div ref={wrapRef} className={`tv-hero ${engineEnabled ? 'is-live' : 'is-idle'}`}>
+      <div
+        ref={keyboardCaptureRef}
+        className="tv-hero__keyboard-capture"
+        tabIndex={-1}
+        aria-label="Mac terminal keyboard capture"
+      />
       <canvas ref={canvasRef} className="tv-hero__canvas" />
       {children ? (
         <div className="tv-hero__controls">

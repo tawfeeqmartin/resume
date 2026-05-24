@@ -1349,6 +1349,16 @@ html.has-pseudo-fullscreen body {
   margin-right: calc(50% - 50vw);
   overflow: visible;
 }
+.tv-hero__keyboard-capture {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  pointer-events: none;
+  outline: none;
+}
 .tv-hero__canvas {
   position: absolute;
   /* Canvas is a replaced element, so give Three an explicit viewport.
@@ -3525,6 +3535,6 @@ window.__loadThreeBundle = () => {
   return window.__threePromise;
 };
 </script>
-<script type="module" src="dist/app.js?v=20260523-scope-width-sync"></script>
+<script type="module" src="dist/app.js?v=20260523-mac-keyboard-capture"></script>
 </body>
 </html>
