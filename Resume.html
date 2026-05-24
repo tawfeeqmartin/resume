@@ -1322,8 +1322,8 @@ html.has-pseudo-fullscreen body {
 }
 .hero-stack__sticky {
   --mac-sticky-top-pad: clamp(2.75rem, 6vh, 4.5rem);
-  --mac-canvas-overhang: 600px;
-  --mac-canvas-top: -600px;
+  --mac-canvas-top: calc(-600px + var(--mac-sticky-top-pad));
+  --mac-canvas-extra-height: calc(600px - var(--mac-sticky-top-pad));
   grid-column: 2;
   grid-row: 1 / span 2;
   position: sticky;
@@ -1332,7 +1332,6 @@ html.has-pseudo-fullscreen body {
   z-index: 100;
   height: calc(100vh - var(--mac-sticky-top-pad));
   overflow: visible;
-  clip-path: inset(0 -100vw 0 -100vw);
   /* Bleed right to viewport edge AND left into the text column so the
      TV body renders OVER the page content, not next to it. */
   margin-right: calc(50% - 50vw);
@@ -1371,7 +1370,7 @@ html.has-pseudo-fullscreen body {
   top: var(--mac-canvas-top);
   left: 0; right: 0;
   width: 100%;
-  height: calc(100% + var(--mac-canvas-overhang));
+  height: calc(100% + var(--mac-canvas-extra-height));
   min-height: 780px;
   display: block;
 }
@@ -1475,8 +1474,8 @@ html.has-doom-overlay body {
   }
   .hero-stack__sticky {
     --mac-sticky-top-pad: 0px;
-    --mac-canvas-overhang: 5.4rem;
     --mac-canvas-top: -5.4rem;
+    --mac-canvas-extra-height: 5.4rem;
     order: 1;
     position: relative;
     top: auto;
