@@ -4830,15 +4830,18 @@ function StrudelReplFeature() {
         <h3 className="serif">A browser-based music and interactive visuals demo.</h3>
         <p>
           <strong>Poetry in Proof</strong> is a browser-based music and
-          interactive visuals demo running on this website. The music is
-          composed in Strudel, with custom code producing MIDI triggers that
-          drive real-time page animations, text and code highlights, the MIDI
-          monitor, and Mac screen reactions. The code editor is live, so the
-          composition can be changed while the page is running. When MIDI OUT is
-          enabled, those same triggers can be sent to an external MIDI
-          destination such as IAC Driver or a network MIDI session. Web MIDI is
-          bound to every lane, so sections, chords, and drums are all
-          addressable from external hardware or remote rigs.
+          interactive visuals demo. I enjoy interactive art and the process of
+          extracting poetry from technical proof, so of course I could not
+          resist bringing my resume to life with a retro-feeling audio-visual
+          system. I composed the music with Strudel and custom code that
+          produces MIDI lane triggers for real-time reel edits, page animations,
+          text and code highlights, the MIDI monitor, and Mac screen reactions.
+          The code editor below is live, so the composition can be changed while
+          the page is running. When MIDI OUT is enabled, those same triggers can
+          be sent to an external MIDI destination such as IAC Driver or a
+          network MIDI session. Web MIDI is bound to every lane, so sections,
+          chords, and drums are all addressable from external hardware or remote
+          rigs.
         </p>
       </aside>
       <div className="help-feature strudel-repl">
