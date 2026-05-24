@@ -104,7 +104,7 @@ arrange(
   [8,  breakdown]
 )._scope()`;
 
-const POETRY_IN_PROOF_STORAGE_VERSION = 'v5-no-vocal-default';
+const POETRY_IN_PROOF_STORAGE_VERSION = 'v6-sticky-scope';
 const POETRY_IN_PROOF_SOURCE_STORAGE_KEY = `resume.poetryInProofSource.${POETRY_IN_PROOF_STORAGE_VERSION}`;
 const POETRY_IN_PROOF_DRAFT_STORAGE_KEY = `resume.poetryInProofDraft.${POETRY_IN_PROOF_STORAGE_VERSION}`;
 const POETRY_IN_PROOF_LAST_GOOD_STORAGE_KEY = `resume.poetryInProofLastGood.${POETRY_IN_PROOF_STORAGE_VERSION}`;
@@ -3411,10 +3411,10 @@ function BlackbirdFeature({ innovationSrc, behindScenesSrc }) {
 const STRUDEL_REPL_INITIAL_CODE = POETRY_IN_PROOF_SOURCE;
 const REPL_WIDGET_LIMIT = 8;
 const REPL_WIDGET_TYPES = {
-  scope: { lineSpan: 4 },
-  tscope: { lineSpan: 4 },
-  fscope: { lineSpan: 4 },
-  spectrum: { lineSpan: 4 },
+  scope: { lineSpan: 4, reserveLines: 0, sticky: true },
+  tscope: { lineSpan: 4, reserveLines: 0, sticky: true },
+  fscope: { lineSpan: 4, reserveLines: 0, sticky: true },
+  spectrum: { lineSpan: 4, reserveLines: 0, sticky: true },
   pianoroll: { lineSpan: 10 },
   punchcard: { lineSpan: 10 },
 };
@@ -3447,6 +3447,7 @@ function parseReplWidgets(source) {
         const config = REPL_WIDGET_TYPES[kind];
         if (!config) continue;
         const id = getReplWidgetId(match[3] || '');
+        const reserveLines = config.reserveLines ?? config.lineSpan;
         const start = sourceOffset + match.index;
         const end = start + match[0].length;
         widgets.push({
@@ -3456,10 +3457,12 @@ function parseReplWidgets(source) {
           lineIndex,
           visualLineIndex: lineIndex + lineOffset,
           lineSpan: config.lineSpan,
+          reserveLines,
+          sticky: Boolean(config.sticky),
           start,
           end,
         });
-        lineOffset += config.lineSpan;
+        lineOffset += reserveLines;
       }
     }
     sourceOffset += line.length + (lineIndex < lines.length - 1 ? 1 : 0);
@@ -3484,7 +3487,7 @@ function reserveReplWidgetSpacing(source, selectionStart = null, selectionEnd = 
 
     const widgets = parseReplWidgets(line);
     const lineSpan = widgets.length
-      ? widgets.reduce((sum, widget) => sum + widget.lineSpan, 0)
+      ? widgets.reduce((sum, widget) => sum + (widget.reserveLines ?? widget.lineSpan), 0)
       : 0;
     if (!lineSpan) continue;
 
@@ -3949,11 +3952,13 @@ function StrudelReplFeature() {
   const scopeWidgets = React.useMemo(() => {
     return parseReplWidgets(code).slice(0, REPL_WIDGET_LIMIT);
   }, [code]);
+  const hasStickyScopeWidget = scopeWidgets.some((widget) => widget.sticky);
 
   const positionScopeWidgets = React.useCallback(() => {
     const ta = textareaRef.current;
     const layer = scopeLayerRef.current;
     if (!ta || !layer) return;
+    const editor = layer.parentElement;
     const style = window.getComputedStyle(ta);
     const fontSize = parseFloat(style.fontSize) || 12;
     const lineHeight = parseFloat(style.lineHeight) || fontSize * 1.42;
@@ -3962,13 +3967,37 @@ function StrudelReplFeature() {
     const padRight = parseFloat(style.paddingRight) || 0;
     const width = Math.max(1, ta.clientWidth - padLeft - padRight);
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    layer.querySelectorAll('.strudel-repl__scope-widget').forEach((canvas) => {
+    const canvases = [...layer.querySelectorAll('.strudel-repl__scope-widget')];
+    const stickyCanvases = canvases.filter((canvas) => canvas.dataset.sticky === '1');
+    const stickyGap = stickyCanvases.length ? 6 : 0;
+    const stickyHeight = stickyCanvases.length
+      ? Math.max(32, Math.round(lineHeight * 4 - 4))
+      : 0;
+    const stickyBlock = stickyCanvases.length
+      ? stickyCanvases.length * stickyHeight + Math.max(0, stickyCanvases.length - 1) * stickyGap + stickyGap * 2
+      : 0;
+    if (editor) {
+      editor.style.setProperty('--repl-sticky-widget-height', `${stickyHeight}px`);
+      editor.style.setProperty('--repl-sticky-widget-gap', `${stickyGap}px`);
+      editor.style.setProperty('--repl-sticky-widget-block', `${stickyBlock}px`);
+    }
+    canvases.forEach((canvas) => {
       const lineIndex = Number(canvas.dataset.visualLine || canvas.dataset.line || 0);
-      const top = padTop + (lineIndex + 1) * lineHeight - ta.scrollTop + 3;
       const lineSpan = Math.max(1, Number(canvas.dataset.lineSpan || 4));
-      const widgetHeight = Math.max(28, Math.round(lineHeight * lineSpan - 5));
-      canvas.style.left = `${padLeft - ta.scrollLeft}px`;
-      canvas.style.top = `${top}px`;
+      const stickyIndex = stickyCanvases.indexOf(canvas);
+      const isSticky = stickyIndex !== -1;
+      const widgetHeight = isSticky
+        ? stickyHeight
+        : Math.max(28, Math.round(lineHeight * lineSpan - 5));
+      canvas.style.left = `${isSticky ? padLeft : padLeft - ta.scrollLeft}px`;
+      if (isSticky) {
+        canvas.style.top = 'auto';
+        canvas.style.bottom = `${stickyGap + (stickyCanvases.length - stickyIndex - 1) * (stickyHeight + stickyGap)}px`;
+      } else {
+        const top = padTop + (lineIndex + 1) * lineHeight - ta.scrollTop + 3;
+        canvas.style.top = `${top}px`;
+        canvas.style.bottom = 'auto';
+      }
       canvas.style.width = `${width}px`;
       canvas.style.height = `${widgetHeight}px`;
       const height = Math.max(1, widgetHeight);
@@ -4044,6 +4073,7 @@ function StrudelReplFeature() {
     positionScopeWidgets();
     const canvases = [...layer.querySelectorAll('.strudel-repl__scope-widget')];
     if (!canvases.length) return;
+    if (canvases.some((canvas) => canvas.dataset.sticky === '1')) return;
     const viewportBottom = ta.clientHeight;
     const finiteTarget = Number.isFinite(targetOffset) ? Number(targetOffset) : null;
     let target = canvases[0];
@@ -4800,7 +4830,7 @@ function StrudelReplFeature() {
         <div className="help-feature__player-col help-feature__player-col--wide">
           <div className="strudel-repl__macbook">
             <div className="strudel-repl__panel">
-              <div className="strudel-repl__editor">
+              <div className={`strudel-repl__editor ${hasStickyScopeWidget ? 'has-sticky-scope' : ''}`}>
                 <pre
                   className="strudel-repl__overlay"
                   ref={overlayRef}
@@ -4818,6 +4848,8 @@ function StrudelReplFeature() {
                       data-line={widget.lineIndex}
                       data-visual-line={widget.visualLineIndex}
                       data-line-span={widget.lineSpan}
+                      data-reserve-lines={widget.reserveLines}
+                      data-sticky={widget.sticky ? '1' : '0'}
                       data-start={widget.start}
                       data-end={widget.end}
                     />

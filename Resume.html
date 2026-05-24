@@ -1562,6 +1562,9 @@ html.has-doom-overlay body {
   flex: 1;
   min-height: 420px;
   background: var(--vscode-bg);
+  --repl-sticky-widget-height: 0px;
+  --repl-sticky-widget-gap: 0px;
+  --repl-sticky-widget-block: 0px;
 }
 .strudel-repl__scope-layer {
   position: absolute;
@@ -1600,6 +1603,10 @@ html.has-doom-overlay body {
   background: transparent;
   overflow: auto;
 }
+.strudel-repl__editor.has-sticky-scope .strudel-repl__overlay,
+.strudel-repl__editor.has-sticky-scope .strudel-repl__textarea {
+  bottom: var(--repl-sticky-widget-block);
+}
 .strudel-repl__overlay {
   pointer-events: none;
   color: var(--vscode-fg);
@@ -1615,6 +1622,10 @@ html.has-doom-overlay body {
   resize: none;
   outline: none;
   -webkit-text-fill-color: transparent;
+}
+.strudel-repl__scope-widget[data-sticky="1"] {
+  border-color: rgba(255, 216, 64, 0.42);
+  background: rgba(30, 30, 30, 0.98);
 }
 .strudel-repl__textarea::selection { background: rgba(86, 156, 214, 0.28); }
 .strudel-repl__textarea:focus { outline: none; }
@@ -3512,6 +3523,6 @@ window.__loadThreeBundle = () => {
   return window.__threePromise;
 };
 </script>
-<script type="module" src="dist/app.js?v=20260523-repl-title-clean"></script>
+<script type="module" src="dist/app.js?v=20260523-sticky-repl-scope"></script>
 </body>
 </html>
