@@ -698,6 +698,36 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   display: grid;
   gap: 1rem;
 }
+@media (min-width: 1400px) {
+  #blackbird {
+    --blackbird-stack-gap: clamp(0.75rem, 1.35vh, 1rem);
+    --blackbird-feature-h: calc(100svh - clamp(5.1rem, 8vh, 7rem));
+    --blackbird-video-w: min(58vw, calc((var(--blackbird-feature-h) - var(--blackbird-stack-gap)) * 0.925));
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  #blackbird .section__header {
+    margin-bottom: clamp(0.9rem, 2vh, 1.4rem);
+  }
+  #blackbird .help-feature {
+    grid-template-columns: minmax(0, var(--blackbird-video-w)) minmax(18rem, 1fr);
+    gap: clamp(1.5rem, 3vw, 3rem);
+    align-items: center;
+  }
+  #blackbird .video-stack {
+    width: 100%;
+    max-width: var(--blackbird-video-w);
+    gap: var(--blackbird-stack-gap);
+  }
+  #blackbird .help-feature__notes--match-stack {
+    min-height: 0;
+    max-height: var(--blackbird-feature-h);
+    justify-content: center;
+  }
+}
 .help-feature__notes h3 {
   font-family: var(--serif); font-size: clamp(1.3rem, 2vw, 1.7rem);
   font-weight: 500; line-height: 1.2; letter-spacing: -0.015em;
