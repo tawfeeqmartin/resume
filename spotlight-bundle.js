@@ -415,6 +415,38 @@ function waitForVideoMetadata(video, url, timeoutMs = 30000) {
   });
 }
 
+function waitForVideoCurrentData(video, url, timeoutMs = 20000) {
+  if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const cleanup = () => {
+      video.removeEventListener('loadeddata', onReady);
+      video.removeEventListener('canplay', onReady);
+      video.removeEventListener('seeked', onReady);
+      video.removeEventListener('error', onError);
+      clearTimeout(timer);
+    };
+    const finish = (callback, value) => {
+      if (done) return;
+      done = true;
+      cleanup();
+      callback(value);
+    };
+    const onReady = () => {
+      if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) finish(resolve);
+    };
+    const onError = () => finish(reject, new Error(`video first frame failed for ${url}`));
+    const timer = setTimeout(() => {
+      finish(reject, new Error(`video first frame timed out after ${timeoutMs}ms for ${url}`));
+    }, timeoutMs);
+    video.addEventListener('loadeddata', onReady);
+    video.addEventListener('canplay', onReady);
+    video.addEventListener('seeked', onReady);
+    video.addEventListener('error', onError, { once: true });
+    try { video.load(); } catch (error) { finish(reject, error); }
+  });
+}
+
 async function loadProjectionFromUrl(source) {
   const normalized = normalizeSource(source);
   const { projectionUrl, requireMesh } = normalized;
@@ -480,7 +512,7 @@ function makeVideoElement(videoUrl, inlineVideoFallback) {
   video.setAttribute('playsinline', '');
   video.setAttribute('webkit-playsinline', '');
   video.muted = true;
-  video.preload = 'metadata';
+  video.preload = 'auto';
   video.style.cssText = `position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:${inlineVideoFallback ? '1' : '0'};pointer-events:none;`;
   return video;
 }
@@ -491,6 +523,13 @@ async function loadVideoWithMetadata(videoUrl, inlineVideoFallback) {
     const video = makeVideoElement(videoUrl, inlineVideoFallback);
     try {
       await waitForVideoMetadata(video, videoUrl, attempt === 1 ? 30000 : 42000);
+      try {
+        if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA && Number.isFinite(video.duration) && video.duration > 0.2) {
+          video.currentTime = 0.08;
+        }
+      } catch (_) {}
+      await waitForVideoCurrentData(video, videoUrl, attempt === 1 ? 20000 : 30000);
+      video.pause();
       return video;
     } catch (error) {
       lastError = error;
@@ -603,6 +642,10 @@ class SpotlightRenderer {
     } else {
       this.renderer.domElement.style.opacity = '1';
     }
+    this._renderCurrentFrame();
+    if (typeof loaded.video.requestVideoFrameCallback === 'function') {
+      loaded.video.requestVideoFrameCallback(() => this._renderCurrentFrame());
+    }
     // Try silent autoplay — we already set muted=true so this should pass the autoplay gate.
     loaded.video.play().catch(err => console.warn('[spotlight] autoplay blocked:', err));
   }
@@ -699,6 +742,14 @@ class SpotlightRenderer {
   }
   _emitState() {
     if (this.onStateChange) this.onStateChange(this.getState());
+  }
+  _renderCurrentFrame() {
+    if (!this.current) return;
+    const video = this.current.loaded.video;
+    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      this.current.texture.needsUpdate = true;
+    }
+    this.renderer.render(this.scene, this.camera);
   }
 
   _tick() {
