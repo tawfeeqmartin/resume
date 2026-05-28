@@ -586,6 +586,45 @@ function useDesktopMode() {
   return [mode, setMode];
 }
 
+function getHelpSourceUrl(candidate) {
+  if (typeof candidate === 'string') return candidate;
+  return candidate.videoUrl || candidate.src || candidate.url;
+}
+
+function canWarmHelpSource(candidate) {
+  const clean = String(getHelpSourceUrl(candidate) || '').split('?')[0].toLowerCase();
+  const probeVideo = document.createElement('video');
+  if (clean.endsWith('.mp4')) return probeVideo.canPlayType('video/mp4') !== '';
+  if (clean.endsWith('.webm')) {
+    return probeVideo.canPlayType('video/webm; codecs="vp9, opus"') !== ''
+      || probeVideo.canPlayType('video/webm') !== '';
+  }
+  return Boolean(clean);
+}
+
+function useHelpMediaWarmup(enabled) {
+  useEffect(() => {
+    if (!enabled) return undefined;
+    let cancelled = false;
+    const timerId = window.setTimeout(async () => {
+      try {
+        const source = HELP_VIDEO_URLS.find(canWarmHelpSource);
+        if (!source || cancelled) return;
+        const spotlightLoader = window.__loadSpotlightBundle || (() => window.__spotlightBundlePromise);
+        const mod = await spotlightLoader();
+        if (cancelled) return;
+        await mod.preloadSpotlightSource?.(source);
+      } catch (error) {
+        console.warn('[help-player] page warm-up failed', error);
+      }
+    }, 300);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timerId);
+    };
+  }, [enabled]);
+}
+
 function DesktopModeToggle({ mode, onModeChange }) {
   const switchMode = (nextMode) => {
     if (nextMode === mode || !onModeChange) return;
@@ -910,6 +949,8 @@ function ReadOnlyResume({ mode, onModeChange }) {
 function App() {
   const mobileResume = useMobileResumeMode();
   const [desktopMode, setDesktopMode] = useDesktopMode();
+  const interactiveMode = !mobileResume && desktopMode !== 'read-only';
+  useHelpMediaWarmup(interactiveMode);
 
   useEffect(() => {
     const switchToPrintResume = () => {

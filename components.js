@@ -2520,11 +2520,7 @@ function HelpPlayer({ src }) {
 	        console.warn('[help-player] preload failed', error);
 	      }
 	    };
-	    if ('requestIdleCallback' in window) {
-	      idleId = window.requestIdleCallback(warm, { timeout: 1400 });
-	    } else {
-	      timerId = window.setTimeout(warm, 900);
-	    }
+	    timerId = window.setTimeout(warm, 350);
 	    return () => {
 	      cancelled = true;
 	      if (idleId) window.cancelIdleCallback?.(idleId);
@@ -2545,7 +2541,7 @@ function HelpPlayer({ src }) {
         setShouldLoad(true);
         observer.disconnect();
       },
-	      { rootMargin: '1600px 0px', threshold: 0.01 }
+	      { rootMargin: '3600px 0px', threshold: 0.01 }
 	    );
     observer.observe(slot);
     return () => observer.disconnect();
@@ -2565,13 +2561,6 @@ function HelpPlayer({ src }) {
         for (const candidate of sources) {
           if (!canPlaySource(candidate)) continue;
           sawPlayableSource = true;
-          // HEAD probe first so a missing file fails fast and the
-          // placeholder shows immediately instead of stalling.
-          const head = await fetch(getVideoUrl(candidate), { method: 'HEAD' }).catch(() => null);
-          if (!head?.ok) {
-            errors.push(new Error(`HELP source unavailable: ${getVideoUrl(candidate)}`));
-            continue;
-          }
           try {
             const result = await mod.mountSpotlight(hostRef.current, candidate);
             if (cancelled) { result.renderer.dispose(); return; }

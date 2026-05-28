@@ -375,7 +375,7 @@ function normalizeSource(source) {
   };
 }
 
-const sourcePreloadCache = new Map();
+const sourceProjectionCache = new Map();
 
 function sourceCacheKey(source) {
   const normalized = normalizeSource(source);
@@ -415,13 +415,11 @@ function waitForVideoMetadata(video, url, timeoutMs = 30000) {
   });
 }
 
-async function loadFromUrl(source) {
+async function loadProjectionFromUrl(source) {
   const normalized = normalizeSource(source);
-  const { videoUrl, projectionUrl, requireMesh } = normalized;
-  const inlineVideoFallback = Boolean(normalized.inlineVideoFallback && !requireMesh);
+  const { projectionUrl, requireMesh } = normalized;
   let geometry = makeEquirectSphere();
   let projection = 'equirect';
-  const isCoarsePointer = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
 
   try {
     const buf = await withTimeout(fetchProjectionBytes(projectionUrl), 20000, 'projection fetch');
@@ -458,6 +456,16 @@ async function loadFromUrl(source) {
     throw new Error(`MESH projection missing in ${projectionUrl}`);
   }
 
+  return { geometry, projection };
+}
+
+function disposeVideo(video) {
+  video.removeAttribute('src');
+  try { video.load(); } catch (_) {}
+  video.remove();
+}
+
+function makeVideoElement(videoUrl, inlineVideoFallback) {
   const video = document.createElement('video');
   // Always set crossOrigin so the video can be uploaded as a WebGL texture
   // without tainting the canvas. R2 sends Access-Control-Allow-Origin for
@@ -474,16 +482,50 @@ async function loadFromUrl(source) {
   video.muted = true;
   video.preload = 'metadata';
   video.style.cssText = `position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:${inlineVideoFallback ? '1' : '0'};pointer-events:none;`;
+  return video;
+}
 
-  try {
-    await waitForVideoMetadata(video, videoUrl);
-  } catch (error) {
-    video.removeAttribute('src');
-    try { video.load(); } catch (_) {}
-    video.remove();
-    throw error;
+async function loadVideoWithMetadata(videoUrl, inlineVideoFallback) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const video = makeVideoElement(videoUrl, inlineVideoFallback);
+    try {
+      await waitForVideoMetadata(video, videoUrl, attempt === 1 ? 30000 : 42000);
+      return video;
+    } catch (error) {
+      lastError = error;
+      disposeVideo(video);
+      if (attempt < 3) {
+        await new Promise((resolve) => setTimeout(resolve, 450 * attempt));
+      }
+    }
   }
-  return { geometry, projection, video, inlineVideoFallback, dispose: () => { video.removeAttribute('src'); video.load(); video.remove(); } };
+  throw lastError || new Error(`video metadata failed for ${videoUrl}`);
+}
+
+async function getProjectionForSource(source) {
+  const key = sourceCacheKey(source);
+  if (!sourceProjectionCache.has(key)) {
+    const promise = loadProjectionFromUrl(source).catch((error) => {
+      sourceProjectionCache.delete(key);
+      throw error;
+    });
+    sourceProjectionCache.set(key, promise);
+  }
+  const loaded = await sourceProjectionCache.get(key);
+  return {
+    geometry: loaded.geometry.clone(),
+    projection: loaded.projection,
+  };
+}
+
+async function loadFromUrl(source) {
+  const normalized = normalizeSource(source);
+  const { videoUrl, requireMesh } = normalized;
+  const inlineVideoFallback = Boolean(normalized.inlineVideoFallback && !requireMesh);
+  const { geometry, projection } = await getProjectionForSource(source);
+  const video = await loadVideoWithMetadata(videoUrl, inlineVideoFallback);
+  return { geometry, projection, video, inlineVideoFallback, dispose: () => disposeVideo(video) };
 }
 
 // ────────────────────────────────────────────────────────────────────
@@ -784,33 +826,15 @@ class SpotlightRenderer {
 // ────────────────────────────────────────────────────────────────────
 
 export async function preloadSpotlightSource(source) {
-  const key = sourceCacheKey(source);
-  if (!sourcePreloadCache.has(key)) {
-    const promise = loadFromUrl(source)
-      .then((loaded) => {
-        if (loaded.video.readyState < HTMLMediaElement.HAVE_METADATA) {
-          try { loaded.video.load(); } catch (_) {}
-        }
-        return loaded;
-      })
-      .catch((error) => {
-        sourcePreloadCache.delete(key);
-        throw error;
-      });
-    sourcePreloadCache.set(key, promise);
-  }
-  const loaded = await sourcePreloadCache.get(key);
+  const loaded = await getProjectionForSource(source);
+  loaded.geometry.dispose();
   return { projection: loaded.projection };
 }
 
 export async function mountSpotlight(host, url) {
   const r = new SpotlightRenderer(host);
   try {
-    const key = sourceCacheKey(url);
-    const loaded = sourcePreloadCache.has(key)
-      ? await sourcePreloadCache.get(key)
-      : await loadFromUrl(url);
-    sourcePreloadCache.delete(key);
+    const loaded = await loadFromUrl(url);
     r.attach(loaded);
     return { renderer: r, projection: loaded.projection };
   } catch (err) {

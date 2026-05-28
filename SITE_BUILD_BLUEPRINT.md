@@ -306,6 +306,9 @@ Performance rule:
 The HELP player should stream media. It should not fetch the entire full-quality
 file into memory just to start playback. Read only the initial byte range needed
 to extract MESH metadata, then let the browser stream/range-load playback.
+Warm-up is allowed, but only for the original full WebM path and only as an
+early range/metadata warm-up. Do not warm up by downloading the whole file, and
+do not introduce a 720p/MP4/Stream/transcoded warm-up asset.
 
 ### CRT TV Clip Sampler
 
@@ -495,6 +498,12 @@ Guardrails:
 - Add cache rules for media.
 - Add WAF/rate limiting for the media host.
 - Add budget alerts before public launch.
+- Use `./deploy.sh main` for Cloudflare Pages. It rebuilds, requires a clean
+  worktree by default, generates a commit-specific JS asset version in the
+  staged copy, writes `deploy-info.json`, and verifies preview plus production
+  before the deploy is considered done.
+- Do not manually edit production `?v=` asset tokens in `Resume.html`. Source
+  should remain on the local dev token; deploy owns production cache busting.
 
 More go-live details live in `GO_LIVE_NOTES.md`.
 

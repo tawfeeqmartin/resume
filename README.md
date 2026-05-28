@@ -35,6 +35,20 @@ with 720, MP4, Cloudflare Stream, a transcode, or a different delivery path
 without explicit owner approval and fresh Chrome, Safari/WebKit, and Firefox
 verification that the original MESH projection still renders correctly.
 
+## Publish
+
+Use the guarded Cloudflare Pages deploy path:
+
+```sh
+./deploy.sh main
+```
+
+The script rebuilds the app, checks the HELP/media guardrails, stages only the
+small runtime assets, writes `deploy-info.json`, rewrites JS asset query strings
+to the current git commit in the staged copy, then verifies the preview and
+production domains. Do not manually bump `?v=` strings in `Resume.html`; source
+uses `v=local-dev`, and deploy generates the production cache-busting token.
+
 ## Audio / Interaction Notes
 
 The header audio and interaction design uses vendored Strudel plus a normalized MIDI-like lane event bus. Current implementation details, channel mapping, proof stamp behavior, and the future scroll-composition idea are documented in `BLACKOUT_RESEARCH_NOTES.md`.
