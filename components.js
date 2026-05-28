@@ -2462,7 +2462,7 @@ function HelpPlayer({ src }) {
   const [paused, setPaused] = useState(true);
   const [showHint, setShowHint] = useState(true);
   const [activeChordKey, setActiveChordKey] = useState('');
-  const [shouldLoad, setShouldLoad] = useState(false);
+  const shouldLoad = true;
   const rendererRef = useRef(null);
   const audibleRef = useRef(false);
   const mutedRef = useRef(true);
@@ -2527,25 +2527,6 @@ function HelpPlayer({ src }) {
 	      if (timerId) window.clearTimeout(timerId);
 	    };
 	  }, [src, canPlaySource]);
-
-	  useEffect(() => {
-	    const host = hostRef.current;
-    const slot = host?.closest('.help-player');
-    if (!slot || typeof IntersectionObserver === 'undefined') {
-      setShouldLoad(true);
-      return undefined;
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return;
-        setShouldLoad(true);
-        observer.disconnect();
-      },
-	      { rootMargin: '3600px 0px', threshold: 0.01 }
-	    );
-    observer.observe(slot);
-    return () => observer.disconnect();
-  }, []);
 
 	  useEffect(() => {
 	    if (!shouldLoad) return undefined;
