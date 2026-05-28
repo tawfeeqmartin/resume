@@ -5002,9 +5002,14 @@ function Experience({ items }) {
               </div>
             </div>
             <div className="job__body">
-              <ul className="job__bullets">
-                {job.bullets.map((b, j) => (<li key={j}>{b}</li>))}
-              </ul>
+              <div className="job__proofs" aria-label={`${job.role} highlights`}>
+                {job.bullets.map((b, j) => (
+                  <p key={j} className="job__proof">
+                    <span className="job__proof-index mono">{String(j + 1).padStart(2, '0')}</span>
+                    <span>{b}</span>
+                  </p>
+                ))}
+              </div>
               {job.credits && (
                 <div className="job__credits">
                   <div className="job__credits-label mono">Selected show credits</div>
@@ -5057,6 +5062,12 @@ const MAC_MODEL_PRIMARY_KEY_COLORS = {
   KeyY: 0xfac22b,
   KeyB: 0x1c5f9f,
 };
+const MAC_STAGE_DRAG_STORAGE_KEY = 'resume.macStageDragX';
+const MAC_STAGE_DRAG_DEFAULTS = {
+  mobile: 0,
+  macbook: 70,
+  wide: -53,
+};
 const DOOM_TERMINAL_COMMANDS = new Set(['doom', 'doom.exe', './doom', 'run doom', 'launch doom', 'open doom']);
 const MAC_SCREEN_MEDIA_SIZE = { width: 960, height: 720 };
 const MAC_SCREEN_TERMINAL_SIZE = { width: 2048, height: 1536 };
@@ -5078,6 +5089,45 @@ const MAC_TERMINAL_BOOT_LINES = [
 
 function getDoomIframeUrl() {
   return new URL('doom.html', window.location.href).href;
+}
+
+function isMacStageDragEnabled() {
+  try {
+    return new URLSearchParams(window.location.search).has('mac-drag');
+  } catch (_) {
+    return false;
+  }
+}
+
+function getMacStageDragBucket(width = (typeof window !== 'undefined' ? window.innerWidth : 0)) {
+  if (width <= 760) return 'mobile';
+  if (width <= 1900) return 'macbook';
+  return 'wide';
+}
+
+function getMacStageDragStorageKey(bucket = getMacStageDragBucket()) {
+  return `${MAC_STAGE_DRAG_STORAGE_KEY}.${bucket}`;
+}
+
+function getMacStageDragDefault(bucket = getMacStageDragBucket()) {
+  return MAC_STAGE_DRAG_DEFAULTS[bucket] ?? 0;
+}
+
+function readMacStageDragX(bucket = getMacStageDragBucket()) {
+  try {
+    const stored = window.localStorage?.getItem(getMacStageDragStorageKey(bucket));
+    if (stored == null || stored === '') return getMacStageDragDefault(bucket);
+    const value = Number(stored);
+    return Number.isFinite(value) ? value : getMacStageDragDefault(bucket);
+  } catch (_) {
+    return getMacStageDragDefault(bucket);
+  }
+}
+
+function writeMacStageDragX(value, bucket = getMacStageDragBucket()) {
+  try {
+    window.localStorage?.setItem(getMacStageDragStorageKey(bucket), String(Math.round(value)));
+  } catch (_) {}
 }
 
 const MAC_KEY_DEFS = {
@@ -5357,6 +5407,10 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
   const wrapRef = React.useRef(null);
   const canvasRef = React.useRef(null);
   const keyboardCaptureRef = React.useRef(null);
+  const macStageDragEnabled = React.useMemo(isMacStageDragEnabled, []);
+  const [macStageDragBucket, setMacStageDragBucket] = React.useState(() => getMacStageDragBucket());
+  const [macStageDragX, setMacStageDragX] = React.useState(() => readMacStageDragX());
+  const macStageDragXRef = React.useRef(macStageDragX);
   const stateRef = React.useRef({
     three: null,
     renderer: null,
@@ -5438,6 +5492,100 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
   React.useEffect(() => {
     setAvailableSources(sources);
   }, [sources]);
+
+  React.useEffect(() => {
+    macStageDragXRef.current = macStageDragX;
+  }, [macStageDragX]);
+
+  React.useEffect(() => {
+    const syncMacStageDrag = () => {
+      const bucket = getMacStageDragBucket();
+      setMacStageDragBucket(bucket);
+      setMacStageDragX(readMacStageDragX(bucket));
+    };
+    syncMacStageDrag();
+    window.addEventListener('resize', syncMacStageDrag);
+    return () => window.removeEventListener('resize', syncMacStageDrag);
+  }, []);
+
+  React.useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    const roundedX = Math.round(macStageDragX);
+    wrap.style.setProperty('--mac-stage-drag-x', `${roundedX}px`);
+    wrap.dataset.macDragX = `${roundedX}px`;
+    wrap.dataset.macDragBucket = macStageDragBucket;
+    window.__resumeMacStagePlacement = () => ({
+      bucket: getMacStageDragBucket(),
+      x: readMacStageDragX(getMacStageDragBucket()),
+      key: getMacStageDragStorageKey(getMacStageDragBucket()),
+    });
+  }, [macStageDragBucket, macStageDragX]);
+
+  React.useEffect(() => {
+    if (!macStageDragEnabled) return undefined;
+    const wrap = wrapRef.current;
+    if (!wrap) return undefined;
+    const clampDragX = (value) => Math.max(-900, Math.min(900, Math.round(value)));
+    const applyDragX = (value) => {
+      const bucket = getMacStageDragBucket();
+      const next = clampDragX(value);
+      macStageDragXRef.current = next;
+      writeMacStageDragX(next, bucket);
+      setMacStageDragBucket(bucket);
+      setMacStageDragX(next);
+    };
+    let activePointerId = null;
+    let startClientX = 0;
+    let startDragX = 0;
+    const interactiveSelector = '.tv-hero__controls, button, a, input, textarea, select, [contenteditable="true"]';
+    const onPointerDown = (event) => {
+      if (event.button !== 0) return;
+      if (event.target?.closest?.(interactiveSelector)) return;
+      event.preventDefault();
+      activePointerId = event.pointerId;
+      startClientX = event.clientX;
+      startDragX = macStageDragXRef.current;
+      wrap.setPointerCapture?.(event.pointerId);
+      document.body.style.userSelect = 'none';
+    };
+    const onPointerMove = (event) => {
+      if (activePointerId !== event.pointerId) return;
+      applyDragX(startDragX + event.clientX - startClientX);
+    };
+    const endPointerDrag = (event) => {
+      if (activePointerId !== event.pointerId) return;
+      activePointerId = null;
+      try { wrap.releasePointerCapture?.(event.pointerId); } catch (_) {}
+      document.body.style.userSelect = '';
+    };
+    const onKeyDown = (event) => {
+      const target = event.target;
+      const tag = target?.tagName?.toLowerCase?.();
+      if (tag === 'input' || tag === 'textarea' || target?.isContentEditable) return;
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        const amount = event.shiftKey ? 24 : 6;
+        applyDragX(macStageDragXRef.current + (event.key === 'ArrowLeft' ? -amount : amount));
+      } else if (event.key === '0') {
+        event.preventDefault();
+        applyDragX(0);
+      }
+    };
+    wrap.addEventListener('pointerdown', onPointerDown);
+    wrap.addEventListener('pointermove', onPointerMove);
+    wrap.addEventListener('pointerup', endPointerDrag);
+    wrap.addEventListener('pointercancel', endPointerDrag);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      wrap.removeEventListener('pointerdown', onPointerDown);
+      wrap.removeEventListener('pointermove', onPointerMove);
+      wrap.removeEventListener('pointerup', endPointerDrag);
+      wrap.removeEventListener('pointercancel', endPointerDrag);
+      window.removeEventListener('keydown', onKeyDown);
+      document.body.style.userSelect = '';
+    };
+  }, [macStageDragEnabled]);
 
   const RECENT_WINDOW = 28;
   const RECENT_PROJECT_WINDOW = 3;
@@ -7832,20 +7980,6 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
           .filter(Boolean);
         const mouseBody = allMeshes.find((m) => m.name === 'Mesh70');
         const mouseButton = allMeshes.find((m) => m.name === 'Mesh284');
-        const makeStickerTexture = (draw) => {
-          const c = document.createElement('canvas');
-          c.width = 256;
-          c.height = 96;
-          const cx = c.getContext('2d');
-          draw(cx, c.width, c.height);
-          const texture = new THREE.CanvasTexture(c);
-          texture.colorSpace = THREE.SRGBColorSpace;
-          texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-          texture.minFilter = renderer.capabilities.isWebGL2 ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter;
-          texture.magFilter = THREE.LinearFilter;
-          texture.generateMipmaps = !!renderer.capabilities.isWebGL2;
-          return texture;
-        };
         if (floppyParts.length) {
           // Use the front mesh (Mesh84) to size the eject distance.
           const front = floppyParts[0];
@@ -7911,35 +8045,6 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         const box = new THREE.Box3().setFromObject(model);
         const ctr = box.getCenter(new THREE.Vector3());
         const size = box.getSize(new THREE.Vector3());
-        if (stateRef.current.deviceMode === 'mac') {
-          const sideTexture = makeStickerTexture((cx, w, h) => {
-            cx.fillStyle = MAC_MODEL_GRAYSCALE_PREVIEW ? '#f2f2f2' : '#e9e5d5';
-            cx.fillRect(0, 0, w, h);
-            cx.fillStyle = MAC_MODEL_GRAYSCALE_PREVIEW ? '#000' : '#d9251d';
-            cx.fillRect(0, 0, Math.floor(w * 0.2), h);
-            cx.fillStyle = MAC_MODEL_GRAYSCALE_PREVIEW ? '#555' : '#2157a4';
-            cx.fillRect(Math.floor(w * 0.2), 0, Math.floor(w * 0.18), h);
-            cx.fillStyle = MAC_MODEL_GRAYSCALE_PREVIEW ? '#000' : '#111';
-            cx.globalAlpha = 0.52;
-            cx.fillRect(Math.floor(w * 0.48), Math.floor(h * 0.28), Math.floor(w * 0.38), 5);
-            cx.fillRect(Math.floor(w * 0.48), Math.floor(h * 0.48), Math.floor(w * 0.28), 5);
-            cx.globalAlpha = 0.18;
-            cx.fillRect(0, h - 5, w, 5);
-            cx.globalAlpha = 1;
-          });
-          const sideSticker = new THREE.Mesh(
-            new THREE.PlaneGeometry(size.z * 0.18, size.y * 0.052),
-            new THREE.MeshBasicMaterial({
-              map: sideTexture,
-              toneMapped: false,
-              side: THREE.DoubleSide,
-            })
-          );
-          sideSticker.name = 'MacSideProductionSticker';
-          sideSticker.position.set(box.max.x + size.x * 0.006, ctr.y - size.y * 0.04, ctr.z + size.z * 0.18);
-          sideSticker.rotation.set(0, Math.PI / 2, -0.035);
-          model.add(sideSticker);
-        }
         applyMacModelGrayscalePreview(THREE, model);
         console.info('[TvHero] bbox center:', ctr, 'size:', size);
         stateRef.current.bbox = { box, ctr };
@@ -8427,7 +8532,12 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
   }, [engineEnabled, availableSources, drawMacOffScreen, pauseAllCachedVideos, stopVocalSamples]);
 
   return (
-    <div ref={wrapRef} className={`tv-hero ${engineEnabled ? 'is-live' : 'is-idle'}`}>
+    <div
+      ref={wrapRef}
+      className={`tv-hero ${engineEnabled ? 'is-live' : 'is-idle'} ${macStageDragEnabled ? 'is-mac-drag-enabled' : ''}`}
+      data-mac-drag-x={`${Math.round(macStageDragX)}px`}
+      data-mac-drag-bucket={macStageDragBucket}
+    >
       <div
         ref={keyboardCaptureRef}
         className="tv-hero__keyboard-capture"

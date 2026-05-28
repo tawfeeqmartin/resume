@@ -66,6 +66,7 @@ Design direction:
 - Technical drawings must be credible, referenced, labeled cleanly, and never feel hallucinated.
 - Labels should be small and standardized; drawing titles should be larger and placed consistently.
 - Avoid overlapping labels, cropped marks, and inconsistent drawing placement between page turns.
+- Do not use pill-shaped chips/badges for editorial or resume content, including shows, credits, skills, projects, awards, and proof points. Use plain text ledgers, line-separated labels, square technical tags, or real controls instead.
 
 Functional visual motifs:
 

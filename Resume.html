@@ -619,36 +619,24 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 }
 
 /* ── experience ──────────────────────────────────────── */
-.experience { list-style: none; padding: 0; margin: 0; }
+.experience {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-top: 1px solid var(--rule);
+}
 .job {
   display: grid;
-  grid-template-columns: 20px 1fr;
-  grid-template-areas: "rail head" "rail body";
-  column-gap: 1.15rem;
-  padding-bottom: 2rem;
-  margin-bottom: 2rem;
-  border-bottom: 1px dashed var(--rule);
+  grid-template-columns: minmax(13rem, 0.32fr) minmax(0, 1fr);
+  grid-template-areas: "head body";
+  column-gap: clamp(1.4rem, 3.4vw, 4.5rem);
+  align-items: start;
+  padding: clamp(1.45rem, 2.7vw, 2.35rem) 0;
+  margin: 0;
+  border-bottom: 1px solid var(--rule);
 }
-.job:last-child { border-bottom: none; }
-.job__rail { grid-area: rail; position: relative; }
-.job__rail-dot {
-  position: absolute; top: 0.75em; left: 50%; transform: translateX(-50%);
-  width: 0.32rem; height: 0.32rem;
-  color: var(--ink);
-  background: color-mix(in oklch, var(--ink), transparent 16%);
-  border: 0;
-  border-radius: 999px;
-  mask: none;
-  -webkit-mask: none;
-  clip-path: none;
-  box-shadow: 0 0 0 5px var(--paper);
-}
-.job__rail-line {
-  position: absolute; top: calc(0.75em + 0.42rem); bottom: -2rem;
-  left: 50%; transform: translateX(-50%);
-  width: 1px; background: var(--rule);
-}
-.job:last-child .job__rail-line { display: none; }
+.job:last-child { border-bottom: 0; }
+.job__rail { display: none; }
 .job__head { grid-area: head; }
 .job__head-row { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
 .job__role {
@@ -680,24 +668,40 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .job__sep { color: var(--accent); }
 .job__body {
   grid-area: body;
+  min-width: 0;
 }
-.job__bullets {
-  margin: 1rem 0 0; padding: 0;
-  list-style: none; max-width: 104ch;
+.job__proofs {
+  display: grid;
+  gap: 0;
+  max-width: 112ch;
 }
-.job__bullets li {
-  position: relative;
-  padding-left: 1.5rem;
-  margin-bottom: 0.48rem;
+.job__proof {
+  display: grid;
+  grid-template-columns: 2.8rem minmax(0, 1fr);
+  gap: clamp(0.6rem, 1.3vw, 1rem);
+  margin: 0;
+  padding: 0.62rem 0;
+  border-top: 1px solid color-mix(in oklch, var(--rule), transparent 36%);
   color: var(--ink-2);
+  line-height: 1.48;
   text-wrap: pretty;
 }
-.job__bullets li::before {
-  content: "—"; position: absolute; left: 0; color: var(--accent);
+.job__proof:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.job__proof-index {
+  align-self: baseline;
+  color: var(--ink-3);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
 }
 .job__credits {
-  margin-top: 1.1rem;
-  max-width: 104ch;
+  margin-top: 1rem;
+  padding-top: 0.95rem;
+  border-top: 1px solid var(--rule);
+  max-width: 112ch;
 }
 .job__credits-label {
   margin-bottom: 0.45rem;
@@ -719,6 +723,9 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .job__credits-list li {
   break-inside: avoid;
   margin: 0 0 0.28rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 @media (min-width: 1600px) {
   .summary {
@@ -729,16 +736,8 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     max-width: 78ch;
   }
   .job {
-    grid-template-columns: 20px minmax(18rem, 0.34fr) minmax(0, 1fr);
-    grid-template-areas: "rail head body";
-    column-gap: clamp(1.5rem, 2.8vw, 3.4rem);
-    align-items: start;
-  }
-  .job__body {
-    padding-top: 0.08rem;
-  }
-  .job__bullets {
-    margin-top: 0;
+    grid-template-columns: minmax(18rem, 0.3fr) minmax(0, 1fr);
+    column-gap: clamp(2rem, 3.2vw, 4.8rem);
   }
   .job__credits-list {
     columns: 4;
@@ -847,7 +846,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .help-feature__chips li {
   border: 1px solid var(--rule);
   padding: 0.3rem 0.6rem;
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 0.65rem;
 }
 .help-hero {
@@ -858,7 +857,12 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     "player";
   gap: 1.25rem 0;
 }
-.help-hero__intro { grid-area: intro; max-width: 88ch; }
+.help-hero__intro {
+  grid-area: intro;
+  max-width: 88ch;
+  margin-inline: auto;
+  text-align: center;
+}
 .help-hero__intro h3 {
   font-family: var(--serif); font-size: var(--type-help-head);
   font-weight: 500; line-height: 1.15; letter-spacing: 0;
@@ -869,6 +873,9 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   margin: 0;
   color: var(--ink-2);
   text-wrap: pretty;
+}
+.help-hero__intro p + p {
+  margin-top: 0.85rem;
 }
 .help-hero__player {
   grid-area: player;
@@ -1633,6 +1640,10 @@ html.has-pseudo-fullscreen body {
   --mac-sticky-top-pad: clamp(2.75rem, 6vh, 4.5rem);
   --mac-canvas-top: calc(-600px + var(--mac-sticky-top-pad));
   --mac-canvas-extra-height: calc(600px - var(--mac-sticky-top-pad));
+  --mac-viewport-right-bleed: max(var(--pad), calc((100vw - var(--maxw)) / 2 + var(--pad)));
+  --mac-stage-wide-width: min(72vw, 78rem);
+  --mac-stage-shift-factor: 0.68;
+  --mac-stage-drag-x: -53px;
   grid-column: 2;
   grid-row: 1 / span 2;
   position: sticky;
@@ -1641,8 +1652,8 @@ html.has-pseudo-fullscreen body {
   z-index: 100;
   height: calc(100vh - var(--mac-sticky-top-pad));
   overflow: visible;
-  /* Bleed right to viewport edge AND left into the text column so the
-     TV body renders OVER the page content, not next to it. */
+  /* Wide monitors keep the original Cloudflare composition; MacBook widths
+     get the bounded/drag-tunable stage in the media query below. */
   margin-right: calc(50% - 50vw);
   margin-left: clamp(-10rem, -5vw, -4rem);
   pointer-events: none;
@@ -1657,9 +1668,33 @@ html.has-pseudo-fullscreen body {
   position: relative;
   width: 100%;
   height: 100%;
-  /* Bleed to the right edge of the viewport. */
   margin-right: calc(50% - 50vw);
+  margin-left: var(--mac-stage-drag-x);
   overflow: visible;
+}
+.tv-hero.is-mac-drag-enabled {
+  cursor: grab;
+  outline: 1px dashed color-mix(in oklch, var(--accent), transparent 35%);
+  outline-offset: -1px;
+}
+.tv-hero.is-mac-drag-enabled:active {
+  cursor: grabbing;
+}
+.tv-hero.is-mac-drag-enabled::after {
+  content: attr(data-mac-drag-bucket) " mac x " attr(data-mac-drag-x);
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 5000;
+  padding: 0.45rem 0.58rem;
+  border: 1px solid color-mix(in oklch, var(--ink), transparent 65%);
+  background: rgba(255,255,255,0.92);
+  color: var(--ink);
+  font: 600 0.72rem/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
 }
 .tv-hero__keyboard-capture {
   position: absolute;
@@ -1785,6 +1820,8 @@ html.has-doom-overlay body {
     --mac-sticky-top-pad: 0px;
     --mac-canvas-top: -5.4rem;
     --mac-canvas-extra-height: 5.4rem;
+    --mac-stage-shift-factor: 1;
+    --mac-stage-drag-x: 0px;
     order: 1;
     position: relative;
     top: auto;
@@ -1818,6 +1855,18 @@ html.has-doom-overlay body {
     bottom: 1rem;
   }
 }
+@media (min-width: 761px) and (max-width: 1900px) {
+  .hero-stack__sticky {
+    --mac-stage-shift-factor: 0.48;
+    --mac-stage-drag-x: 70px;
+    margin-right: calc(var(--mac-viewport-right-bleed) * -1);
+  }
+  .tv-hero {
+    width: max(100%, var(--mac-stage-wide-width));
+    margin-right: 0;
+    margin-left: calc(min(0px, calc((100% - var(--mac-stage-wide-width)) * var(--mac-stage-shift-factor))) + var(--mac-stage-drag-x));
+  }
+}
 /* ── Strudel REPL: flat editor inside a MacBook frame ─────────── */
 .strudel-repl.help-feature {
   display: block;
@@ -1830,8 +1879,9 @@ html.has-doom-overlay body {
 }
 .strudel-repl__intro {
   min-height: 0;
-  max-width: 100ch;
-  margin: -0.6rem 0 clamp(1.4rem, 2.8vw, 2.4rem);
+  max-width: 96ch;
+  margin: -0.6rem auto clamp(1.4rem, 2.8vw, 2.4rem);
+  text-align: center;
 }
 .strudel-repl__macbook {
   position: relative;
