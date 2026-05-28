@@ -39,6 +39,11 @@ cp media/3d/apple_macintosh.glb "$STAGE_DIR/media/3d/"
 cp media/demo/mac4.jpg "$STAGE_DIR/media/demo/"
 cp media/imessage/generated/*-avatar-v4.png "$STAGE_DIR/media/imessage/generated/"
 
+# Serve the portfolio directly at the domain root. Cloudflare Pages already
+# canonicalizes /Resume.html to /Resume, but the root should not depend on the
+# tiny redirect shell in source.
+cp "$STAGE_DIR/Resume.html" "$STAGE_DIR/index.html"
+
 COMMIT_HASH="$(git rev-parse HEAD)"
 COMMIT_SHORT="$(git rev-parse --short HEAD)"
 MSG="$(git log -1 --pretty=%s)"
