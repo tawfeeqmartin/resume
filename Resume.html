@@ -49,7 +49,7 @@
   --sans:  -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, sans-serif;
   --mono:  ui-monospace, 'SF Mono', Menlo, Monaco, 'IBM Plex Mono', monospace;
   --chrome:'Silkscreen', ui-sans-serif, system-ui, sans-serif;
-  --maxw: 1200px;
+  --maxw: 2560px;
   --pad: clamp(1.5rem, 4vw, 4rem);
 }
 * { box-sizing: border-box; }
@@ -523,7 +523,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .section__body { padding: 0; }
 
 /* ── intro ───────────────────────────────────────────── */
-.intro { max-width: 56ch; }
+.intro { max-width: 66ch; }
 .intro__p {
   margin: 0 0 1rem;
   font-size: 1.08rem;
@@ -542,7 +542,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   font-size: clamp(1.05rem, 1.65vw, 1.35rem);
   line-height: 1.4;
   letter-spacing: -0.005em;
-  max-width: 50ch;
+  max-width: 112ch;
   color: var(--ink-2);
   text-wrap: pretty;
   font-variation-settings: "opsz" 24;
@@ -613,7 +613,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 }
 .job__bullets {
   margin: 1rem 0 0; padding: 0;
-  list-style: none; max-width: 70ch;
+  list-style: none; max-width: 104ch;
 }
 .job__bullets li {
   position: relative;
@@ -627,7 +627,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 }
 .job__credits {
   margin-top: 1.1rem;
-  max-width: 70ch;
+  max-width: 104ch;
 }
 .job__credits-label {
   margin-bottom: 0.45rem;
@@ -649,6 +649,30 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .job__credits-list li {
   break-inside: avoid;
   margin: 0 0 0.28rem;
+}
+@media (min-width: 1600px) {
+  .summary {
+    columns: 2;
+    column-gap: clamp(2rem, 4vw, 5rem);
+  }
+  .intro {
+    max-width: 78ch;
+  }
+  .job {
+    grid-template-columns: 20px minmax(18rem, 0.34fr) minmax(0, 1fr);
+    grid-template-areas: "rail head body";
+    column-gap: clamp(1.5rem, 2.8vw, 3.4rem);
+    align-items: start;
+  }
+  .job__body {
+    padding-top: 0.08rem;
+  }
+  .job__bullets {
+    margin-top: 0;
+  }
+  .job__credits-list {
+    columns: 4;
+  }
 }
 
 /* ── HELP feature ────────────────────────────────────── */
@@ -732,7 +756,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     "player";
   gap: 1.25rem 0;
 }
-.help-hero__intro { grid-area: intro; max-width: 68ch; }
+.help-hero__intro { grid-area: intro; max-width: 88ch; }
 .help-hero__intro h3 {
   font-family: var(--serif); font-size: clamp(1.45rem, 2.5vw, 2.1rem);
   font-weight: 500; line-height: 1.15; letter-spacing: -0.015em;
@@ -759,6 +783,8 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   margin-top: 0.35rem;
 }
 html.has-inverted-help-preview #help {
+  --immersive-maxw: min(100vw, 2560px);
+  --immersive-pad: clamp(1.25rem, 2.4vw, 4.25rem);
   --ink: #f5f5f2;
   --ink-2: #d7d7d2;
   --ink-3: #9c9c98;
@@ -769,7 +795,7 @@ html.has-inverted-help-preview #help {
   margin-right: calc(50% - 50vw);
   padding:
     clamp(3.8rem, 7vw, 6.8rem)
-    calc((100vw - min(100vw, var(--maxw))) / 2 + var(--pad))
+    calc((100vw - var(--immersive-maxw)) / 2 + var(--immersive-pad))
     clamp(4.6rem, 8vw, 7.5rem);
   background: #030303;
   color: var(--ink);
@@ -832,6 +858,8 @@ html.has-inverted-help-preview #help .proof-stamp__award {
   box-shadow: none;
 }
 html.has-inverted-poetry-preview #strudel {
+  --immersive-maxw: min(100vw, 2560px);
+  --immersive-pad: clamp(1.25rem, 2.4vw, 4.25rem);
   --paper: #030303;
   --paper-2: #030303;
   --ink: #f5f5f2;
@@ -844,7 +872,7 @@ html.has-inverted-poetry-preview #strudel {
   margin-right: calc(50% - 50vw);
   padding:
     clamp(3.8rem, 7vw, 6.8rem)
-    calc((100vw - min(100vw, var(--maxw))) / 2 + var(--pad))
+    calc((100vw - var(--immersive-maxw)) / 2 + var(--immersive-pad))
     clamp(4.6rem, 8vw, 7.5rem);
   background: #030303;
   color: var(--ink);
@@ -866,7 +894,7 @@ html.has-inverted-poetry-preview #strudel .strudel-repl__intro {
   margin-bottom: clamp(1.15rem, 2.2vw, 1.85rem);
 }
 html.has-inverted-poetry-preview #strudel .strudel-repl__macbook {
-  width: min(100%, 920px);
+  width: min(100%, 1840px);
   aspect-ratio: 1.66 / 1;
   background-image: none;
   margin-top: 0;
@@ -957,7 +985,7 @@ html.has-inverted-poetry-preview #strudel .strudel-repl__panel {
   font-size: clamp(1.05rem, 1.55vw, 1.3rem);
   line-height: 1.45;
   color: var(--ink-2);
-  max-width: 60ch;
+  max-width: 92ch;
   text-wrap: pretty;
 }
 .system-section__detail {
@@ -965,7 +993,7 @@ html.has-inverted-poetry-preview #strudel .strudel-repl__panel {
   letter-spacing: 0.06em;
   color: var(--ink-2);
   line-height: 1.6;
-  max-width: 60ch;
+  max-width: 92ch;
 }
 .system-section__detail b {
   font-weight: 600;
@@ -976,7 +1004,7 @@ html.has-inverted-poetry-preview #strudel .strudel-repl__panel {
   display: block;
   width: 100%;
   height: auto;
-  max-width: 880px;
+  max-width: 1440px;
   margin: 0.5rem auto;
 }
 .system-jam-figure__fill--yellow { fill: var(--accent-yellow); }
@@ -1449,8 +1477,8 @@ html.has-pseudo-fullscreen body {
   /* Left column = readable text width. Right column takes whatever's
      left; the sticky TV inside it bleeds out to the viewport right edge
      AND overlaps left into the text column. */
-  grid-template-columns: minmax(0, 56ch) minmax(0, 1fr);
-  column-gap: 1.5rem;
+  grid-template-columns: minmax(0, min(118ch, 58vw)) minmax(30rem, 1fr);
+  column-gap: clamp(2rem, 4vw, 5.5rem);
   row-gap: 0;
   align-items: start;
   margin: 0;
@@ -1461,7 +1489,7 @@ html.has-pseudo-fullscreen body {
      summary's top margin (0.2rem) should match the top margin. */
   margin: 2.4rem 0 2.2rem;
   display: flex; flex-direction: column; gap: 1.1rem;
-  max-width: 22ch;
+  max-width: 32ch;
 }
 .hero-lead__name {
   font-family: var(--sans);
@@ -1514,7 +1542,7 @@ html.has-pseudo-fullscreen body {
   /* Bleed right to viewport edge AND left into the text column so the
      TV body renders OVER the page content, not next to it. */
   margin-right: calc(50% - 50vw);
-  margin-left: -8vw;
+  margin-left: clamp(-10rem, -5vw, -4rem);
   pointer-events: none;
 }
 /* Keep the top strip and mode toggle clickable above the transparent
@@ -1696,11 +1724,11 @@ html.has-doom-overlay body {
 .strudel-repl .help-feature__player-col--wide { width: 100%; }
 .strudel-repl .help-feature__notes--match-stack {
   margin-top: 2.4rem;
-  max-width: 70ch;
+  max-width: 96ch;
 }
 .strudel-repl__intro {
   min-height: 0;
-  max-width: 76ch;
+  max-width: 100ch;
   margin: -0.6rem 0 clamp(1.4rem, 2.8vw, 2.4rem);
 }
 .strudel-repl__macbook {
@@ -1926,11 +1954,16 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .help-feature__playe
   align-items: center;
   justify-items: center;
   background: #030303;
+  overflow: hidden;
+  padding: clamp(0.5rem, 1.4vmin, 1.4rem);
 }
 html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbook {
-  width: min(98vw, 98dvw, calc(88vh * 1.66), calc(88dvh * 1.66));
+  --macbook-fit-width: calc(92dvh * 1.66);
+  --macbook-wide-width: min(82dvw, calc(108dvh * 1.66));
+  width: min(96dvw, max(var(--macbook-fit-width), var(--macbook-wide-width)));
   height: auto;
   aspect-ratio: 1.66 / 1;
+  max-width: 2800px;
   transform: none;
 }
 html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbook .strudel-repl__panel {
@@ -2470,7 +2503,7 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
 }
 
 /* ── project ─────────────────────────────────────────── */
-.project { max-width: 65ch; }
+.project { max-width: 112ch; }
 .project__head { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
 .project__head h3 {
   font-family: var(--serif); font-weight: 500; margin: 0;
@@ -3075,7 +3108,7 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
   letter-spacing: 0.04em;
 }
 .page-footer__media-note {
-  max-width: 72ch;
+  max-width: 92ch;
   margin: 0;
   color: var(--muted);
   letter-spacing: 0.03em;
