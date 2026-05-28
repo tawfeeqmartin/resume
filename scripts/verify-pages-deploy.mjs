@@ -77,26 +77,32 @@ async function verifyOnce() {
   const modelResponse = await fetch(`${base}/media/3d/apple_macintosh.glb`, { method: 'HEAD' });
   if (!modelResponse.ok) throw new Error(`Mac model ${modelResponse.status}`);
 
-  const helpResponse = await fetch(`${base}/media/help_full.webm`, {
-    headers: { Range: 'bytes=0-1023' },
-  });
-  const contentRange = helpResponse.headers.get('content-range') || '';
-  const contentLength = helpResponse.headers.get('content-length') || '';
-  if (helpResponse.status !== 206) {
-    throw new Error(`HELP range status ${helpResponse.status}`);
-  }
-  if (!/^bytes 0-1023\/\d+/i.test(contentRange)) {
-    throw new Error(`HELP range content-range mismatch: ${contentRange || '(missing)'}`);
-  }
-  if (contentLength !== '1024') {
-    throw new Error(`HELP range content-length mismatch: ${contentLength || '(missing)'}`);
-  }
+  const checkHelpRange = async (url, label) => {
+    const helpResponse = await fetch(url, {
+      headers: { Range: 'bytes=0-1023' },
+    });
+    const contentRange = helpResponse.headers.get('content-range') || '';
+    const contentLength = helpResponse.headers.get('content-length') || '';
+    if (helpResponse.status !== 206) {
+      throw new Error(`HELP ${label} range status ${helpResponse.status}`);
+    }
+    if (!/^bytes 0-1023\/\d+/i.test(contentRange)) {
+      throw new Error(`HELP ${label} range content-range mismatch: ${contentRange || '(missing)'}`);
+    }
+    if (contentLength !== '1024') {
+      throw new Error(`HELP ${label} range content-length mismatch: ${contentLength || '(missing)'}`);
+    }
+    return contentRange;
+  };
+
+  const helpRange = await checkHelpRange(`${base}/media/help_full.webm`, 'canonical');
+  await checkHelpRange(`${base}/media/help_full.webm?deploy-range-probe=1`, 'query-normalized');
 
   return {
     origin: base,
     commit: info.commitShort || commitHash.slice(0, 7),
     assetVersion,
-    helpRange: contentRange,
+    helpRange,
   };
 }
 

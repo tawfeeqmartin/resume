@@ -300,6 +300,9 @@ Cloudflare production should load HELP through same-origin
 `/media/help_full.webm`, proxied to the R2/media origin. This avoids Safari/WebKit
 cross-origin WebGL texture failures without changing codec, resolution, or
 projection metadata.
+The Pages worker must canonicalize this exact media path before forwarding it
+to R2. Do not pass arbitrary query strings through to R2 for HELP; query-string
+requests have shown less reliable byte-range behavior at the edge.
 
 Performance rule:
 
