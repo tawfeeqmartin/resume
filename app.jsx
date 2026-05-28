@@ -5,24 +5,26 @@ const mediaUrl = (path) => {
   if (IS_LOCAL_PREVIEW) return path;
   return `${PRODUCTION_MEDIA_ORIGIN}/${path.replace(/^media\//, '')}`;
 };
+const sameOriginMediaUrl = (path) => path;
 const withCacheKey = (url, key) => `${url}${url.includes('?') ? '&' : '?'}v=${key}`;
 const TV_CLIP_CACHE_KEY = '20260522-bass-track-no-laugh';
 const VOCAL_SAMPLE_CACHE_KEY = '20260522-vocal-rotation-no-laugh';
 const SITE_MODE_STORAGE_KEY = 'resume.desktop.mode';
 const IS_MOBILE_MEDIA_TARGET = window.matchMedia('(max-width: 900px), (pointer: coarse)').matches;
 const helpMeshSource = (path) => ({
-  videoUrl: mediaUrl(path),
-  projectionUrl: mediaUrl(path),
+  videoUrl: sameOriginMediaUrl(path),
+  projectionUrl: sameOriginMediaUrl(path),
   requireMesh: true,
 });
+const HELP_FULL_MESH_SOURCE = helpMeshSource("media/help_full.webm");
 // HELP must either render through the decoded Google Spotlight MESH
 // projection or fail closed. Showing the native encoded layout looks
 // broken, so there is intentionally no MP4/raw inline fallback here.
 const HELP_DESKTOP_SOURCES = [
-  helpMeshSource("media/help_full.webm"),
+  HELP_FULL_MESH_SOURCE,
 ];
 const HELP_MOBILE_SOURCES = [
-  helpMeshSource("media/help_full.webm"),
+  HELP_FULL_MESH_SOURCE,
 ];
 const HELP_VIDEO_URLS = IS_MOBILE_MEDIA_TARGET
   ? HELP_MOBILE_SOURCES

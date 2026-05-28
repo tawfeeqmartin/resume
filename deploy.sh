@@ -24,6 +24,7 @@ rsync -a \
   --exclude 'archive' \
   --exclude 'models' \
   --exclude 'fonts' \
+  --exclude 'nvidia-job-links.txt' \
   --exclude '*.md' \
   --exclude 'media' \
   --exclude '.DS_Store' \

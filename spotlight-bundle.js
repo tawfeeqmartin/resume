@@ -309,13 +309,43 @@ function makeEquirectSphere() {
   return geo;
 }
 
+async function readResponsePrefix(response, maxBytes) {
+  if (!response.body?.getReader) return response.arrayBuffer();
+  const reader = response.body.getReader();
+  const chunks = [];
+  let received = 0;
+  try {
+    while (received < maxBytes) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const take = Math.min(value.byteLength, maxBytes - received);
+      chunks.push(take === value.byteLength ? value : value.slice(0, take));
+      received += take;
+      if (take < value.byteLength) break;
+    }
+  } finally {
+    try { await reader.cancel(); } catch (_) {}
+  }
+  const out = new Uint8Array(received);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return out.buffer;
+}
+
 async function fetchProjectionBytes(url) {
   // Most MESH metadata lives near the file header, but some encoded
   // variants put enough WebM tables up front that 1 MiB can miss it.
   // Pull a still-small 4 MiB range so we fail less often without loading
   // the full video file.
-  const res = await fetch(url, { headers: { Range: 'bytes=0-4194303' } });
+  const maxBytes = 4 * 1024 * 1024;
+  const res = await fetch(url, { headers: { Range: `bytes=0-${maxBytes - 1}` } });
   if (!res.ok) throw new Error(`fetch ${url} → ${res.status}`);
+  // Some local preview servers ignore Range and answer 200 with the entire
+  // video. Read and cancel only the prefix needed for projection metadata.
+  if (res.status === 200) return readResponsePrefix(res, maxBytes);
   return res.arrayBuffer();
 }
 
@@ -357,6 +387,34 @@ function sourceCacheKey(source) {
   ].join('|');
 }
 
+function waitForVideoMetadata(video, url, timeoutMs = 30000) {
+  if (video.readyState >= 1) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const cleanup = () => {
+      video.removeEventListener('loadedmetadata', onReady);
+      video.removeEventListener('loadeddata', onReady);
+      video.removeEventListener('error', onError);
+      clearTimeout(timer);
+    };
+    const finish = (callback, value) => {
+      if (done) return;
+      done = true;
+      cleanup();
+      callback(value);
+    };
+    const onReady = () => finish(resolve);
+    const onError = () => finish(reject, new Error(`video metadata failed for ${url}`));
+    const timer = setTimeout(() => {
+      finish(reject, new Error(`video metadata timed out after ${timeoutMs}ms for ${url}`));
+    }, timeoutMs);
+    video.addEventListener('loadedmetadata', onReady, { once: true });
+    video.addEventListener('loadeddata', onReady, { once: true });
+    video.addEventListener('error', onError, { once: true });
+    try { video.load(); } catch (error) { finish(reject, error); }
+  });
+}
+
 async function loadFromUrl(source) {
   const normalized = normalizeSource(source);
   const { videoUrl, projectionUrl, requireMesh } = normalized;
@@ -366,7 +424,7 @@ async function loadFromUrl(source) {
   const isCoarsePointer = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
 
   try {
-    const buf = await withTimeout(fetchProjectionBytes(projectionUrl), 9000, 'projection fetch');
+    const buf = await withTimeout(fetchProjectionBytes(projectionUrl), 20000, 'projection fetch');
     const head = new Uint8Array(buf, 0, Math.min(16, buf.byteLength));
     const isWebm = head.length >= 4 && head[0] === 0x1a && head[1] === 0x45 && head[2] === 0xdf && head[3] === 0xa3;
 
@@ -417,6 +475,14 @@ async function loadFromUrl(source) {
   video.preload = 'metadata';
   video.style.cssText = `position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:${inlineVideoFallback ? '1' : '0'};pointer-events:none;`;
 
+  try {
+    await waitForVideoMetadata(video, videoUrl);
+  } catch (error) {
+    video.removeAttribute('src');
+    try { video.load(); } catch (_) {}
+    video.remove();
+    throw error;
+  }
   return { geometry, projection, video, inlineVideoFallback, dispose: () => { video.removeAttribute('src'); video.load(); video.remove(); } };
 }
 
@@ -722,7 +788,9 @@ export async function preloadSpotlightSource(source) {
   if (!sourcePreloadCache.has(key)) {
     const promise = loadFromUrl(source)
       .then((loaded) => {
-        try { loaded.video.load(); } catch (_) {}
+        if (loaded.video.readyState < HTMLMediaElement.HAVE_METADATA) {
+          try { loaded.video.load(); } catch (_) {}
+        }
         return loaded;
       })
       .catch((error) => {

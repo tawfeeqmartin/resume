@@ -8,6 +8,8 @@ media/help_full.webm
 
 # Local scratch output
 *.log
+tmp/
+nvidia-job-links.txt
 node_modules/
 
 # Local asset quarantine for source images, alternate renders, and review-only media
@@ -15,6 +17,7 @@ review/
 
 # Local-only prototypes and archived experiments
 archive/
+fonts/
 models/
 3d-test.html
 Resume-classic.html

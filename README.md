@@ -5,7 +5,7 @@ Static portfolio site for Tawfeeq Martin, focused on creative technology, virtua
 ## Local Preview
 
 ```sh
-python3 -m http.server 8021
+npm run serve
 ```
 
 Open:
@@ -13,6 +13,12 @@ Open:
 ```text
 http://127.0.0.1:8021/Resume.html
 ```
+
+Use this server instead of `python3 -m http.server` for HELP work. The HELP
+player needs HTTP byte-range support so the browser can stream the original
+full `media/help_full.webm` while the loader reads only the MESH metadata
+header. Python's basic static server can answer range requests with the whole
+569 MB file, which makes local HELP loading unreliable.
 
 ## Media Notes
 
@@ -22,6 +28,12 @@ The full-quality local source files below are intentionally ignored because they
 - `media/help_full.webm`
 
 The checked-in site uses web-ready media for local preview. For production, move the large assets to Cloudflare R2, Git LFS, or a dedicated streaming host and update the media URLs.
+
+HELP is a locked MESH playback path: production should load the original full
+`help_full.webm` through same-origin `/media/help_full.webm`. Do not replace it
+with 720, MP4, Cloudflare Stream, a transcode, or a different delivery path
+without explicit owner approval and fresh Chrome, Safari/WebKit, and Firefox
+verification that the original MESH projection still renders correctly.
 
 ## Audio / Interaction Notes
 

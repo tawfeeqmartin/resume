@@ -758,6 +758,55 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 #help + #blackbird {
   margin-top: 0.35rem;
 }
+html.has-inverted-help-preview #help {
+  --ink: #f5f5f2;
+  --ink-2: #d7d7d2;
+  --ink-3: #9c9c98;
+  --rule: rgba(245, 245, 242, 0.22);
+  --accent: #f5f5f2;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding:
+    clamp(3.8rem, 7vw, 6.8rem)
+    calc((100vw - min(100vw, var(--maxw))) / 2 + var(--pad))
+    clamp(4.6rem, 8vw, 7.5rem);
+  background: #030303;
+  color: var(--ink);
+  isolation: isolate;
+}
+html.has-inverted-help-preview #help .section__label,
+html.has-inverted-help-preview #help .section__label-num,
+html.has-inverted-help-preview #help .section__label-sep {
+  color: var(--ink-3);
+}
+html.has-inverted-help-preview #help .section__label-title,
+html.has-inverted-help-preview #help .help-hero__intro h3 {
+  color: var(--ink);
+}
+html.has-inverted-help-preview #help .help-hero__intro p {
+  color: var(--ink-2);
+}
+html.has-inverted-help-preview #help .help-player {
+  box-shadow:
+    0 34px 70px -34px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(245, 245, 242, 0.2);
+}
+html.has-inverted-help-preview #help .proof-stamp {
+  --stamp-fill-alpha: 0.84;
+}
+html.has-inverted-help-preview #help .proof-stamp__line {
+  stroke: #f5f5f2;
+}
+html.has-inverted-help-preview #help .proof-stamp__line--dash {
+  stroke: rgba(245, 245, 242, 0.58);
+}
+html.has-inverted-help-preview #help .proof-stamp__org {
+  color: rgba(245, 245, 242, 0.62);
+}
+html.has-inverted-help-preview #help .proof-stamp__award {
+  color: rgba(245, 245, 242, 0.8);
+}
 #help.is-help-pinned .help-hero__intro,
 #help.is-help-pinned .help-hero__details {
   opacity: 0;
@@ -781,6 +830,117 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   aspect-ratio: auto;
   border-radius: 0;
   box-shadow: none;
+}
+html.has-inverted-poetry-preview #strudel {
+  --paper: #030303;
+  --paper-2: #030303;
+  --ink: #f5f5f2;
+  --ink-2: #d8d8d3;
+  --ink-3: #9e9e98;
+  --rule: rgba(245, 245, 242, 0.2);
+  --accent: #f5f5f2;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding:
+    clamp(3.8rem, 7vw, 6.8rem)
+    calc((100vw - min(100vw, var(--maxw))) / 2 + var(--pad))
+    clamp(4.6rem, 8vw, 7.5rem);
+  background: #030303;
+  color: var(--ink);
+  isolation: isolate;
+}
+html.has-inverted-poetry-preview #strudel .section__label,
+html.has-inverted-poetry-preview #strudel .section__label-num,
+html.has-inverted-poetry-preview #strudel .section__label-sep {
+  color: var(--ink-3);
+}
+html.has-inverted-poetry-preview #strudel .section__label-title,
+html.has-inverted-poetry-preview #strudel .strudel-repl__intro h3 {
+  color: var(--ink);
+}
+html.has-inverted-poetry-preview #strudel .strudel-repl__intro p {
+  color: var(--ink-2);
+}
+html.has-inverted-poetry-preview #strudel .strudel-repl__intro {
+  margin-bottom: clamp(1.15rem, 2.2vw, 1.85rem);
+}
+html.has-inverted-poetry-preview #strudel .strudel-repl__macbook {
+  width: min(100%, 920px);
+  aspect-ratio: 1.66 / 1;
+  background-image: none;
+  margin-top: 0;
+  filter:
+    drop-shadow(0 34px 58px rgba(0, 0, 0, 0.72))
+    drop-shadow(0 0 26px rgba(120, 180, 255, 0.1));
+  isolation: isolate;
+}
+html.has-inverted-poetry-preview #strudel .strudel-repl__macbook::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 7.2%;
+  bottom: 7.6%;
+  left: 7.2%;
+  z-index: 0;
+  pointer-events: none;
+  border: 1px solid rgba(196, 204, 214, 0.48);
+  border-bottom-color: rgba(82, 88, 96, 0.78);
+  border-radius: 18px 18px 10px 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 8%),
+    linear-gradient(180deg, #11151a 0%, #050607 58%, #020303 100%);
+  box-shadow:
+    inset 0 0 0 3px rgba(0, 0, 0, 0.72),
+    inset 0 -18px 24px rgba(255, 255, 255, 0.035),
+    0 0 0 1px rgba(0, 0, 0, 0.88);
+}
+html.has-inverted-poetry-preview #strudel .strudel-repl__macbook::after {
+  content: '';
+  position: absolute;
+  top: auto;
+  right: 0;
+  bottom: 3%;
+  left: 0;
+  width: auto;
+  z-index: 3;
+  height: 4.6%;
+  transform: none;
+  pointer-events: none;
+  border-radius: 0 0 10px 10px;
+  background:
+    radial-gradient(ellipse at center top, rgba(190, 200, 212, 0.36) 0 16%, transparent 18%) center top / 14% 100% no-repeat,
+    linear-gradient(180deg, #303a46 0%, #17202a 46%, #080b10 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(230, 237, 245, 0.26),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.8),
+    0 8px 18px rgba(0, 0, 0, 0.58);
+}
+html.has-inverted-poetry-preview #strudel .strudel-repl__macbook .strudel-repl__panel {
+  top: 5.1%;
+  left: 9.1%;
+  right: 9.1%;
+  bottom: 14.2%;
+  z-index: 1;
+  border: 1px solid rgba(0, 0, 0, 0.82);
+  border-radius: 4px;
+  background: #1e1e1e;
+}
+html.has-inverted-poetry-preview #strudel .strudel-repl__macbook .strudel-repl__panel::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  z-index: 5;
+  width: 15.5%;
+  height: 4.8%;
+  transform: translateX(-50%);
+  border-radius: 0 0 10px 10px;
+  background: #010204;
+  pointer-events: none;
+}
+html.has-inverted-poetry-preview #strudel .strudel-repl__panel {
+  box-shadow: 0 0 0 1px rgba(245, 245, 242, 0.18);
 }
 /* Poetry-in-Proof live section — composed as a Byrne plate, not as a
    generic LIVE feature block. Single column: lede serif paragraph,
@@ -1215,7 +1375,11 @@ html.has-pseudo-fullscreen body {
   70% { transform: translate(45%, -50%); opacity: 1; }
 }
 .wasd-key {
-  border: 1px solid rgba(244,240,230,0.28);
+  --wasd-accent: #c9c9c9;
+  --wasd-active-ink: #111;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--wasd-accent), transparent 56%);
   background: rgba(244,240,230,0.08);
   color: #f4f0e6;
   display: grid;
@@ -1225,32 +1389,47 @@ html.has-pseudo-fullscreen body {
   letter-spacing: 0.1em;
   transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, transform 0.12s ease;
 }
+.wasd-key::after {
+  content: "";
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  bottom: 5px;
+  height: 2px;
+  background: var(--wasd-accent);
+  opacity: 0.82;
+}
+.wasd-key[data-key="W"] {
+  --wasd-accent: #d42a20;
+  --wasd-active-ink: #fff;
+}
+.wasd-key[data-key="A"] {
+  --wasd-accent: #fac22b;
+  --wasd-active-ink: #111;
+}
+.wasd-key[data-key="S"] {
+  --wasd-accent: #f4f0e6;
+  --wasd-active-ink: #111;
+}
+.wasd-key[data-key="D"] {
+  --wasd-accent: #1c5f9f;
+  --wasd-active-ink: #fff;
+}
 .wasd-key.is-active {
-  background: #fac22b;
-  border-color: #fac22b;
-  color: #111;
+  background: var(--wasd-accent);
+  border-color: var(--wasd-accent);
+  color: var(--wasd-active-ink);
   transform: translateY(-1px);
 }
-.wasd-key.is-active[data-key="A"] {
-  background: #0e638e;
-  border-color: #0e638e;
-  color: #fff;
-}
-.wasd-key.is-active[data-key="S"] {
-  background: #d42a20;
-  border-color: #d42a20;
-  color: #fff;
-}
-.wasd-key.is-active[data-key="D"] {
-  background: #f4f0e6;
-  border-color: #f4f0e6;
-  color: #111;
-}
 .wasd-key b {
+  position: relative;
+  z-index: 1;
   font-weight: 500;
   line-height: 1;
 }
 .wasd-key i {
+  position: relative;
+  z-index: 1;
   color: var(--accent);
   font-style: normal;
   font-size: 0.8rem;
@@ -1742,6 +1921,27 @@ html.has-doom-overlay body {
   min-height: 0;
   border-top: 1px solid rgba(255,255,255,0.11);
   background: #1e1e1e;
+}
+html.has-inverted-poetry-preview #strudel.is-strudel-pinned .help-feature__player-col {
+  align-items: center;
+  justify-items: center;
+  background: #030303;
+}
+html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbook {
+  width: min(98vw, 98dvw, calc(88vh * 1.66), calc(88dvh * 1.66));
+  height: auto;
+  aspect-ratio: 1.66 / 1;
+  transform: none;
+}
+html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbook .strudel-repl__panel {
+  top: 5.1%;
+  left: 9.1%;
+  right: 9.1%;
+  bottom: 14.2%;
+}
+html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbook .strudel-repl__overlay,
+html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbook .strudel-repl__textarea {
+  font-size: clamp(7px, 0.78vw, 10px);
 }
 .midi-mon {
   display: flex;
@@ -3492,6 +3692,16 @@ html.has-doom-overlay body {
   .pp-audio-toggle__icon { width: 20px; height: 16px; }
 }
 </style>
+<script>
+(() => {
+  try {
+    document.documentElement.classList.add(
+      'has-inverted-help-preview',
+      'has-inverted-poetry-preview'
+    );
+  } catch (_) {}
+})();
+</script>
 </head>
 <body>
 <div id="root"></div>
@@ -3509,7 +3719,7 @@ html.has-doom-overlay body {
 }
 </script>
 
-<script src="data.js?v=20260521-ai-skills"></script>
+<script src="data.js?v=20260528-help-full-same-origin-v7"></script>
 <script type="module">
 // Lazy loaders shared by the compiled app bundle. These keep heavy
 // rendering code off the startup path until a component actually asks.
@@ -3527,7 +3737,7 @@ window.__loadStrudelModule = () => {
   return window.__resumeStrudelReady;
 };
 window.__loadSpotlightBundle = () => {
-  window.__spotlightBundlePromise ||= import('./spotlight-bundle.js?v=20260522-help-prewarm');
+  window.__spotlightBundlePromise ||= import('./spotlight-bundle.js?v=20260528-help-full-same-origin-v7');
   return window.__spotlightBundlePromise;
 };
 window.__loadThreeBundle = () => {
@@ -3541,6 +3751,6 @@ window.__loadThreeBundle = () => {
   return window.__threePromise;
 };
 </script>
-<script type="module" src="dist/app.js?v=20260524-mac-sticky-terminal-v1"></script>
+<script type="module" src="dist/app.js?v=20260528-help-full-same-origin-v7"></script>
 </body>
 </html>

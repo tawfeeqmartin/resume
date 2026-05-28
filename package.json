@@ -2,6 +2,7 @@
   "scripts": {
     "build": "node scripts/build-app.mjs",
     "check:tv-clips": "node scripts/check-tv-clips.mjs",
+    "serve": "node scripts/serve-local.mjs",
     "watch": "node scripts/build-app.mjs --watch"
   },
   "devDependencies": {

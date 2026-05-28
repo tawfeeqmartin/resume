@@ -104,7 +104,7 @@ arrange(
   [8,  breakdown]
 )._scope()`;
 
-const POETRY_IN_PROOF_STORAGE_VERSION = 'v7-default-arrangement';
+const POETRY_IN_PROOF_STORAGE_VERSION = 'v8-mac-live-cuts';
 const POETRY_IN_PROOF_SOURCE_STORAGE_KEY = `resume.poetryInProofSource.${POETRY_IN_PROOF_STORAGE_VERSION}`;
 const POETRY_IN_PROOF_DRAFT_STORAGE_KEY = `resume.poetryInProofDraft.${POETRY_IN_PROOF_STORAGE_VERSION}`;
 const POETRY_IN_PROOF_LAST_GOOD_STORAGE_KEY = `resume.poetryInProofLastGood.${POETRY_IN_PROOF_STORAGE_VERSION}`;
@@ -189,7 +189,17 @@ function getResumeStrudelAudioEngine() {
   let midiAccess = null;
   let midiOutput = null;
   let midiInput = null;
+  let midiInputName = '';
   let midiOutputEnabled = false;
+  const midiInputStats = {
+    accepted: 0,
+    dropped: 0,
+    systemDropped: 0,
+    unmappedDropped: 0,
+    floodDropped: 0,
+    windowStartedAt: 0,
+    windowCount: 0,
+  };
   const liveChordVoices = new Map();
   const stemMutes = { drums: false, harmony: false, melody: false };
   const mixSettings = {
@@ -1664,6 +1674,9 @@ function getResumeStrudelAudioEngine() {
     get midiOutputEnabled() { return midiOutputEnabled; },
     get midiOutputId() { return midiOutput?.id || ''; },
     get midiOutputName() { return midiOutput?.name || ''; },
+    get midiInputEnabled() { return Boolean(midiInput); },
+    get midiInputName() { return midiInputName; },
+    get midiInputStats() { return { ...midiInputStats }; },
     async requestMidiAccess() {
       if (!navigator.requestMIDIAccess) {
         throw new Error('Web MIDI is not available in this browser.');
@@ -1701,15 +1714,54 @@ function getResumeStrudelAudioEngine() {
     async enableMidiIn(inputIdOrName = '') {
       const access = await this.requestMidiAccess();
       const inputs = Array.from(access.inputs.values());
+      if (midiInput) midiInput.onmidimessage = null;
       midiInput = inputs.find((input) => input.id === inputIdOrName || input.name === inputIdOrName) || inputs[0] || null;
+      midiInputName = midiInput?.name || '';
       if (!midiInput) return { enabled: false, name: '' };
       midiInput.onmidimessage = (message) => {
-        const [status, note, velocity = 0] = message.data;
+        const [status, note, velocity = 0] = message.data || [];
+        if (!Number.isFinite(status)) {
+          midiInputStats.dropped += 1;
+          return;
+        }
+        // `sysex: false` should suppress real SysEx payloads, but Push/DAW
+        // hardware can still send dense system realtime/common bytes
+        // (clock, start/stop, active sensing). Those are not scene input.
+        if (status >= 0xf0) {
+          midiInputStats.dropped += 1;
+          midiInputStats.systemDropped += 1;
+          return;
+        }
         const command = status & 0xf0;
+        if (command !== 0x90) {
+          midiInputStats.dropped += 1;
+          return;
+        }
+        if (velocity <= 0) {
+          midiInputStats.dropped += 1;
+          return;
+        }
+        const now = performance.now();
+        if (now - midiInputStats.windowStartedAt > 1000) {
+          midiInputStats.windowStartedAt = now;
+          midiInputStats.windowCount = 0;
+        }
+        midiInputStats.windowCount += 1;
+        if (midiInputStats.windowCount > 48) {
+          midiInputStats.dropped += 1;
+          midiInputStats.floodDropped += 1;
+          return;
+        }
         const channel = (status & 0x0f) + 1;
-        const type = command === 0x90 && velocity > 0 ? 'noteon' : command === 0x80 || (command === 0x90 && velocity === 0) ? 'noteoff' : 'control';
+        const type = 'noteon';
         const laneEntry = Object.entries(SCENE_MIDI_MAP).find(([, value]) => value.channel === channel && value.note === note)
           || Object.entries(SCENE_MIDI_MAP).find(([, value]) => value.group === 'drums' && value.note === note);
+        if (!laneEntry) {
+          midiInputStats.dropped += 1;
+          midiInputStats.unmappedDropped += 1;
+          return;
+        }
+        midiInputStats.accepted += 1;
         const lane = laneEntry?.[0];
         const laneConfig = laneEntry?.[1];
         window.dispatchEvent(new CustomEvent('resume-midi-event', {
@@ -1732,6 +1784,7 @@ function getResumeStrudelAudioEngine() {
     disableMidiIn() {
       if (midiInput) midiInput.onmidimessage = null;
       midiInput = null;
+      midiInputName = '';
     },
     toggleStemMute(stem) {
       if (!Object.prototype.hasOwnProperty.call(stemMutes, stem)) return { ...stemMutes };
@@ -3585,6 +3638,7 @@ function MidiBusMonitor({ compact = false } = {}) {
   // from.
   React.useEffect(() => {
     const onMidi = (e) => {
+      if (e.detail?.type && e.detail.type !== 'noteon') return;
       const lane = e.detail?.lane;
       if (!lane) return;
       const chip = chipRefs.current[lane];
@@ -5010,8 +5064,31 @@ function Experience({ items }) {
 // ────────────────────────────────────────────────────────────────────
 
 const TV_MODEL_URL = 'media/3d/apple_macintosh.glb';
+const MAC_MODEL_GRAYSCALE_PREVIEW = (() => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return !(params.has('mac-model-color') || params.get('mac-model') === 'color');
+  } catch (_) {
+    return true;
+  }
+})();
+const MAC_MODEL_GRAY_STEPS = [
+  0x000000,
+  0x191919,
+  0x333333,
+  0x555555,
+  0x777777,
+  0x999999,
+  0xc9c9c9,
+  0xf2f2f2,
+];
+const MAC_MODEL_PRIMARY_KEY_COLORS = {
+  KeyR: 0xd42a20,
+  KeyY: 0xfac22b,
+  KeyB: 0x1c5f9f,
+};
 const DOOM_TERMINAL_COMMANDS = new Set(['doom', 'doom.exe', './doom', 'run doom', 'launch doom', 'open doom']);
-const MAC_SCREEN_MEDIA_SIZE = { width: 1536, height: 1152 };
+const MAC_SCREEN_MEDIA_SIZE = { width: 960, height: 720 };
 const MAC_SCREEN_TERMINAL_SIZE = { width: 2048, height: 1536 };
 const MAC_TERMINAL_COMMAND_LINES = [
   'PLAY     play interactive reel',
@@ -5113,6 +5190,15 @@ const MAC_KEY_BY_CHAR = Object.fromEntries(
       : []
   ))
 );
+const MAC_KEY_CODE_BY_MESH = new Map(
+  Object.entries(MAC_KEY_DEFS).map(([code, def]) => [def.mesh, code])
+);
+const MAC_MODEL_KEY_EASTER_EGG = 'hello world';
+const MAC_MODEL_EASTER_EGG_KEYS = new Set(
+  [...MAC_MODEL_KEY_EASTER_EGG]
+    .map((char) => MAC_KEY_BY_CHAR[char])
+    .filter((code) => code && code !== 'Space')
+);
 
 function getMacKeyCodeFromEvent(event) {
   if (MAC_KEY_DEFS[event.code]) return event.code;
@@ -5124,6 +5210,92 @@ function getMacTerminalCharacter(code, shiftKey = false) {
   const def = MAC_KEY_DEFS[code];
   if (!def || !def.char) return '';
   return shiftKey && def.shiftChar ? def.shiftChar : def.char;
+}
+
+function getMacMeshNumericId(mesh) {
+  const match = String(mesh?.name || '').match(/^Mesh0*(\d+)(?:_|$)?$/);
+  return match ? Number(match[1]) : null;
+}
+
+function getMacGrayMaterialSpec(mesh) {
+  const name = String(mesh?.name || '');
+  if (!name || name === 'MacScreenTextureProxy' || /^screen$|^mesh75$/i.test(name)) return null;
+  if (name === 'MacSideProductionSticker') return null;
+  if (name === '3DGeom_10') return { key: 'logo-plate-black', step: 0, roughness: 0.94 };
+  if (name === '3DGeom_15') return { key: 'spacebar-word-break', step: 3, roughness: 0.9 };
+  if (/^Cube/.test(name)) return { key: 'deep-void-black', step: 0, roughness: 0.98 };
+
+  const id = getMacMeshNumericId(mesh);
+  if (id == null) return { key: 'case-default-highlight', step: 7, roughness: 0.88 };
+  if (id === 74) return { key: 'screen-surround-black', step: 0, roughness: 0.98 };
+  if (id >= 285 && id <= 341) {
+    const code = MAC_KEY_CODE_BY_MESH.get(name);
+    if (MAC_MODEL_PRIMARY_KEY_COLORS[code]) {
+      return {
+        key: `primary-key-${code}`,
+        step: 7,
+        color: MAC_MODEL_PRIMARY_KEY_COLORS[code],
+        roughness: 0.82,
+      };
+    }
+    if (MAC_MODEL_EASTER_EGG_KEYS.has(code)) {
+      return { key: 'keycap-hello-world', step: 7, roughness: 0.82 };
+    }
+    if (code && MAC_KEY_DEFS[code]?.action === 'modifier') {
+      return { key: 'keycap-modifier-dark', step: 3, roughness: 0.9 };
+    }
+    return { key: 'keycap-field', step: 5, roughness: 0.88 };
+  }
+  if (id >= 134 && id <= 272) return { key: 'key-legend-black', step: 0, roughness: 1 };
+  if (id === 284) return { key: 'mouse-button-accent', step: 2, roughness: 0.86 };
+  if (id >= 69 && id <= 72) return { key: 'mouse-body', step: 5, roughness: 0.88 };
+  if (id === 273) return { key: 'floppy-tray-black', step: 0, roughness: 0.94 };
+  if (id === 84) return { key: 'floppy-label-bright', step: 7, roughness: 0.88 };
+  if ([76, 77, 78, 79, 80, 81, 82, 83].includes(id)) {
+    const step = id % 2 === 0 ? 0 : 1;
+    return { key: `front-accent-${step}`, step, roughness: 0.9 };
+  }
+  if (id >= 76 && id <= 94) {
+    const step = 1 + ((id - 76) % 6);
+    return { key: `badge-stripe-${step}`, step, roughness: 0.82 };
+  }
+  if (id >= 95 && id <= 114) {
+    const step = id % 4 === 0 ? 7 : id % 3 === 0 ? 6 : 5;
+    return { key: `case-panel-${step}`, step, roughness: 0.88 };
+  }
+  if (id >= 115 && id <= 133) return { key: 'port-detail-black', step: 0, roughness: 0.96 };
+  if (id >= 342 && id <= 344) return { key: 'rear-dark-detail-black', step: 0, roughness: 0.94 };
+  if (id >= 1 && id <= 83) {
+    const step = id % 7 === 0 ? 7 : id % 5 === 0 ? 3 : id % 3 === 0 ? 5 : 6;
+    return { key: `case-shell-${step}`, step, roughness: 0.9 };
+  }
+  return { key: 'misc-gray', step: 5, roughness: 0.9 };
+}
+
+function applyMacModelGrayscalePreview(THREE, model) {
+  if (!MAC_MODEL_GRAYSCALE_PREVIEW || !THREE || !model) return;
+  const cache = new Map();
+  const materialFor = (spec) => {
+    const step = Math.max(0, Math.min(MAC_MODEL_GRAY_STEPS.length - 1, spec.step));
+    const key = `${spec.key}:${step}:${spec.roughness}`;
+    if (!cache.has(key)) {
+      cache.set(key, new THREE.MeshStandardMaterial({
+        color: spec.color ?? MAC_MODEL_GRAY_STEPS[step],
+        roughness: spec.roughness ?? 0.9,
+        metalness: 0,
+      }));
+    }
+    return cache.get(key);
+  };
+  let applied = 0;
+  model.traverse((mesh) => {
+    if (!mesh.isMesh) return;
+    const spec = getMacGrayMaterialSpec(mesh);
+    if (!spec) return;
+    mesh.material = materialFor(spec);
+    applied += 1;
+  });
+  console.info('[TvHero] Mac model 8-bit grayscale preview applied:', applied, 'meshes');
 }
 
 const TV_HERO_VIDEO_CACHE_LIMIT = 12;
@@ -6971,11 +7143,14 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         // so the vertical roll + ghost + bloom layer onto the live video frame.
         if (macBurstActive) {
           const m = state.macBloom;
-          const remaining = Math.max(0, (m.activeUntil - now) / m.duration);
-          const curve = m.kind === 'clap' ? Math.pow(remaining, 1.6) : Math.pow(remaining, 1.1);
-          // Band phase sweeps from bandStart to bandEnd over the burst.
+          const remaining = Math.max(0, (m.activeUntil - now) / Math.max(1, m.duration));
+          const curve = m.kind === 'clap'
+            ? Math.pow(remaining, 1.6)
+            : m.kind === 'powerOn'
+              ? Math.pow(remaining, 0.9)
+              : Math.pow(remaining, 2.0);
           const elapsed = now - (m.started || (m.activeUntil - m.duration));
-          const t01 = Math.min(1, elapsed / m.duration);
+          const t01 = Math.min(1, elapsed / Math.max(1, m.duration));
           const eased = 1 - Math.pow(1 - t01, 2.4);
           if (m.bandStart !== undefined) {
             m.rollPhase = m.bandStart + (m.bandEnd - m.bandStart) * eased;
@@ -7062,18 +7237,22 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     if (now - state.lastHatStutterAt < 1450) return;
     if ((detail.id || 0) % 4 !== 1) return;
     state.lastHatStutterAt = now;
-    const video = state.currentVideo;
     const holdMs = Math.max(38, Math.min(58, (detail.duration || 90) * 0.45));
-    try { video.pause(); } catch {}
-    window.setTimeout(() => {
-      if (state.currentVideo !== video || state.tabVisible === false || state.tvVisible === false) return;
-      if (!window.__resumeStrudelAudioEngine?.enabled) return;
-      try {
-        const playPromise = video.play?.();
-        if (playPromise?.catch) playPromise.catch(() => {});
-      } catch {}
-    }, holdMs);
-  }, []);
+    if (state.deviceMode === 'mac') {
+      animateMacBloomBurst('bass', {
+        id: detail.id,
+        duration: holdMs,
+        strength: 0.42,
+      });
+      return;
+    }
+    state.tracking = {
+      activeUntil: now + holdMs,
+      seed: (detail.id || 1) * 191,
+      strength: 0.34,
+    };
+    if (!state.currentVideo) animateTrackingBurst();
+  }, [animateMacBloomBurst, animateTrackingBurst]);
 
   React.useEffect(() => {
     const state = stateRef.current;
@@ -7218,23 +7397,13 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
           }
           return;
         }
-        const previousVideo = stateRef.current.currentVideo;
-        if (previousVideo && previousVideo !== video) {
-          previousVideo.muted = true;
-          try { previousVideo.pause(); } catch {}
-        }
-        stateRef.current.currentImage = null;
-        stateRef.current.currentMedia = video;
-        stateRef.current.currentSource = source;
-        stateRef.current.currentFit = source.fit || 'contain';
-        stateRef.current.currentMatteAspect = source.matteAspect || null;
-        stateRef.current.currentPunchIn = source.punchIn || 1;
         video.loop = false;
         video.muted = true;
         video.defaultMuted = true;
         video.volume = 0;
         video.onended = () => {
           const state = stateRef.current;
+          if (state.cutToken !== cutToken) return;
           if (state.currentVideo !== video || state.currentMedia !== video) return;
           if (state.tabVisible === false || state.tvVisible === false) return;
           if (!window.__resumeStrudelAudioEngine?.enabled) return;
@@ -7247,21 +7416,83 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         if (playPromise?.catch) {
           playPromise.catch(() => {});
         }
-        drawVideoLoop(video);
-        window.dispatchEvent(new CustomEvent('resume-tv-clip-cue', {
-          detail: {
-            lane,
-            url: src,
-            project: source.project || '',
-            cue: source.cue || '',
-            sampleKey: source.sampleKey || '',
-            pool: source.pool || '',
-            hasAudio: false,
-            muted: video.muted,
-            volume: video.volume,
-            index: idx,
-          },
-        }));
+        let committed = false;
+        let fallbackTimer = 0;
+        const cleanupReadyListeners = () => {
+          video.removeEventListener('loadeddata', onReady);
+          video.removeEventListener('canplay', onReady);
+          video.removeEventListener('playing', onReady);
+          video.removeEventListener('seeked', onReady);
+          window.clearTimeout(fallbackTimer);
+        };
+        const commitVideo = () => {
+          if (committed) return;
+          if (stateRef.current.cutToken !== cutToken) {
+            cleanupReadyListeners();
+            if (stateRef.current.currentVideo !== video) {
+              try { video.pause(); } catch {}
+            }
+            return;
+          }
+          committed = true;
+          cleanupReadyListeners();
+          const previousVideo = stateRef.current.currentVideo;
+          stateRef.current.currentImage = null;
+          stateRef.current.currentMedia = video;
+          stateRef.current.currentSource = source;
+          stateRef.current.currentFit = source.fit || 'contain';
+          stateRef.current.currentMatteAspect = source.matteAspect || null;
+          stateRef.current.currentPunchIn = source.punchIn || 1;
+          drawVideoLoop(video);
+          if (previousVideo && previousVideo !== video) {
+            previousVideo.muted = true;
+            try { previousVideo.pause(); } catch {}
+          }
+          window.dispatchEvent(new CustomEvent('resume-tv-clip-cue', {
+            detail: {
+              lane,
+              url: src,
+              project: source.project || '',
+              cue: source.cue || '',
+              sampleKey: source.sampleKey || '',
+              pool: source.pool || '',
+              hasAudio: false,
+              muted: video.muted,
+              volume: video.volume,
+              index: idx,
+            },
+          }));
+        };
+        const onReady = () => {
+          if (committed) return;
+          if (stateRef.current.cutToken !== cutToken) {
+            cleanupReadyListeners();
+            if (stateRef.current.currentVideo !== video) {
+              try { video.pause(); } catch {}
+            }
+            return;
+          }
+          if (video.readyState < 2) return;
+          if (typeof video.requestVideoFrameCallback === 'function') {
+            let frameCommitted = false;
+            const frameFallback = window.setTimeout(() => {
+              if (!frameCommitted) commitVideo();
+            }, 140);
+            video.requestVideoFrameCallback(() => {
+              frameCommitted = true;
+              window.clearTimeout(frameFallback);
+              commitVideo();
+            });
+            return;
+          }
+          commitVideo();
+        };
+        video.addEventListener('loadeddata', onReady);
+        video.addEventListener('canplay', onReady);
+        video.addEventListener('playing', onReady);
+        video.addEventListener('seeked', onReady);
+        fallbackTimer = window.setTimeout(onReady, stateRef.current.currentVideo ? 700 : 180);
+        onReady();
       };
       if (video.readyState >= 2) {
         mountVideo();
@@ -7327,7 +7558,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       renderer.setClearColor(0x000000, 0);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 0.62;
+      renderer.toneMappingExposure = MAC_MODEL_GRAYSCALE_PREVIEW ? 0.68 : 0.62;
 
       const scene = new THREE.Scene();
       scene.background = null;
@@ -7360,20 +7591,24 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         camera.updateProjectionMatrix();
       };
 
-      const key = new THREE.DirectionalLight(0xfff7e8, 2.35);
+      const key = new THREE.DirectionalLight(MAC_MODEL_GRAYSCALE_PREVIEW ? 0xffffff : 0xfff7e8, MAC_MODEL_GRAYSCALE_PREVIEW ? 2.15 : 2.35);
       key.position.set(-2.15, 1.85, 1.05);
       scene.add(key);
-      const fill = new THREE.DirectionalLight(0xe8eef7, 0.14);
+      const fill = new THREE.DirectionalLight(MAC_MODEL_GRAYSCALE_PREVIEW ? 0xffffff : 0xe8eef7, MAC_MODEL_GRAYSCALE_PREVIEW ? 0.18 : 0.14);
       fill.position.set(2.0, 0.45, 1.45);
       scene.add(fill);
-      const rim = new THREE.DirectionalLight(0xffe6bd, 1.15);
+      const rim = new THREE.DirectionalLight(MAC_MODEL_GRAYSCALE_PREVIEW ? 0xffffff : 0xffe6bd, MAC_MODEL_GRAYSCALE_PREVIEW ? 0.95 : 1.15);
       rim.position.set(-0.65, 2.05, -1.8);
       scene.add(rim);
-      const keyboardGrazing = new THREE.DirectionalLight(0xffd6a6, 0.36);
+      const keyboardGrazing = new THREE.DirectionalLight(MAC_MODEL_GRAYSCALE_PREVIEW ? 0xffffff : 0xffd6a6, MAC_MODEL_GRAYSCALE_PREVIEW ? 0.28 : 0.36);
       keyboardGrazing.position.set(1.2, -0.65, 1.6);
       scene.add(keyboardGrazing);
       // Keep global fill low so the front face and keyboard hold shape.
-      scene.add(new THREE.HemisphereLight(0xfff0d8, 0x0c0a08, 0.13));
+      scene.add(new THREE.HemisphereLight(
+        MAC_MODEL_GRAYSCALE_PREVIEW ? 0xffffff : 0xfff0d8,
+        MAC_MODEL_GRAYSCALE_PREVIEW ? 0x101010 : 0x0c0a08,
+        MAC_MODEL_GRAYSCALE_PREVIEW ? 0.15 : 0.13,
+      ));
       scene.add(new THREE.AmbientLight(0xffffff, 0.012));
 
       // Offscreen canvas for the screen content
@@ -7708,13 +7943,13 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         const size = box.getSize(new THREE.Vector3());
         if (stateRef.current.deviceMode === 'mac') {
           const sideTexture = makeStickerTexture((cx, w, h) => {
-            cx.fillStyle = '#e9e5d5';
+            cx.fillStyle = MAC_MODEL_GRAYSCALE_PREVIEW ? '#f2f2f2' : '#e9e5d5';
             cx.fillRect(0, 0, w, h);
-            cx.fillStyle = '#d9251d';
+            cx.fillStyle = MAC_MODEL_GRAYSCALE_PREVIEW ? '#000' : '#d9251d';
             cx.fillRect(0, 0, Math.floor(w * 0.2), h);
-            cx.fillStyle = '#2157a4';
+            cx.fillStyle = MAC_MODEL_GRAYSCALE_PREVIEW ? '#555' : '#2157a4';
             cx.fillRect(Math.floor(w * 0.2), 0, Math.floor(w * 0.18), h);
-            cx.fillStyle = '#111';
+            cx.fillStyle = MAC_MODEL_GRAYSCALE_PREVIEW ? '#000' : '#111';
             cx.globalAlpha = 0.52;
             cx.fillRect(Math.floor(w * 0.48), Math.floor(h * 0.28), Math.floor(w * 0.38), 5);
             cx.fillRect(Math.floor(w * 0.48), Math.floor(h * 0.48), Math.floor(w * 0.28), 5);
@@ -7735,6 +7970,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
           sideSticker.rotation.set(0, Math.PI / 2, -0.035);
           model.add(sideSticker);
         }
+        applyMacModelGrayscalePreview(THREE, model);
         console.info('[TvHero] bbox center:', ctr, 'size:', size);
         stateRef.current.bbox = { box, ctr };
         stateRef.current.frameModel = () => frameModel(box);

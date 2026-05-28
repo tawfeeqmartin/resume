@@ -3,9 +3,7 @@
     {
       "allowed": {
         "origins": [
-          "https://tawfeeqmartin.github.io",
-          "https://tawfeeqmartin.com",
-          "https://www.tawfeeqmartin.com"
+          "*"
         ],
         "methods": [
           "GET",

@@ -35,14 +35,27 @@ Current large assets include:
 
 ## HELP MESH Player Caveat
 
-The HELP player should stream the full `help_full.webm` from R2. It should not fetch the entire file into memory before playback.
+The HELP player should stream the full `help_full.webm` from R2 through the
+same-origin Cloudflare Pages route `/media/help_full.webm`. This same-origin
+route is intentional: Safari/WebKit can reject a cross-origin video when Three.js
+uses it as a WebGL texture, even when the network request itself succeeds.
+
+Locked implementation constraint: do not change HELP to a 720 file, MP4
+fallback, Cloudflare Stream asset, transcoded copy, or different delivery path
+without explicit owner approval and a fresh verification pass proving the
+replacement preserves and renders the original Google Spotlight Stories MESH
+projection correctly in Chrome, Safari/WebKit, and Firefox.
+
+The player should not fetch the entire file into memory before playback.
 
 The loader should:
 
-- Reads only the header/metadata needed to extract the MESH projection.
-- Sets the video element `src` directly to the remote media URL.
-- Lets the browser stream/range-load the actual video data.
-- Preserves the custom MESH metadata path from the source WebM.
+- Read only the header/metadata needed to extract the MESH projection.
+- Set the video element `src` to same-origin `/media/help_full.webm` on production.
+- Use the same `help_full.webm` file for both `videoUrl` and `projectionUrl`.
+- Let the browser stream/range-load the actual video data.
+- Preserve the custom MESH metadata path from the source WebM.
+- Use `help_full.webm` only. Do not use `help-720-mesh.webm` as a fallback.
 
 ## Cost Expectation
 

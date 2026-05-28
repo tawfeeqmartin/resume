@@ -23,7 +23,7 @@ Current build style:
 Local preview:
 
 ```sh
-python3 -m http.server 8021
+npm run serve
 ```
 
 Open:
@@ -31,6 +31,12 @@ Open:
 ```text
 http://127.0.0.1:8021/Resume.html
 ```
+
+This project uses `scripts/serve-local.mjs` instead of Python's basic static
+server because HELP depends on byte ranges. Local media requests to
+`media/help_full.webm` must return `206 Partial Content` for `Range` requests;
+otherwise the MESH metadata read and the browser media stream can both degrade
+into large full-file reads.
 
 The site currently favors an offline-friendly static workflow so design iteration stays fast and portable. If this becomes a repeatable framework later, the first migration target should be a lightweight build step that preserves the same component boundaries.
 
@@ -164,6 +170,9 @@ Rules:
 - Visual systems should filter by `group`, `lane`, `channel`, or `note`.
 - Do not add animation hacks that fake musical timing.
 - MIDI output and future MIDI input should use this same channel map.
+- MIDI input must stay defensive around hardware such as Push 3: ignore SysEx,
+  system realtime/common bytes, CCs, note-off messages, unmapped notes, and
+  bursts above the app's lane-event budget before dispatching `resume-midi-event`.
 
 Current channel map:
 
@@ -274,12 +283,29 @@ Expected behavior:
 - Desktop: drag to look, WASD control, spacebar play/pause, fullscreen.
 - Mobile: touch gesture interaction; do not show desktop WASD OSD.
 - Gyro support can be explored, but must be tested on real phone hardware.
-- Mobile should use a compatible MP4 fallback if WebM/MESH playback is not viable on the target browser.
-- If full MESH interactivity cannot be preserved on mobile, document that clearly and choose the best playback fallback.
+- Do not use an MP4 fallback, 720 fallback, Cloudflare Stream asset, transcoded copy, or different delivery path for HELP without explicit owner approval.
+- If full MESH interactivity cannot be preserved on a target browser, fail closed or document the limitation; do not substitute a flat/projection-wrong video.
+
+Source/projection rule:
+
+Use `help_full.webm` as the only HELP source. Both `videoUrl` and
+`projectionUrl` must point at that same original file so the decoded Google
+Spotlight Stories MESH projection matches the video frames. Do not include
+`help-720-mesh.webm`, `help_full.mp4`, Cloudflare Stream, any transcoded
+fallback, or a different delivery path without explicit owner approval and a
+fresh verification pass proving the replacement preserves and renders the same
+MESH projection correctly in Chrome, Safari/WebKit, and Firefox.
+
+Cloudflare production should load HELP through same-origin
+`/media/help_full.webm`, proxied to the R2/media origin. This avoids Safari/WebKit
+cross-origin WebGL texture failures without changing codec, resolution, or
+projection metadata.
 
 Performance rule:
 
-The HELP player should stream media. It should not fetch the entire full-quality file into memory just to start playback.
+The HELP player should stream media. It should not fetch the entire full-quality
+file into memory just to start playback. Read only the initial byte range needed
+to extract MESH metadata, then let the browser stream/range-load playback.
 
 ### CRT TV Clip Sampler
 

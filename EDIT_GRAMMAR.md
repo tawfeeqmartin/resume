@@ -12,9 +12,9 @@ timed gestures.
 Allowed live work:
 
 - Clip selection by music section and MIDI lane.
-- Video play, pause, seek, and playback-rate changes.
+- Video play, seek, and playback-rate changes that keep the previous frame live until the next frame is drawable.
 - Small canvas crop/punch adjustments that reuse the existing draw pass.
-- Short pauses for hat stutters.
+- Short visual hat ticks that leave the video decoder running.
 - Bass-driven CRT tracking already present in the Mac screen canvas path.
 
 Avoid live work:
@@ -23,13 +23,14 @@ Avoid live work:
 - Realtime blur, glow, chromatic aberration, datamosh, or large noise passes.
 - Heavy WebGL post-processing.
 - Any effect that requires decoding additional hidden videos every frame.
+- Pausing the active decoder during a musical edit.
 
 ## Music Lanes
 
 - `snare`: editorial cut or channel flip. This is the hard edit lane.
 - `kick`: no new cuts. It can support physical pressure if needed.
 - `bass`: horizontal CRT tracking, sync roll, and body feel.
-- `hat`: sparse micro stutter only. Never cut on every hat.
+- `hat`: sparse visual tick only. Never pause the video decoder or cut on every hat.
 - `lead`: occasional sparse clip changes in sections without snares.
 - `vocal`: short punch-in/freeze language so the picture performs with the chop.
 
