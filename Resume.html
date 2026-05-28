@@ -51,8 +51,78 @@
   --chrome:'Silkscreen', ui-sans-serif, system-ui, sans-serif;
   --maxw: 2560px;
   --pad: clamp(1.5rem, 4vw, 4rem);
+  --type-hero-name: 3.65rem;
+  --type-hero-tag: 1.05rem;
+  --type-summary: 1.18rem;
+  --type-job-role: 1.72rem;
+  --type-feature-head: 1.45rem;
+  --type-help-head: 1.65rem;
+  --type-system-lede: 1.12rem;
+  --type-project-head: 1.52rem;
+  --type-award-title: 1.32rem;
+  --type-repl-screen: 7.8px;
+  --type-repl-screen-pinned: 10px;
+  --type-repl-screen-pinned-inverted: 9px;
+  --repl-screen-pad-y: 9px;
+  --repl-screen-pad-x: 10px;
+  --type-read-only-hero: 5.2rem;
+  --type-mobile-resume-hero: 3.25rem;
+  --type-mobile-summary: 1.12rem;
+  --type-mobile-job-head: 1.38rem;
+}
+@media (min-width: 1400px) {
+  :root {
+    --type-hero-name: 4.5rem;
+    --type-hero-tag: 1.18rem;
+    --type-summary: 1.35rem;
+    --type-job-role: 2rem;
+    --type-feature-head: 1.7rem;
+    --type-help-head: 2.1rem;
+    --type-system-lede: 1.3rem;
+    --type-project-head: 1.8rem;
+    --type-award-title: 1.65rem;
+    --type-repl-screen: 10.4px;
+    --type-repl-screen-pinned: 12px;
+    --type-repl-screen-pinned-inverted: 11px;
+    --repl-screen-pad-y: 13px;
+    --repl-screen-pad-x: 15px;
+    --type-read-only-hero: 7rem;
+    --type-mobile-resume-hero: 4.4rem;
+    --type-mobile-summary: 1.35rem;
+    --type-mobile-job-head: 1.75rem;
+  }
+}
+@media (max-width: 700px) {
+  :root {
+    --type-hero-name: 3rem;
+    --type-hero-tag: 1rem;
+    --type-summary: 1.05rem;
+    --type-job-role: 1.55rem;
+    --type-feature-head: 1.32rem;
+    --type-help-head: 1.45rem;
+    --type-system-lede: 1.05rem;
+    --type-project-head: 1.35rem;
+    --type-award-title: 1.25rem;
+    --type-repl-screen: 6.2px;
+    --type-repl-screen-pinned: 8px;
+    --type-repl-screen-pinned-inverted: 8px;
+    --repl-screen-pad-y: 7px;
+    --repl-screen-pad-x: 8px;
+    --type-read-only-hero: 3.2rem;
+    --type-mobile-resume-hero: 3rem;
+    --type-mobile-summary: 1.08rem;
+    --type-mobile-job-head: 1.28rem;
+  }
 }
 * { box-sizing: border-box; }
+html {
+  scroll-snap-type: y proximity;
+}
+@media (max-width: 1399px), (prefers-reduced-motion: reduce) {
+  html {
+    scroll-snap-type: none;
+  }
+}
 html, body {
   margin: 0;
   overflow-x: clip;
@@ -539,9 +609,9 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 /* ── summary ─────────────────────────────────────────── */
 .summary {
   font-family: var(--serif);
-  font-size: clamp(1.05rem, 1.65vw, 1.35rem);
+  font-size: var(--type-summary);
   line-height: 1.4;
-  letter-spacing: -0.005em;
+  letter-spacing: 0;
   max-width: 112ch;
   color: var(--ink-2);
   text-wrap: pretty;
@@ -583,9 +653,9 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .job__head-row { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
 .job__role {
   font-family: var(--sans);
-  font-size: clamp(1.6rem, 2.4vw, 2rem);
+  font-size: var(--type-job-role);
   font-weight: 600;
-  letter-spacing: -0.022em;
+  letter-spacing: 0;
   line-height: 1.08;
   margin: 0;
   color: var(--ink);
@@ -703,6 +773,8 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     --blackbird-stack-gap: clamp(0.75rem, 1.35vh, 1rem);
     --blackbird-feature-h: calc(100svh - clamp(5.1rem, 8vh, 7rem));
     --blackbird-video-w: min(58vw, calc((var(--blackbird-feature-h) - var(--blackbird-stack-gap)) * 0.925));
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
     min-height: 100vh;
     min-height: 100svh;
     display: flex;
@@ -729,8 +801,8 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   }
 }
 .help-feature__notes h3 {
-  font-family: var(--serif); font-size: clamp(1.3rem, 2vw, 1.7rem);
-  font-weight: 500; line-height: 1.2; letter-spacing: -0.015em;
+  font-family: var(--serif); font-size: var(--type-feature-head);
+  font-weight: 500; line-height: 1.2; letter-spacing: 0;
   margin: 0 0 1rem;
 }
 .help-feature__notes p {
@@ -788,8 +860,8 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 }
 .help-hero__intro { grid-area: intro; max-width: 88ch; }
 .help-hero__intro h3 {
-  font-family: var(--serif); font-size: clamp(1.45rem, 2.5vw, 2.1rem);
-  font-weight: 500; line-height: 1.15; letter-spacing: -0.015em;
+  font-family: var(--serif); font-size: var(--type-help-head);
+  font-weight: 500; line-height: 1.15; letter-spacing: 0;
   margin: 0 0 0.75rem;
 }
 .help-hero__intro p,
@@ -1012,7 +1084,7 @@ html.has-inverted-poetry-preview #strudel .strudel-repl__panel {
   gap: 1.25rem;
 }
 .system-section__lede {
-  font-size: clamp(1.05rem, 1.55vw, 1.3rem);
+  font-size: var(--type-system-lede);
   line-height: 1.45;
   color: var(--ink-2);
   max-width: 92ch;
@@ -1524,16 +1596,16 @@ html.has-pseudo-fullscreen body {
 .hero-lead__name {
   font-family: var(--sans);
   font-weight: 600;
-  font-size: clamp(3rem, 6vw, 4.5rem);
-  letter-spacing: -0.035em;
+  font-size: var(--type-hero-name);
+  letter-spacing: 0;
   line-height: 1.02;
   color: var(--ink);
 }
 .hero-lead__tag {
   font-family: var(--sans);
   font-weight: 400;
-  font-size: clamp(1rem, 1.5vw, 1.18rem);
-  letter-spacing: -0.005em;
+  font-size: var(--type-hero-tag);
+  letter-spacing: 0;
   line-height: 1.5;
   color: var(--ink-3);
   max-width: 32ch;
@@ -1886,8 +1958,8 @@ html.has-doom-overlay body {
 .strudel-repl__textarea:focus { outline: none; }
 .strudel-repl__macbook .strudel-repl__overlay,
 .strudel-repl__macbook .strudel-repl__textarea {
-  font: clamp(5.8px, 0.8vw, 8.6px) / 1.42 var(--mono);
-  padding: clamp(7px, 1vw, 11px) clamp(8px, 1.2vw, 13px);
+  font: var(--type-repl-screen) / 1.42 var(--mono);
+  padding: var(--repl-screen-pad-y) var(--repl-screen-pad-x);
   text-shadow: none;
   scrollbar-width: none;
 }
@@ -1970,7 +2042,7 @@ html.has-doom-overlay body {
 }
 #strudel.is-strudel-pinned .strudel-repl__macbook .strudel-repl__overlay,
 #strudel.is-strudel-pinned .strudel-repl__macbook .strudel-repl__textarea {
-  font-size: clamp(7px, 1.05vw, 11px);
+  font-size: var(--type-repl-screen-pinned);
 }
 #strudel.is-strudel-pinned .strudel-repl__screen-dock {
   display: grid;
@@ -2004,7 +2076,7 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
 }
 html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbook .strudel-repl__overlay,
 html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbook .strudel-repl__textarea {
-  font-size: clamp(7px, 0.78vw, 10px);
+  font-size: var(--type-repl-screen-pinned-inverted);
 }
 .midi-mon {
   display: flex;
@@ -2526,7 +2598,7 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
   }
   .strudel-repl__macbook .strudel-repl__overlay,
   .strudel-repl__macbook .strudel-repl__textarea {
-    font-size: clamp(5.2px, 1.45vw, 7.2px);
+    font-size: var(--type-repl-screen);
     padding: 7px 8px;
   }
   .midi-mon__chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -2537,7 +2609,7 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
 .project__head { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
 .project__head h3 {
   font-family: var(--serif); font-weight: 500; margin: 0;
-  font-size: clamp(1.4rem, 2.2vw, 1.8rem); letter-spacing: -0.015em;
+  font-size: var(--type-project-head); letter-spacing: 0;
 }
 .project__sub { color: var(--ink-3); }
 .project__body { margin: 0.75rem 0 1rem; color: var(--ink-2); text-wrap: pretty; }
@@ -2648,10 +2720,10 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
 }
 .award-hero__title {
   font-family: var(--sans);
-  font-size: clamp(1.25rem, 1.9vw, 1.65rem);
+  font-size: var(--type-award-title);
   font-weight: 600;
   line-height: 1.18;
-  letter-spacing: -0.018em;
+  letter-spacing: 0;
   color: var(--ink);
 }
 .award-hero__project {
@@ -2719,9 +2791,9 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
 .read-only-hero h1 {
   margin: 0;
   font-family: var(--sans);
-  font-size: clamp(4.2rem, 9vw, 8.2rem);
+  font-size: var(--type-read-only-hero);
   font-weight: 600;
-  letter-spacing: -0.055em;
+  letter-spacing: 0;
   line-height: 0.92;
 }
 .read-only-hero__title {
@@ -2777,9 +2849,9 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
 .mobile-resume-hero h1 {
   margin: 0;
   font-family: var(--sans);
-  font-size: clamp(3rem, 13vw, 5rem);
+  font-size: var(--type-mobile-resume-hero);
   font-weight: 600;
-  letter-spacing: -0.045em;
+  letter-spacing: 0;
   line-height: 0.96;
 }
 .mobile-resume-hero__title {
@@ -2833,7 +2905,7 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
 .mobile-summary {
   margin: 0;
   color: var(--ink);
-  font-size: clamp(1.08rem, 5.1vw, 1.45rem);
+  font-size: var(--type-mobile-summary);
   line-height: 1.45;
 }
 .mobile-jobs,
@@ -2874,9 +2946,9 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
 .mobile-project h3 {
   margin: 0;
   font-family: var(--sans);
-  font-size: clamp(1.28rem, 6.2vw, 1.9rem);
+  font-size: var(--type-mobile-job-head);
   font-weight: 600;
-  letter-spacing: -0.025em;
+  letter-spacing: 0;
   line-height: 1.08;
 }
 .mobile-job__tag,
@@ -3082,7 +3154,7 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
   font-family: var(--sans);
   font-size: 1.05rem;
   font-weight: 600;
-  letter-spacing: -0.018em;
+  letter-spacing: 0;
   line-height: 1.08;
 }
 .refs__text {
@@ -3432,7 +3504,7 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
     font-size: 0.62rem;
   }
   .summary {
-    font-size: clamp(0.95rem, 4.8vw, 1.35rem);
+    font-size: var(--type-summary);
   }
   .job {
     grid-template-columns: 1fr;
@@ -3573,7 +3645,7 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
   }
   .read-only-hero h1 {
     font-size: 42pt;
-    letter-spacing: -0.052em;
+    letter-spacing: 0;
     line-height: 0.94;
   }
   .read-only-hero__title {
