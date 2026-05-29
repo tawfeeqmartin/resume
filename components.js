@@ -2387,6 +2387,8 @@ function getActiveHelpPlayerForKeyboard() {
   if (fullscreenSlot?.classList?.contains('help-player')) return fullscreenSlot;
   const pseudo = document.querySelector('.help-player.is-pseudo-fullscreen');
   if (pseudo) return pseudo;
+  const pinned = document.querySelector('#help.is-help-pinned .help-player');
+  if (pinned) return pinned;
   const focused = document.activeElement?.closest?.('.help-player');
   if (focused) return focused;
   return document.querySelector('.help-player:hover');

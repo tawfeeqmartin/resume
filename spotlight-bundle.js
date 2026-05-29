@@ -847,6 +847,10 @@ class SpotlightRenderer {
       return;
     }
     if (key === 'a' || key === 'd' || key === 'w' || key === 's' || key === 'arrowleft' || key === 'arrowright' || key === 'arrowup') {
+      if ((key === 'a' || key === 'd' || key === 'w' || key === 's') && this.current) {
+        const video = this.current.loaded.video;
+        if (video.paused || video.muted) this.playWithSound({ restart: false });
+      }
       this.keys.add(key);
       this.autoSpin = false;
       e.preventDefault();
