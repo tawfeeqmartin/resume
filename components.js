@@ -5459,7 +5459,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     lastCutAt: 0,
     lastRhythmCutAt: 0,
     lastSparseCutAt: 0,
-    lastHatStutterAt: 0,
+    lastHatTrackingPulseAt: 0,
     lastVocalPunchAt: 0,
     sparseMotif: null,
     liveEdit: { punchUntil: 0, punchScale: 1 },
@@ -6765,7 +6765,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         ctx2d.restore();
       }
     }
-    // Clap or power-on: vertical-hold drift — full image scrolls vertically
+    // Clap or power-on: vertical roll drift — full image scrolls vertically
     // with wrap-around plus a dark sync bar at the seam.
     if (kind === 'clap' || kind === 'powerOn') {
       const rollPhase = state.macBloom?.rollPhase ?? 0;
@@ -7347,25 +7347,28 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     }, duration + 24);
   }, [drawSourceToCanvas]);
 
-  const applyHatStutter = React.useCallback((detail = {}) => {
+  // Realtime edit FX must never pause, seek, or throttle the active clip.
+  // They redraw the current video frame through canvas overlays while the
+  // underlying HTMLVideoElement keeps playing.
+  const applyHatTrackingPulse = React.useCallback((detail = {}) => {
     const state = stateRef.current;
     if (state.tabVisible === false || state.tvVisible === false) return;
     if (state.channelFlipping || !state.currentVideo || state.currentVideo.paused) return;
     const now = performance.now();
-    if (now - state.lastHatStutterAt < 1450) return;
+    if (now - state.lastHatTrackingPulseAt < 1450) return;
     if ((detail.id || 0) % 4 !== 1) return;
-    state.lastHatStutterAt = now;
-    const holdMs = Math.max(38, Math.min(58, (detail.duration || 90) * 0.45));
+    state.lastHatTrackingPulseAt = now;
+    const pulseMs = Math.max(38, Math.min(58, (detail.duration || 90) * 0.45));
     if (state.deviceMode === 'mac') {
       animateMacBloomBurst('bass', {
         id: detail.id,
-        duration: holdMs,
+        duration: pulseMs,
         strength: 0.42,
       });
       return;
     }
     state.tracking = {
-      activeUntil: now + holdMs,
+      activeUntil: now + pulseMs,
       seed: (detail.id || 1) * 191,
       strength: 0.34,
     };
@@ -8276,7 +8279,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
   React.useEffect(() => {
     const onDrumHit = (event) => {
       if (event.detail?.lane === 'hat') {
-        applyHatStutter(event.detail);
+        applyHatTrackingPulse(event.detail);
         return;
       }
       if (event.detail?.lane !== 'snare') return;
@@ -8295,7 +8298,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     };
     window.addEventListener('resume-drum-hit', onDrumHit);
     return () => window.removeEventListener('resume-drum-hit', onDrumHit);
-  }, [animateChannelFlip, animateMacBloomBurst, animateKeyPress, applyHatStutter]);
+  }, [animateChannelFlip, animateMacBloomBurst, animateKeyPress, applyHatTrackingPulse]);
 
   React.useEffect(() => {
     const onVocalCue = (event) => {
@@ -8498,7 +8501,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     stateRef.current.lastCutAt = 0;
     stateRef.current.lastRhythmCutAt = 0;
     stateRef.current.lastSparseCutAt = 0;
-    stateRef.current.lastHatStutterAt = 0;
+    stateRef.current.lastHatTrackingPulseAt = 0;
     stateRef.current.lastVocalPunchAt = 0;
     stateRef.current.sparseMotif = null;
     stateRef.current.vocalSampleLoop = -1;

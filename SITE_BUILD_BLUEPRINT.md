@@ -67,6 +67,7 @@ Design direction:
 - Labels should be small and standardized; drawing titles should be larger and placed consistently.
 - Avoid overlapping labels, cropped marks, and inconsistent drawing placement between page turns.
 - Do not use pill-shaped chips/badges for editorial or resume content, including shows, credits, skills, projects, awards, and proof points. Use plain text ledgers, line-separated labels, square technical tags, or real controls instead.
+- Realtime Mac/TV edit FX must not pause, freeze, seek backward, set playback rate to zero, or simulate stop-motion holds on active video. Music-reactive edits should be continuous playback with canvas redraws only: hard cuts, punch-in zoom, CRT bloom, tracking roll, static, and overlays are allowed. `video.pause()` is only acceptable for cleanup, offscreen power management, power-off state, stale cached clips, or replacing a superseded clip.
 
 Functional visual motifs:
 
