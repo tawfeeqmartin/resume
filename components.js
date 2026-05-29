@@ -2471,6 +2471,7 @@ function HelpPlayer({ src }) {
   const wasPlayingBeforeHiddenRef = useRef(false);
   const keyboardStartPendingRef = useRef(false);
   const resizeTimerRef = useRef(null);
+  const offscreenPauseTimerRef = useRef(null);
 
 	  const forceRendererResize = React.useCallback(() => {
 	    const renderer = rendererRef.current;
@@ -2486,6 +2487,12 @@ function HelpPlayer({ src }) {
       rendererRef.current?.resize?.();
 	    }, 260);
 	  }, []);
+
+  const clearOffscreenPauseTimer = React.useCallback(() => {
+    if (!offscreenPauseTimerRef.current) return;
+    window.clearTimeout(offscreenPauseTimerRef.current);
+    offscreenPauseTimerRef.current = null;
+  }, []);
 
 	  const getVideoUrl = React.useCallback((candidate) => {
 	    if (typeof candidate === 'string') return candidate;
@@ -2582,12 +2589,13 @@ function HelpPlayer({ src }) {
         detail: { id: 'help-player', active: false },
       }));
       if (rendererRef.current) { rendererRef.current.dispose(); rendererRef.current = null; }
+      clearOffscreenPauseTimer();
       if (resizeTimerRef.current) {
         window.clearTimeout(resizeTimerRef.current);
         resizeTimerRef.current = null;
       }
     };
-	  }, [src, shouldLoad, forceRendererResize, canPlaySource, getVideoUrl]);
+	  }, [src, shouldLoad, forceRendererResize, canPlaySource, getVideoUrl, clearOffscreenPauseTimer]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -2630,25 +2638,37 @@ function HelpPlayer({ src }) {
     if (status !== 'ready' || typeof IntersectionObserver === 'undefined') return undefined;
     const slot = hostRef.current?.closest('.help-player');
     if (!slot) return undefined;
+    const isPinned = () => Boolean(slot.closest('#help')?.classList.contains('is-help-pinned'));
+    const pauseWhenStablyOffscreen = () => {
+      if (offscreenPauseTimerRef.current || isPinned()) return;
+      offscreenPauseTimerRef.current = window.setTimeout(() => {
+        offscreenPauseTimerRef.current = null;
+        if (isPinned()) return;
+        const renderer = rendererRef.current;
+        if (!renderer) return;
+        wasPlayingBeforeHiddenRef.current = !pausedRef.current;
+        if (!pausedRef.current) {
+          pausedRef.current = true;
+          setPaused(true);
+          renderer.pause();
+          if (!mutedRef.current) {
+            audibleRef.current = false;
+            window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
+              detail: { id: 'help-player', active: false },
+            }));
+          }
+        }
+      }, 650);
+    };
     const observer = new IntersectionObserver(
       ([entry]) => {
         const renderer = rendererRef.current;
         if (!renderer) return;
-        if (!entry.isIntersecting || entry.intersectionRatio < 0.16) {
-          wasPlayingBeforeHiddenRef.current = !pausedRef.current;
-          if (!pausedRef.current) {
-            pausedRef.current = true;
-            setPaused(true);
-            renderer.pause();
-            if (!mutedRef.current) {
-              audibleRef.current = false;
-              window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
-                detail: { id: 'help-player', active: false },
-              }));
-            }
-          }
+        if ((!entry.isIntersecting || entry.intersectionRatio < 0.16) && !isPinned()) {
+          pauseWhenStablyOffscreen();
           return;
         }
+        clearOffscreenPauseTimer();
         forceRendererResize();
         if (
           entry.intersectionRatio >= 0.48 &&
@@ -2662,8 +2682,11 @@ function HelpPlayer({ src }) {
       { threshold: [0, 0.16, 0.48, 1] }
     );
     observer.observe(slot);
-    return () => observer.disconnect();
-  }, [status, forceRendererResize]);
+    return () => {
+      clearOffscreenPauseTimer();
+      observer.disconnect();
+    };
+  }, [status, forceRendererResize, clearOffscreenPauseTimer]);
 
   useEffect(() => {
     if (status !== 'ready') return undefined;
@@ -2713,6 +2736,7 @@ function HelpPlayer({ src }) {
   const stopPlayback = React.useCallback(() => {
     userPausedRef.current = true;
     wasPlayingBeforeHiddenRef.current = false;
+    clearOffscreenPauseTimer();
     audibleRef.current = false;
     pausedRef.current = true;
     mutedRef.current = true;
@@ -2722,7 +2746,7 @@ function HelpPlayer({ src }) {
     window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
       detail: { id: 'help-player', active: false },
     }));
-  }, []);
+  }, [clearOffscreenPauseTimer]);
 
   useEffect(() => {
     const onFullscreenExit = (event) => {
@@ -2743,7 +2767,16 @@ function HelpPlayer({ src }) {
       window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
         detail: { id: 'help-player', active: true },
       }));
-      rendererRef.current.replayWithSound();
+      const playPromise = rendererRef.current.playWithSound
+        ? rendererRef.current.playWithSound({ restart: false })
+        : rendererRef.current.play?.();
+      if (playPromise?.catch) {
+        playPromise.catch(() => {
+          window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
+            detail: { id: 'help-player', active: false },
+          }));
+        });
+      }
     } else {
       stopPlayback();
     }
