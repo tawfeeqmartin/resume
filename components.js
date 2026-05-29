@@ -3376,7 +3376,7 @@ function ProofStampRow({ items, compact, className = "" }) {
 
 function BlackbirdFeature({ innovationSrc, behindScenesSrc }) {
   return (
-    <Section id="blackbird" label="04 · LIVE · THE MILL BLACKBIRD">
+    <Section id="blackbird" label="04 · SELECTED WORK · THE MILL BLACKBIRD">
       <div className="help-feature">
         <div className="help-feature__player-col help-feature__player-col--wide">
           <div className="video-stack">
@@ -4849,7 +4849,7 @@ function StrudelReplFeature() {
   }, []);
 
   return (
-    <Section id="strudel" label="05 · LIVE CODE · POETRY IN PROOF">
+    <Section id="strudel" label="05 · LIVE SYSTEM · POETRY IN PROOF">
       <aside className="help-feature__notes help-feature__notes--match-stack strudel-repl__intro">
         <h3 className="serif">A browser-based music and interactive visuals demo.</h3>
         <p>
@@ -8600,7 +8600,7 @@ function HelpFeature({ src }) {
   }, []);
 
   return (
-    <Section id="help" label="03 · LIVE · MILL STITCH ™ ON HELP">
+    <Section id="help" label="03 · SELECTED WORK · MILL STITCH™ / HELP">
       <div className="help-hero">
         <div className="help-hero__intro">
           <h3 className="serif">A 360° film, served from its native projection.</h3>
@@ -8777,7 +8777,7 @@ function FourChordsFigure() {
 
 function LiveSystemFeature() {
   return (
-    <Section id="system" label="05 · LIVE · POETRY IN PROOF">
+    <Section id="system" label="05 · LIVE SYSTEM · POETRY IN PROOF">
       <div className="system-section">
         <p className="system-section__lede serif">
           The page is the demo. A proof-figure interface in the Byrne / Euclid
