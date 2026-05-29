@@ -4,7 +4,7 @@ const RESUME = {
   title: "Creative Technologist · Senior Virtual Production Engineer",
   location: "Los Angeles, CA",
   site: "tawfeeqmartin.com",
-  summary: "Award-winning creative technologist with 20+ years defining and shipping products at the intersection of emerging technology and cinematic storytelling. Core engineering team at ILM StageCraft. Previously Technical Innovations Manager at The Mill, where I led 0-to-1 product development on landmark projects including Google Spotlight Stories ‘HELP’ (dir. Justin Lin) — a double Gold Cannes Lion–winning immersive 360° film — and was one of the inventors of Mill Stitch™ and the Mill Blackbird car rig. Independent developer of AI tools and generative creative systems.",
+  summary: "Award-winning creative technologist with 20+ years defining and shipping products at the intersection of emerging technology and cinematic storytelling. Research and Development / StageCraft team at Industrial Light & Magic. Previously Technical Innovations Manager at The Mill, where I led 0-to-1 product development on landmark projects including Google Spotlight Stories ‘HELP’ (dir. Justin Lin) — a double Gold Cannes Lion–winning immersive 360° film — and was one of the inventors of Mill Stitch™ and the Mill Blackbird car rig. Independent developer of AI tools and generative creative systems.",
 
   intro: [
     "I've spent 20+ years at the intersection of emerging technology and storytelling — at Waterfront Studios, The Mill, ILM StageCraft, and in my own independent work. What draws me to this role is that it describes something I've actually been doing: taking capabilities that don't have a product shape yet and finding one.",
@@ -20,7 +20,7 @@ const RESUME = {
       period: "2020 — Present",
       tag: "Current",
       bullets: [
-        "Core engineering team for ILM StageCraft, the world's leading LED volume virtual production system, supporting major episodic and feature productions.",
+        "Research and Development / StageCraft team at Industrial Light & Magic, supporting the world's leading LED volume virtual production system across major episodic and feature productions.",
         "Architect and maintain real-time rendering infrastructure connecting both ILM in-house renderer / Unreal Engine to in-camera VFX (ICVFX) pipelines across multiple stage facilities.",
         "Active research into AI-augmented production workflows: LLM-based tooling, multi-agent orchestration, and local inference pipelines as future enhancements to virtual production infrastructure.",
         "Identify opportunities to apply frontier AI capabilities to virtual production; translate research into actionable prototypes and proposals for production integration.",
