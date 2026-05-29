@@ -2759,28 +2759,45 @@ function HelpPlayer({ src }) {
     return () => window.removeEventListener('resume-video-fullscreen-exit', onFullscreenExit);
   }, [stopPlayback, forceRendererResize]);
 
+  const playHelpWithSound = React.useCallback(() => {
+    const renderer = rendererRef.current;
+    if (!renderer) return null;
+    userPausedRef.current = false;
+    wasPlayingBeforeHiddenRef.current = false;
+    clearOffscreenPauseTimer();
+    window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
+      detail: { id: 'help-player', active: true },
+    }));
+    const playPromise = renderer.playWithSound
+      ? renderer.playWithSound({ restart: false })
+      : (() => {
+          const video = renderer.current?.loaded?.video;
+          if (video) video.muted = false;
+          return renderer.play?.();
+        })();
+    if (playPromise?.catch) {
+      playPromise.catch(() => {
+        window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
+          detail: { id: 'help-player', active: false },
+        }));
+      });
+    }
+    return playPromise;
+  }, [clearOffscreenPauseTimer]);
+
   const togglePlayback = () => {
-    if (!rendererRef.current) return;
-    if (paused) {
-      userPausedRef.current = false;
-      wasPlayingBeforeHiddenRef.current = false;
-      window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
-        detail: { id: 'help-player', active: true },
-      }));
-      const playPromise = rendererRef.current.playWithSound
-        ? rendererRef.current.playWithSound({ restart: false })
-        : rendererRef.current.play?.();
-      if (playPromise?.catch) {
-        playPromise.catch(() => {
-          window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
-            detail: { id: 'help-player', active: false },
-          }));
-        });
-      }
+    const renderer = rendererRef.current;
+    if (!renderer) return;
+    const rendererState = renderer.getState?.();
+    const isPaused = rendererState?.paused ?? pausedRef.current;
+    const isMuted = rendererState?.muted ?? mutedRef.current;
+    if (isPaused || isMuted) {
+      playHelpWithSound();
     } else {
       stopPlayback();
     }
   };
+  const isAudiblePlaying = !paused && !muted;
   const replayWithSound = () => {
     hideHint();
     userPausedRef.current = false;
@@ -2791,7 +2808,6 @@ function HelpPlayer({ src }) {
     rendererRef.current?.replayWithSound();
   };
   const startFromKeyboard = React.useCallback(() => {
-    setShouldLoad(true);
     setShowHint(false);
     const renderer = rendererRef.current;
     if (!renderer) {
@@ -2803,27 +2819,8 @@ function HelpPlayer({ src }) {
     const isMuted = rendererState?.muted ?? mutedRef.current;
     if (!isPaused && !isMuted) return;
     keyboardStartPendingRef.current = false;
-    userPausedRef.current = false;
-    wasPlayingBeforeHiddenRef.current = false;
-    window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
-      detail: { id: 'help-player', active: true },
-    }));
-    const playPromise = renderer.playWithSound
-      ? renderer.playWithSound({ restart: false })
-      : (() => {
-          const video = renderer.current?.loaded?.video;
-          if (!video) return renderer.play?.();
-          video.muted = false;
-          return video.play?.();
-        })();
-    if (playPromise?.catch) {
-      playPromise.catch(() => {
-        window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
-          detail: { id: 'help-player', active: false },
-        }));
-      });
-    }
-  }, []);
+    playHelpWithSound();
+  }, [playHelpWithSound]);
 
   useEffect(() => {
     const onKey = (event) => {
@@ -2856,6 +2853,7 @@ function HelpPlayer({ src }) {
       document.exitFullscreen().catch(() => {});
       return;
     }
+    playHelpWithSound();
     if (isMobileFullscreenTarget()) {
       if (rendererRef.current?.enterNativeVideoFullscreen?.()) return;
       enterPseudoFullscreen(slot, forceRendererResize);
@@ -2924,8 +2922,8 @@ function HelpPlayer({ src }) {
             </div>
           </div>
           <div className="video-controls video-controls--help" aria-label="HELP video controls">
-            <button className="video-control video-control--primary mono" onClick={togglePlayback} aria-label={paused ? 'Play video' : 'Pause video'}>
-              <span className={`video-control__icon ${paused ? 'video-control__icon--play' : 'video-control__icon--stop'}`} aria-hidden="true" />
+            <button className="video-control video-control--primary mono" onClick={togglePlayback} aria-label={isAudiblePlaying ? 'Pause video' : 'Play video with sound'}>
+              <span className={`video-control__icon ${isAudiblePlaying ? 'video-control__icon--stop' : 'video-control__icon--play'}`} aria-hidden="true" />
             </button>
             <button className="video-control mono" onClick={replayWithSound} aria-label="Replay from beginning with sound">
               <span className="video-control__icon video-control__icon--replay" aria-hidden="true" />

@@ -834,7 +834,7 @@ class SpotlightRenderer {
     if (key === ' ') {
       if (this.current) {
         const video = this.current.loaded.video;
-        if (video.paused) this.playWithSound({ restart: false });
+        if (video.paused || video.muted) this.playWithSound({ restart: false });
         else this.pauseAndMute();
       }
       e.preventDefault();
