@@ -13,6 +13,42 @@
 
 import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 
+const HELP_PLAYBACK_VOLUME = 0.86;
+const HELP_FADE_IN_MS = 140;
+
+function setVideoVolume(video, value) {
+  try {
+    video.volume = Math.max(0, Math.min(1, value));
+  } catch (_) {}
+}
+
+function fadeVideoVolume(video, target = HELP_PLAYBACK_VOLUME, duration = HELP_FADE_IN_MS) {
+  if (!video) return;
+  const safeTarget = Math.max(0, Math.min(1, target));
+  if (video.__resumeVolumeFadeRaf) {
+    cancelAnimationFrame(video.__resumeVolumeFadeRaf);
+    video.__resumeVolumeFadeRaf = 0;
+  }
+  if (!duration || typeof requestAnimationFrame !== 'function') {
+    setVideoVolume(video, safeTarget);
+    return;
+  }
+  const started = performance.now();
+  const from = Math.min(video.volume || 0, safeTarget);
+  const tick = (now) => {
+    const t = Math.min(1, (now - started) / duration);
+    const eased = 1 - Math.pow(1 - t, 2);
+    setVideoVolume(video, from + (safeTarget - from) * eased);
+    if (t < 1 && !video.paused && !video.muted) {
+      video.__resumeVolumeFadeRaf = requestAnimationFrame(tick);
+    } else {
+      video.__resumeVolumeFadeRaf = 0;
+      if (!video.muted) setVideoVolume(video, safeTarget);
+    }
+  };
+  video.__resumeVolumeFadeRaf = requestAnimationFrame(tick);
+}
+
 // ────────────────────────────────────────────────────────────────────
 //  mp4Boxes — minimal ISO BMFF walker for sv3d → proj → mshp
 // ────────────────────────────────────────────────────────────────────
@@ -512,6 +548,7 @@ function makeVideoElement(videoUrl, inlineVideoFallback) {
   video.setAttribute('playsinline', '');
   video.setAttribute('webkit-playsinline', '');
   video.muted = true;
+  setVideoVolume(video, HELP_PLAYBACK_VOLUME);
   video.preload = 'auto';
   video.style.cssText = `position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:${inlineVideoFallback ? '1' : '0'};pointer-events:none;`;
   return video;
@@ -646,8 +683,9 @@ class SpotlightRenderer {
     if (typeof loaded.video.requestVideoFrameCallback === 'function') {
       loaded.video.requestVideoFrameCallback(() => this._renderCurrentFrame());
     }
-    // Try silent autoplay — we already set muted=true so this should pass the autoplay gate.
-    loaded.video.play().catch(err => console.warn('[spotlight] autoplay blocked:', err));
+    // Keep the decoded first frame visible without silently advancing the
+    // full HELP WebM. Explicit play/fullscreen/WASD gestures start playback.
+    this._emitState();
   }
 
   setAutoSpin(v) { this.autoSpin = v; }
@@ -673,8 +711,13 @@ class SpotlightRenderer {
   pauseAndMute() {
     if (!this.current) return;
     const video = this.current.loaded.video;
+    if (video.__resumeVolumeFadeRaf) {
+      cancelAnimationFrame(video.__resumeVolumeFadeRaf);
+      video.__resumeVolumeFadeRaf = 0;
+    }
     video.muted = true;
     video.pause();
+    setVideoVolume(video, HELP_PLAYBACK_VOLUME);
     this._emitState();
   }
   replayWithSound() {
@@ -683,7 +726,9 @@ class SpotlightRenderer {
   playWithSound({ restart = false } = {}) {
     if (!this.current) return;
     const video = this.current.loaded.video;
+    const fadeStartVolume = Math.min(video.volume || HELP_PLAYBACK_VOLUME, 0.38);
     video.muted = false;
+    setVideoVolume(video, fadeStartVolume);
     const start = () => {
       if (restart) {
         try { video.currentTime = 0; } catch (_) {}
@@ -692,13 +737,16 @@ class SpotlightRenderer {
       this._emitState();
       if (promise?.then) {
         return promise.then(() => {
+          fadeVideoVolume(video);
           this._emitState();
           return true;
         }).catch((err) => {
+          setVideoVolume(video, HELP_PLAYBACK_VOLUME);
           this._emitState();
           throw err;
         });
       }
+      fadeVideoVolume(video);
       return Promise.resolve(true);
     };
     if (video.readyState >= HTMLMediaElement.HAVE_METADATA) return start();
@@ -723,6 +771,12 @@ class SpotlightRenderer {
     const enter = video.webkitEnterFullscreen || video.webkitEnterFullScreen || video.requestFullscreen;
     if (!enter) return false;
     try {
+      const slot = this.host.closest?.('.help-player') || this.host;
+      video.addEventListener('webkitendfullscreen', () => {
+        window.dispatchEvent(new CustomEvent('resume-video-fullscreen-exit', {
+          detail: { slot },
+        }));
+      }, { once: true });
       enter.call(video);
       return true;
     } catch (_) {

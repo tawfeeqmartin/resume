@@ -2496,6 +2496,12 @@ function HelpPlayer({ src }) {
     offscreenPauseTimerRef.current = null;
   }, []);
 
+  const emitHelpImmersiveState = React.useCallback((active, reason = 'help') => {
+    window.dispatchEvent(new CustomEvent('resume-help-immersive-state', {
+      detail: { active: Boolean(active), reason },
+    }));
+  }, []);
+
 	  const getVideoUrl = React.useCallback((candidate) => {
 	    if (typeof candidate === 'string') return candidate;
 	    return candidate.videoUrl || candidate.src || candidate.url;
@@ -2590,6 +2596,7 @@ function HelpPlayer({ src }) {
       window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
         detail: { id: 'help-player', active: false },
       }));
+      emitHelpImmersiveState(false, 'unmount');
       if (rendererRef.current) { rendererRef.current.dispose(); rendererRef.current = null; }
       clearOffscreenPauseTimer();
       if (resizeTimerRef.current) {
@@ -2597,7 +2604,7 @@ function HelpPlayer({ src }) {
         resizeTimerRef.current = null;
       }
     };
-	  }, [src, shouldLoad, forceRendererResize, canPlaySource, getVideoUrl, clearOffscreenPauseTimer]);
+	  }, [src, shouldLoad, forceRendererResize, canPlaySource, getVideoUrl, clearOffscreenPauseTimer, emitHelpImmersiveState]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -2640,12 +2647,16 @@ function HelpPlayer({ src }) {
     if (status !== 'ready' || typeof IntersectionObserver === 'undefined') return undefined;
     const slot = hostRef.current?.closest('.help-player');
     if (!slot) return undefined;
-    const isPinned = () => Boolean(slot.closest('#help')?.classList.contains('is-help-pinned'));
+    const isImmersive = () => (
+      Boolean(slot.closest('#help')?.classList.contains('is-help-pinned')) ||
+      slot.classList.contains('is-pseudo-fullscreen') ||
+      getVideoFullscreenSlot(document.fullscreenElement) === slot
+    );
     const pauseWhenStablyOffscreen = () => {
-      if (offscreenPauseTimerRef.current || isPinned()) return;
+      if (offscreenPauseTimerRef.current || isImmersive()) return;
       offscreenPauseTimerRef.current = window.setTimeout(() => {
         offscreenPauseTimerRef.current = null;
-        if (isPinned()) return;
+        if (isImmersive()) return;
         const renderer = rendererRef.current;
         if (!renderer) return;
         wasPlayingBeforeHiddenRef.current = !pausedRef.current;
@@ -2666,7 +2677,7 @@ function HelpPlayer({ src }) {
       ([entry]) => {
         const renderer = rendererRef.current;
         if (!renderer) return;
-        if ((!entry.isIntersecting || entry.intersectionRatio < 0.16) && !isPinned()) {
+        if ((!entry.isIntersecting || entry.intersectionRatio < 0.16) && !isImmersive()) {
           pauseWhenStablyOffscreen();
           return;
         }
@@ -2754,12 +2765,13 @@ function HelpPlayer({ src }) {
     const onFullscreenExit = (event) => {
       const slot = hostRef.current?.closest('.help-player');
       if (!slot || event.detail?.slot !== slot) return;
+      emitHelpImmersiveState(false, 'fullscreen');
       stopPlayback();
       forceRendererResize();
     };
     window.addEventListener('resume-video-fullscreen-exit', onFullscreenExit);
     return () => window.removeEventListener('resume-video-fullscreen-exit', onFullscreenExit);
-  }, [stopPlayback, forceRendererResize]);
+  }, [stopPlayback, forceRendererResize, emitHelpImmersiveState]);
 
   const playHelpWithSound = React.useCallback(() => {
     const renderer = rendererRef.current;
@@ -2855,6 +2867,7 @@ function HelpPlayer({ src }) {
       document.exitFullscreen().catch(() => {});
       return;
     }
+    emitHelpImmersiveState(true, 'fullscreen');
     playHelpWithSound();
     if (isMobileFullscreenTarget()) {
       if (rendererRef.current?.enterNativeVideoFullscreen?.()) return;
@@ -3082,6 +3095,25 @@ function VideoSlot({ src, label, fallbackPath }) {
       detail: { id: slotIdRef.current, active: false },
     }));
   }, []);
+
+  useEffect(() => {
+    const pauseForHelp = (event) => {
+      if (event.type === 'resume-video-audio-state') {
+        if (event.detail?.id !== 'help-player' || !event.detail?.active) return;
+      } else if (!event.detail?.active && !event.detail?.pinned) {
+        return;
+      }
+      stopPlayback();
+    };
+    window.addEventListener('resume-video-audio-state', pauseForHelp);
+    window.addEventListener('resume-help-pin-change', pauseForHelp);
+    window.addEventListener('resume-help-immersive-state', pauseForHelp);
+    return () => {
+      window.removeEventListener('resume-video-audio-state', pauseForHelp);
+      window.removeEventListener('resume-help-pin-change', pauseForHelp);
+      window.removeEventListener('resume-help-immersive-state', pauseForHelp);
+    };
+  }, [stopPlayback]);
 
   useEffect(() => {
     if (status !== 'ready') return undefined;
@@ -5506,6 +5538,9 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    macBloomRaf: 0,
 	    tvVisible: true,
 	    tabVisible: typeof document === 'undefined' ? true : !document.hidden,
+	    helpPlayerActive: false,
+	    helpPinned: false,
+	    helpImmersive: false,
 	    requestRender: null,
 	    powerPausedVideo: null,
 	    powerToggleInFlight: false,
@@ -5519,6 +5554,11 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
   const lastCutRef = React.useRef(0);
   const lastChordKeyRef = React.useRef(null);
   const currentIdxRef = React.useRef(-1);
+
+  const helpOwnsTvStage = React.useCallback(() => {
+    const state = stateRef.current;
+    return Boolean(state.helpPlayerActive || state.helpPinned || state.helpImmersive);
+  }, []);
 
   React.useEffect(() => { phaseRef.current = phase; }, [phase]);
 
@@ -5903,7 +5943,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
   }, []);
 
   const playVocalRegion = React.useCallback(async (sample, region = {}, detail = {}) => {
-    if (!sample || stateRef.current.tabVisible === false || stateRef.current.tvVisible === false) return;
+    if (!sample || stateRef.current.tabVisible === false || stateRef.current.tvVisible === false || helpOwnsTvStage()) return;
     if (!window.__resumeStrudelAudioEngine?.enabled) return;
     const context = getMusicAudioContext();
     if (!context) return;
@@ -5982,7 +6022,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         texture,
       },
     }));
-  }, [VOCAL_HOOK_VOLUME, emitVocalMidi, getMusicAudioContext, loadVocalSampleBuffer]);
+  }, [VOCAL_HOOK_VOLUME, emitVocalMidi, getMusicAudioContext, helpOwnsTvStage, loadVocalSampleBuffer]);
 
   const playVocalMoment = React.useCallback((sample, mode, scheduledTime, slotIndex = 0) => {
     if (!sample) return;
@@ -7385,7 +7425,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
   // underlying HTMLVideoElement keeps playing.
   const applyHatTrackingPulse = React.useCallback((detail = {}) => {
     const state = stateRef.current;
-    if (state.tabVisible === false || state.tvVisible === false) return;
+    if (state.tabVisible === false || state.tvVisible === false || helpOwnsTvStage()) return;
     if (state.channelFlipping || !state.currentVideo || state.currentVideo.paused) return;
     const now = performance.now();
     if (now - state.lastHatTrackingPulseAt < 1450) return;
@@ -7406,7 +7446,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       strength: 0.34,
     };
     if (!state.currentVideo) animateTrackingBurst();
-  }, [animateMacBloomBurst, animateTrackingBurst]);
+  }, [animateMacBloomBurst, animateTrackingBurst, helpOwnsTvStage]);
 
   React.useEffect(() => {
     const state = stateRef.current;
@@ -7419,9 +7459,18 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       state.videoFrameRequest = 0;
     };
     const pauseTvWork = () => {
+      state.cutToken = (state.cutToken || 0) + 1;
       cancelAnimationFrame(state.raf);
       state.raf = 0;
       cancelVideoCallbacks();
+      cancelAnimationFrame(state.trackingRaf);
+      cancelAnimationFrame(state.channelRaf);
+      cancelAnimationFrame(state.macBloomRaf);
+      state.trackingRaf = 0;
+      state.channelRaf = 0;
+      state.macBloomRaf = 0;
+      state.channelFlipping = false;
+      window.clearTimeout(state.channelCutTimer);
       stopVocalSamples(12);
       if (state.currentVideo) {
         state.powerPausedVideo = state.currentVideo;
@@ -7445,7 +7494,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       }
     };
     const syncPowerState = () => {
-      const active = state.tabVisible !== false && state.tvVisible !== false;
+      const active = state.tabVisible !== false && state.tvVisible !== false && !helpOwnsTvStage();
       if (active) resumeTvWork();
       else pauseTvWork();
     };
@@ -7453,7 +7502,23 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       state.tabVisible = !document.hidden;
       syncPowerState();
     };
+    const onHelpAudioState = (event) => {
+      if (event.detail?.id !== 'help-player') return;
+      state.helpPlayerActive = Boolean(event.detail?.active);
+      syncPowerState();
+    };
+    const onHelpPinChange = (event) => {
+      state.helpPinned = Boolean(event.detail?.pinned);
+      syncPowerState();
+    };
+    const onHelpImmersiveState = (event) => {
+      state.helpImmersive = Boolean(event.detail?.active);
+      syncPowerState();
+    };
     document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('resume-video-audio-state', onHelpAudioState);
+    window.addEventListener('resume-help-pin-change', onHelpPinChange);
+    window.addEventListener('resume-help-immersive-state', onHelpImmersiveState);
     let observer = null;
     if (typeof IntersectionObserver !== 'undefined' && wrapRef.current) {
       observer = new IntersectionObserver((entries) => {
@@ -7462,12 +7527,20 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       }, { rootMargin: '640px 0px' });
       observer.observe(wrapRef.current);
     }
+    state.helpPinned = Boolean(document.querySelector('#help.is-help-pinned'));
+    state.helpImmersive = Boolean(
+      document.querySelector('.help-player.is-pseudo-fullscreen') ||
+      getVideoFullscreenSlot(document.fullscreenElement)?.classList?.contains('help-player')
+    );
     onVisibility();
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('resume-video-audio-state', onHelpAudioState);
+      window.removeEventListener('resume-help-pin-change', onHelpPinChange);
+      window.removeEventListener('resume-help-immersive-state', onHelpImmersiveState);
       observer?.disconnect();
     };
-  }, [drawVideoLoop, engineEnabled, pauseAllCachedVideos, stopVocalSamples]);
+  }, [drawVideoLoop, engineEnabled, helpOwnsTvStage, pauseAllCachedVideos, stopVocalSamples]);
 
   const animateChannelFlip = React.useCallback((detail = {}) => {
     const state = stateRef.current;
@@ -7514,7 +7587,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 
   const cutRef = React.useRef(null);
   const cut = React.useCallback((lane, options = {}) => {
-    if (!availableSources.length) return;
+    if (!availableSources.length || helpOwnsTvStage()) return;
     const idx = pickIndex(lane, options);
     currentIdxRef.current = idx;
     const source = availableSources[idx];
@@ -7545,7 +7618,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         cache.set(src, video);
       }
       const mountVideo = () => {
-        if (stateRef.current.cutToken !== cutToken) {
+        if (stateRef.current.cutToken !== cutToken || helpOwnsTvStage()) {
           if (stateRef.current.currentVideo !== video) {
             try { video.pause(); } catch {}
           }
@@ -7581,7 +7654,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         };
         const commitVideo = () => {
           if (committed) return;
-          if (stateRef.current.cutToken !== cutToken) {
+          if (stateRef.current.cutToken !== cutToken || helpOwnsTvStage()) {
             cleanupReadyListeners();
             if (stateRef.current.currentVideo !== video) {
               try { video.pause(); } catch {}
@@ -7619,7 +7692,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         };
         const onReady = () => {
           if (committed) return;
-          if (stateRef.current.cutToken !== cutToken) {
+          if (stateRef.current.cutToken !== cutToken || helpOwnsTvStage()) {
             cleanupReadyListeners();
             if (stateRef.current.currentVideo !== video) {
               try { video.pause(); } catch {}
@@ -7667,7 +7740,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       cache.set(src, img);
     }
     if (img.complete && img.naturalWidth > 0) {
-      if (stateRef.current.cutToken !== cutToken) return;
+      if (stateRef.current.cutToken !== cutToken || helpOwnsTvStage()) return;
       stateRef.current.currentImage = img;
       stateRef.current.currentMedia = img;
       stateRef.current.currentSource = source;
@@ -7676,7 +7749,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       drawSourceToCanvas(img);
     } else {
       img.onload = () => {
-        if (stateRef.current.cutToken !== cutToken) return;
+        if (stateRef.current.cutToken !== cutToken || helpOwnsTvStage()) return;
         stateRef.current.currentImage = img;
         stateRef.current.currentMedia = img;
         stateRef.current.currentSource = source;
@@ -7686,7 +7759,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         drawSourceToCanvas(img);
       };
     }
-  }, [availableSources, pickIndex, drawSourceToCanvas, drawVideoLoop, stopVideoLoop, trimVideoCache]);
+  }, [availableSources, pickIndex, drawSourceToCanvas, drawVideoLoop, helpOwnsTvStage, stopVideoLoop, trimVideoCache]);
   React.useEffect(() => { cutRef.current = cut; }, [cut]);
 
   // Init Three.js scene (lazy-loaded)
@@ -8089,13 +8162,13 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         // Initial state: Mac boots powered-off with the "click to start"
         // prompt. TV mode boots with a starter cut.
         if (stateRef.current.deviceMode === 'mac') {
-          if (window.__resumeStrudelAudioEngine?.enabled) {
+          if (window.__resumeStrudelAudioEngine?.enabled && !helpOwnsTvStage()) {
             cutRef.current?.('init');
           } else {
             drawMacOffScreen();
           }
         } else {
-          cutRef.current?.('init');
+          if (!helpOwnsTvStage()) cutRef.current?.('init');
         }
       }, (progress) => {
         if (progress.total) console.info(`[TvHero] loading ${(progress.loaded / progress.total * 100).toFixed(0)}%`);
@@ -8282,7 +8355,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
   React.useEffect(() => {
     const onBassHit = (event) => {
       if (event.detail?.lane && event.detail.lane !== 'bass') return;
-      if (stateRef.current.tabVisible === false || stateRef.current.tvVisible === false) return;
+      if (stateRef.current.tabVisible === false || stateRef.current.tvVisible === false || helpOwnsTvStage()) return;
       const media = stateRef.current.currentMedia || stateRef.current.currentImage;
       if (!media) return;
       if (stateRef.current.deviceMode === 'mac') {
@@ -8307,16 +8380,17 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     };
     window.addEventListener('resume-bass-hit', onBassHit);
     return () => window.removeEventListener('resume-bass-hit', onBassHit);
-  }, [animateTrackingBurst, animateMacBloomBurst]);
+  }, [animateTrackingBurst, animateMacBloomBurst, helpOwnsTvStage]);
 
   React.useEffect(() => {
     const onDrumHit = (event) => {
+      if (helpOwnsTvStage()) return;
       if (event.detail?.lane === 'hat') {
         applyHatTrackingPulse(event.detail);
         return;
       }
       if (event.detail?.lane !== 'snare') return;
-      if (stateRef.current.tabVisible === false || stateRef.current.tvVisible === false) return;
+      if (stateRef.current.tabVisible === false || stateRef.current.tvVisible === false || helpOwnsTvStage()) return;
       stateRef.current.lastRhythmCutAt = performance.now();
       stateRef.current.rhythmCutCount = (stateRef.current.rhythmCutCount || 0) + 1;
       stateRef.current.sparseMotif = null;
@@ -8331,11 +8405,11 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     };
     window.addEventListener('resume-drum-hit', onDrumHit);
     return () => window.removeEventListener('resume-drum-hit', onDrumHit);
-  }, [animateChannelFlip, animateMacBloomBurst, animateKeyPress, applyHatTrackingPulse]);
+  }, [animateChannelFlip, animateMacBloomBurst, animateKeyPress, applyHatTrackingPulse, helpOwnsTvStage]);
 
   React.useEffect(() => {
     const onVocalCue = (event) => {
-      if (stateRef.current.tabVisible === false || stateRef.current.tvVisible === false) return;
+      if (stateRef.current.tabVisible === false || stateRef.current.tvVisible === false || helpOwnsTvStage()) return;
       const now = performance.now();
       if (now - stateRef.current.lastVocalPunchAt < 420) return;
       stateRef.current.lastVocalPunchAt = now;
@@ -8343,7 +8417,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     };
     window.addEventListener('resume-vocal-sample-cue', onVocalCue);
     return () => window.removeEventListener('resume-vocal-sample-cue', onVocalCue);
-  }, [triggerEditPunch]);
+  }, [helpOwnsTvStage, triggerEditPunch]);
 
   // Intro + breakdown have no clap/snare lane, so without a secondary
   // cue the short trailer clips loop visibly. Let sparse melody/bass
@@ -8353,7 +8427,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     if (!engineEnabled || !availableSources.length) return undefined;
     const trySparseCut = (lane) => {
       const state = stateRef.current;
-      if (state.tabVisible === false || state.tvVisible === false) return;
+      if (state.tabVisible === false || state.tvVisible === false || helpOwnsTvStage()) return;
       const now = performance.now();
       if (now - state.lastRhythmCutAt < 1700) return;
       if (now - state.lastCutAt < 2200) return;
@@ -8382,7 +8456,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       window.removeEventListener('resume-melody-note', onMelody);
       window.removeEventListener('resume-bass-hit', onBass);
     };
-  }, [engineEnabled, availableSources, getBreakdownPosition, triggerSectionVocal]);
+  }, [engineEnabled, availableSources, getBreakdownPosition, helpOwnsTvStage, triggerSectionVocal]);
 
 	  // Click the Mac's physical controls to slide the floppy and toggle
 	  // audio + picture. Any Mac hit also captures keyboard focus so the
@@ -8512,13 +8586,13 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     const sequence = ['W', 'A', 'S', 'D'];
     let idx = 0;
     const onMelody = () => {
-      if (stateRef.current.tabVisible === false || stateRef.current.tvVisible === false) return;
+      if (stateRef.current.tabVisible === false || stateRef.current.tvVisible === false || helpOwnsTvStage()) return;
       animateKeyPress(sequence[idx % sequence.length]);
       idx++;
     };
     window.addEventListener('resume-melody-note', onMelody);
     return () => window.removeEventListener('resume-melody-note', onMelody);
-  }, [animateKeyPress]);
+  }, [animateKeyPress, helpOwnsTvStage]);
 
   // Audio-on setup. Clip changes are intentionally handled by the
   // dedicated snare/clap listener above; cutting on every kick/lead note
@@ -8539,8 +8613,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     stateRef.current.sparseMotif = null;
     stateRef.current.vocalSampleLoop = -1;
     stateRef.current.vocalSampleSlots.clear();
-    if (!stateRef.current.currentMedia) cutRef.current?.('init');
-  }, [engineEnabled, availableSources]);
+    if (!stateRef.current.currentMedia && !helpOwnsTvStage()) cutRef.current?.('init');
+  }, [engineEnabled, availableSources, helpOwnsTvStage]);
 
   // Idle cut cycle when audio is off — keeps something on the screen
   React.useEffect(() => {
@@ -8562,10 +8636,11 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       drawMacOffScreen();
       return;
     }
+    if (helpOwnsTvStage()) return undefined;
     cutRef.current?.('idle');
     const t = setInterval(() => cutRef.current?.('idle'), 3500);
     return () => clearInterval(t);
-  }, [engineEnabled, availableSources, drawMacOffScreen, pauseAllCachedVideos, stopVocalSamples]);
+  }, [engineEnabled, availableSources, drawMacOffScreen, helpOwnsTvStage, pauseAllCachedVideos, stopVocalSamples]);
 
   return (
     <div
