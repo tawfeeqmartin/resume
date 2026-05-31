@@ -15,6 +15,9 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 
 const HELP_PLAYBACK_VOLUME = 0.86;
 const HELP_FADE_IN_MS = 140;
+const HELP_STALL_WATCHDOG_MS = 850;
+const HELP_STALL_NUDGE_SECONDS = 0.12;
+const HELP_STALL_MIN_PROGRESS_SECONDS = 0.08;
 
 function setVideoVolume(video, value) {
   try {
@@ -632,6 +635,7 @@ class SpotlightRenderer {
     this.resizeObserver = null;
     this.onStateChange = null;
     this.disposed = false;
+    this.playbackWatchdog = 0;
 
     this._onResize = this._onResize.bind(this);
     this._onDown = this._onDown.bind(this);
@@ -698,19 +702,23 @@ class SpotlightRenderer {
   }
   play() {
     if (!this.current) return;
-    const promise = this.current.loaded.video.play();
+    const video = this.current.loaded.video;
+    const promise = video.play();
+    this._startPlaybackWatchdog(video);
     this._emitState();
     if (promise?.catch) promise.catch(() => this._emitState());
     return promise;
   }
   pause() {
     if (!this.current) return;
+    this._clearPlaybackWatchdog();
     this.current.loaded.video.pause();
     this._emitState();
   }
   pauseAndMute() {
     if (!this.current) return;
     const video = this.current.loaded.video;
+    this._clearPlaybackWatchdog();
     if (video.__resumeVolumeFadeRaf) {
       cancelAnimationFrame(video.__resumeVolumeFadeRaf);
       video.__resumeVolumeFadeRaf = 0;
@@ -734,13 +742,16 @@ class SpotlightRenderer {
         try { video.currentTime = 0; } catch (_) {}
       }
       const promise = video.play();
+      this._startPlaybackWatchdog(video);
       this._emitState();
       if (promise?.then) {
         return promise.then(() => {
+          this._startPlaybackWatchdog(video);
           fadeVideoVolume(video);
           this._emitState();
           return true;
         }).catch((err) => {
+          this._clearPlaybackWatchdog();
           setVideoVolume(video, HELP_PLAYBACK_VOLUME);
           this._emitState();
           throw err;
@@ -796,6 +807,46 @@ class SpotlightRenderer {
   }
   _emitState() {
     if (this.onStateChange) this.onStateChange(this.getState());
+  }
+  _clearPlaybackWatchdog() {
+    if (!this.playbackWatchdog) return;
+    window.clearTimeout(this.playbackWatchdog);
+    this.playbackWatchdog = 0;
+  }
+  _nudgeStalledVideo(video) {
+    const current = Number.isFinite(video.currentTime) ? video.currentTime : 0;
+    try {
+      if (Number.isFinite(video.duration) && video.duration > 0.4) {
+        video.currentTime = Math.min(Math.max(0.08, current + HELP_STALL_NUDGE_SECONDS), video.duration - 0.2);
+      } else {
+        video.currentTime = current + HELP_STALL_NUDGE_SECONDS;
+      }
+    } catch (_) {}
+    this._renderCurrentFrame();
+  }
+  _startPlaybackWatchdog(video, attempt = 0) {
+    this._clearPlaybackWatchdog();
+    if (!video || this.disposed) return;
+    const sampledTime = Number.isFinite(video.currentTime) ? video.currentTime : 0;
+    this.playbackWatchdog = window.setTimeout(() => {
+      this.playbackWatchdog = 0;
+      if (
+        this.disposed ||
+        !this.current ||
+        this.current.loaded.video !== video ||
+        video.paused ||
+        video.muted
+      ) {
+        return;
+      }
+      const now = Number.isFinite(video.currentTime) ? video.currentTime : sampledTime;
+      if (now - sampledTime > HELP_STALL_MIN_PROGRESS_SECONDS) return;
+      this._nudgeStalledVideo(video);
+      const promise = video.play();
+      this._emitState();
+      if (promise?.catch) promise.catch(() => this._emitState());
+      if (attempt < 2) this._startPlaybackWatchdog(video, attempt + 1);
+    }, HELP_STALL_WATCHDOG_MS + attempt * 350);
   }
   _renderCurrentFrame() {
     if (!this.current) return;
@@ -918,6 +969,7 @@ class SpotlightRenderer {
 
   dispose() {
     this.disposed = true;
+    this._clearPlaybackWatchdog();
     window.removeEventListener('resize', this._onResize);
     window.removeEventListener('pointermove', this._onMove);
     window.removeEventListener('pointerup', this._onUp);
