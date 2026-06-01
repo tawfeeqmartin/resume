@@ -11,9 +11,18 @@ PROJECT_NAME="resume"
 BRANCH="${1:-main}"
 PRODUCTION_ORIGIN="${PRODUCTION_ORIGIN:-https://tawfeeqmartin.com}"
 WRANGLER_VERSION="${WRANGLER_VERSION:-4.96.0}"
+CLOUDFLARE_ENV_FILE="${CLOUDFLARE_ENV_FILE:-.env.cloudflare}"
 STAGE_DIR="$(mktemp -d -t cf-pages-XXXXXX)"
 DEPLOY_LOG="$(mktemp -t cf-pages-deploy-log-XXXXXX)"
 trap 'rm -f "$DEPLOY_LOG"; rm -rf "$STAGE_DIR"' EXIT
+
+if [[ -f "$CLOUDFLARE_ENV_FILE" ]]; then
+  echo "→ loading Cloudflare deploy env from $CLOUDFLARE_ENV_FILE"
+  set -a
+  # shellcheck disable=SC1090
+  source "$CLOUDFLARE_ENV_FILE"
+  set +a
+fi
 
 read_cached_account_id() {
   node -e '
@@ -57,7 +66,8 @@ Then rerun:
   ./deploy.sh ${BRANCH}
 
 For token-based deploys, export CLOUDFLARE_API_TOKEN with Cloudflare Pages edit access
-and account read access. Account id in use: ${CLOUDFLARE_ACCOUNT_ID}
+and account read access, or put it in untracked ${CLOUDFLARE_ENV_FILE}.
+Account id in use: ${CLOUDFLARE_ACCOUNT_ID}
 EOF
 }
 
