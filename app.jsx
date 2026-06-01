@@ -607,6 +607,7 @@ function useHelpMediaWarmup(enabled) {
     if (!enabled) return undefined;
     let cancelled = false;
     const timerId = window.setTimeout(async () => {
+      if (window.__resumeIsPageActive && !window.__resumeIsPageActive()) return;
       try {
         const source = HELP_VIDEO_URLS.find(canWarmHelpSource);
         if (!source || cancelled) return;

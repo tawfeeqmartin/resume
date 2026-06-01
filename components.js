@@ -162,6 +162,121 @@ function resetStoredPoetryInProofSource() {
   } catch {}
 }
 
+const RESUME_PAGE_ACTIVITY_CHANNEL = 'resume-page-activity-v1';
+const RESUME_PAGE_ACTIVITY_STORAGE_KEY = 'resume.page.activeOwner.v1';
+
+function createResumePageActivityCoordinator() {
+  const instanceId = `resume-page-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  let ownerId = instanceId;
+  let ownerAt = 0;
+  let active = !document.hidden;
+  let channel = null;
+  try {
+    if ('BroadcastChannel' in window) {
+      channel = new BroadcastChannel(RESUME_PAGE_ACTIVITY_CHANNEL);
+    }
+  } catch {}
+
+  const dispatch = (reason) => {
+    window.dispatchEvent(new CustomEvent('resume-page-activity-change', {
+      detail: { active, reason, instanceId, ownerId },
+    }));
+  };
+  const setActive = (next, reason) => {
+    const normalized = Boolean(next && !document.hidden);
+    if (active === normalized) return;
+    active = normalized;
+    dispatch(reason);
+  };
+  const broadcast = (message) => {
+    const payload = { ...message, source: 'resume-page-activity', nonce: Math.random() };
+    try { channel?.postMessage(payload); } catch {}
+    try { window.localStorage?.setItem(RESUME_PAGE_ACTIVITY_STORAGE_KEY, JSON.stringify(payload)); } catch {}
+  };
+  const claim = (reason = 'claim') => {
+    if (document.hidden) {
+      setActive(false, 'hidden');
+      return;
+    }
+    ownerId = instanceId;
+    ownerAt = Date.now();
+    setActive(true, reason);
+    broadcast({ type: 'claim', id: instanceId, at: ownerAt, reason });
+  };
+  const release = (reason = 'release') => {
+    if (ownerId === instanceId) {
+      broadcast({ type: 'release', id: instanceId, at: Date.now(), reason });
+    }
+    setActive(false, reason);
+  };
+  const handleMessage = (message) => {
+    if (!message || message.source !== 'resume-page-activity') return;
+    if (message.id === instanceId) return;
+    if (message.type === 'claim') {
+      const messageAt = Number(message.at) || Date.now();
+      if (messageAt >= ownerAt) {
+        ownerId = message.id;
+        ownerAt = messageAt;
+        setActive(false, 'claimed-by-another-tab');
+      }
+      return;
+    }
+    if (message.type === 'release' && ownerId === message.id) {
+      ownerId = '';
+      ownerAt = 0;
+      if (!document.hidden) {
+        window.setTimeout(() => {
+          if (!document.hidden && ownerId !== instanceId) claim('claim-after-release');
+        }, 140);
+      }
+    }
+  };
+  const onStorage = (event) => {
+    if (event.key !== RESUME_PAGE_ACTIVITY_STORAGE_KEY || !event.newValue) return;
+    try { handleMessage(JSON.parse(event.newValue)); } catch {}
+  };
+  const onVisibility = () => {
+    if (document.hidden) release('hidden');
+    else claim('visible');
+  };
+  const onPageHide = () => release('pagehide');
+
+  if (channel?.addEventListener) {
+    channel.addEventListener('message', (event) => handleMessage(event.data));
+  } else if (channel) {
+    channel.onmessage = (event) => handleMessage(event.data);
+  }
+  window.addEventListener('storage', onStorage);
+  document.addEventListener('visibilitychange', onVisibility);
+  document.addEventListener('freeze', onPageHide);
+  window.addEventListener('pagehide', onPageHide);
+  window.addEventListener('focus', () => claim('focus'));
+  window.addEventListener('pageshow', () => claim('pageshow'));
+  window.addEventListener('pointerdown', () => claim('pointer'), true);
+  window.addEventListener('keydown', () => claim('keyboard'), true);
+  window.setTimeout(() => claim('init'), 0);
+
+  return {
+    id: instanceId,
+    get active() { return Boolean(active && !document.hidden && ownerId === instanceId); },
+    claim,
+    release,
+  };
+}
+
+function getResumePageActivity() {
+  if (!window.__resumePageActivity) {
+    window.__resumePageActivity = createResumePageActivityCoordinator();
+  }
+  return window.__resumePageActivity;
+}
+
+function isResumePageActive() {
+  return getResumePageActivity().active;
+}
+
+window.__resumeIsPageActive = isResumePageActive;
+
 function getResumeStrudelAudioEngine() {
   if (window.__resumeStrudelAudioEngine) return window.__resumeStrudelAudioEngine;
 
@@ -1558,9 +1673,10 @@ function getResumeStrudelAudioEngine() {
     setVideoDucked(Boolean(event.detail?.active), event.detail?.id || '__video__');
   });
 
-  // Suspend the Strudel audio context when the tab is hidden so phones
-  // don't keep burning CPU in the background. Resume + fresh pattern
-  // evaluation on return so accumulated scheduling state gets reset.
+  // Suspend the Strudel audio context when this page is no longer the
+  // active tab/window so multiple open resume tabs do not compete for
+  // decode, scheduling, and audio CPU. Resume + fresh pattern evaluation
+  // on return so accumulated scheduling state gets reset.
   let wasPlayingBeforeHidden = false;
   let pendingGestureResume = false;
   const getStrudelAudioContextState = () => {
@@ -1598,25 +1714,27 @@ function getResumeStrudelAudioEngine() {
   const resumeAfterUserGesture = () => {
     resumeAudioAfterReturn({ resetTransport: false, requirePending: true });
   };
+  const suspendForInactivePage = () => {
+    wasPlayingBeforeHidden = enabled && !videoDucked;
+    pendingGestureResume = wasPlayingBeforeHidden;
+    if (wasPlayingBeforeHidden) {
+      [...liveChordVoices.keys()].forEach((key) => releaseLiveChord(key));
+      hushCurrent(true);
+    }
+  };
   const resumeAfterPageReturn = () => {
-    if (document.hidden) return;
+    if (!isResumePageActive()) return;
     if (!wasPlayingBeforeHidden && !pendingGestureResume && !(enabled && audioContextNeedsResume())) return;
     wasPlayingBeforeHidden = false;
     pendingGestureResume = true;
     resumeAudioAfterReturn({ resetTransport: true });
   };
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-      wasPlayingBeforeHidden = enabled && !videoDucked;
-      pendingGestureResume = wasPlayingBeforeHidden;
-      if (wasPlayingBeforeHidden) {
-        [...liveChordVoices.keys()].forEach((key) => releaseLiveChord(key));
-        hushCurrent(true);
-      }
-    } else {
-      resumeAfterPageReturn();
-    }
-  });
+  const syncPageAudioActivity = () => {
+    if (isResumePageActive()) resumeAfterPageReturn();
+    else suspendForInactivePage();
+  };
+  document.addEventListener('visibilitychange', syncPageAudioActivity);
+  window.addEventListener('resume-page-activity-change', syncPageAudioActivity);
   window.addEventListener('focus', resumeAfterPageReturn);
   window.addEventListener('pageshow', resumeAfterPageReturn);
   window.addEventListener('pointerdown', resumeAfterUserGesture, true);
@@ -2524,6 +2642,7 @@ function HelpPlayer({ src }) {
 	    let timerId = 0;
 	    const sources = Array.isArray(src) ? src : [src];
 	    const warm = async () => {
+	      if (!isResumePageActive()) return;
 	      try {
 	        const candidate = sources.find(canPlaySource);
 	        if (!candidate) return;
@@ -2726,8 +2845,8 @@ function HelpPlayer({ src }) {
 
   useEffect(() => {
     if (status !== 'ready') return undefined;
-    const onVisibilityChange = () => {
-      if (document.visibilityState !== 'hidden') return;
+    const pauseForInactivePage = () => {
+      if (isResumePageActive()) return;
       const renderer = rendererRef.current;
       if (!renderer) return;
       wasPlayingBeforeHiddenRef.current = false;
@@ -2739,10 +2858,26 @@ function HelpPlayer({ src }) {
         setMuted(true);
         renderer.pauseAndMute();
       }
+      renderer.setPowerActive?.(false);
     };
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
-  }, [status]);
+    const onPageActivityChange = () => {
+      const renderer = rendererRef.current;
+      if (!renderer) return;
+      if (isResumePageActive()) {
+        renderer.setPowerActive?.(true);
+        forceRendererResize();
+      } else {
+        pauseForInactivePage();
+      }
+    };
+    document.addEventListener('visibilitychange', pauseForInactivePage);
+    window.addEventListener('resume-page-activity-change', onPageActivityChange);
+    onPageActivityChange();
+    return () => {
+      document.removeEventListener('visibilitychange', pauseForInactivePage);
+      window.removeEventListener('resume-page-activity-change', onPageActivityChange);
+    };
+  }, [status, forceRendererResize]);
 
   const hideHint = () => setShowHint(false);
   const resetHint = () => setShowHint(true);
@@ -3072,15 +3207,20 @@ function VideoSlot({ src, label, fallbackPath }) {
   useEffect(() => {
     const video = videoRef.current;
     if (!video || status !== 'ready') return undefined;
-    const onVisibilityChange = () => {
-      if (document.visibilityState !== 'hidden') return;
-      userHeldPlaybackRef.current = true;
+    const pauseForInactivePage = () => {
+      if (isResumePageActive()) return;
+      userHeldPlaybackRef.current = false;
       if (window.__resumeHeldVideoSlot === slotIdRef.current) window.__resumeHeldVideoSlot = null;
       video.muted = true;
       if (!video.paused) video.pause();
+      emitVideoAudioState();
     };
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+    document.addEventListener('visibilitychange', pauseForInactivePage);
+    window.addEventListener('resume-page-activity-change', pauseForInactivePage);
+    return () => {
+      document.removeEventListener('visibilitychange', pauseForInactivePage);
+      window.removeEventListener('resume-page-activity-change', pauseForInactivePage);
+    };
   }, [status]);
 
   const stopPlayback = React.useCallback(() => {
@@ -5537,7 +5677,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     macBloom: { activeUntil: 0, strength: 0, kind: 'bass' },
 	    macBloomRaf: 0,
 	    tvVisible: true,
-	    tabVisible: typeof document === 'undefined' ? true : !document.hidden,
+	    tabVisible: typeof document === 'undefined' ? true : isResumePageActive(),
 	    helpPlayerActive: false,
 	    helpPinned: false,
 	    helpImmersive: false,
@@ -7498,8 +7638,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       if (active) resumeTvWork();
       else pauseTvWork();
     };
-    const onVisibility = () => {
-      state.tabVisible = !document.hidden;
+    const onPageActivity = () => {
+      state.tabVisible = isResumePageActive();
       syncPowerState();
     };
     const onHelpAudioState = (event) => {
@@ -7515,7 +7655,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       state.helpImmersive = Boolean(event.detail?.active);
       syncPowerState();
     };
-    document.addEventListener('visibilitychange', onVisibility);
+    document.addEventListener('visibilitychange', onPageActivity);
+    window.addEventListener('resume-page-activity-change', onPageActivity);
     window.addEventListener('resume-video-audio-state', onHelpAudioState);
     window.addEventListener('resume-help-pin-change', onHelpPinChange);
     window.addEventListener('resume-help-immersive-state', onHelpImmersiveState);
@@ -7532,9 +7673,10 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       document.querySelector('.help-player.is-pseudo-fullscreen') ||
       getVideoFullscreenSlot(document.fullscreenElement)?.classList?.contains('help-player')
     );
-    onVisibility();
+    onPageActivity();
     return () => {
-      document.removeEventListener('visibilitychange', onVisibility);
+      document.removeEventListener('visibilitychange', onPageActivity);
+      window.removeEventListener('resume-page-activity-change', onPageActivity);
       window.removeEventListener('resume-video-audio-state', onHelpAudioState);
       window.removeEventListener('resume-help-pin-change', onHelpPinChange);
       window.removeEventListener('resume-help-immersive-state', onHelpImmersiveState);
@@ -7587,18 +7729,28 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 
   const cutRef = React.useRef(null);
   const cut = React.useCallback((lane, options = {}) => {
-    if (!availableSources.length || helpOwnsTvStage()) return;
+    const state = stateRef.current;
+    if (!availableSources.length || helpOwnsTvStage() || state.tabVisible === false || state.tvVisible === false) return;
     const idx = pickIndex(lane, options);
     currentIdxRef.current = idx;
     const source = availableSources[idx];
     const src = source.url;
     const now = performance.now();
-    stateRef.current.currentLane = lane || source.lanes?.[0] || 'idle';
-    stateRef.current.currentCutMode = options.mode || 'normal';
-    stateRef.current.lastCutAt = now;
-    if (lane === 'snare') stateRef.current.lastRhythmCutAt = now;
-    const cutToken = (stateRef.current.cutToken || 0) + 1;
-    stateRef.current.cutToken = cutToken;
+    state.currentLane = lane || source.lanes?.[0] || 'idle';
+    state.currentCutMode = options.mode || 'normal';
+    state.lastCutAt = now;
+    if (lane === 'snare') state.lastRhythmCutAt = now;
+    const cutToken = (state.cutToken || 0) + 1;
+    state.cutToken = cutToken;
+    const canCommitCut = () => {
+      const s = stateRef.current;
+      return (
+        s.cutToken === cutToken &&
+        s.tabVisible !== false &&
+        s.tvVisible !== false &&
+        !helpOwnsTvStage()
+      );
+    };
     if (source.kind === 'video') {
       const cache = stateRef.current.videoCache;
       let video = cache.get(src);
@@ -7618,7 +7770,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         cache.set(src, video);
       }
       const mountVideo = () => {
-        if (stateRef.current.cutToken !== cutToken || helpOwnsTvStage()) {
+        if (!canCommitCut()) {
           if (stateRef.current.currentVideo !== video) {
             try { video.pause(); } catch {}
           }
@@ -7639,6 +7791,10 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
           });
         };
         try { video.currentTime = source.start ?? 0; } catch {}
+        if (!canCommitCut()) {
+          try { video.pause(); } catch {}
+          return;
+        }
         const playPromise = video.play?.();
         if (playPromise?.catch) {
           playPromise.catch(() => {});
@@ -7654,7 +7810,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         };
         const commitVideo = () => {
           if (committed) return;
-          if (stateRef.current.cutToken !== cutToken || helpOwnsTvStage()) {
+          if (!canCommitCut()) {
             cleanupReadyListeners();
             if (stateRef.current.currentVideo !== video) {
               try { video.pause(); } catch {}
@@ -7692,7 +7848,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         };
         const onReady = () => {
           if (committed) return;
-          if (stateRef.current.cutToken !== cutToken || helpOwnsTvStage()) {
+          if (!canCommitCut()) {
             cleanupReadyListeners();
             if (stateRef.current.currentVideo !== video) {
               try { video.pause(); } catch {}
@@ -7740,7 +7896,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       cache.set(src, img);
     }
     if (img.complete && img.naturalWidth > 0) {
-      if (stateRef.current.cutToken !== cutToken || helpOwnsTvStage()) return;
+      if (!canCommitCut()) return;
       stateRef.current.currentImage = img;
       stateRef.current.currentMedia = img;
       stateRef.current.currentSource = source;
@@ -7749,7 +7905,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       drawSourceToCanvas(img);
     } else {
       img.onload = () => {
-        if (stateRef.current.cutToken !== cutToken || helpOwnsTvStage()) return;
+        if (!canCommitCut()) return;
         stateRef.current.currentImage = img;
         stateRef.current.currentMedia = img;
         stateRef.current.currentSource = source;

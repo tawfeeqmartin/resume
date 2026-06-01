@@ -636,6 +636,8 @@ class SpotlightRenderer {
     this.onStateChange = null;
     this.disposed = false;
     this.playbackWatchdog = 0;
+    this.powerActive = true;
+    this.tickRaf = 0;
 
     this._onResize = this._onResize.bind(this);
     this._onDown = this._onDown.bind(this);
@@ -644,6 +646,7 @@ class SpotlightRenderer {
     this._onKeyDown = this._onKeyDown.bind(this);
     this._onKeyUp = this._onKeyUp.bind(this);
     this._tick = this._tick.bind(this);
+    this._scheduleTick = this._scheduleTick.bind(this);
 
     window.addEventListener('resize', this._onResize);
     if ('ResizeObserver' in window) {
@@ -656,7 +659,7 @@ class SpotlightRenderer {
     document.addEventListener('keydown', this._onKeyDown);
     document.addEventListener('keyup', this._onKeyUp);
     this._lastTime = performance.now();
-    requestAnimationFrame(this._tick);
+    this._scheduleTick();
   }
 
   attach(loaded) {
@@ -797,6 +800,22 @@ class SpotlightRenderer {
   resize() {
     this._onResize();
   }
+  setPowerActive(active) {
+    const next = Boolean(active);
+    if (this.powerActive === next) return;
+    this.powerActive = next;
+    this.keys.clear();
+    this.dragging = false;
+    this._clearPlaybackWatchdog();
+    if (!next) {
+      if (this.tickRaf) cancelAnimationFrame(this.tickRaf);
+      this.tickRaf = 0;
+      return;
+    }
+    this._lastTime = performance.now();
+    this._renderCurrentFrame();
+    this._scheduleTick();
+  }
   getState() {
     const video = this.current?.loaded.video;
     return {
@@ -856,10 +875,15 @@ class SpotlightRenderer {
     }
     this.renderer.render(this.scene, this.camera);
   }
+  _scheduleTick() {
+    if (this.disposed || !this.powerActive || this.tickRaf) return;
+    this.tickRaf = requestAnimationFrame(this._tick);
+  }
 
   _tick() {
     if (this.disposed) return;
-    requestAnimationFrame(this._tick);
+    this.tickRaf = 0;
+    if (!this.powerActive) return;
     const now = performance.now();
     const dt = (now - this._lastTime) / 1000;
     this._lastTime = now;
@@ -893,6 +917,7 @@ class SpotlightRenderer {
     }
     this.renderer.render(this.scene, this.camera);
     this._emitState();
+    this._scheduleTick();
   }
 
   _onResize() {
@@ -970,6 +995,8 @@ class SpotlightRenderer {
   dispose() {
     this.disposed = true;
     this._clearPlaybackWatchdog();
+    if (this.tickRaf) cancelAnimationFrame(this.tickRaf);
+    this.tickRaf = 0;
     window.removeEventListener('resize', this._onResize);
     window.removeEventListener('pointermove', this._onMove);
     window.removeEventListener('pointerup', this._onUp);
