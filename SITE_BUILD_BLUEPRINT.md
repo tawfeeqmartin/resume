@@ -507,13 +507,13 @@ Guardrails:
   worktree by default, generates a commit-specific JS asset version in the
   staged copy, writes `deploy-info.json`, and verifies preview plus production
   before the deploy is considered done.
-- The deploy script pins Wrangler and reads the Pages account id from
-  `.wrangler/cache/pages.json` when `CLOUDFLARE_ACCOUNT_ID` is not already
-  exported. It also sources untracked `.env.cloudflare` when present, so a
-  long-lived `CLOUDFLARE_API_TOKEN` can make deploys non-interactive for agents.
-  It performs a Cloudflare auth preflight before local build/staging so an
-  expired Wrangler login fails immediately with a reauth/token command instead
-  of after a long upload path.
+- The deploy script pins Wrangler, uses the known Pages account id as a
+  non-secret fallback, and still allows `CLOUDFLARE_ACCOUNT_ID` to override it.
+  It also sources untracked `.env.cloudflare` when present, so a long-lived
+  `CLOUDFLARE_API_TOKEN` can make deploys non-interactive for agents. It
+  performs a Cloudflare auth preflight before local build/staging so an expired
+  Wrangler login fails immediately with a reauth/token command instead of after
+  a long upload path.
 - Do not manually edit production `?v=` asset tokens in `Resume.html`. Source
   should remain on the local dev token; deploy owns production cache busting.
 

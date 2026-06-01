@@ -12,6 +12,7 @@ BRANCH="${1:-main}"
 PRODUCTION_ORIGIN="${PRODUCTION_ORIGIN:-https://tawfeeqmartin.com}"
 WRANGLER_VERSION="${WRANGLER_VERSION:-4.96.0}"
 CLOUDFLARE_ENV_FILE="${CLOUDFLARE_ENV_FILE:-.env.cloudflare}"
+DEFAULT_CLOUDFLARE_ACCOUNT_ID="0dc8091911bb938dc2f50bbb8defa12b"
 STAGE_DIR="$(mktemp -d -t cf-pages-XXXXXX)"
 DEPLOY_LOG="$(mktemp -t cf-pages-deploy-log-XXXXXX)"
 trap 'rm -f "$DEPLOY_LOG"; rm -rf "$STAGE_DIR"' EXIT
@@ -45,9 +46,7 @@ if [[ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
 fi
 
 if [[ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
-  echo "Deploy aborted: CLOUDFLARE_ACCOUNT_ID is not set and no cached account id was found." >&2
-  echo "Run wrangler login once, or export CLOUDFLARE_ACCOUNT_ID before deploying." >&2
-  exit 1
+  CLOUDFLARE_ACCOUNT_ID="$DEFAULT_CLOUDFLARE_ACCOUNT_ID"
 fi
 export CLOUDFLARE_ACCOUNT_ID
 
