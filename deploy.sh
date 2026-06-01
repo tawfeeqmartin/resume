@@ -10,9 +10,62 @@ cd "$(dirname "$0")"
 PROJECT_NAME="resume"
 BRANCH="${1:-main}"
 PRODUCTION_ORIGIN="${PRODUCTION_ORIGIN:-https://tawfeeqmartin.com}"
+WRANGLER_VERSION="${WRANGLER_VERSION:-4.96.0}"
 STAGE_DIR="$(mktemp -d -t cf-pages-XXXXXX)"
 DEPLOY_LOG="$(mktemp -t cf-pages-deploy-log-XXXXXX)"
 trap 'rm -f "$DEPLOY_LOG"; rm -rf "$STAGE_DIR"' EXIT
+
+read_cached_account_id() {
+  node -e '
+    const fs = require("node:fs");
+    for (const file of [".wrangler/cache/pages.json", ".wrangler/cache/wrangler-account.json"]) {
+      try {
+        const data = JSON.parse(fs.readFileSync(file, "utf8"));
+        const id = data.account_id || data.account?.id || "";
+        if (id) {
+          console.log(id);
+          process.exit(0);
+        }
+      } catch {}
+    }
+  ' 2>/dev/null || true
+}
+
+if [[ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+  CLOUDFLARE_ACCOUNT_ID="$(read_cached_account_id)"
+fi
+
+if [[ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+  echo "Deploy aborted: CLOUDFLARE_ACCOUNT_ID is not set and no cached account id was found." >&2
+  echo "Run wrangler login once, or export CLOUDFLARE_ACCOUNT_ID before deploying." >&2
+  exit 1
+fi
+export CLOUDFLARE_ACCOUNT_ID
+
+wrangler() {
+  npx --yes "wrangler@${WRANGLER_VERSION}" "$@"
+}
+
+cloudflare_auth_hint() {
+  cat >&2 <<EOF
+Cloudflare auth failed before deployment.
+
+Fix:
+  npx --yes wrangler@${WRANGLER_VERSION} login
+
+Then rerun:
+  ./deploy.sh ${BRANCH}
+
+For token-based deploys, export CLOUDFLARE_API_TOKEN with Cloudflare Pages edit access
+and account read access. Account id in use: ${CLOUDFLARE_ACCOUNT_ID}
+EOF
+}
+
+echo "→ checking Cloudflare auth (account: $CLOUDFLARE_ACCOUNT_ID, wrangler: $WRANGLER_VERSION)"
+if ! wrangler pages project list --json >/dev/null; then
+  cloudflare_auth_hint
+  exit 1
+fi
 
 echo "→ running preflight checks"
 npm run build
@@ -70,7 +123,7 @@ echo "→ deploying $COMMIT_SHORT ($MSG) to Cloudflare Pages project '$PROJECT_N
 echo "  staged file count: $(find "$STAGE_DIR" -type f | wc -l | tr -d ' ')"
 echo "  asset version: $ASSET_VERSION"
 
-npx --yes wrangler@latest pages deploy "$STAGE_DIR" \
+wrangler pages deploy "$STAGE_DIR" \
   --project-name "$PROJECT_NAME" \
   --branch "$BRANCH" \
   --commit-hash "$COMMIT_HASH" \
