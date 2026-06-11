@@ -2480,6 +2480,46 @@ function isMobileFullscreenTarget() {
   return window.matchMedia('(max-width: 900px), (pointer: coarse)').matches;
 }
 
+// Web fullscreen was briefly bound to the Mac reel. Keep it behind a flag so the
+// floppy/video startup path can still call the helper without forcing browser
+// fullscreen.
+const MAC_REEL_FULLSCREEN_ENABLED = false;
+let reelFullscreenActive = false;
+function reelEnterFullscreen() {
+  if (!MAC_REEL_FULLSCREEN_ENABLED) return;
+  if (typeof document === 'undefined') return;
+  if (document.fullscreenElement || document.webkitFullscreenElement) { reelFullscreenActive = true; return; }
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!req) return;                       // iOS Safari et al: no element fullscreen
+  reelFullscreenActive = true;
+  try {
+    const p = req.call(el);
+    if (p && typeof p.catch === 'function') p.catch(() => { reelFullscreenActive = false; });
+  } catch (_) { reelFullscreenActive = false; }
+}
+function reelExitFullscreen() {
+  if (!MAC_REEL_FULLSCREEN_ENABLED) {
+    reelFullscreenActive = false;
+    return;
+  }
+  if (typeof document === 'undefined' || !reelFullscreenActive) return;
+  reelFullscreenActive = false;
+  if (!(document.fullscreenElement || document.webkitFullscreenElement)) return;
+  const exit = document.exitFullscreen || document.webkitExitFullscreen;
+  if (exit) { try { exit.call(document); } catch (_) {} }
+}
+// Keep our flag honest when the user leaves fullscreen on their own (Esc), so a
+// later eject doesn't try to exit a fullscreen we're no longer in.
+if (MAC_REEL_FULLSCREEN_ENABLED && typeof document !== 'undefined' && !document.__reelFullscreenHooked) {
+  document.__reelFullscreenHooked = true;
+  const onReelFsChange = () => {
+    if (!(document.fullscreenElement || document.webkitFullscreenElement)) reelFullscreenActive = false;
+  };
+  document.addEventListener('fullscreenchange', onReelFsChange);
+  document.addEventListener('webkitfullscreenchange', onReelFsChange);
+}
+
 function enterPseudoFullscreen(slot, afterEnter) {
   slot.classList.add('is-pseudo-fullscreen');
   document.documentElement.classList.add('has-pseudo-fullscreen');
@@ -3579,9 +3619,9 @@ function ProofStampRow({ items, compact, className = "" }) {
   );
 }
 
-function BlackbirdFeature({ innovationSrc, behindScenesSrc }) {
+function BlackbirdFeature({ innovationSrc, behindScenesSrc, label = "04 · SELECTED WORK · THE MILL BLACKBIRD" }) {
   return (
-    <Section id="blackbird" label="04 · SELECTED WORK · THE MILL BLACKBIRD">
+    <Section id="blackbird" label={label}>
       <div className="help-feature">
         <div className="help-feature__player-col help-feature__player-col--wide">
           <div className="video-stack">
@@ -4149,7 +4189,7 @@ const STRUDEL_REPL_LINE_PATTERNS = [
   { re: /\b(\d+(?:\.\d+)?)\b/g, cls: 'sr-num' },
 ];
 
-function StrudelReplFeature() {
+function StrudelReplFeature({ label = "05 · LIVE SYSTEM · POETRY IN PROOF" } = {}) {
   const textareaRef = React.useRef(null);
   const overlayRef = React.useRef(null);
   const scopeLayerRef = React.useRef(null);
@@ -5054,7 +5094,7 @@ function StrudelReplFeature() {
   }, []);
 
   return (
-    <Section id="strudel" label="05 · LIVE SYSTEM · POETRY IN PROOF">
+    <Section id="strudel" label={label}>
       <aside className="help-feature__notes help-feature__notes--match-stack strudel-repl__intro">
         <h3 className="serif">A browser-based music and interactive visuals demo.</h3>
         <p>
@@ -5148,21 +5188,23 @@ function Section({ id, label, children, dense }) {
   const numberMatch = typeof label === 'string' ? label.match(/^(\d+)\s*·\s*(.*)$/) : null;
   return (
     <section id={id} className={`section section--${shape} ${dense ? 'section--dense' : ''}`}>
-      <header className="section__header">
-        <span className="section__mark" aria-hidden="true" />
-        <span className="section__rule" />
-        <span className="section__label mono">
-          {numberMatch ? (
-            <>
-              <span className="section__label-num">{numberMatch[1]}</span>
-              <span className="section__label-sep" aria-hidden="true"> · </span>
-              <span className="section__label-title">{numberMatch[2]}</span>
-            </>
-          ) : (
-            label
-          )}
-        </span>
-      </header>
+      {label ? (
+        <header className="section__header">
+          <span className="section__mark" aria-hidden="true" />
+          <span className="section__rule" />
+          <span className="section__label mono">
+            {numberMatch ? (
+              <>
+                <span className="section__label-num">{numberMatch[1]}</span>
+                <span className="section__label-sep" aria-hidden="true"> · </span>
+                <span className="section__label-title">{numberMatch[2]}</span>
+              </>
+            ) : (
+              label
+            )}
+          </span>
+        </header>
+      ) : null}
       <div className="section__body">{children}</div>
     </section>
   );
@@ -5276,19 +5318,72 @@ const MAC_STAGE_DRAG_DEFAULTS = {
 const DOOM_TERMINAL_COMMANDS = new Set(['doom', 'doom.exe', './doom', 'run doom', 'launch doom', 'open doom']);
 const MAC_SCREEN_MEDIA_SIZE = { width: 960, height: 720 };
 const MAC_SCREEN_TERMINAL_SIZE = { width: 2048, height: 1536 };
+const MAC_ASCII_BASS_FILTER_ENABLED = (() => {
+  // The ASCII bass filter now lives on the hero name (AsciiName), not the Mac.
+  // Off by default; opt back in on the Mac with ?mac-ascii=on / 1 / true.
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const value = String(params.get('mac-ascii') || '').toLowerCase();
+    return value === '1' || value === 'on' || value === 'true';
+  } catch (_) {
+    return false;
+  }
+})();
+const MAC_ASCII_BASS_CHARS = '.,:;-=+xX80S#@';
+const MAC_ASCII_NAMED_COLORS = Object.freeze({
+  red: '#ff453a',
+  yellow: '#ffd60a',
+  blue: '#0a84ff',
+  cyan: '#64d2ff',
+  green: '#32d74b',
+  magenta: '#ff375f',
+  orange: '#ff9f0a',
+  purple: '#bf5af2',
+  white: '#ffffff',
+});
+const MAC_ASCII_BASS_KEY_SEQUENCE = Object.freeze([
+  { label: 'R', code: 'KeyR', char: '@', color: '#ff453a' },
+  { label: 'Y', code: 'KeyY', char: '#', color: '#ffd60a' },
+  { label: 'B', code: 'KeyB', char: 'S', color: '#0a84ff' },
+]);
+const MAC_ASCII_BASS_MAX_ACCENT_GLYPHS = 10;
+const MAC_ASCII_BASS_CONFIG_DEFAULTS = Object.freeze({
+  enabled: MAC_ASCII_BASS_FILTER_ENABLED,
+  chars: MAC_ASCII_BASS_CHARS,
+  charColors: {
+    S: '#0a84ff',
+    '#': '#ffd60a',
+    '@': '#ff453a',
+  },
+  tileSize: 23,
+  minFrameMs: 48,
+  fontScale: 1.02,
+  brightness: 1,
+  contrast: 2.54,
+  threshold: 0.73,
+  coverage: 1,
+  density: 1,
+  edgeEmphasis: 0,
+  backgroundBlur: 40,
+  backgroundOpacity: 0.35,
+  opacity: 1.35,
+  darken: 0.36,
+  jitter: 1.35,
+  scanline: 0.28,
+});
 const MAC_TERMINAL_COMMAND_LINES = [
-  'PLAY     play interactive reel',
-  'DOOM     boot fullscreen Doom',
-  'STATUS   print audio engine state',
-  'RESET    restore last-good source',
-  'CLEAR    clear terminal',
-  'ABOUT    describe this system',
+  'play     play interactive reel',
+  'doom     boot fullscreen Doom',
+  'status   print audio engine state',
+  'reset    restore last-good source',
+  'clear    clear terminal',
+  'about    describe this system',
 ];
 const MAC_TERMINAL_BOOT_LINES = [
   'MacTerminal 1.1',
   'System 1 Finder session',
   '',
-  'COMMANDS',
+  'commands',
   ...MAC_TERMINAL_COMMAND_LINES,
 ];
 
@@ -5333,6 +5428,118 @@ function writeMacStageDragX(value, bucket = getMacStageDragBucket()) {
   try {
     window.localStorage?.setItem(getMacStageDragStorageKey(bucket), String(Math.round(value)));
   } catch (_) {}
+}
+
+function clampMacAsciiNumber(value, fallback, min, max) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.max(min, Math.min(max, number));
+}
+
+function parseMacAsciiBoolean(value, fallback) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+    if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+  }
+  return fallback;
+}
+
+function normalizeMacAsciiColor(value) {
+  const raw = String(value ?? '').trim().toLowerCase();
+  if (!raw) return '';
+  if (MAC_ASCII_NAMED_COLORS[raw]) return MAC_ASCII_NAMED_COLORS[raw];
+  const hex = raw.replace(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i, '#$1');
+  if (!/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(hex)) return '';
+  if (hex.length === 4) {
+    return `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`.toLowerCase();
+  }
+  return hex.toLowerCase();
+}
+
+function normalizeMacAsciiCharColors(input, fallback = {}) {
+  const source = input && typeof input === 'object' && !Array.isArray(input) ? input : fallback;
+  const colors = {};
+  for (const [key, value] of Object.entries(source || {}).slice(0, 96)) {
+    const char = Array.from(String(key ?? ''))[0];
+    const color = normalizeMacAsciiColor(value);
+    if (char && color) colors[char] = color;
+  }
+  return colors;
+}
+
+function macAsciiColorToRgb(color) {
+  const normalized = normalizeMacAsciiColor(color);
+  if (!normalized) return null;
+  const hex = normalized.slice(1);
+  return [
+    Number.parseInt(hex.slice(0, 2), 16),
+    Number.parseInt(hex.slice(2, 4), 16),
+    Number.parseInt(hex.slice(4, 6), 16),
+  ];
+}
+
+function normalizeMacAsciiConfig(input = {}, fallback = MAC_ASCII_BASS_CONFIG_DEFAULTS) {
+  const base = fallback || MAC_ASCII_BASS_CONFIG_DEFAULTS;
+  const rawChars = input.chars ?? base.chars;
+  const chars = String(rawChars ?? '').slice(0, 96);
+  return {
+    enabled: parseMacAsciiBoolean(input.enabled, base.enabled),
+    chars: chars.trim() ? chars : base.chars,
+    charColors: normalizeMacAsciiCharColors(input.charColors ?? base.charColors, base.charColors),
+    tileSize: clampMacAsciiNumber(input.tileSize, base.tileSize, 6, 36),
+    minFrameMs: clampMacAsciiNumber(input.minFrameMs, base.minFrameMs, 16, 180),
+    fontScale: clampMacAsciiNumber(input.fontScale, base.fontScale, 0.55, 1.8),
+    brightness: clampMacAsciiNumber(input.brightness, base.brightness, -1, 1),
+    contrast: clampMacAsciiNumber(input.contrast, base.contrast, 0.1, 3),
+    threshold: clampMacAsciiNumber(input.threshold, base.threshold, 0, 0.95),
+    coverage: clampMacAsciiNumber(input.coverage, base.coverage, 0, 1),
+    density: clampMacAsciiNumber(input.density, base.density, 0.2, 2.5),
+    edgeEmphasis: clampMacAsciiNumber(input.edgeEmphasis, base.edgeEmphasis, 0, 2),
+    backgroundBlur: clampMacAsciiNumber(input.backgroundBlur, base.backgroundBlur, 0, 40),
+    backgroundOpacity: clampMacAsciiNumber(input.backgroundOpacity, base.backgroundOpacity, 0, 1),
+    opacity: clampMacAsciiNumber(input.opacity, base.opacity, 0, 1.35),
+    darken: clampMacAsciiNumber(input.darken, base.darken, 0, 0.85),
+    jitter: clampMacAsciiNumber(input.jitter, base.jitter, 0, 4),
+    scanline: clampMacAsciiNumber(input.scanline, base.scanline, 0, 0.75),
+  };
+}
+
+function getMacAsciiInitialConfig() {
+  let config = normalizeMacAsciiConfig();
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const overrides = {};
+    if (params.has('mac-ascii-chars')) overrides.chars = params.get('mac-ascii-chars');
+    if (params.has('mac-ascii-tile')) overrides.tileSize = params.get('mac-ascii-tile');
+    if (params.has('mac-ascii-min-frame')) overrides.minFrameMs = params.get('mac-ascii-min-frame');
+    if (params.has('mac-ascii-font')) overrides.fontScale = params.get('mac-ascii-font');
+    if (params.has('mac-ascii-brightness')) overrides.brightness = params.get('mac-ascii-brightness');
+    if (params.has('mac-ascii-contrast')) overrides.contrast = params.get('mac-ascii-contrast');
+    if (params.has('mac-ascii-threshold')) overrides.threshold = params.get('mac-ascii-threshold');
+    if (params.has('mac-ascii-coverage')) overrides.coverage = params.get('mac-ascii-coverage');
+    if (params.has('mac-ascii-density')) overrides.density = params.get('mac-ascii-density');
+    if (params.has('mac-ascii-edge')) overrides.edgeEmphasis = params.get('mac-ascii-edge');
+    if (params.has('mac-ascii-bg-blur')) overrides.backgroundBlur = params.get('mac-ascii-bg-blur');
+    if (params.has('mac-ascii-bg-opacity')) overrides.backgroundOpacity = params.get('mac-ascii-bg-opacity');
+    if (params.has('mac-ascii-opacity')) overrides.opacity = params.get('mac-ascii-opacity');
+    if (params.has('mac-ascii-darken')) overrides.darken = params.get('mac-ascii-darken');
+    if (params.has('mac-ascii-jitter')) overrides.jitter = params.get('mac-ascii-jitter');
+    if (params.has('mac-ascii-scanline')) overrides.scanline = params.get('mac-ascii-scanline');
+    config = normalizeMacAsciiConfig(overrides, config);
+  } catch (_) {}
+  return config;
+}
+
+function isMacAsciiControlHost() {
+  try {
+    const host = window.location.hostname;
+    return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+  } catch (_) {
+    return false;
+  }
 }
 
 const MAC_KEY_DEFS = {
@@ -5405,6 +5612,9 @@ const MAC_KEY_ALIASES = {
   A: 'KeyA',
   S: 'KeyS',
   D: 'KeyD',
+  R: 'KeyR',
+  Y: 'KeyY',
+  B: 'KeyB',
   space: 'Space',
 };
 
@@ -5438,9 +5648,24 @@ function getMacTerminalCharacter(code, shiftKey = false) {
 }
 
 function getMacMeshNumericId(mesh) {
-  const match = String(mesh?.name || '').match(/^Mesh0*(\d+)(?:_|$)?$/);
+  // The GLB ships a few stacked body shells exported as name-collision
+  // twins (Mesh01_2, Mesh79_2/_3, Mesh80_2/_3). They sit at the same place
+  // as their numeric twin, so they must resolve to the SAME id — otherwise
+  // they pick up a different grayscale step and the two coplanar shells
+  // z-fight as a two-tone broken patch across the front of the case.
+  const match = String(mesh?.name || '').match(/^Mesh0*(\d+)(?:_\d+)?$/);
   return match ? Number(match[1]) : null;
 }
+
+// Accent/badge shells around the floppy bezel whose faces are coincident with
+// the case but which the front-accent / badge-stripe rules below would paint a
+// different gray — so they z-fight as a two-tone patch. (The case-shell range
+// itself is already pinned to one uniform gray below; these ids sit in earlier
+// id ranges so they need pinning explicitly.) Genuine recessed detail that is
+// meant to differ — the floppy label (84), floppy tray (273), ports (121) — is
+// deliberately NOT listed. Derived from scripts/blender/find_coincident_faces.py
+// (run with ALLFACES=1) — re-run it if the model changes.
+const MAC_COINCIDENT_CASE_IDS = new Set([76, 79, 81, 83, 85, 86, 87, 88, 90, 93]);
 
 function getMacGrayMaterialSpec(mesh) {
   const name = String(mesh?.name || '');
@@ -5452,6 +5677,7 @@ function getMacGrayMaterialSpec(mesh) {
 
   const id = getMacMeshNumericId(mesh);
   if (id == null) return { key: 'case-default-highlight', step: 7, roughness: 0.88 };
+  if (MAC_COINCIDENT_CASE_IDS.has(id)) return { key: 'case-shell-6', step: 6, roughness: 0.9 };
   if (id === 74) return { key: 'screen-surround-black', step: 0, roughness: 0.98 };
   if (id >= 285 && id <= 341) {
     const code = MAC_KEY_CODE_BY_MESH.get(name);
@@ -5471,7 +5697,7 @@ function getMacGrayMaterialSpec(mesh) {
     }
     return { key: 'keycap-field', step: 5, roughness: 0.88 };
   }
-  if (id >= 134 && id <= 272) return { key: 'key-legend-black', step: 0, roughness: 1 };
+  if (id >= 134 && id <= 272) return { key: 'key-legend-black', step: 2, roughness: 1 };
   if (id === 284) return { key: 'mouse-button-accent', step: 2, roughness: 0.86 };
   if (id >= 69 && id <= 72) return { key: 'mouse-body', step: 5, roughness: 0.88 };
   if (id === 273) return { key: 'floppy-tray-black', step: 0, roughness: 0.94 };
@@ -5491,8 +5717,11 @@ function getMacGrayMaterialSpec(mesh) {
   if (id >= 115 && id <= 133) return { key: 'port-detail-black', step: 0, roughness: 0.96 };
   if (id >= 342 && id <= 344) return { key: 'rear-dark-detail-black', step: 0, roughness: 0.94 };
   if (id >= 1 && id <= 83) {
-    const step = id % 7 === 0 ? 7 : id % 5 === 0 ? 3 : id % 3 === 0 ? 5 : 6;
-    return { key: `case-shell-${step}`, step, roughness: 0.9 };
+    // Uniform case gray. The model splits the shell into many overlapping,
+    // often-coincident sub-meshes, so any per-id step variance shows up as
+    // z-fighting where they coplanar-overlap. A single step keeps the whole
+    // case body consistent and fight-free. See find_coincident_faces.py.
+    return { key: 'case-shell-6', step: 6, roughness: 0.9 };
   }
   return { key: 'misc-gray', step: 5, roughness: 0.9 };
 }
@@ -5504,10 +5733,18 @@ function applyMacModelGrayscalePreview(THREE, model) {
     const step = Math.max(0, Math.min(MAC_MODEL_GRAY_STEPS.length - 1, spec.step));
     const key = `${spec.key}:${step}:${spec.roughness}`;
     if (!cache.has(key)) {
+      // Key legends sit flush on the keycap tops, so they z-fight with the
+      // cap surface and render as broken/smudged labels. A negative polygon
+      // offset pulls the legend slightly toward the camera so it always wins
+      // the depth test and sits cleanly on the key.
+      const isLegend = spec.key === 'key-legend-black';
       cache.set(key, new THREE.MeshStandardMaterial({
         color: spec.color ?? MAC_MODEL_GRAY_STEPS[step],
         roughness: spec.roughness ?? 0.9,
         metalness: 0,
+        polygonOffset: isLegend,
+        polygonOffsetFactor: isLegend ? -1 : 0,
+        polygonOffsetUnits: isLegend ? -2 : 0,
       }));
     }
     return cache.get(key);
@@ -5521,6 +5758,543 @@ function applyMacModelGrayscalePreview(THREE, model) {
     applied += 1;
   });
   console.info('[TvHero] Mac model 8-bit grayscale preview applied:', applied, 'meshes');
+}
+
+function isMacHeroTabletopEnabled() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const value = String(params.get('mac-table') || '').toLowerCase();
+    if (value === 'off' || value === '0' || value === 'false') return false;
+    if (value === 'on' || value === '1' || value === 'true') return true;
+  } catch (_) {}
+  return document.documentElement?.dataset?.resumeVariant === 'landing-v1';
+}
+
+function createMacHeroTabletop(THREE, modelBox) {
+  if (!isMacHeroTabletopEnabled() || !THREE || !modelBox || modelBox.isEmpty()) return null;
+  const size = modelBox.getSize(new THREE.Vector3());
+  const ctr = modelBox.getCenter(new THREE.Vector3());
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  const base = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  base.addColorStop(0, '#f1ece3');
+  base.addColorStop(0.55, '#e7e0d5');
+  base.addColorStop(1, '#dcd2c4');
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  let seed = 17;
+  const rand = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  const grain = ctx.createImageData(canvas.width, canvas.height);
+  for (let i = 0; i < grain.data.length; i += 4) {
+    const n = (rand() - 0.5) * 4;
+    grain.data[i] = 230 + n;
+    grain.data[i + 1] = 224 + n;
+    grain.data[i + 2] = 214 + n;
+    grain.data[i + 3] = 7;
+  }
+  ctx.putImageData(grain, 0, 0);
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const contact = ctx.createRadialGradient(canvas.width * 0.5, canvas.height * 0.48, 54, canvas.width * 0.5, canvas.height * 0.48, 370);
+  contact.addColorStop(0, 'rgba(68,48,32,0.16)');
+  contact.addColorStop(0.48, 'rgba(68,48,32,0.052)');
+  contact.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = contact;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  const material = new THREE.MeshStandardMaterial({
+    map: tex,
+    color: 0xffffff,
+    roughness: 0.92,
+    metalness: 0,
+  });
+  const baseWidth = Math.max(size.x * 1.32, 2.64);
+  const width = baseWidth * 0.9;
+  const depth = Math.max(size.z * 1.45, 2.2);
+  const table = new THREE.Mesh(new THREE.PlaneGeometry(width, depth, 1, 1), material);
+  table.name = 'MacHeroTabletop';
+  table.rotation.x = -Math.PI / 2;
+  table.position.set(ctr.x - baseWidth * 0.05, modelBox.min.y - size.y * 0.016, ctr.z + size.z * 0.14);
+  return table;
+}
+
+function createMacStickyNote(THREE, caseBox, screenBox, options = {}) {
+  if (!THREE || !caseBox || caseBox.isEmpty()) return null;
+  const {
+    text = 'resume',
+    href = 'resume-readonly.html',
+    hitType = 'resume',
+    placement = 'left',
+    rotationDeg = placement === 'right' ? 4 : -5,
+    scale = placement === 'right' ? 0.255 : 0.285,
+    minWidth = placement === 'right' ? 0.22 : 0.25,
+    paperStops = ['#fff8b6', '#ffec74', '#f4d34d'],
+    ink = '#2e2b22',
+    arrowInk = '#3d3425',
+    border = 'rgba(122, 91, 24, 0.28)',
+    shadow = 'rgba(112, 86, 24, 0.16)',
+    emissive = 0xffdc58,
+    emissiveIntensity = 0.18,
+    overwrittenInk = false,
+    smiley = false,
+    penInk = 'rgba(0, 0, 28, 1)',
+    foldSide = placement === 'right' ? 'left' : 'right',
+    hoverMotion = null,
+  } = options;
+  const caseSize = caseBox.getSize(new THREE.Vector3());
+  const canvas = document.createElement('canvas');
+  canvas.width = 640;
+  canvas.height = 520;
+  const ctx = canvas.getContext('2d');
+  const normalizedFoldSide = foldSide === 'left' ? 'left' : 'right';
+  const draw = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const paperLeft = 22;
+    const paperRight = 612;
+    const paperBottom = 478;
+    const paper = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    paper.addColorStop(0, paperStops[0]);
+    paper.addColorStop(0.52, paperStops[1]);
+    paper.addColorStop(1, paperStops[2]);
+    ctx.fillStyle = paper;
+    ctx.fillRect(paperLeft, 22, paperRight - paperLeft, paperBottom - 22);
+    const fold = normalizedFoldSide === 'left'
+      ? {
+          shadowBack: 88,
+          shadowTipY: 386,
+          curveStart: 128,
+          c1: 82,
+          c1y: 462,
+          c2: 34,
+          c2y: 424,
+          tipY: 381,
+          strokeStart: 96,
+          strokeC1: 62,
+          strokeC1Y: 458,
+          strokeC2: 24,
+          strokeC2Y: 424,
+          strokeTip: 2,
+          strokeTipY: 392,
+          gradientBack: 116,
+          gradientTopY: 366,
+          gradientOutside: 10,
+          gradientBottomY: 500,
+        }
+      : {
+          shadowBack: 112,
+          shadowTipY: 366,
+          curveStart: 150,
+          c1: 88,
+          c1y: 458,
+          c2: 34,
+          c2y: 410,
+          tipY: 350,
+          strokeStart: 118,
+          strokeC1: 72,
+          strokeC1Y: 452,
+          strokeC2: 26,
+          strokeC2Y: 408,
+          strokeTip: 1,
+          strokeTipY: 360,
+          gradientBack: 128,
+          gradientTopY: 348,
+          gradientOutside: 8,
+          gradientBottomY: 496,
+        };
+    const foldX = (offset) => (
+      normalizedFoldSide === 'left'
+        ? paperLeft + offset
+        : paperRight - offset
+    );
+    ctx.fillStyle = shadow;
+    ctx.beginPath();
+    ctx.moveTo(foldX(fold.shadowBack), paperBottom);
+    ctx.lineTo(foldX(0), fold.shadowTipY);
+    ctx.lineTo(foldX(0), paperBottom);
+    ctx.closePath();
+    ctx.fill();
+    const curlShade = ctx.createLinearGradient(
+      foldX(fold.gradientBack),
+      fold.gradientTopY,
+      foldX(-fold.gradientOutside),
+      fold.gradientBottomY,
+    );
+    curlShade.addColorStop(0, 'rgba(255,255,255,0)');
+    curlShade.addColorStop(0.48, 'rgba(255,255,255,0.28)');
+    curlShade.addColorStop(1, 'rgba(106,76,18,0.34)');
+    ctx.fillStyle = curlShade;
+    ctx.beginPath();
+    ctx.moveTo(foldX(fold.curveStart), paperBottom);
+    ctx.bezierCurveTo(foldX(fold.c1), fold.c1y, foldX(fold.c2), fold.c2y, foldX(0), fold.tipY);
+    ctx.lineTo(foldX(0), paperBottom);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(122, 91, 24, 0.28)';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(foldX(fold.strokeStart), paperBottom - 4);
+    ctx.bezierCurveTo(
+      foldX(fold.strokeC1),
+      fold.strokeC1Y,
+      foldX(fold.strokeC2),
+      fold.strokeC2Y,
+      foldX(fold.strokeTip),
+      fold.strokeTipY,
+    );
+    ctx.stroke();
+    ctx.strokeStyle = border;
+    ctx.lineWidth = 7;
+    ctx.strokeRect(paperLeft, 22, paperRight - paperLeft, paperBottom - 22);
+
+    ctx.save();
+    const arrow = placement === 'right'
+      ? {
+          translateY: -2,
+          lineWidth: 11,
+          penWidth: 2.8,
+          start: [520, 334],
+          c1: [486, 301],
+          c2: [444, 266],
+          end: [390, 231],
+          headA: [431, 229],
+          headB: [414, 269],
+        }
+      : {
+          translateY: 8,
+          lineWidth: 14,
+          penWidth: 3,
+          start: [92, 348],
+          c1: [158, 306],
+          c2: [206, 278],
+          end: [258, 240],
+          headA: [214, 242],
+          headB: [234, 278],
+        };
+    ctx.translate(0, arrow.translateY);
+    ctx.strokeStyle = overwrittenInk ? penInk : arrowInk;
+    ctx.fillStyle = overwrittenInk ? penInk : arrowInk;
+    ctx.globalAlpha = overwrittenInk ? 0.86 : 1;
+    ctx.lineWidth = overwrittenInk ? arrow.penWidth : arrow.lineWidth;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(...arrow.start);
+    ctx.bezierCurveTo(...arrow.c1, ...arrow.c2, ...arrow.end);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(...arrow.end);
+    ctx.lineTo(...arrow.headA);
+    ctx.moveTo(...arrow.end);
+    ctx.lineTo(...arrow.headB);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.rotate(-0.035);
+    ctx.fillStyle = overwrittenInk ? penInk : ink;
+    const fontStack = overwrittenInk
+      ? '"Bradley Hand", "Noteworthy", "Segoe Print", "Comic Sans MS", cursive'
+      : '"Caveat Brush", "Permanent Marker", "Comic Sans MS", cursive';
+    let fontSize = overwrittenInk ? 132 : text.length > 7 ? 134 : text.length > 6 ? 148 : 176;
+    const fontWeight = overwrittenInk ? '300 ' : '';
+    ctx.font = `${fontWeight}${fontSize}px ${fontStack}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const textMaxWidth = smiley ? 430 : 510;
+    while (ctx.measureText(text).width > textMaxWidth && fontSize > 88) {
+      fontSize -= 6;
+      ctx.font = `${fontWeight}${fontSize}px ${fontStack}`;
+    }
+    const labelX = smiley ? 326 : 372;
+    const labelY = 214;
+    if (overwrittenInk) {
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      const rand = (seed) => {
+        const n = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+        return n - Math.floor(n);
+      };
+      const passes = [
+        [-0.6, -0.35, -0.006, 0.32],
+        [0, 0, 0.002, 1],
+        [0.6, 0.35, -0.003, 0.28],
+        [0.28, -0.62, 0.006, 0.18],
+      ];
+      const drawOverwrittenLabel = () => {
+        passes.forEach(([x, y, rotate, alpha]) => {
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.fillStyle = penInk;
+          ctx.translate(labelX, labelY);
+          ctx.rotate(rotate);
+          ctx.fillText(text, x, y);
+          ctx.restore();
+        });
+      };
+      drawOverwrittenLabel();
+      if (text === 'resume') {
+        const resumeTraceStrokeWidth = 3.2;
+        const traceCommands = [
+          ['M', 134, 238],
+          ['C', 136, 222, 141, 208, 151, 207],
+          ['C', 160, 207, 166, 212, 170, 220],
+          ['M', 189, 226],
+          ['C', 214, 215, 224, 206, 229, 217],
+          ['C', 235, 231, 196, 232, 191, 231],
+          ['C', 187, 245, 215, 249, 234, 237],
+          ['M', 328, 214],
+          ['C', 319, 250, 353, 253, 365, 232],
+          ['C', 369, 224, 370, 217, 371, 212],
+          ['M', 397, 244],
+          ['C', 398, 218, 407, 212, 417, 215],
+          ['C', 426, 218, 428, 230, 428, 244],
+          ['M', 428, 244],
+          ['C', 430, 219, 441, 212, 451, 215],
+          ['C', 463, 219, 465, 232, 465, 245],
+          ['M', 493, 226],
+          ['C', 518, 215, 529, 206, 533, 217],
+          ['C', 539, 231, 501, 232, 496, 231],
+          ['C', 492, 245, 519, 249, 538, 237],
+        ];
+        const jitter = (value, seed, amount) => value + (rand(seed) - 0.5) * amount;
+        const drawResumeTrace = (dx, dy, alpha, noise, passIndex) => {
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.strokeStyle = penInk;
+          ctx.lineWidth = resumeTraceStrokeWidth;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.translate(dx, dy);
+          ctx.beginPath();
+          traceCommands.forEach((cmd, index) => {
+            if (cmd[0] === 'M') {
+              ctx.moveTo(
+                jitter(cmd[1], passIndex * 37 + index * 3 + 1, noise),
+                jitter(cmd[2], passIndex * 37 + index * 3 + 2, noise),
+              );
+            } else {
+              ctx.bezierCurveTo(
+                jitter(cmd[1], passIndex * 37 + index * 7 + 1, noise),
+                jitter(cmd[2], passIndex * 37 + index * 7 + 2, noise),
+                jitter(cmd[3], passIndex * 37 + index * 7 + 3, noise),
+                jitter(cmd[4], passIndex * 37 + index * 7 + 4, noise),
+                jitter(cmd[5], passIndex * 37 + index * 7 + 5, noise),
+                jitter(cmd[6], passIndex * 37 + index * 7 + 6, noise),
+              );
+            }
+          });
+          ctx.stroke();
+          ctx.restore();
+        };
+        [
+          [0, 0, 1, 0.16],
+          [1.2, -0.85, 0.72, 0.8],
+          [-1, 0.75, 0.55, 0.7],
+          [0.45, 0.35, 0.38, 0.55],
+        ].forEach(([x, y, alpha, noise], index) => {
+          drawResumeTrace(x, y, alpha, noise, index + 1);
+        });
+        ctx.save();
+        ctx.strokeStyle = penInk;
+        ctx.lineCap = 'round';
+        for (let i = 0; i < 18; i++) {
+          const x1 = 142 + rand(i * 5 + 1) * 382;
+          const y1 = 166 + rand(i * 5 + 2) * 104;
+          const length = 18 + rand(i * 5 + 3) * 62;
+          const drift = -5 + rand(i * 5 + 4) * 10;
+          ctx.globalAlpha = 0.035 + rand(i * 5 + 5) * 0.055;
+          ctx.lineWidth = 0.24 + rand(i * 5 + 6) * 0.32;
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.quadraticCurveTo(x1 + length * 0.52, y1 + drift, x1 + length, y1 + drift * 0.35);
+          ctx.stroke();
+        }
+        ctx.restore();
+        ctx.save();
+        ctx.globalAlpha = 0.09;
+        ctx.strokeStyle = 'rgba(255, 240, 126, 0.45)';
+        ctx.lineWidth = 0.55;
+        ctx.lineCap = 'round';
+        [
+          [162, 188, 298, 181],
+          [222, 214, 372, 205],
+          [270, 237, 448, 226],
+        ].forEach(([x1, y1, x2, y2]) => {
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+        });
+        ctx.restore();
+      }
+    } else {
+      ctx.fillText(text, labelX, labelY);
+      ctx.fillText(text, labelX + 4, labelY + 2);
+    }
+    if (smiley) {
+      const sx = 552;
+      const sy = 88;
+      const drawSmiley = (x, y, alpha) => {
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        ctx.ellipse(x, y, 29, 27, -0.12, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x - 10, y - 6, 2.5, 0, Math.PI * 2);
+        ctx.arc(x + 9, y - 7, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x, y + 1, 15, 0.18, Math.PI - 0.08);
+        ctx.stroke();
+      };
+      ctx.strokeStyle = overwrittenInk ? penInk : ink;
+      ctx.fillStyle = overwrittenInk ? penInk : ink;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = overwrittenInk ? 1.8 : 7;
+      if (overwrittenInk) {
+        drawSmiley(sx - 0.9, sy, 0.78);
+        drawSmiley(sx + 0.8, sy + 0.6, 0.38);
+        drawSmiley(sx, sy - 0.8, 0.24);
+      } else {
+        drawSmiley(sx, sy, 0.9);
+      }
+    }
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.fillRect(36, 34, 548, 26);
+  };
+  draw();
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  if (document.fonts?.ready) {
+    document.fonts.ready.then(() => {
+      draw();
+      tex.needsUpdate = true;
+    }).catch(() => {});
+  }
+
+  const material = new THREE.MeshStandardMaterial({
+    map: tex,
+    color: 0xffffff,
+    roughness: 0.78,
+    metalness: 0,
+    emissive,
+    emissiveIntensity,
+    side: THREE.DoubleSide,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1,
+    transparent: true,
+    alphaTest: 0.02,
+  });
+  const noteW = Math.max(caseSize.x * scale, minWidth);
+  const noteH = noteW * (canvas.height / canvas.width);
+  const geometry = new THREE.PlaneGeometry(noteW, noteH, 18, 14);
+  const positions = geometry.attributes.position;
+  const curlDepth = normalizedFoldSide === 'left' ? 0.086 : 0.12;
+  const curlTuck = normalizedFoldSide === 'left' ? 0.032 : 0.045;
+  const curlLift = normalizedFoldSide === 'left' ? 0.021 : 0.03;
+  const curlDirection = normalizedFoldSide === 'left' ? 1 : -1;
+  const smoothstep = (edge0, edge1, x) => {
+    const t = Math.max(0, Math.min(1, (x - edge0) / Math.max(0.0001, edge1 - edge0)));
+    return t * t * (3 - 2 * t);
+  };
+  for (let i = 0; i < positions.count; i++) {
+    const x = positions.getX(i);
+    const y = positions.getY(i);
+    const horizontal = normalizedFoldSide === 'left'
+      ? smoothstep(noteW * 0.2, noteW * 0.5, -x)
+      : smoothstep(noteW * 0.18, noteW * 0.5, x);
+    const bottom = smoothstep(noteH * 0.08, noteH * 0.5, -y);
+    const curl = horizontal * bottom;
+    if (curl <= 0) continue;
+    positions.setZ(i, curl * noteW * curlDepth);
+    positions.setX(i, x + curl * noteW * curlTuck * curlDirection);
+    positions.setY(i, y + curl * noteH * curlLift);
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+  const note = new THREE.Mesh(geometry, material);
+  note.name = `Mac${text.replace(/[^a-z0-9]/gi, '') || 'Link'}StickyNote`;
+  const screenSize = screenBox && !screenBox.isEmpty() ? screenBox.getSize(new THREE.Vector3()) : null;
+  const screenMin = screenBox && !screenBox.isEmpty() ? screenBox.min : null;
+  const screenMax = screenBox && !screenBox.isEmpty() ? screenBox.max : null;
+  const targetX = placement === 'right'
+    ? screenMax && screenSize
+      ? screenMax.x + noteW * 0.24
+      : caseBox.max.x - caseSize.x * 0.24
+    : screenMin && screenSize
+      ? screenMin.x - noteW * 0.22
+      : caseBox.min.x + caseSize.x * 0.24;
+  const targetY = screenMax
+    ? Math.min(caseBox.max.y - noteH * 0.42, screenMax.y + noteH * (placement === 'right' ? 0.62 : 0.78))
+    : caseBox.max.y - caseSize.y * 0.18;
+  note.position.set(
+    Math.max(caseBox.min.x + noteW * 0.56, Math.min(caseBox.max.x - noteW * 0.5, targetX)),
+    Math.max(caseBox.min.y + noteH * 0.5, Math.min(caseBox.max.y - noteH * 0.3, targetY)),
+    caseBox.max.z + Math.max(0.008, caseSize.z * 0.012),
+  );
+  note.rotation.z = THREE.MathUtils.degToRad(rotationDeg);
+  note.userData.href = href;
+  note.userData.hitType = hitType;
+  note.userData.label = text;
+  note.userData.hoverHome = {
+    x: note.position.x,
+    y: note.position.y,
+    z: note.position.z,
+    rotationX: note.rotation.x,
+    rotationY: note.rotation.y,
+    rotationZ: note.rotation.z,
+    scale: 1,
+    emissiveIntensity,
+  };
+  const defaultHoverMotion = placement === 'right'
+    ? {
+        x: noteW * 0.026,
+        y: -noteH * 0.022,
+        z: Math.max(0.01, noteW * 0.032),
+        rotationX: THREE.MathUtils.degToRad(-1.65),
+        rotationY: THREE.MathUtils.degToRad(2.35),
+        rotationZ: THREE.MathUtils.degToRad(-1.35),
+        scale: 1.024,
+        emissiveIntensity: emissiveIntensity + 0.065,
+        easeIn: 0.16,
+        easeOut: 0.105,
+      }
+    : {
+        x: noteW * 0.016,
+        y: noteH * 0.064,
+        z: Math.max(0.014, noteW * 0.052),
+        rotationX: THREE.MathUtils.degToRad(1.15),
+        rotationY: THREE.MathUtils.degToRad(-1.25),
+        rotationZ: THREE.MathUtils.degToRad(2.35),
+        scale: 1.044,
+        emissiveIntensity: emissiveIntensity + 0.095,
+        easeIn: 0.24,
+        easeOut: 0.15,
+      };
+  note.userData.hoverOffset = {
+    ...defaultHoverMotion,
+    ...(hoverMotion || {}),
+  };
+  note.userData.hovered = false;
+  return note;
 }
 
 const TV_HERO_VIDEO_CACHE_LIMIT = 12;
@@ -5608,6 +6382,239 @@ function rankTvEditCandidates(candidates, profile, previousSource) {
   return shortlist.length ? shortlist : scored;
 }
 
+// ── DOM → texture rasterization ──────────────────────────────────────────
+// To project the real page sections onto the CRT glass (sampled by the same
+// shader as the videos), the DOM must become pixels in the screen canvas. That
+// means rasterizing it, and the raster must stay origin-clean or WebGL refuses
+// the upload. So every external resource is inlined as a data URL first.
+const _macFontCss = { promise: null };
+
+const blobToDataURL = (blob) => new Promise((resolve, reject) => {
+  const fr = new FileReader();
+  fr.onload = () => resolve(fr.result);
+  fr.onerror = reject;
+  fr.readAsDataURL(blob);
+});
+
+// Inline every same-origin url() in a CSS string as a data URL (background
+// images, masks, the HELP behind-the-scenes stills) so they survive into the
+// isolated SVG render instead of being stripped for the taint guard.
+async function inlineCssUrls(cssText) {
+  const urls = [...new Set(
+    [...cssText.matchAll(/url\(\s*(['"]?)([^)'"]+)\1\s*\)/gi)].map((m) => m[2].trim()),
+  )].filter((u) => u && !u.toLowerCase().startsWith('data:'));
+  const map = new Map();
+  await Promise.all(urls.map(async (u) => {
+    try {
+      const abs = new URL(u, document.baseURI);
+      if (abs.origin !== location.origin) return;   // cross-origin → leave (gets stripped)
+      const d = await blobToDataURL(await (await fetch(abs.href, { cache: 'force-cache' })).blob());
+      map.set(u, d);
+    } catch {}
+  }));
+  let out = cssText;
+  for (const [u, d] of map) out = out.split(u).join(d);
+  return out;
+}
+
+// Fetch the Google-Fonts stylesheets + their font files once and return a block
+// of @font-face rules with the binaries inlined, so display faces (Anton, etc.)
+// survive into the isolated SVG render. Cached for the session.
+async function getInlinedFontCss() {
+  if (_macFontCss.promise) return _macFontCss.promise;
+  _macFontCss.promise = (async () => {
+    const links = [...document.querySelectorAll('link[rel="stylesheet"][href*="fonts.googleapis.com"]')];
+    const blocks = await Promise.all(links.map(async (l) => {
+      try {
+        let css = await (await fetch(l.href, { cache: 'force-cache' })).text();
+        const urls = [...new Set([...css.matchAll(/url\(([^)]+)\)/g)].map((m) => m[1].replace(/["']/g, '')))];
+        await Promise.all(urls.map(async (u) => {
+          try {
+            const d = await blobToDataURL(await (await fetch(u, { cache: 'force-cache' })).blob());
+            css = css.split(u).join(d);
+          } catch {}
+        }));
+        return css;
+      } catch { return ''; }
+    }));
+    return blocks.join('\n');
+  })();
+  return _macFontCss.promise;
+}
+
+// Snapshot a live <video>/<canvas> to a still data URL (clones are blank, so we
+// must read the live element), then return a same-sized <img> to swap in.
+function snapshotMediaToImg(live, cloneEl) {
+  try {
+    const cw = live.clientWidth || live.videoWidth || live.width || 0;
+    const ch = live.clientHeight || live.videoHeight || live.height || 0;
+    let data = null;
+    if (live.tagName === 'CANVAS') {
+      data = live.toDataURL('image/png');
+    } else if (live.tagName === 'VIDEO' && (live.videoWidth || 0) > 0) {
+      const c = document.createElement('canvas');
+      c.width = live.videoWidth; c.height = live.videoHeight;
+      c.getContext('2d').drawImage(live, 0, 0, c.width, c.height);
+      data = c.toDataURL('image/jpeg', 0.82);
+    }
+    const img = document.createElement('img');
+    if (data) img.src = data;
+    img.style.cssText = cloneEl.getAttribute('style') || '';
+    if (cw) img.style.width = `${cw}px`;
+    if (ch) img.style.height = `${ch}px`;
+    img.style.objectFit = 'cover';
+    return img;
+  } catch {
+    const ph = document.createElement('div');
+    ph.style.cssText = (cloneEl.getAttribute('style') || '') + ';background:#0a0908;';
+    return ph;
+  }
+}
+
+// Build an origin-clean, high-DPR raster of `sourceEl` laid out at `width`.
+async function rasterizePage(sourceEl, { width = 1280, scale = 1.5, fontCss = '' } = {}) {
+  // Collect readable (same-origin) CSS so the clone is styled inside the SVG,
+  // then inline its same-origin url() assets (background stills, masks) as data
+  // URLs so they render instead of being stripped by the taint guard.
+  let css = '';
+  for (const ss of document.styleSheets) {
+    try { for (const r of ss.cssRules) css += r.cssText + '\n'; } catch {}
+  }
+  css = await inlineCssUrls(css);
+  // The whole design is driven by CSS custom properties (--paper, --ink, --sans,
+  // …) defined on :root. Inside the isolated SVG the cloned subtree is NOT a
+  // descendant of that :root, so every var() resolves to its initial value
+  // (black text, transparent backgrounds). getComputedStyle does NOT enumerate
+  // custom properties, so harvest their names from the collected CSS and resolve
+  // each against :root, then pin them on the clone root to restore the cascade.
+  let rootVars = '';
+  try {
+    const names = new Set((css.match(/--[\w-]+/g) || []));
+    const rootCS = getComputedStyle(document.documentElement);
+    const bodyCS = getComputedStyle(document.body);
+    for (const name of names) {
+      const v = (rootCS.getPropertyValue(name) || bodyCS.getPropertyValue(name)).trim();
+      if (v) rootVars += `${name}:${v};`;
+    }
+  } catch {}
+
+  const clone = sourceEl.cloneNode(true);
+  clone.setAttribute('style', `${rootVars}transform:none;position:static;width:${width}px;height:auto;max-height:none;background:#ffffff;color:var(--ink);`);
+
+  // Swap live media (video/2d-canvas) → still <img> by DOM order. WebGL canvases
+  // (the HELP player) can't be read back via toDataURL — they'd snapshot to black
+  // and cover the cinematic still behind them — so drop them and let the
+  // behind-the-scenes background show through.
+  const liveMedia = [...sourceEl.querySelectorAll('video, canvas')];
+  const cloneMedia = [...clone.querySelectorAll('video, canvas')];
+  cloneMedia.forEach((el, i) => {
+    const live = liveMedia[i];
+    if (!live) return;
+    if (live.tagName === 'CANVAS') {
+      let webgl = false;
+      try { webgl = !!(live.getContext('webgl') || live.getContext('webgl2')); } catch {}
+      if (webgl || live.clientHeight === 0) { el.remove(); return; }
+    }
+    el.replaceWith(snapshotMediaToImg(live, el));
+  });
+
+  // Inline same-origin <img> sources as data URLs (clone keeps the same src).
+  await Promise.all([...clone.querySelectorAll('img')].map(async (img) => {
+    const src = img.getAttribute('src');
+    if (!src || src.startsWith('data:')) return;
+    try {
+      const abs = new URL(src, document.baseURI).href;
+      const d = await blobToDataURL(await (await fetch(abs, { cache: 'force-cache' })).blob());
+      img.setAttribute('src', d);
+      img.removeAttribute('srcset');
+    } catch { img.remove(); }
+  }));
+
+  // Measure the laid-out height by mounting offscreen briefly.
+  const stage = document.createElement('div');
+  stage.style.cssText = `position:fixed;left:-99999px;top:0;width:${width}px;pointer-events:none;opacity:0;`;
+  stage.appendChild(clone);
+  document.body.appendChild(stage);
+  // force webfonts/layout
+  if (document.fonts?.ready) { try { await document.fonts.ready; } catch {} }
+  // Pinned/interactive components (e.g. the HELP side-swipe stage) use fixed /
+  // sticky / large-translate positioning to pin to the viewport. Cloned into a
+  // static raster, those escape and paint full-page overlays that hide every
+  // section below. Flatten all positioning to the document flow so the page
+  // rasterizes as a normal scrolling document.
+  const vpH = window.innerHeight || 800;
+  clone.querySelectorAll('*').forEach((el) => {
+    const cs = getComputedStyle(el);
+    const h = el.getBoundingClientRect().height;
+    // Pinned scaffolding (fixed/sticky) → relative, so it still anchors its
+    // absolutely-positioned layers (the HELP crossfade stills) but no longer
+    // escapes to the viewport. Keep `absolute` intact — that's what the layered
+    // backgrounds and players rely on.
+    if (cs.position === 'fixed' || cs.position === 'sticky') el.style.position = 'relative';
+    // Pinned-scroll RUNWAYS are much taller than the viewport (e.g. the HELP
+    // stage is ~3.8× tall to drive its pin). Collapse those to their pinned
+    // view so they don't project as huge empty voids. Leave ~viewport-height
+    // stage cards (and their dark cinematic grounds) intact.
+    if (h > vpH * 1.4) {
+      el.style.height = 'auto';
+      el.style.minHeight = '0';
+      el.style.maxHeight = 'none';
+      el.style.overflow = 'visible';
+    } else if (h >= vpH * 0.8) {
+      // A ~viewport-height stage card (the pinned HELP view). Pin it to a FIXED
+      // height so its absolute inset:0 background layers (the cinematic stills)
+      // fill the whole frame instead of collapsing to the short text height.
+      const fixed = Math.round(Math.min(h, vpH));
+      el.style.height = `${fixed}px`;
+      el.style.minHeight = `${fixed}px`;
+      el.style.maxHeight = `${fixed}px`;
+      el.style.overflow = 'hidden';
+    }
+  });
+  const height = Math.max(1, clone.scrollHeight);
+  document.body.removeChild(stage);
+
+  const holder = document.createElement('div');
+  holder.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+  holder.style.cssText = `width:${width}px;height:${height}px;background:#ffffff;`;
+  holder.innerHTML = `<style>${fontCss}\n${css}</style>`;
+  holder.appendChild(clone);
+
+  // An SVG that references ANY external URL taints the output canvas and blocks
+  // the WebGL upload. Replace every non-data url() (masks, background textures,
+  // font files that failed to inline) with a transparent pixel so the raster
+  // stays origin-clean. data: urls (inlined images/fonts) are preserved.
+  const TRANSPARENT = "url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7')";
+  const stripExternalUrls = (s) => s.replace(/url\(\s*(['"]?)([^)]*?)\1\s*\)/gi,
+    (m, _q, u) => (u.trim().toLowerCase().startsWith('data:') ? m : TRANSPARENT));
+
+  const svg = stripExternalUrls(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">`
+    + `<foreignObject x="0" y="0" width="100%" height="100%">`
+    + new XMLSerializer().serializeToString(holder)
+    + `</foreignObject></svg>`);
+  // IMPORTANT: load via a data: URL, NOT URL.createObjectURL(blob). Chrome taints
+  // the canvas when an SVG that contains a <foreignObject> is loaded from a blob:
+  // URL, which would block the WebGL upload; the same SVG from a data: URL stays
+  // origin-clean.
+  const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  const img = await new Promise((resolve, reject) => {
+    const im = new Image();
+    im.onload = () => resolve(im);
+    im.onerror = () => reject(new Error('svg raster failed'));
+    im.src = url;
+  });
+  const cnv = document.createElement('canvas');
+  cnv.width = Math.round(width * scale);
+  cnv.height = Math.round(height * scale);
+  const cx = cnv.getContext('2d');
+  cx.fillStyle = '#ffffff';
+  cx.fillRect(0, 0, cnv.width, cnv.height);
+  cx.scale(scale, scale);
+  cx.drawImage(img, 0, 0, width, height);
+  return { canvas: cnv, cssWidth: width, cssHeight: height, scale };
+}
+
 function TvHero({ sources = [], vocalSamples = [], children }) {
   const wrapRef = React.useRef(null);
   const canvasRef = React.useRef(null);
@@ -5675,6 +6682,9 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     screenMode: TV_MODEL_URL.includes('macintosh') ? 'grayscale' : 'color',
     deviceMode: TV_MODEL_URL.includes('macintosh') ? 'mac' : 'tv',
     macBloom: { activeUntil: 0, strength: 0, kind: 'bass' },
+    asciiBurst: null,
+    asciiConfig: getMacAsciiInitialConfig(),
+    bassKeyIndex: 0,
 	    macBloomRaf: 0,
 	    tvVisible: true,
 	    tabVisible: typeof document === 'undefined' ? true : isResumePageActive(),
@@ -5686,6 +6696,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    powerToggleInFlight: false,
 	    macKeyAudio: null,
 	    terminal: null,
+	    stickyNoteHoverRaf: 0,
+	    hoveredStickyNote: null,
 	  });
   const [engineEnabled, setEngineEnabled] = React.useState(false);
   const [availableSources, setAvailableSources] = React.useState(() => sources);
@@ -6344,6 +7356,27 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     }
   }, [disposeCachedVideo]);
 
+  const emitSourceChange = React.useCallback((source, detail = {}) => {
+    try {
+      const state = stateRef.current;
+      window.dispatchEvent(new CustomEvent('resume-tv-source-change', {
+        detail: {
+          lane: detail.lane || state.currentLane || source?.lanes?.[0] || 'idle',
+          mode: detail.mode || state.currentCutMode || 'normal',
+          url: detail.url || source?.url || '',
+          project: source?.project || '',
+          cue: source?.cue || '',
+          sampleKey: source?.sampleKey || '',
+          index: Number.isFinite(detail.index) ? detail.index : -1,
+          kind: source?.kind || '',
+          frameCanvas: state.screenCanvas || null,
+          source,
+          timestamp: performance.now(),
+        },
+      }));
+    } catch (_) {}
+  }, []);
+
   const ensureMacTerminal = React.useCallback(() => {
     const state = stateRef.current;
     if (!state.terminal) {
@@ -6509,6 +7542,9 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
   const drawMacOffScreen = React.useCallback(() => {
     const { ctx2d, screenCanvas, screenTex } = stateRef.current;
     if (!ctx2d || !screenCanvas) return;
+    // CRT channels own the screen — except the boot channel, which IS the
+    // terminal and asks for it explicitly via forceTerminal.
+    if (stateRef.current.pageMode && !stateRef.current.forceTerminal) return;
     setScreenCanvasSize('terminal');
     setScreenTextureSampling('terminal');
     const w = screenCanvas.width, h = screenCanvas.height;
@@ -6523,8 +7559,11 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     const black = '#000000';
     const paper = '#f8f7ee';
     const menuH = px(h * 0.052);
+    // UI chrome (menu bar, window title) keeps the original clean Mac system
+    // stack. Body stays Monaco (authentic on macOS) with VT323 as a retro mono
+    // fallback so non-Mac devices still get a period look instead of Courier.
     const uiFont = '"Chicago", Geneva, "Lucida Grande", Arial, sans-serif';
-    const monoFont = 'Monaco, "Courier New", monospace';
+    const monoFont = 'Monaco, "VT323", "IBM Plex Mono", "Courier New", monospace';
 
     ctx2d.fillStyle = desktopPaper;
     ctx2d.fillRect(0, 0, w, menuH);
@@ -6543,61 +7582,70 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     // A compact classic-Mac window: white field, black hairlines, title-bar
     // stripes, close box, and a small scroll bar. The original display was
     // 1-bit, so this stays black/white instead of a modern dark terminal.
-    const wx = px(w * 0.085);
-    const wy = menuH + px(h * 0.058);
-    const ww = px(w * 0.83);
-    const wh = px(h * 0.71);
-    const titleH = px(h * 0.048);
+    const terminalWindowScale = 0.8;
+    const baseWx = w * 0.085;
+    const baseWy = menuH + h * 0.058;
+    const baseWw = w * 0.83;
+    const baseWh = h * 0.71;
+    const wx = px(baseWx + baseWw * (1 - terminalWindowScale) * 0.5);
+    const wy = px(baseWy + baseWh * (1 - terminalWindowScale) * 0.5);
+    const ww = px(baseWw * terminalWindowScale);
+    const wh = px(baseWh * terminalWindowScale);
+    const titleH = px(h * 0.048 * terminalWindowScale);
     ctx2d.fillStyle = paper;
     ctx2d.fillRect(wx, wy, ww, wh);
     ctx2d.strokeStyle = black;
     ctx2d.lineWidth = 2;
     ctx2d.strokeRect(wx, wy, ww, wh);
     ctx2d.lineWidth = 2;
-    ctx2d.strokeRect(wx + 5, wy + 5, ww - 10, wh - 10);
+    const innerInset = px(5 * terminalWindowScale);
+    ctx2d.strokeRect(wx + innerInset, wy + innerInset, ww - innerInset * 2, wh - innerInset * 2);
 
-    const titleY = wy + 6;
+    const titleY = wy + px(6 * terminalWindowScale);
     const titleText = 'MacTerminal';
     ctx2d.save();
     ctx2d.beginPath();
-    ctx2d.rect(wx + 8, titleY, ww - 16, titleH - 8);
+    const windowInset = px(8 * terminalWindowScale);
+    ctx2d.rect(wx + windowInset, titleY, ww - windowInset * 2, titleH - windowInset);
     ctx2d.clip();
     ctx2d.strokeStyle = black;
     ctx2d.lineWidth = 2;
-    for (let y = titleY + 4; y < titleY + titleH - 8; y += 8) {
+    for (let y = titleY + px(4 * terminalWindowScale); y < titleY + titleH - windowInset; y += px(8 * terminalWindowScale)) {
       ctx2d.beginPath();
-      ctx2d.moveTo(wx + 12, y);
-      ctx2d.lineTo(wx + ww - 12, y);
+      ctx2d.moveTo(wx + px(12 * terminalWindowScale), y);
+      ctx2d.lineTo(wx + ww - px(12 * terminalWindowScale), y);
       ctx2d.stroke();
     }
     ctx2d.restore();
     ctx2d.fillStyle = paper;
-    const titleW = px(w * 0.17);
+    const titleW = px(w * 0.17 * terminalWindowScale);
     const titleX = px(wx + ww / 2 - titleW / 2);
-    ctx2d.fillRect(titleX, wy + 6, titleW, titleH - 8);
-    ctx2d.font = `bold ${px(h * 0.021)}px ${uiFont}`;
+    ctx2d.fillRect(titleX, wy + px(6 * terminalWindowScale), titleW, titleH - windowInset);
+    ctx2d.font = `bold ${px(h * 0.021 * terminalWindowScale)}px ${uiFont}`;
     ctx2d.fillStyle = black;
     ctx2d.textAlign = 'center';
     ctx2d.fillText(titleText, wx + ww / 2, wy + px(titleH * 0.68));
     ctx2d.fillText(titleText, wx + ww / 2 + uiTextOffset, wy + px(titleH * 0.68));
     ctx2d.textAlign = 'left';
 
-    const closeSize = px(h * 0.024);
-    ctx2d.strokeRect(wx + px(w * 0.018), wy + px(h * 0.015), closeSize, closeSize);
-    ctx2d.strokeRect(wx + ww - px(w * 0.034), wy + titleH + 4, px(w * 0.015), wh - titleH - px(h * 0.043));
-    ctx2d.fillRect(wx + ww - px(w * 0.034), wy + titleH + 4, px(w * 0.015), 2);
-    ctx2d.fillRect(wx + ww - px(w * 0.034), wy + wh - px(h * 0.04), px(w * 0.015), 2);
+    const closeSize = px(h * 0.024 * terminalWindowScale);
+    const scrollW = px(w * 0.015 * terminalWindowScale);
+    const scrollX = wx + ww - px(w * 0.034 * terminalWindowScale);
+    ctx2d.strokeRect(wx + px(w * 0.018 * terminalWindowScale), wy + px(h * 0.015 * terminalWindowScale), closeSize, closeSize);
+    ctx2d.strokeRect(scrollX, wy + titleH + px(4 * terminalWindowScale), scrollW, wh - titleH - px(h * 0.043 * terminalWindowScale));
+    ctx2d.fillRect(scrollX, wy + titleH + px(4 * terminalWindowScale), scrollW, 2);
+    ctx2d.fillRect(scrollX, wy + wh - px(h * 0.04 * terminalWindowScale), scrollW, 2);
 
     ctx2d.save();
     ctx2d.beginPath();
-    const tx = wx + px(w * 0.034);
-    const ty = wy + titleH + px(h * 0.034);
-    const tw = ww - px(w * 0.088);
-    const th = wh - titleH - px(h * 0.072);
+    const tx = wx + px(w * 0.034 * terminalWindowScale);
+    const ty = wy + titleH + px(h * 0.034 * terminalWindowScale);
+    const tw = ww - px(w * 0.088 * terminalWindowScale);
+    const th = wh - titleH - px(h * 0.072 * terminalWindowScale);
     ctx2d.rect(tx, ty, tw, th);
     ctx2d.clip();
     ctx2d.fillStyle = black;
-    const fontSize = px(h * 0.038);
+    const fontSize = px(h * 0.0335 * terminalWindowScale);
     const lineHeight = px(fontSize * 1.42);
     ctx2d.font = `${fontSize}px ${monoFont}`;
     const prompt = 'tawfeeq$ ';
@@ -6683,6 +7731,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
   const drawSourceToCanvas = React.useCallback((img, effect = null) => {
     const { ctx2d, screenCanvas, screenTex } = stateRef.current;
     if (!ctx2d || !screenCanvas) return;
+    if (stateRef.current.pageMode) return;  // CRT page projection owns the screen
     setScreenCanvasSize('media');
     setScreenTextureSampling('media');
     const w = screenCanvas.width, h = screenCanvas.height;
@@ -6867,6 +7916,10 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       ctx2d.putImageData(imageData, 0, 0);
     }
 
+    // Boot channel: overlay the channel menu bar on the terminal once docked.
+    if (stateRef.current.dockMode) {
+      stateRef.current.drawMenuBar?.(ctx2d, screenCanvas.width, screenCanvas.height);
+    }
     if (screenTex) {
       screenTex.needsUpdate = true;
       stateRef.current.requestRender?.();
@@ -6894,6 +7947,214 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     };
     tickTracking();
   }, [drawSourceToCanvas]);
+
+  const drawMacAsciiBassOverlay = React.useCallback((strength = 1, hitT = 0) => {
+    const state = stateRef.current;
+    if (state.deviceMode !== 'mac' || state.macBloom?.ascii === false) return;
+    const config = state.asciiConfig || MAC_ASCII_BASS_CONFIG_DEFAULTS;
+    if (!config.enabled) return;
+    const { ctx2d, screenCanvas } = state;
+    if (!ctx2d || !screenCanvas) return;
+    const w = screenCanvas.width, h = screenCanvas.height;
+    const amount = Math.max(0, Math.min(1, strength / 1.08));
+    if (amount <= 0.045) return;
+
+    const now = performance.now();
+    const tileSize = Math.max(6, config.tileSize || MAC_ASCII_BASS_CONFIG_DEFAULTS.tileSize);
+    const cols = Math.max(12, Math.min(160, Math.round(w / tileSize)));
+    const rows = Math.max(9, Math.min(120, Math.round(h / tileSize)));
+    const cellW = w / cols;
+    const cellH = h / rows;
+    if (!state.asciiBurst) state.asciiBurst = {};
+    const ascii = state.asciiBurst;
+    if (!ascii.canvas) {
+      ascii.canvas = document.createElement('canvas');
+      ascii.ctx = ascii.canvas.getContext('2d');
+      ascii.sampleCanvas = document.createElement('canvas');
+      ascii.sampleCtx = ascii.sampleCanvas.getContext('2d');
+      ascii.backgroundCanvas = document.createElement('canvas');
+      ascii.backgroundCtx = ascii.backgroundCanvas.getContext('2d');
+    }
+    if (ascii.canvas.width !== w || ascii.canvas.height !== h) {
+      ascii.canvas.width = w;
+      ascii.canvas.height = h;
+      ascii.ready = false;
+    }
+    if (ascii.sampleCanvas.width !== cols || ascii.sampleCanvas.height !== rows) {
+      ascii.sampleCanvas.width = cols;
+      ascii.sampleCanvas.height = rows;
+      ascii.ready = false;
+    }
+    const bgScale = 4;
+    const bgW = Math.max(1, Math.round(w / bgScale));
+    const bgH = Math.max(1, Math.round(h / bgScale));
+    if (ascii.backgroundCanvas.width !== bgW || ascii.backgroundCanvas.height !== bgH) {
+      ascii.backgroundCanvas.width = bgW;
+      ascii.backgroundCanvas.height = bgH;
+    }
+
+    const seed = state.macBloom?.shakeSeed || 1;
+    const chars = String(config.chars || MAC_ASCII_BASS_CHARS);
+    const charColors = config.charColors || {};
+    const colorKey = JSON.stringify(charColors);
+    const accent = state.macBloom?.asciiAccent || null;
+    const accentColor = accent ? accent.color : '';
+    const accentKey = accent ? `${accent.label}:${accent.char}:${accentColor}` : '';
+    const key = `${w}x${h}:${cols}x${rows}:${seed}:${chars}:${colorKey}:${accentKey}:${config.fontScale}:${config.jitter}:${config.brightness}:${config.contrast}:${config.threshold}:${config.coverage}:${config.density}:${config.edgeEmphasis}`;
+    const videoActive = state.currentVideo && state.currentMedia === state.currentVideo && !state.currentVideo.paused;
+    const minFrameMs = videoActive
+      ? Math.max(72, config.minFrameMs || MAC_ASCII_BASS_CONFIG_DEFAULTS.minFrameMs)
+      : (config.minFrameMs || MAC_ASCII_BASS_CONFIG_DEFAULTS.minFrameMs);
+    const shouldBuild = !ascii.ready
+      || ascii.key !== key
+      || now - (ascii.lastBuiltAt || 0) >= minFrameMs;
+
+    if (shouldBuild) {
+      const sampleCtx = ascii.sampleCtx;
+      const outCtx = ascii.ctx;
+      sampleCtx.save();
+      sampleCtx.imageSmoothingEnabled = true;
+      sampleCtx.clearRect(0, 0, cols, rows);
+      sampleCtx.drawImage(screenCanvas, 0, 0, cols, rows);
+      sampleCtx.restore();
+
+      const pixels = sampleCtx.getImageData(0, 0, cols, rows).data;
+      const phase = Math.floor(now / 64);
+      const jitterAmount = config.jitter ?? MAC_ASCII_BASS_CONFIG_DEFAULTS.jitter;
+      const brightness = config.brightness ?? 0;
+      const contrast = config.contrast ?? 1;
+      const threshold = config.threshold ?? 0;
+      const coverage = config.coverage ?? 1;
+      const density = config.density ?? 1;
+      const edgeEmphasis = config.edgeEmphasis ?? 0;
+      const charColorRgb = {};
+      for (const [char, color] of Object.entries(charColors)) {
+        const rgb = macAsciiColorToRgb(color);
+        if (rgb) charColorRgb[char] = rgb;
+      }
+      const accentRgb = macAsciiColorToRgb(accentColor);
+      const rand = (i) => {
+        const x = Math.sin(seed * 17.17 + phase * 5.31 + i * 41.89) * 9371.13;
+        return x - Math.floor(x);
+      };
+      const clamp01 = (value) => Math.max(0, Math.min(1, value));
+      const lumAt = (x, y) => {
+        const xx = Math.max(0, Math.min(cols - 1, x));
+        const yy = Math.max(0, Math.min(rows - 1, y));
+        const idx = (yy * cols + xx) * 4;
+        return (pixels[idx] * 0.299 + pixels[idx + 1] * 0.587 + pixels[idx + 2] * 0.114) / 255;
+      };
+
+      outCtx.clearRect(0, 0, w, h);
+      outCtx.textAlign = 'center';
+      outCtx.textBaseline = 'middle';
+      outCtx.font = `700 ${Math.max(8, Math.round(cellH * (config.fontScale || 1)))}px Monaco, "Courier New", monospace`;
+      const peakIndex = Math.max(0, chars.length - 1);
+      const accentCandidates = [];
+      const accentBandH = Math.max(54, Math.floor(h * 0.15));
+      const accentSpan = h + accentBandH * 2;
+      const accentY = accentRgb
+        ? ((((state.macBloom?.rollPhase || 0) % accentSpan) + accentSpan) % accentSpan) - accentBandH
+        : 0;
+      const addAccentCandidate = (candidate) => {
+        if (accentCandidates.length < MAC_ASCII_BASS_MAX_ACCENT_GLYPHS) {
+          accentCandidates.push(candidate);
+          return;
+        }
+        let weakestIndex = 0;
+        let weakestScore = accentCandidates[0].score;
+        for (let i = 1; i < accentCandidates.length; i++) {
+          if (accentCandidates[i].score < weakestScore) {
+            weakestIndex = i;
+            weakestScore = accentCandidates[i].score;
+          }
+        }
+        if (candidate.score > weakestScore) accentCandidates[weakestIndex] = candidate;
+      };
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const i = (y * cols + x) * 4;
+          const sourceLum = (pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114) / 255;
+          const edge = edgeEmphasis > 0
+            ? Math.max(Math.abs(lumAt(x + 1, y) - lumAt(x - 1, y)), Math.abs(lumAt(x, y + 1) - lumAt(x, y - 1)))
+            : 0;
+          let lum = (sourceLum - 0.5) * contrast + 0.5 + brightness + edge * edgeEmphasis * 0.85;
+          lum = clamp01(lum * density);
+          if (threshold > 0 && lum < threshold) continue;
+          if (threshold > 0) lum = clamp01((lum - threshold) / Math.max(0.001, 1 - threshold));
+          if (coverage < 1) {
+            const coverageGate = coverage * (0.35 + lum * 0.65);
+            if (rand(i + 2203) > coverageGate) continue;
+          }
+          const jitter = (rand(i) - 0.5) * jitterAmount;
+          const index = Math.max(0, Math.min(chars.length - 1, Math.round(lum * (chars.length - 1) + jitter)));
+          const char = chars[index];
+          if (char === ' ') continue;
+          const tone = Math.round(172 + lum * 74);
+          let alpha = Math.max(0.22, Math.min(0.96, 0.18 + lum * 0.86));
+          const mappedRgb = accentRgb ? null : charColorRgb[char];
+          let rgb = mappedRgb || [tone, tone, Math.max(165, tone - 12)];
+          const drawX = x * cellW + cellW * 0.5;
+          const drawY = y * cellH + cellH * 0.55;
+          if (accentRgb && index === peakIndex) {
+            const actionBias = 1 - Math.min(1, Math.abs(drawY - accentY) / Math.max(1, h * 0.48));
+            addAccentCandidate({
+              alpha,
+              char,
+              score: lum * 1.25 + actionBias * 0.95 + rand(i + 7319) * 0.72,
+              x: drawX,
+              y: drawY,
+            });
+          }
+          outCtx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alpha})`;
+          outCtx.fillText(char, drawX, drawY);
+        }
+      }
+      if (accentRgb) {
+        for (const candidate of accentCandidates) {
+          const alpha = Math.min(1, candidate.alpha * 1.3 + 0.1);
+          outCtx.fillStyle = `rgba(${accentRgb[0]},${accentRgb[1]},${accentRgb[2]},${alpha})`;
+          outCtx.fillText(candidate.char, candidate.x, candidate.y);
+        }
+      }
+      ascii.ready = true;
+      ascii.key = key;
+      ascii.lastBuiltAt = now;
+    }
+
+    const attackLift = Math.max(0, 1 - hitT * 0.28);
+    const alpha = Math.max(0, Math.min(1, amount * attackLift));
+    const backgroundOpacity = Math.max(0, Math.min(1, config.backgroundOpacity ?? 0));
+    const backgroundBlur = Math.max(0, config.backgroundBlur ?? 0);
+    ctx2d.save();
+    ctx2d.globalCompositeOperation = 'source-over';
+    if (backgroundOpacity > 0.001) {
+      const bgCtx = ascii.backgroundCtx;
+      bgCtx.save();
+      bgCtx.imageSmoothingEnabled = true;
+      bgCtx.clearRect(0, 0, bgW, bgH);
+      if (backgroundBlur > 0 && 'filter' in bgCtx) {
+        bgCtx.filter = `blur(${Math.max(0, backgroundBlur / bgScale)}px)`;
+      }
+      bgCtx.drawImage(screenCanvas, 0, 0, bgW, bgH);
+      bgCtx.restore();
+      ctx2d.globalAlpha = Math.min(1, backgroundOpacity * (0.6 + alpha * 0.4));
+      ctx2d.imageSmoothingEnabled = true;
+      ctx2d.drawImage(ascii.backgroundCanvas, 0, 0, w, h);
+      ctx2d.globalAlpha = 1;
+    }
+    ctx2d.fillStyle = `rgba(0,0,0,${0.12 + alpha * (config.darken ?? 0.36)})`;
+    ctx2d.fillRect(0, 0, w, h);
+    ctx2d.globalCompositeOperation = 'screen';
+    ctx2d.globalAlpha = Math.min(1, (0.46 + alpha * 0.5) * (config.opacity ?? 1));
+    ctx2d.drawImage(ascii.canvas, 0, 0, w, h);
+    ctx2d.globalCompositeOperation = 'multiply';
+    ctx2d.globalAlpha = Math.min(0.5, alpha * (config.scanline ?? 0.28));
+    ctx2d.fillStyle = '#000';
+    const scanStep = Math.max(8, Math.round(cellH * 0.86));
+    for (let y = 0; y < h; y += scanStep) ctx2d.fillRect(0, y, w, 1);
+    ctx2d.restore();
+  }, []);
 
   // Mac-specific CRT response: heavy phosphor bloom + brief ghost echo
   // instead of TV-style sync tear / channel static. Reads as a hot CRT
@@ -6977,6 +8238,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         ctx2d.fillRect(0, Math.round(yCenter - 1), w, 1);
         ctx2d.restore();
       }
+      drawMacAsciiBassOverlay(s, hitT);
     }
     // Clap or power-on: vertical roll drift — full image scrolls vertically
     // with wrap-around plus a dark sync bar at the seam.
@@ -7006,7 +8268,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       screenTex.needsUpdate = true;
       stateRef.current.requestRender?.();
     }
-  }, [drawSourceToCanvas]);
+  }, [drawSourceToCanvas, drawMacAsciiBassOverlay]);
 
   // Mouse button press (Mesh284) — quick down/up.
   const animateMouseButton = React.useCallback(() => {
@@ -7037,9 +8299,84 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     tick();
   }, []);
 
+  const animateStickyNoteHover = React.useCallback(() => {
+    const state = stateRef.current;
+    if (state.stickyNoteHoverRaf) return;
+    const settle = 0.0008;
+    const tick = () => {
+      state.stickyNoteHoverRaf = 0;
+      let active = false;
+      for (const note of state.stickyNotes || []) {
+        const home = note?.userData?.hoverHome;
+        const offset = note?.userData?.hoverOffset;
+        if (!note || !home || !offset) continue;
+        const hovered = Boolean(note.userData.hovered);
+        const targetX = home.x + (hovered ? offset.x : 0);
+        const targetY = home.y + (hovered ? offset.y : 0);
+        const targetZ = home.z + (hovered ? offset.z : 0);
+        const targetRotationX = home.rotationX + (hovered ? (offset.rotationX || 0) : 0);
+        const targetRotationY = home.rotationY + (hovered ? (offset.rotationY || 0) : 0);
+        const targetRotationZ = home.rotationZ + (hovered ? offset.rotationZ : 0);
+        const targetScale = hovered ? offset.scale : home.scale;
+        const targetEmissive = hovered ? offset.emissiveIntensity : home.emissiveIntensity;
+        const ease = hovered ? (offset.easeIn ?? 0.22) : (offset.easeOut ?? 0.16);
+        note.position.x += (targetX - note.position.x) * ease;
+        note.position.y += (targetY - note.position.y) * ease;
+        note.position.z += (targetZ - note.position.z) * ease;
+        note.rotation.x += (targetRotationX - note.rotation.x) * ease;
+        note.rotation.y += (targetRotationY - note.rotation.y) * ease;
+        note.rotation.z += (targetRotationZ - note.rotation.z) * ease;
+        note.scale.x += (targetScale - note.scale.x) * ease;
+        note.scale.y += (targetScale - note.scale.y) * ease;
+        note.scale.z += (targetScale - note.scale.z) * ease;
+        if (note.material && Number.isFinite(note.material.emissiveIntensity)) {
+          note.material.emissiveIntensity += (targetEmissive - note.material.emissiveIntensity) * ease;
+        }
+        const remaining = Math.abs(targetX - note.position.x)
+          + Math.abs(targetY - note.position.y)
+          + Math.abs(targetZ - note.position.z)
+          + Math.abs(targetRotationX - note.rotation.x)
+          + Math.abs(targetRotationY - note.rotation.y)
+          + Math.abs(targetRotationZ - note.rotation.z)
+          + Math.abs(targetScale - note.scale.x)
+          + Math.abs(targetScale - note.scale.y);
+        if (remaining > settle) {
+          active = true;
+        } else {
+          note.position.set(targetX, targetY, targetZ);
+          note.rotation.x = targetRotationX;
+          note.rotation.y = targetRotationY;
+          note.rotation.z = targetRotationZ;
+          note.scale.setScalar(targetScale);
+          if (note.material && Number.isFinite(note.material.emissiveIntensity)) {
+            note.material.emissiveIntensity = targetEmissive;
+          }
+        }
+      }
+      state.requestRender?.();
+      if (active) state.stickyNoteHoverRaf = requestAnimationFrame(tick);
+    };
+    state.stickyNoteHoverRaf = requestAnimationFrame(tick);
+  }, []);
+
+  const setHoveredStickyNote = React.useCallback((nextNote) => {
+    const state = stateRef.current;
+    const normalizedNote = nextNote || null;
+    if (state.hoveredStickyNote === normalizedNote) return;
+    state.hoveredStickyNote = normalizedNote;
+    for (const note of state.stickyNotes || []) {
+      if (note?.userData) note.userData.hovered = note === normalizedNote;
+    }
+    animateStickyNoteHover();
+  }, [animateStickyNoteHover]);
+
   // Floppy slide in/out. Returns a promise that resolves when the slide
   // completes so callers can sequence (e.g., wait for insert before audio).
   const animateFloppy = React.useCallback((inserted) => {
+    // Fullscreen is disabled by MAC_REEL_FULLSCREEN_ENABLED; keep the calls in
+    // place so the binding can be restored without touching every trigger path.
+    if (inserted) reelEnterFullscreen();
+    else reelExitFullscreen();
     const state = stateRef.current;
     const f = state.floppy;
     if (!f) return Promise.resolve();
@@ -7076,6 +8413,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
   }, []);
 
   const setFloppyInsertedInstant = React.useCallback((inserted, render = true) => {
+    // Mirror the eject → exit-fullscreen binding for the instant (non-animated) path.
+    if (!inserted) reelExitFullscreen();
     const state = stateRef.current;
     const f = state.floppy;
     if (!f) return false;
@@ -7181,9 +8520,17 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    tick();
 	  }, []);
 
-		  const animateMacBloomBurst = React.useCallback((kind = 'bass', options = {}) => {
+	  const animateMacBloomBurst = React.useCallback((kind = 'bass', options = {}) => {
 	    const state = stateRef.current;
 	    cancelAnimationFrame(state.macBloomRaf);
+	    const asciiBurst = kind === 'bass' && options.ascii !== false;
+	    const asciiAccent = asciiBurst
+	      ? MAC_ASCII_BASS_KEY_SEQUENCE[(state.bassKeyIndex || 0) % MAC_ASCII_BASS_KEY_SEQUENCE.length]
+	      : null;
+	    if (asciiAccent) {
+	      state.bassKeyIndex = ((state.bassKeyIndex || 0) + 1) % MAC_ASCII_BASS_KEY_SEQUENCE.length;
+	      animateKeyPress(asciiAccent.label);
+	    }
 	    const bassHitStrength = Math.max(0.82, Math.min(2.35, Number(options.strength) || 1));
 	    const bassDuration = Math.max(130, Math.min(260, (options.duration || 180) * 0.82));
 	    const duration = kind === 'clap' ? 180 : kind === 'powerOn' ? 220 : bassDuration;
@@ -7218,6 +8565,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	      rollPhase: start,
 	      hitStrength: bassHitStrength,
 	      bassLevel: options.bassLevel,
+	      ascii: asciiBurst,
+	      asciiAccent,
 	      shakeSeed: options.id || Math.floor(performance.now()),
 	    };
     if (state.currentVideo && state.currentMedia === state.currentVideo) {
@@ -7246,7 +8595,91 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       };
       tick();
     });
-  }, [drawMacBloom, drawSourceToCanvas]);
+  }, [animateKeyPress, drawMacBloom, drawSourceToCanvas]);
+
+  const applyMacAsciiControlConfig = React.useCallback((input = {}) => {
+    const state = stateRef.current;
+    const next = normalizeMacAsciiConfig(input, state.asciiConfig || MAC_ASCII_BASS_CONFIG_DEFAULTS);
+    const previous = state.asciiConfig || {};
+    const changed = JSON.stringify(next) !== JSON.stringify(previous);
+    state.asciiConfig = next;
+    if (changed && state.asciiBurst) {
+      state.asciiBurst.ready = false;
+      state.asciiBurst.key = '';
+    }
+    return next;
+  }, []);
+
+  React.useEffect(() => {
+    if (stateRef.current.deviceMode !== 'mac' || !isMacAsciiControlHost()) return undefined;
+    let disposed = false;
+    let timer = 0;
+    let lastRevision = '';
+    let channel = null;
+
+    const applyPayload = (payload = {}) => {
+      const config = payload.config || payload;
+      if (!config || typeof config !== 'object') return;
+      const revision = String(payload.revision ?? JSON.stringify(config));
+      if (revision === lastRevision) return;
+      lastRevision = revision;
+      applyMacAsciiControlConfig(config);
+    };
+
+    const fetchConfig = async () => {
+      try {
+        const response = await fetch('/api/mac-ascii-config', { cache: 'no-store' });
+        if (!response.ok) return;
+        applyPayload(await response.json());
+      } catch (_) {}
+    };
+
+    const pulse = (detail = {}) => {
+      const state = stateRef.current;
+      if (state.tabVisible === false || state.tvVisible === false || helpOwnsTvStage()) return;
+      const media = state.currentMedia || state.currentImage;
+      if (!media) return;
+      animateMacBloomBurst('bass', {
+        id: detail.id || Math.floor(performance.now()),
+        duration: detail.duration || 190,
+        strength: detail.strength || 1.28,
+      });
+    };
+
+    if ('BroadcastChannel' in window) {
+      try {
+        channel = new BroadcastChannel('resume-mac-ascii-control-v1');
+        channel.onmessage = (event) => {
+          const message = event.data || {};
+          if (message.type === 'config') applyPayload(message.payload || message);
+          if (message.type === 'pulse') pulse(message);
+        };
+      } catch (_) {
+        channel = null;
+      }
+    }
+
+    window.__resumeMacAsciiEffect = {
+      get: () => ({ ...(stateRef.current.asciiConfig || MAC_ASCII_BASS_CONFIG_DEFAULTS) }),
+      set: (config) => applyMacAsciiControlConfig(config),
+      reset: () => applyMacAsciiControlConfig(MAC_ASCII_BASS_CONFIG_DEFAULTS),
+      pulse,
+    };
+
+    fetchConfig();
+    timer = window.setInterval(() => {
+      if (!disposed) fetchConfig();
+    }, 500);
+
+    return () => {
+      disposed = true;
+      window.clearInterval(timer);
+      try { channel?.close?.(); } catch (_) {}
+      if (window.__resumeMacAsciiEffect?.get) {
+        try { delete window.__resumeMacAsciiEffect; } catch (_) { window.__resumeMacAsciiEffect = null; }
+      }
+    };
+  }, [animateMacBloomBurst, applyMacAsciiControlConfig, helpOwnsTvStage]);
 
   const runMacTerminalCommand = React.useCallback(async (rawCommand) => {
     const cmd = String(rawCommand || '').trim();
@@ -7259,7 +8692,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       return;
     }
     if (lower === 'help' || lower === '?') {
-      pushMacTerminalLine('COMMANDS');
+      pushMacTerminalLine('commands');
       MAC_TERMINAL_COMMAND_LINES.forEach(pushMacTerminalLine);
       drawMacOffScreen();
       return;
@@ -7297,14 +8730,14 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     if (DOOM_TERMINAL_COMMANDS.has(lower)) {
       if (state.powerToggleInFlight) return;
       state.powerToggleInFlight = true;
-      pushMacTerminalLine('loading DOOM.EXE...');
+      pushMacTerminalLine('loading doom.exe...');
       pushMacTerminalLine('halting site audio...');
       drawMacOffScreen();
       try {
         if (engine?.enabled) await engine.setEnabled(false);
         await animateFloppy(true);
         await animateMacBloomBurst('powerOn');
-        pushMacTerminalLine('fullscreen handoff armed.');
+        pushMacTerminalLine('doom handoff armed.');
         drawMacOffScreen();
         window.dispatchEvent(new CustomEvent('resume-launch-doom'));
       } catch (error) {
@@ -7327,7 +8760,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         const nextEngine = window.__resumeStrudelAudioEngine;
         const result = await nextEngine?.setEnabled(true);
         if (result === false) {
-          pushMacTerminalLine('audio failed; use RESET then PLAY.');
+          pushMacTerminalLine('audio failed; use reset then play.');
           drawMacOffScreen();
         }
       } catch (error) {
@@ -7375,6 +8808,21 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     drawMacOffScreen();
     return true;
   }, [drawMacOffScreen, ensureMacTerminal, playMacKeyClick, runMacTerminalCommand]);
+
+  // Canvas text only adopts a webfont once it's actually loaded, so the terminal
+  // would draw with a fallback on first paint. Redraw the Mac screen after the
+  // period faces (Silkscreen / VT323) are ready.
+  React.useEffect(() => {
+    if (!document.fonts?.load) return undefined;
+    let cancelled = false;
+    Promise.all([
+      document.fonts.load('16px "VT323"'),
+    ]).catch(() => {}).then(() => {
+      if (cancelled) return;
+      if (stateRef.current.deviceMode === 'mac' && !stateRef.current.pageMode) drawMacOffScreen();
+    });
+    return () => { cancelled = true; };
+  }, [drawMacOffScreen]);
 
   const drawChannelStatic = React.useCallback((seed = 1, strength = 1) => {
     const state = stateRef.current;
@@ -7577,6 +9025,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         id: detail.id,
         duration: pulseMs,
         strength: 0.42,
+        ascii: false,
       });
       return;
     }
@@ -7845,6 +9294,12 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
               index: idx,
             },
           }));
+          emitSourceChange(source, {
+            lane,
+            mode: stateRef.current.currentCutMode,
+            url: src,
+            index: idx,
+          });
         };
         const onReady = () => {
           if (committed) return;
@@ -7902,7 +9357,14 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       stateRef.current.currentSource = source;
       stateRef.current.currentFit = source.fit || 'cover';
       stateRef.current.currentMatteAspect = source.matteAspect || null;
+      stateRef.current.currentPunchIn = source.punchIn || 1;
       drawSourceToCanvas(img);
+      emitSourceChange(source, {
+        lane,
+        mode: stateRef.current.currentCutMode,
+        url: src,
+        index: idx,
+      });
     } else {
       img.onload = () => {
         if (!canCommitCut()) return;
@@ -7911,11 +9373,17 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         stateRef.current.currentSource = source;
         stateRef.current.currentFit = source.fit || 'cover';
         stateRef.current.currentMatteAspect = source.matteAspect || null;
-      stateRef.current.currentPunchIn = source.punchIn || 1;
+        stateRef.current.currentPunchIn = source.punchIn || 1;
         drawSourceToCanvas(img);
+        emitSourceChange(source, {
+          lane,
+          mode: stateRef.current.currentCutMode,
+          url: src,
+          index: idx,
+        });
       };
     }
-  }, [availableSources, pickIndex, drawSourceToCanvas, drawVideoLoop, helpOwnsTvStage, stopVideoLoop, trimVideoCache]);
+  }, [availableSources, pickIndex, drawSourceToCanvas, drawVideoLoop, emitSourceChange, helpOwnsTvStage, stopVideoLoop, trimVideoCache]);
   React.useEffect(() => { cutRef.current = cut; }, [cut]);
 
   // Init Three.js scene (lazy-loaded)
@@ -7941,30 +9409,37 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       renderer.setClearColor(0x000000, 0);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = MAC_MODEL_GRAYSCALE_PREVIEW ? 0.68 : 0.62;
+      renderer.toneMappingExposure = MAC_MODEL_GRAYSCALE_PREVIEW ? 0.54 : 0.50;
 
       const scene = new THREE.Scene();
       scene.background = null;
 
-      const camera = new THREE.PerspectiveCamera(34, (canvas.clientWidth || 800) / (canvas.clientHeight || 800), 0.01, 100);
+      const HERO_FOV = 34;
+      const camera = new THREE.PerspectiveCamera(HERO_FOV, (canvas.clientWidth || 800) / (canvas.clientHeight || 800), 0.01, 100);
       camera.position.set(0.45, 0.52, 2.5);
       camera.lookAt(0, 0.42, -0.13);
-
       const frameModel = (box) => {
+        // The dolly narrows the FOV for the docked (near-orthographic) view, so
+        // restore the hero lens before reframing or the rest framing drifts.
+        camera.fov = HERO_FOV;
         const sphere = box.getBoundingSphere(new THREE.Sphere());
         const isMobileFrame = window.matchMedia('(max-width: 760px)').matches;
+        const isLandingFrame = document.documentElement?.dataset?.resumeVariant === 'landing-v1';
         const target = sphere.center.clone();
         target.y += sphere.radius * (isMobileFrame ? 0.06 : 0.02);
         if (isMobileFrame) target.x -= sphere.radius * 0.46;
+        else if (isLandingFrame) target.x -= sphere.radius * 0.12;
         const verticalFov = THREE.MathUtils.degToRad(camera.fov);
         const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * camera.aspect);
         const fitHeightDistance = sphere.radius / Math.sin(verticalFov / 2);
         const fitWidthDistance = sphere.radius / Math.sin(horizontalFov / 2);
-        // Pull camera ~30% closer so the Mac fills more of the canvas.
-        const distance = Math.max(fitHeightDistance, fitWidthDistance) * (isMobileFrame ? 1.18 : 0.89);
+        // Pull the camera closer so the Mac fills more of the canvas. The
+        // landing factor (0.562) renders the whole model (Mac + keyboard +
+        // mouse) ~15% larger than the base landing fit (0.646 / 1.15).
+        const distance = Math.max(fitHeightDistance, fitWidthDistance) * (isMobileFrame ? 1.18 : isLandingFrame ? 0.562 : 0.89);
         const viewDirection = new THREE.Vector3(
-          isMobileFrame ? 0.08 : 0.32,
-          isMobileFrame ? 0.12 : 0.14,
+          isMobileFrame ? 0.08 : isLandingFrame ? 0 : 0.32,
+          isMobileFrame ? 0.12 : isLandingFrame ? 0.095 : 0.14,
           1,
         ).normalize();
         camera.position.copy(target).add(viewDirection.multiplyScalar(distance));
@@ -7972,27 +9447,369 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         camera.far = distance + sphere.radius * 4.0;
         camera.lookAt(target);
         camera.updateProjectionMatrix();
+        // Cache the hero framing so the scroll dolly can lerp from it.
+        stateRef.current.heroCam = { pos: camera.position.clone(), target: target.clone() };
+        const zp = stateRef.current.zoomProgress || 0;
+        if (zp > 0) stateRef.current.applyZoom?.(zp);
+      };
+      // Scroll-driven dolly: lerp the camera from the hero framing onto the CRT
+      // glass until the screen fills the viewport (CRT_FILL < 1 keeps the case
+      // sides in frame). Renders on demand.
+      // Fraction of the viewport HEIGHT the screen fills at full dock. < 1 leaves
+      // an equal sliver of case above and below the centered screen.
+      // Fraction of the viewport WIDTH the monitor case fills at full dock.
+      // 1.0 = the case's side edges sit exactly on the viewport's side edges.
+      const CRT_FILL = 1.0;
+      // Dock perfectly head-on so the case is square-on and centered (no
+      // keystoning, equal margins).
+      const CRT_DIR = new THREE.Vector3(0, 0, 1).normalize();
+      // Telephoto lens through the dolly, then a true orthographic projection at
+      // the dock so the docked view is perfectly orthogonal (zero perspective).
+      const CRT_FOV = 12;
+      const _zv = new THREE.Vector3();
+      // Half the world width to frame to the viewport: the monitor case width, so
+      // its side edges meet the viewport sides. Centered on the screen (vertically
+      // too) so the page stays centred.
+      const frameHalfWidth = () => {
+        const box = stateRef.current.caseBox || stateRef.current.screenBox;
+        return (box.getSize(_zv).x * 0.5) / CRT_FILL;
+      };
+      // The locked camera pose. Horizontally centered on the CASE (so its side
+      // edges are equidistant from the viewport sides — no left/right gap), but
+      // vertically centered on the SCREEN so the page stays in view. Distance set
+      // so the case width fills the viewport width at the current lens.
+      const computeScreenPose = () => {
+        const sBox = stateRef.current.screenBox;
+        const cBox = stateRef.current.caseBox || sBox;
+        if (!sBox) return null;
+        const sCtr = sBox.getCenter(new THREE.Vector3());
+        const cCtr = cBox.getCenter(new THREE.Vector3());
+        const target = new THREE.Vector3(cCtr.x, sCtr.y, sCtr.z);
+        const vFov = THREE.MathUtils.degToRad(camera.fov);
+        const dist = frameHalfWidth() / (Math.tan(vFov / 2) * Math.max(0.0001, camera.aspect));
+        const pos = target.clone().add(CRT_DIR.clone().multiplyScalar(dist));
+        return { pos, target };
+      };
+      const _perspM = new THREE.Matrix4();
+      const _orthoM = new THREE.Matrix4();
+      const applyZoom = (p) => {
+        const hero = stateRef.current.heroCam;
+        const sBox = stateRef.current.screenBox;
+        if (!hero || !sBox) return;
+        // Narrow the lens as we dock (perspective → near-orthographic). Set the
+        // FOV first so computeScreenPose fits the screen at the docked lens.
+        camera.fov = HERO_FOV + (CRT_FOV - HERO_FOV) * p;
+        camera.updateProjectionMatrix();
+        const pose = computeScreenPose();
+        if (!pose) return;
+        camera.position.lerpVectors(hero.pos, pose.pos, p);
+        const tgt = hero.target.clone().lerp(pose.target, p);
+        // The long lens pushes the camera far back; widen near/far so the Mac
+        // stays inside the frustum instead of getting clipped.
+        const dist = camera.position.distanceTo(tgt);
+        camera.near = Math.max(0.01, dist * 0.2);
+        camera.far = dist * 2.4 + 5;
+        camera.lookAt(tgt);
+        camera.updateProjectionMatrix();
+        // Dramatize the case lighting as we dock: keep the upper-left key, but
+        // cut the right-side fill toward zero and drop the even hemisphere fill,
+        // so the case has a strong left-bright / right-dark falloff against the
+        // black room instead of reading flat / bright on the right.
+        const dl = THREE.MathUtils.smoothstep(p, 0.35, 1.0);
+        const kl = stateRef.current.keyLight;
+        if (kl) kl.intensity = (kl.userData.baseIntensity || 0) * (1 + dl * 0.2);
+        const fl = stateRef.current.fillLight;
+        if (fl) fl.intensity = (fl.userData.baseIntensity || 0) * (1 - dl * 0.95);
+        const hemi = stateRef.current.hemiLight;
+        if (hemi) hemi.intensity = (hemi.userData.baseIntensity || 0) * (1 - dl * 0.8);
+        // Blend the projection to a TRUE orthographic one as we dock, framed to
+        // the same screen height — so the docked view is perfectly orthogonal.
+        const ob = THREE.MathUtils.smoothstep(p, 0.55, 1.0);
+        if (ob > 0) {
+          const halfW = frameHalfWidth();
+          const halfH = halfW / Math.max(0.0001, camera.aspect);
+          _orthoM.makeOrthographic(-halfW, halfW, halfH, -halfH, camera.near, camera.far);
+          _perspM.copy(camera.projectionMatrix);
+          const e = camera.projectionMatrix.elements;
+          const a = _perspM.elements;
+          const o = _orthoM.elements;
+          for (let i = 0; i < 16; i++) e[i] = a[i] * (1 - ob) + o[i] * ob;
+          camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+        }
+        stateRef.current.requestRender?.();
+      };
+      stateRef.current.applyZoom = applyZoom;
+      window.__tvHeroZoom = (p) => {
+        stateRef.current.zoomProgress = p;
+        applyZoom(p);
+      };
+      // Project the screen-glass AABB to viewport pixels at the *locked* camera
+      // pose (independent of the live dolly), so the DOM "screen viewport" can be
+      // positioned to the real projected rect. Canvas is the full viewport in
+      // CRT mode, so client px == viewport px. Returns null until the model loads.
+      const _projCam = new THREE.PerspectiveCamera();
+      const _projV = new THREE.Vector3();
+      const projectScreenRect = (inset = 0) => {
+        const sBox = stateRef.current.screenBox;
+        const pose = computeScreenPose();
+        if (!sBox || !pose) return null;
+        const w = canvas.clientWidth || window.innerWidth;
+        const h = canvas.clientHeight || window.innerHeight;
+        _projCam.fov = camera.fov;
+        _projCam.aspect = camera.aspect;
+        _projCam.near = camera.near;
+        _projCam.far = camera.far;
+        _projCam.position.copy(pose.pos);
+        _projCam.up.copy(camera.up);
+        _projCam.lookAt(pose.target);
+        _projCam.updateMatrixWorld(true);
+        _projCam.updateProjectionMatrix();
+        const mn = sBox.min, mx = sBox.max;
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (let i = 0; i < 8; i++) {
+          _projV.set(i & 1 ? mx.x : mn.x, i & 2 ? mx.y : mn.y, i & 4 ? mx.z : mn.z);
+          _projV.project(_projCam);
+          const px = (_projV.x * 0.5 + 0.5) * w;
+          const py = (-_projV.y * 0.5 + 0.5) * h;
+          if (px < minX) minX = px;
+          if (px > maxX) maxX = px;
+          if (py < minY) minY = py;
+          if (py > maxY) maxY = py;
+        }
+        const rw = maxX - minX, rh = maxY - minY;
+        const ix = rw * inset, iy = rh * inset;
+        return { x: minX + ix, y: minY + iy, w: rw - ix * 2, h: rh - iy * 2 };
+      };
+      stateRef.current.projectScreenRect = projectScreenRect;
+      window.__tvHeroScreenRect = projectScreenRect;
+
+      // ── CRT channels ──────────────────────────────────────────────────────
+      // Once docked, the glass becomes a little Macintosh you tune like a TV: a
+      // persistent menu bar lists the channels (Film Reel / Help / Blackbird /
+      // Audio / Doom), scrolling flips between them with a static cut, and the
+      // 🍎 is the boot/terminal. "About" links out to the read-only résumé. Page
+      // channels are rasterized DOM; Film Reel is the live trailer pool; Doom is
+      // a boot card.
+      const PAGE_W = 960;
+      const MENU_FRAC = 0.05;       // menu-bar height as a fraction of the screen
+      let channels = [];            // [{id,label,type,sel,href}]
+      let chRasters = [];           // raster | null per channel
+      let activeCh = 0;
+      let chWithin = 0;             // vertical pan within a (tall) page channel
+      let chBusy = false;           // mid static-cut
+
+      const drawMenuBar = (cx, W, H) => {
+        const mh = Math.max(2, Math.round(H * MENU_FRAC));
+        cx.imageSmoothingEnabled = true;
+        cx.fillStyle = '#f6f5ef'; cx.fillRect(0, 0, W, mh);
+        cx.fillStyle = '#111'; cx.fillRect(0, mh - 2, W, 2);
+        const fs = Math.round(mh * 0.5);
+        cx.font = `${fs}px "Chicago", Geneva, "Lucida Grande", Arial, sans-serif`;
+        cx.textBaseline = 'middle';
+        const cy = Math.round(mh * 0.5);
+        const rects = [];
+        let x = Math.round(W * 0.016);
+        // 🍎 = the boot/terminal channel (0)
+        if (activeCh === 0) { cx.fillStyle = '#111'; cx.fillRect(x - fs * 0.4, 3, fs * 1.5, mh - 7); cx.fillStyle = '#f6f5ef'; }
+        else cx.fillStyle = '#111';
+        cx.beginPath(); cx.arc(x + fs * 0.35, cy, fs * 0.42, 0, Math.PI * 2); cx.fill();
+        rects.push({ ch: 0, x0: x - fs * 0.4, x1: x + fs * 1.1 });
+        x += fs * 1.7;
+        // Channels 1..N-2 flow from the left; the last channel (About) is pinned
+        // to the right like a classic Mac menu.
+        const lastIsRight = channels.length > 1;
+        const leftEnd = lastIsRight ? channels.length - 1 : channels.length;
+        for (let i = 1; i < leftEnd; i++) {
+          const lbl = channels[i].label;
+          const tw = cx.measureText(lbl).width;
+          const padX = Math.round(fs * 0.45);
+          if (i === activeCh) { cx.fillStyle = '#111'; cx.fillRect(x - padX, 3, tw + padX * 2, mh - 7); cx.fillStyle = '#f6f5ef'; }
+          else cx.fillStyle = '#111';
+          cx.fillText(lbl, x, cy);
+          rects.push({ ch: i, x0: x - padX, x1: x + tw + padX });
+          x += tw + Math.round(fs * 1.0);
+        }
+        if (lastIsRight) {
+          const li = channels.length - 1;
+          const lbl = channels[li].label;
+          const aw = cx.measureText(lbl).width;
+          const padX = Math.round(fs * 0.45);
+          const ax = W - aw - Math.round(W * 0.022);
+          if (li === activeCh) { cx.fillStyle = '#111'; cx.fillRect(ax - padX, 3, aw + padX * 2, mh - 7); cx.fillStyle = '#f6f5ef'; }
+          else cx.fillStyle = '#111';
+          cx.fillText(lbl, ax, cy);
+          rects.push({ ch: li, x0: ax - padX, x1: ax + aw + padX });
+        }
+        cx.textBaseline = 'alphabetic';
+        stateRef.current.menuRects = { mh, rects, W, H };
+        return mh;
+      };
+      stateRef.current.drawMenuBar = drawMenuBar;
+
+      const channelWithinRange = (i) => {
+        const sc = stateRef.current.screenCanvas, r = chRasters[i];
+        if (!sc || !r || channels[i]?.type !== 'page') return 0;
+        const s = sc.width / r.cssWidth;                  // css → canvas
+        const availCss = (sc.height - Math.round(sc.height * MENU_FRAC)) / s;
+        return Math.max(0, r.cssHeight - availCss);
       };
 
-      const key = new THREE.DirectionalLight(MAC_MODEL_GRAYSCALE_PREVIEW ? 0xffffff : 0xfff7e8, MAC_MODEL_GRAYSCALE_PREVIEW ? 2.15 : 2.35);
-      key.position.set(-2.15, 1.85, 1.05);
+      const drawPageChannel = (i) => {
+        const st = stateRef.current, sc = st.screenCanvas, cx = st.ctx2d, tex = st.screenTex;
+        if (!sc || !cx) return;
+        const W = sc.width, H = sc.height, mh = Math.round(H * MENU_FRAC);
+        cx.fillStyle = '#ffffff'; cx.fillRect(0, 0, W, H);
+        const r = chRasters[i];
+        if (r) {
+          const s = W / r.cssWidth;                       // css → canvas
+          const availH = H - mh;
+          const pan = Math.min(channelWithinRange(i), Math.max(0, chWithin)) * s;
+          cx.drawImage(r.canvas, 0, (pan / s) * r.scale, r.cssWidth * r.scale, (availH / s) * r.scale, 0, mh, W, availH);
+        }
+        drawMenuBar(cx, W, H);
+        if (tex) tex.needsUpdate = true;
+        st.requestRender?.();
+      };
+
+      const drawDoomChannel = () => {
+        const st = stateRef.current, sc = st.screenCanvas, cx = st.ctx2d, tex = st.screenTex;
+        if (!sc || !cx) return;
+        const W = sc.width, H = sc.height;
+        cx.fillStyle = '#080807'; cx.fillRect(0, 0, W, H);
+        cx.textAlign = 'center';
+        cx.fillStyle = '#b1140e';
+        cx.font = `${Math.round(H * 0.17)}px "Anton", Impact, system-ui, sans-serif`;
+        cx.fillText('DOOM', W / 2, H * 0.5);
+        cx.fillStyle = '#9a8f86';
+        cx.font = `${Math.round(H * 0.028)}px "VT323", Monaco, monospace`;
+        cx.fillText('press  RETURN  to boot', W / 2, H * 0.64);
+        cx.textAlign = 'left';
+        drawMenuBar(cx, W, H);
+        if (tex) tex.needsUpdate = true;
+        st.requestRender?.();
+      };
+
+      const renderChannel = () => {
+        const st = stateRef.current;
+        const ch = channels[activeCh];
+        if (!ch) return;
+        if (ch.type === 'boot') {
+          st.pageMode = true; st.channelChrome = false;
+          st.forceTerminal = true; drawMacOffScreen(); st.forceTerminal = false;
+          const sc = st.screenCanvas, cx = st.ctx2d;
+          if (sc && cx) { drawMenuBar(cx, sc.width, sc.height); if (st.screenTex) st.screenTex.needsUpdate = true; }
+        } else if (ch.type === 'video') {
+          st.pageMode = false;        // let the trailer pool draw to the screen
+          st.channelChrome = true;    // composite the menu bar after each video frame
+        } else if (ch.type === 'doom') {
+          st.pageMode = true; st.channelChrome = false; drawDoomChannel();
+        } else {
+          st.pageMode = true; st.channelChrome = false; drawPageChannel(activeCh);
+        }
+        st.requestRender?.();
+      };
+      stateRef.current.renderChannel = renderChannel;
+
+      const tuneToChannel = (i, withStatic) => {
+        i = Math.max(0, Math.min(channels.length - 1, i));
+        const changed = i !== activeCh;
+        activeCh = i;
+        if (changed) chWithin = 0;
+        if (!withStatic || !changed) { if (!chBusy) renderChannel(); return; }
+        // brief CRT static burst, then cut to the new channel
+        chBusy = true;
+        const st = stateRef.current;
+        st.pageMode = true; st.channelChrome = false;
+        let n = 0;
+        const step = () => {
+          if (n < 4) { drawChannelStatic((n + 1) * 7.3, 1.15); n += 1; window.setTimeout(step, 36); }
+          else { chBusy = false; renderChannel(); }
+        };
+        step();
+      };
+
+      window.__tvHeroPageMode = (on) => {
+        const st = stateRef.current;
+        if (on) {
+          const sc = st.screenCanvas;
+          if (sc && sc.width !== MAC_SCREEN_TERMINAL_SIZE.width) {
+            sc.width = MAC_SCREEN_TERMINAL_SIZE.width;
+            sc.height = MAC_SCREEN_TERMINAL_SIZE.height;
+          }
+          if (st.screenTex && st.three) {
+            st.screenTex.minFilter = st.three.LinearFilter;
+            st.screenTex.magFilter = st.three.LinearFilter;
+            st.screenTex.generateMipmaps = false;
+          }
+          st.dockMode = true;
+          renderChannel();
+        } else {
+          st.dockMode = false; st.pageMode = false; st.channelChrome = false;
+        }
+        st.requestRender?.();
+      };
+      window.__tvHeroProjectChannels = async (defs) => {
+        if (!Array.isArray(defs) || !defs.length) return { ok: false };
+        channels = defs;
+        chRasters = new Array(defs.length).fill(null);
+        const fontCss = await getInlinedFontCss();
+        for (let i = 0; i < defs.length; i++) {
+          if (defs[i].type !== 'page') continue;
+          const el = document.querySelector(defs[i].sel);
+          if (!el) continue;
+          try {
+            const raster = await rasterizePage(el, { width: PAGE_W, scale: 2, fontCss });
+            let tainted = false;
+            try { raster.canvas.getContext('2d').getImageData(0, 0, 1, 1); } catch { tainted = true; }
+            if (!tainted) chRasters[i] = raster;
+          } catch (e) { console.warn('[TvHero] channel raster failed', defs[i].id, e); }
+        }
+        if (stateRef.current.pageMode || activeCh === 0) renderChannel();
+        return { ok: true, count: defs.length };
+      };
+      window.__tvHeroTune = (i, withStatic = true) => tuneToChannel(i, withStatic);
+      window.__tvHeroChannelWithin = (px) => {
+        chWithin = px || 0;
+        if (channels[activeCh]?.type === 'page' && !chBusy) drawPageChannel(activeCh);
+      };
+      window.__tvHeroChannelInfo = () => ({
+        active: activeCh,
+        count: channels.length,
+        within: channels.map((c, i) => channelWithinRange(i)),
+      });
+
+      // Strong, raking key from upper-left to sculpt the bezel + lid; low fill
+      // and hemisphere so the shadow side stays deep — more form, less flat.
+      const key = new THREE.DirectionalLight(MAC_MODEL_GRAYSCALE_PREVIEW ? 0xffffff : 0xfff7e8, MAC_MODEL_GRAYSCALE_PREVIEW ? 2.55 : 2.75);
+      key.position.set(-2.7, 2.25, 0.85);
       scene.add(key);
-      const fill = new THREE.DirectionalLight(MAC_MODEL_GRAYSCALE_PREVIEW ? 0xffffff : 0xe8eef7, MAC_MODEL_GRAYSCALE_PREVIEW ? 0.18 : 0.14);
+      key.userData.baseIntensity = key.intensity;
+      stateRef.current.keyLight = key;
+      const fill = new THREE.DirectionalLight(MAC_MODEL_GRAYSCALE_PREVIEW ? 0xffffff : 0xe8eef7, MAC_MODEL_GRAYSCALE_PREVIEW ? 0.08 : 0.06);
       fill.position.set(2.0, 0.45, 1.45);
       scene.add(fill);
-      const rim = new THREE.DirectionalLight(MAC_MODEL_GRAYSCALE_PREVIEW ? 0xffffff : 0xffe6bd, MAC_MODEL_GRAYSCALE_PREVIEW ? 0.95 : 1.15);
+      // At rest the key light from the upper-left is dramatic, but once docked
+      // head-on it leaves the case's right edge in shadow — it blends into the
+      // dark background and reads as a gap. Ramp the right-side fill up as we dock
+      // so both case edges are evenly lit and clearly framed.
+      fill.userData.baseIntensity = fill.intensity;
+      stateRef.current.fillLight = fill;
+      const rim = new THREE.DirectionalLight(MAC_MODEL_GRAYSCALE_PREVIEW ? 0xffffff : 0xffe6bd, MAC_MODEL_GRAYSCALE_PREVIEW ? 1.35 : 1.55);
       rim.position.set(-0.65, 2.05, -1.8);
       scene.add(rim);
-      const keyboardGrazing = new THREE.DirectionalLight(MAC_MODEL_GRAYSCALE_PREVIEW ? 0xffffff : 0xffd6a6, MAC_MODEL_GRAYSCALE_PREVIEW ? 0.28 : 0.36);
+      const keyboardGrazing = new THREE.DirectionalLight(MAC_MODEL_GRAYSCALE_PREVIEW ? 0xffffff : 0xffd6a6, MAC_MODEL_GRAYSCALE_PREVIEW ? 0.24 : 0.30);
       keyboardGrazing.position.set(1.2, -0.65, 1.6);
       scene.add(keyboardGrazing);
       // Keep global fill low so the front face and keyboard hold shape.
-      scene.add(new THREE.HemisphereLight(
+      const hemi = new THREE.HemisphereLight(
         MAC_MODEL_GRAYSCALE_PREVIEW ? 0xffffff : 0xfff0d8,
         MAC_MODEL_GRAYSCALE_PREVIEW ? 0x101010 : 0x0c0a08,
-        MAC_MODEL_GRAYSCALE_PREVIEW ? 0.15 : 0.13,
-      ));
-      scene.add(new THREE.AmbientLight(0xffffff, 0.012));
+        MAC_MODEL_GRAYSCALE_PREVIEW ? 0.07 : 0.06,
+      );
+      scene.add(hemi);
+      hemi.userData.baseIntensity = hemi.intensity;
+      stateRef.current.hemiLight = hemi;
+      scene.add(new THREE.AmbientLight(0xffffff, 0.006));
 
       // Offscreen canvas for the screen content
       const screenCanvas = document.createElement('canvas');
@@ -8034,76 +9851,146 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         const allMeshes = [];
         model.traverse((c) => { if (c.isMesh) allMeshes.push(c); });
         console.info('[TvHero] meshes:', allMeshes.map(m => `${m.name} (${m.geometry.attributes.position.count}v)`));
+        // The GLB ships redundant duplicate body shells: the same case surface
+        // modelled twice with different triangulation (Mesh01 vs Mesh01_2 share
+        // 1037 coincident front-face cells; Mesh79/80 likewise). Two coincident
+        // surfaces z-fight as a shimmering broken patch across the front no
+        // matter how they're coloured. Hide the duplicate twin so only one
+        // surface renders. See scripts/blender/find_coincident_faces.py.
+        const MAC_DUPLICATE_SHELLS = new Set(['Mesh01_2', 'Mesh79_2', 'Mesh79_3', 'Mesh80_2', 'Mesh80_3']);
+        for (const m of allMeshes) {
+          if (MAC_DUPLICATE_SHELLS.has(m.name)) m.visible = false;
+        }
         // 'Screen' = Trinitron's separated curved glass mesh.
         // 'Mesh75' = Apple Macintosh classic screen.
-        let screenMeshes = allMeshes.filter((m) => /^screen$|^mesh75$/i.test(m.name));
+        let screenMeshes = allMeshes.filter((m) => /^screen$/i.test(String(m.name || '')) || getMacMeshNumericId(m) === 75);
         if (!screenMeshes.length && allMeshes.length >= 2) {
           const sorted = allMeshes.slice().sort((a, b) => b.geometry.attributes.position.count - a.geometry.attributes.position.count);
           screenMeshes = sorted.slice(1);
         }
-        const makeMacScreenProxy = () => {
-          const screenMesh = screenMeshes[0];
-          if (!screenMesh?.geometry) return null;
-          screenMesh.geometry.computeBoundingBox();
-          const bb = screenMesh.geometry.boundingBox;
-          const center = bb.getCenter(new THREE.Vector3()).add(screenMesh.position);
-          const size = bb.getSize(new THREE.Vector3());
-          const width = size.x * 0.965;
-          const height = size.y * 0.955;
-          const positions = screenMesh.geometry.attributes.position;
-          let sumY = 0, sumZ = 0, sumYY = 0, sumYZ = 0;
-          for (let i = 0; i < positions.count; i++) {
-            const y = positions.getY(i);
-            const z = positions.getZ(i);
-            sumY += y;
-            sumZ += z;
-            sumYY += y * y;
-            sumYZ += y * z;
-          }
-          const denom = positions.count * sumYY - sumY * sumY;
-          const tiltZPerY = Math.abs(denom) > 1e-6
-            ? (positions.count * sumYZ - sumY * sumZ) / denom
-            : 0;
-          const interceptZ = positions.count
-            ? (sumZ - tiltZPerY * sumY) / positions.count
-            : center.z;
-          const fittedCenterZ = tiltZPerY * (center.y - screenMesh.position.y) + interceptZ + screenMesh.position.z;
-          const geo = new THREE.PlaneGeometry(width, height, 1, 1);
-          const pos = geo.attributes.position;
-          for (let i = 0; i < pos.count; i++) {
-            pos.setZ(i, tiltZPerY * pos.getY(i));
-          }
-          pos.needsUpdate = true;
-          const uv = geo.attributes.uv;
-          for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - uv.getY(i));
-          uv.needsUpdate = true;
-          geo.computeVertexNormals();
-          const proxy = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
-            map: screenTex,
-            toneMapped: false,
-            side: THREE.FrontSide,
-          }));
-          proxy.name = 'MacScreenTextureProxy';
-          proxy.position.set(center.x, center.y, fittedCenterZ + 0.035);
-          model.add(proxy);
-          return proxy;
+        // Project the HELP video straight onto the screen's own geometry —
+        // no flat billboard. For the Mac that geometry is the domed CRT
+        // glass (Mesh75, rebuilt as a high-res spherical dome with clean
+        // (0,0)->(1,1) UVs in scripts/blender/dome_mac_screen.py); for the
+        // Trinitron it's the separated 'Screen' glass. An unlit basic
+        // material makes the canvas read as an emissive picture tube, and
+        // the curved mesh sits in real 3D so the video follows the bulge.
+        // CRT picture-tube shader: barrel-warp the UVs so the image bulges
+        // like a tube (with black rounded-corner falloff), plus scanlines, an
+        // edge vignette, and a hair of chromatic aberration. Injected into a
+        // MeshBasicMaterial via onBeforeCompile so three's sRGB texture decode
+        // and output color management stay intact; toneMapped:false keeps the
+        // screen reading as an emissive phosphor.
+        const screenMaterial = new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false });
+        screenMaterial.onBeforeCompile = (shader) => {
+          shader.uniforms.uCurve = { value: 0.11 };     // barrel amount
+          shader.uniforms.uScan = { value: 0.09 };      // scanline depth
+          shader.uniforms.uLines = { value: 220.0 };    // scanline count
+          shader.uniforms.uVignette = { value: 0.20 };  // corner darkening
+          shader.uniforms.uAber = { value: 0.0013 };    // chromatic aberration
+          shader.uniforms.uFeather = { value: 0.075 };  // soft edge falloff width
+          shader.uniforms.uProjectionScale = { value: 0.93 }; // 7% smaller picture frustum on the CRT
+          shader.fragmentShader = shader.fragmentShader
+            .replace('#include <common>', `#include <common>
+              uniform float uCurve; uniform float uScan; uniform float uLines;
+              uniform float uVignette; uniform float uAber; uniform float uFeather;
+              uniform float uProjectionScale;
+              vec2 crtCurve(vec2 uv) {
+                vec2 c = uv * 2.0 - 1.0;
+                c *= 1.0 + uCurve * dot(c, c);
+                return c * 0.5 + 0.5;
+              }`)
+            .replace('#include <map_fragment>', `
+              #ifdef USE_MAP
+                vec2 cuv = crtCurve(vMapUv);
+                // Make only the source image projected onto the CRT slightly
+                // smaller, leaving the physical glass/camera framing unchanged.
+                // This keeps content out of the most warped edge of the curved
+                // mesh so the vignette can absorb that area.
+                vec2 puv = (cuv - 0.5) / max(uProjectionScale, 0.001) + 0.5;
+                vec4 sampledDiffuseColor = vec4(
+                  texture2D(map, clamp(puv + vec2(uAber, 0.0), vec2(0.0), vec2(1.0))).r,
+                  texture2D(map, clamp(puv, vec2(0.0), vec2(1.0))).g,
+                  texture2D(map, clamp(puv - vec2(uAber, 0.0), vec2(0.0), vec2(1.0))).b,
+                  1.0
+                );
+                float scan = mix(1.0 - uScan, 1.0, 0.5 + 0.5 * cos(cuv.y * uLines * 6.2831853));
+                sampledDiffuseColor.rgb *= scan;
+                vec2 vc = puv * 2.0 - 1.0;
+                sampledDiffuseColor.rgb *= clamp(1.0 - uVignette * dot(vc, vc), 0.0, 1.0);
+                // Feathered edge: smooth falloff into the bezel instead of a hard
+                // clip — fades to black across uFeather on every side (and beyond).
+                vec2 fade = smoothstep(vec2(0.0), vec2(uFeather), puv)
+                          * smoothstep(vec2(0.0), vec2(uFeather), 1.0 - puv);
+                sampledDiffuseColor.rgb *= fade.x * fade.y;
+                diffuseColor *= sampledDiffuseColor;
+              #endif
+            `);
+          screenMaterial.userData.crtShader = shader;
         };
-        if (stateRef.current.deviceMode === 'mac') {
-          const originalScreenMeshes = [...screenMeshes];
-          const proxy = makeMacScreenProxy();
-          if (proxy) {
-            originalScreenMeshes.forEach((m) => { m.visible = false; });
-            screenMeshes = [proxy];
-          } else {
-            for (const m of screenMeshes) {
-              m.material = new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false });
+        for (const m of screenMeshes) {
+          m.material = screenMaterial;
+          m.visible = true;
+        }
+        // World-space box of the CRT glass — used to dolly the camera onto the
+        // screen for the "zoom into the CRT" scroll effect.
+        {
+          const sBox = new THREE.Box3();
+          for (const m of screenMeshes) sBox.expandByObject(m);
+          if (!sBox.isEmpty()) {
+            stateRef.current.screenBox = sBox;
+            // Monitor-case box (housing around the glass): every mesh that isn't
+            // well in front of the screen plane — i.e. drop the keyboard & mouse,
+            // which sit forward (toward the camera) of the tube. Used to dock
+            // until the case edges meet the viewport sides.
+            const sCtr = sBox.getCenter(new THREE.Vector3());
+            const sSize = sBox.getSize(new THREE.Vector3());
+            const caseBox = new THREE.Box3();
+            const _tb = new THREE.Box3();
+            const _tc = new THREE.Vector3();
+            for (const m of allMeshes) {
+              _tb.setFromObject(m);
+              _tb.getCenter(_tc);
+              // Keep the monitor tower (at/around the screen); drop the keyboard &
+              // mouse, which sit well below it.
+              if (_tc.y >= sCtr.y - sSize.y * 1.0 && Math.abs(_tc.x - sCtr.x) < sSize.x * 2.2) {
+                caseBox.union(_tb);
+              }
             }
-          }
-        } else {
-          for (const m of screenMeshes) {
-            m.material = new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false });
+            if (!caseBox.isEmpty()) stateRef.current.caseBox = caseBox;
+            // Let the CRT scroll driver know the projected screen rect is now
+            // computable so it can lay out the DOM "screen viewport".
+            try { window.dispatchEvent(new Event('tvhero:screenbox')); } catch {}
           }
         }
+        const resumeStickyNote = createMacStickyNote(THREE, stateRef.current.caseBox, stateRef.current.screenBox, {
+          text: 'resume',
+          href: 'resume-readonly.html',
+          hitType: 'resume',
+          placement: 'left',
+          overwrittenInk: true,
+          smiley: true,
+        });
+        const linkedinStickyNote = createMacStickyNote(THREE, stateRef.current.caseBox, stateRef.current.screenBox, {
+          text: 'linkedin',
+          href: 'https://www.linkedin.com/in/tawfeeq-martin-82991a14/',
+          hitType: 'linkedin',
+          placement: 'right',
+          paperStops: ['#dff4ff', '#8bd8ff', '#50aee4'],
+          ink: '#17314a',
+          arrowInk: '#183a5a',
+          border: 'rgba(24, 72, 114, 0.26)',
+          shadow: 'rgba(22, 70, 108, 0.16)',
+          emissive: 0x6ec9ff,
+          emissiveIntensity: 0.13,
+        });
+        const stickyNotes = [resumeStickyNote, linkedinStickyNote].filter(Boolean);
+        for (const stickyNote of stickyNotes) {
+          scene.add(stickyNote);
+        }
+        stateRef.current.resumeStickyNote = resumeStickyNote;
+        stateRef.current.linkedinStickyNote = linkedinStickyNote;
+        stateRef.current.stickyNotes = stickyNotes;
         const isKeycapMesh = (mesh) => {
           if (mesh.name === '3DGeom_15') return true;
           const match = mesh.name.match(/^Mesh(\d+)$/);
@@ -8286,10 +10173,18 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
           };
         }
         const hitTargets = new Map();
-        const addHitTarget = (mesh, type, label = '') => {
+        const addHitTarget = (mesh, type, label = '', href = '') => {
           if (!mesh) return;
-          hitTargets.set(mesh.uuid, { type, label });
+          hitTargets.set(mesh.uuid, { type, label, href });
         };
+        stickyNotes.forEach((stickyNote) => {
+          addHitTarget(
+            stickyNote,
+            stickyNote.userData.hitType || 'link',
+            stickyNote.userData.label || '',
+            stickyNote.userData.href || '',
+          );
+        });
         [mouseBody, mouseButton].forEach((m) => addHitTarget(m, 'mouse'));
         screenMeshes.forEach((m) => addHitTarget(m, 'screen'));
         floppyParts.forEach((m) => addHitTarget(m, 'floppy'));
@@ -8301,18 +10196,23 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
             parts.forEach((part) => addHitTarget(part.mesh, 'key', code));
           }
         }
-        const hitMeshPool = [...allMeshes, ...screenMeshes];
+        const hitMeshPool = [...allMeshes, ...screenMeshes, ...stickyNotes].filter(Boolean);
         stateRef.current.macHitMeshes = Array.from(hitTargets.keys())
           .map((uuid) => hitMeshPool.find((m) => m.uuid === uuid))
           .filter(Boolean);
         stateRef.current.macHitTargets = hitTargets;
         stateRef.current.mouseHitMeshes = [mouseBody, mouseButton].filter(Boolean);
-        const box = new THREE.Box3().setFromObject(model);
-        const ctr = box.getCenter(new THREE.Vector3());
-        const size = box.getSize(new THREE.Vector3());
-        applyMacModelGrayscalePreview(THREE, model);
-        console.info('[TvHero] bbox center:', ctr, 'size:', size);
-        stateRef.current.bbox = { box, ctr };
+	        const box = new THREE.Box3().setFromObject(model);
+	        const ctr = box.getCenter(new THREE.Vector3());
+	        const size = box.getSize(new THREE.Vector3());
+	        applyMacModelGrayscalePreview(THREE, model);
+	        const tabletop = createMacHeroTabletop(THREE, box);
+	        if (tabletop) {
+	          scene.add(tabletop);
+	          stateRef.current.tabletop = tabletop;
+	        }
+	        console.info('[TvHero] bbox center:', ctr, 'size:', size);
+	        stateRef.current.bbox = { box, ctr };
         stateRef.current.frameModel = () => frameModel(box);
         stateRef.current.frameModel();
         // Initial state: Mac boots powered-off with the "click to start"
@@ -8372,6 +10272,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       cancelAnimationFrame(s.trackingRaf);
       cancelAnimationFrame(s.channelRaf);
       cancelAnimationFrame(s.macBloomRaf);
+      cancelAnimationFrame(s.stickyNoteHoverRaf);
       for (const k of Object.values(s.keys || {})) cancelAnimationFrame(k.raf);
       for (const k of (s.genericKeyPresses?.values?.() || [])) cancelAnimationFrame(k.raf);
       for (const video of s.videoCache.values()) {
@@ -8440,6 +10341,9 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     const onKey = (event) => {
       if (stateRef.current.deviceMode !== 'mac') return;
       if (!heroVisible()) return;
+      // On the HELP page the player owns WASD (and other keys). Bail so we
+      // never intercept/stopPropagation those keys away from HELP.
+      if (getActiveHelpPlayerForKeyboard()) return;
       if (isEditableTarget(event.target)) return;
       if (document.activeElement !== keyboardCaptureRef.current) return;
       const code = getMacKeyCodeFromEvent(event);
@@ -8470,6 +10374,40 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, [animateKeyPress, applyMacTerminalKey, drawMacOffScreen, ensureMacTerminal, playMacKeyClick]);
+
+  // Auto-capture: on the Mac hero the CRT terminal should take keyboard input
+  // immediately — no click on the screen required. Focus the hidden capture
+  // target whenever the hero is on screen (and re-focus when it scrolls back
+  // into view), but never steal focus from a real text field the user is
+  // typing in. preventScroll keeps the page from jumping.
+  React.useEffect(() => {
+    if (stateRef.current.deviceMode !== 'mac') return undefined;
+    const el = wrapRef.current;
+    if (!el) return undefined;
+    const isEditableActive = () => {
+      const a = document.activeElement;
+      const tag = a?.tagName?.toLowerCase?.();
+      return tag === 'input' || tag === 'textarea' || a?.isContentEditable;
+    };
+    const focusCapture = () => {
+      const capture = keyboardCaptureRef.current;
+      if (!capture || isEditableActive()) return;
+      // Don't grab focus when the HELP player is active — it owns the keyboard.
+      if (getActiveHelpPlayerForKeyboard()) return;
+      if (document.activeElement === capture) return;
+      try { capture.focus({ preventScroll: true }); }
+      catch { capture.focus?.(); }
+      const term = ensureMacTerminal();
+      term.focused = true;
+      term.cursorOn = true;
+      drawMacOffScreen();
+    };
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) focusCapture();
+    }, { threshold: 0.35 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [drawMacOffScreen, ensureMacTerminal]);
 
   React.useEffect(() => {
     if (stateRef.current.deviceMode !== 'mac') return undefined;
@@ -8622,6 +10560,28 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    const canvas = canvasRef.current;
 	    if (!canvas) return;
     let raycaster = null;
+    const pickStickyNote = (event) => {
+      const state = stateRef.current;
+      const THREE = state.three;
+      const camera = state.camera;
+      const stickyNotes = state.stickyNotes || [];
+      if (!THREE || !camera || !stickyNotes.length) return null;
+      if (!raycaster) raycaster = new THREE.Raycaster();
+      const rect = canvas.getBoundingClientRect();
+      const ndc = new THREE.Vector2(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        -((event.clientY - rect.top) / rect.height) * 2 + 1,
+      );
+      raycaster.setFromCamera(ndc, camera);
+      const hits = raycaster.intersectObjects(stickyNotes, false);
+      return hits[0]?.object || null;
+    };
+    const onPointerMove = (event) => {
+      setHoveredStickyNote(pickStickyNote(event));
+    };
+    const onPointerLeave = () => {
+      setHoveredStickyNote(null);
+    };
     const onPointerDown = async (event) => {
 	      const state = stateRef.current;
 	      const THREE = state.three;
@@ -8648,6 +10608,17 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	      if (state.powerToggleInFlight) return;
 	      const hit = hits[0];
 	      const target = state.macHitTargets?.get(hit.object.uuid) || { type: 'mouse' };
+	      if (['resume', 'linkedin', 'link'].includes(target.type)) {
+	        const href = target.href || (target.type === 'resume' ? 'resume-readonly.html' : '');
+	        if (!href) return;
+	        if (/^https?:\/\//i.test(href)) {
+	          const opened = window.open(href, '_blank', 'noopener,noreferrer');
+	          if (opened) opened.opener = null;
+	        } else {
+	          window.location.href = href;
+	        }
+	        return;
+	      }
 	      if (target.type === 'screen') {
 	        if (!window.__resumeStrudelAudioEngine?.enabled) {
 	          const term = ensureMacTerminal();
@@ -8711,20 +10682,32 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	        stateRef.current.powerToggleInFlight = false;
 	      }
 	    };
+	    canvas.addEventListener('pointermove', onPointerMove, { passive: true });
+	    canvas.addEventListener('pointerleave', onPointerLeave);
+	    canvas.addEventListener('pointercancel', onPointerLeave);
 	    canvas.addEventListener('pointerdown', onPointerDown);
 	    canvas.style.cursor = 'pointer';
     return () => {
+      canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('pointerleave', onPointerLeave);
+      canvas.removeEventListener('pointercancel', onPointerLeave);
       canvas.removeEventListener('pointerdown', onPointerDown);
+      stateRef.current.hoveredStickyNote = null;
+      for (const stickyNote of stateRef.current.stickyNotes || []) {
+        if (stickyNote?.userData) stickyNote.userData.hovered = false;
+      }
+      cancelAnimationFrame(stateRef.current.stickyNoteHoverRaf);
+      stateRef.current.stickyNoteHoverRaf = 0;
       canvas.style.cursor = '';
     };
-  }, [animateMouseButton, animateKeyPress, animateKeyMeshPress, animateFloppy, animateMacBloomBurst, applyMacTerminalKey, captureMacKeyboard, drawMacOffScreen, ensureMacTerminal, pushMacTerminalLine]);
+  }, [animateMouseButton, animateKeyPress, animateKeyMeshPress, animateFloppy, animateMacBloomBurst, applyMacTerminalKey, captureMacKeyboard, drawMacOffScreen, ensureMacTerminal, pushMacTerminalLine, setHoveredStickyNote]);
 
   React.useEffect(() => {
     if (stateRef.current.deviceMode !== 'mac') return;
     const onDoomClosed = async () => {
       if (stateRef.current.powerToggleInFlight) return;
       stateRef.current.powerToggleInFlight = true;
-      pushMacTerminalLine('DOOM session ended.');
+      pushMacTerminalLine('doom session ended.');
       drawMacOffScreen();
       try {
         await animateFloppy(false);
@@ -8821,7 +10804,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
   );
 }
 
-function HelpFeature({ src }) {
+function HelpFeature({ src, label = "03 · SELECTED WORK · MILL STITCH™ / HELP", showIntro = true }) {
   useEffect(() => {
     const section = document.getElementById('help');
     if (!section) return undefined;
@@ -8864,8 +10847,9 @@ function HelpFeature({ src }) {
   }, []);
 
   return (
-    <Section id="help" label="03 · SELECTED WORK · MILL STITCH™ / HELP">
+    <Section id="help" label={label}>
       <div className="help-hero">
+        {showIntro ? (
         <div className="help-hero__intro">
           <h3 className="serif">A 360° film, served from its native projection.</h3>
           <ProofStampRow items={HELP_AWARD_STAMPS} className="proof-stamps--no-rails proof-stamps--under-heading proof-stamps--help-title" />
@@ -8884,6 +10868,7 @@ function HelpFeature({ src }) {
             keys or drag to look around.
           </p>
         </div>
+        ) : null}
         <div className="help-hero__player">
           <HelpPlayer src={src} />
         </div>
