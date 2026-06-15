@@ -110,6 +110,20 @@ rsync -a \
   --exclude '*.md' \
   --exclude 'media' \
   --exclude '.DS_Store' \
+  --exclude '.env*' \
+  --exclude '.claude' \
+  --exclude '.job-agent' \
+  --exclude 'tmp' \
+  --exclude 'data-*.js' \
+  --exclude 'resume-*.html' \
+  --exclude '*.pdf' \
+  --exclude 'job-agent*' \
+  --exclude 'landing-v1.html' \
+  --exclude 'lib' \
+  --exclude 'data' \
+  --exclude 'output' \
+  --exclude 'blender' \
+  --exclude 'gpt-image-2-api' \
   ./ "$STAGE_DIR/"
 
 echo "→ adding whitelisted runtime media"

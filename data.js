@@ -1,7 +1,7 @@
 // Resume data
 const RESUME = {
   name: "Tawfeeq Martin",
-  title: "Creative Technologist · Senior Virtual Production Engineer",
+  title: "Creative Technologist · Senior Creative Engineer",
   location: "Los Angeles, CA",
   site: "tawfeeqmartin.com",
   summary: "Award-winning creative technologist with 20+ years defining and shipping products at the intersection of emerging technology and cinematic storytelling. Research and Development / StageCraft team at Industrial Light & Magic. Previously Technical Innovations Manager at The Mill, where I led 0-to-1 product development on landmark projects including Google Spotlight Stories ‘HELP’ (dir. Justin Lin) — a double Gold Cannes Lion–winning immersive 360° film — and was one of the inventors of Mill Stitch™ and the Mill Blackbird car rig. Independent developer of AI tools and generative creative systems.",
@@ -14,10 +14,10 @@ const RESUME = {
 
   experience: [
     {
-      role: "Senior Virtual Production Engineer",
-      org: "ILM StageCraft (Industrial Light & Magic)",
+      role: "Senior Creative Engineer, ILM StageCraft",
+      org: "Industrial Light & Magic",
       where: "Los Angeles, CA",
-      period: "2020 — Present",
+      period: "Aug 2020 — Present",
       tag: "Current",
       bullets: [
         "Research and Development / StageCraft team at Industrial Light & Magic, supporting the world's leading LED volume virtual production system across major episodic and feature productions.",

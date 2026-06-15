@@ -1,6 +1,7 @@
 .DS_Store
 .wrangler/
 .env.cloudflare
+.env.openai
 
 # Local-only source/high-quality media. These exceed GitHub's normal file limit
 # and should move to object storage or Git LFS before production launch.
@@ -10,6 +11,7 @@ media/help_full.webm
 # Local scratch output
 *.log
 tmp/
+.job-agent/
 nvidia-job-links.txt
 node_modules/
 
@@ -45,6 +47,8 @@ media/pretext01.mp4
 media/demo/*
 !media/demo/
 !media/demo/mac4.jpg
+!media/demo/help-bts.webp
+!media/demo/help-bts-2.webp
 
 # Reference source portraits: keep only generated avatar deliverables.
 media/imessage/*
@@ -52,3 +56,35 @@ media/imessage/*
 !media/imessage/generated/
 media/imessage/generated/*
 !media/imessage/generated/*-avatar-v4.png
+
+# Job applications — tailored resume variants, cover letters, outreach, PDFs.
+# Local-only; never commit or deploy to the public site. (data.js stays tracked.)
+data-*.js
+resume-adobe.html
+resume-apple.html
+resume-disney.html
+resume-framestore.html
+resume-readonly.html
+Tawfeeq-Martin-*.pdf
+cover-letter-*.md
+outreach-*.md
+CRT_BRIEF.md
+landing-v1.html
+
+# Job-agent tooling and scraped lead data (local-only).
+job-agent.css
+job-agent.html
+job-agent.js
+scripts/job-agent-runner.mjs
+scripts/job-agent-server.mjs
+lib/
+data/
+output/
+
+# Local-only tooling and scratch assets.
+scripts/blender/
+scripts/gpt-image-2-api/
+media/bedroom-bg-01.jpg
+media/bedroom-bg.webp
+media/images/
+media/paper-tile.png
