@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "include": [
+    "/api/*",
+    "/media/help_full.webm"
+  ],
+  "exclude": []
+}

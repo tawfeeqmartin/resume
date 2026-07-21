@@ -4,10 +4,24 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Tawfeeq Martin — Resume</title>
+<script>
+/* The landing is a directed intro, not a document-position restore. Make a
+   reload deterministic before layout or React has a chance to paint. */
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+const resetLandingScroll = () => window.scrollTo(0, 0);
+resetLandingScroll();
+window.addEventListener('pageshow', () => {
+  resetLandingScroll();
+  requestAnimationFrame(resetLandingScroll);
+});
+window.addEventListener('beforeunload', resetLandingScroll);
+</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="modulepreload" href="dist/three-bundle.js?v=three-185-htmltexture-v268">
+<link rel="preload" href="media/3d/apple_macintosh.glb" as="fetch" type="model/gltf-binary" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Cascadia+Code:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <!-- Vintage type: Silkscreen (Chicago-like pixel), Pixelify Sans (Geneva-like),
      Caveat Brush + Permanent Marker (Mac "hello" chunky hand-lettering). -->
@@ -670,6 +684,13 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   grid-area: body;
   min-width: 0;
 }
+.job__description {
+  max-width: 84ch;
+  margin: 0 0 clamp(1rem, 1.8vw, 1.45rem);
+  color: var(--ink);
+  font-size: clamp(1.05rem, 1.45vw, 1.24rem);
+  line-height: 1.48;
+}
 .job__proofs {
   display: grid;
   gap: 0;
@@ -745,6 +766,25 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 }
 
 /* ── HELP feature ────────────────────────────────────── */
+#louis-vuitton-ss20,
+#human-race {
+  --ink: #f5f5f2;
+  --ink-2: #d7d7d2;
+  --ink-3: #9c9c98;
+  --rule: rgba(245, 245, 242, 0.22);
+  --accent: #f5f5f2;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding: clamp(3.8rem, 7vw, 6.8rem) max(var(--page-pad), calc((100vw - var(--content-max)) / 2 + var(--page-pad))) clamp(4.6rem, 8vw, 7.5rem);
+  background: #030303;
+  color: var(--ink);
+}
+#louis-vuitton-ss20 .video-slot,
+#human-race .video-slot { border-radius: 0; box-shadow: none; }
+#louis-vuitton-ss20 .section__rule,
+#human-race .section__rule { display: none; }
+
 .help-feature {
   display: grid;
   grid-template-columns: minmax(0,1.5fr) minmax(0,1fr);
@@ -1703,6 +1743,16 @@ html.has-pseudo-fullscreen body {
   opacity: 0;
   pointer-events: none;
   outline: none;
+}
+.tv-hero__hand-of-god-runtime {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 810px;
+  height: 1440px;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 .tv-hero__canvas {
   position: absolute;
@@ -3016,6 +3066,13 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
   color: var(--ink-2);
   font-size: 0.92rem;
 }
+.mobile-job__description {
+  margin: 0.78rem 0 0;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.04rem;
+  line-height: 1.48;
+}
 .mobile-job__bullets {
   list-style: none;
   padding: 0;
@@ -3749,6 +3806,11 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
   .mobile-job__bullets {
     margin-top: 0.38rem;
   }
+  .mobile-job__description {
+    margin-top: 0.3rem;
+    font-size: 9.5pt;
+    line-height: 1.32;
+  }
   .mobile-job__bullets li {
     padding-left: 0.82rem;
     margin-bottom: 0.13rem;
@@ -3891,18 +3953,7 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
 
 <script src="vendor/react.production.min.js"></script>
 <script src="vendor/react-dom.production.min.js"></script>
-<!-- Three.js for the TV hero. Lazy-loaded via dynamic import so first
-     paint isn't blocked by the 180KB bundle. -->
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-    "three/examples/jsm/loaders/GLTFLoader.js": "https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js"
-  }
-}
-</script>
-
-<script src="data.js?v=local-dev"></script>
+<script src="data.js?v=mill-experience-description-20260716"></script>
 <script type="module">
 // Lazy loaders shared by the compiled app bundle. These keep heavy
 // rendering code off the startup path until a component actually asks.
@@ -3920,20 +3971,25 @@ window.__loadStrudelModule = () => {
   return window.__resumeStrudelReady;
 };
 window.__loadSpotlightBundle = () => {
-  window.__spotlightBundlePromise ||= import('./spotlight-bundle.js?v=local-dev');
+  window.__spotlightBundlePromise ||= import('./spotlight-bundle.js?v=three-185-htmltexture-v268');
   return window.__spotlightBundlePromise;
 };
 window.__loadThreeBundle = () => {
-  window.__threePromise ||= (async () => {
-    const THREE = await import('three');
-    const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js');
+  window.__threePromise ||= import('./dist/three-bundle.js?v=three-185-htmltexture-v268').then(({ THREE, GLTFLoader }) => {
     window.THREE = THREE;
     window.GLTFLoader = GLTFLoader;
     return { THREE, GLTFLoader };
-  })();
+  });
   return window.__threePromise;
 };
 </script>
-<script type="module" src="dist/app.js?v=local-dev"></script>
+<script>
+if (window.location.protocol === 'file:') {
+  window.location.replace('http://127.0.0.1:8021/Resume.html');
+}
+window.RESUME_APP_VARIANT = 'landing-v1';
+</script>
+  <script src="dist/qrcode-bundle.js?v=cloud-companion-v1"></script>
+  <script type="module" src="dist/app.js?v=intro-lifecycle-audit-v377-20260720"></script>
 </body>
 </html>

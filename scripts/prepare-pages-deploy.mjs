@@ -22,7 +22,10 @@ const REQUIRED_FILES = [
   'data.js',
   'spotlight-bundle.js',
   'dist/app.js',
+  'dist/qrcode-bundle.js',
+  'dist/three-bundle.js',
   '_worker.js',
+  '_routes.json',
   'media/3d/apple_macintosh.glb',
   'media/demo/mac4.jpg',
 ];
@@ -45,6 +48,7 @@ const VERSIONED_ASSETS = [
   { label: 'data.js', regex: /(data\.js\?v=)[^"')]+/g },
   { label: 'spotlight-bundle.js', regex: /(spotlight-bundle\.js\?v=)[^"')]+/g },
   { label: 'dist/app.js', regex: /(dist\/app\.js\?v=)[^"')]+/g },
+  { label: 'dist/qrcode-bundle.js', regex: /(dist\/qrcode-bundle\.js\?v=)[^"')]+/g },
 ];
 
 function posixPath(file) {
@@ -106,6 +110,14 @@ for (const file of FORBIDDEN_STAGE_FILES) {
   await assertFileAbsent(file);
 }
 
+const routes = JSON.parse(await fs.readFile(path.join(stageDir, '_routes.json'), 'utf8'));
+const requiredWorkerRoutes = ['/api/*', '/media/help_full.webm'];
+if (routes.version !== 1
+  || !Array.isArray(routes.include)
+  || requiredWorkerRoutes.some((route) => !routes.include.includes(route))) {
+  throw new Error('_routes.json must restrict the Worker to companion/contact APIs and the HELP media proxy.');
+}
+
 await rewriteHtmlAssetVersions('Resume.html');
 await rewriteHtmlAssetVersions('index.html');
 
@@ -113,7 +125,10 @@ const files = {
   data: 'data.js',
   spotlight: 'spotlight-bundle.js',
   app: 'dist/app.js',
+  qrCode: 'dist/qrcode-bundle.js',
+  three: 'dist/three-bundle.js',
   worker: '_worker.js',
+  routes: '_routes.json',
   macModel: 'media/3d/apple_macintosh.glb',
 };
 

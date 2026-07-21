@@ -8,10 +8,11 @@
  * resume embed wants a clean drag-to-look hero, not a feature dump.
  *
  * Loaded as: import { mountSpotlight } from './spotlight-bundle.js';
- * Three.js comes from the unpkg ESM CDN.
+ * Three.js comes from the same local bundle as the main experience so HELP
+ * cannot load a second renderer revision or depend on a CDN at runtime.
  */
 
-import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+import { THREE } from './dist/three-bundle.js?v=three-185-htmltexture-v268';
 
 const HELP_PLAYBACK_VOLUME = 0.86;
 const HELP_FADE_IN_MS = 140;
