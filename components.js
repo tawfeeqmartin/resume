@@ -13550,7 +13550,9 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       ctx2d.textAlign = 'left';
       ctx2d.textBaseline = 'alphabetic';
       ctx2d.font = `400 ${cursorSize}px ${MAC_TERMINAL_FONT}`;
-      const idlePrompt = stateRef.current.macTryItPromptVisible ? '> try it ' : '> ';
+      const idlePrompt = stateRef.current.macTryItPromptVisible
+        ? '> try it '
+        : '> headphones on. this machine has feelings ';
       ctx2d.fillText(idlePrompt, cursorX, cursorBaseline);
       if (stateRef.current.macOvertureCursorOn !== false) {
         drawMacUiCursor(
