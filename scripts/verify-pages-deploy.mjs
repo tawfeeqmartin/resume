@@ -82,11 +82,14 @@ async function verifyOnce() {
     throw new Error('/Resume.html is incorrectly serving the interactive landing page');
   }
 
-  const demoResponse = await fetch(`${base}/demo/Resume.html?${cacheBust}`, {
-    headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
-  });
-  if (demoResponse.status !== 404) {
-    throw new Error(`/demo/Resume.html should be gone; got ${demoResponse.status}`);
+  const enforcesCanonicalPublicRoutes = /(^|\.)tawfeeqmartin\.com$/i.test(new URL(base).hostname);
+  if (enforcesCanonicalPublicRoutes) {
+    const demoResponse = await fetch(`${base}/demo/Resume.html?${cacheBust}`, {
+      headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+    });
+    if (demoResponse.status !== 404) {
+      throw new Error(`/demo/Resume.html should be gone; got ${demoResponse.status}`);
+    }
   }
 
   const appResponse = await fetch(`${base}/dist/app.js?v=${assetVersion}`, {
