@@ -1198,12 +1198,34 @@ const LANDING_VARIANT_CSS = `
   stroke: #111;
   stroke-width: 1;
   stroke-dasharray: 6 7;
+  stroke-dashoffset: 0;
   stroke-linecap: square;
   vector-effect: non-scaling-stroke;
   mix-blend-mode: multiply;
+  animation: landing-profile-connector-flow 920ms linear infinite;
 }
 .landing-profile__instrument-link circle {
   fill: #111;
+}
+.landing-profile__instrument-link circle:last-child {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: landing-profile-connector-arrive 920ms linear infinite;
+}
+@keyframes landing-profile-connector-flow {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -26; }
+}
+@keyframes landing-profile-connector-arrive {
+  0%, 74% { opacity: 0.38; transform: scale(0.86); }
+  86% { opacity: 1; transform: scale(1.26); }
+  100% { opacity: 0.38; transform: scale(0.86); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-profile__instrument-link line,
+  .landing-profile__instrument-link circle:last-child {
+    animation: none;
+  }
 }
 @media (max-width: 760px) {
   .landing-profile {
