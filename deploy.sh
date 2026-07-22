@@ -80,7 +80,11 @@ echo "→ running preflight checks"
 npm run build
 node --check scripts/serve-local.mjs
 node --check spotlight-bundle.js
-npm run check:tv-clips
+if [[ "${SKIP_TV_CLIPS_CHECK:-0}" == "1" ]]; then
+  echo "→ skipping remote TV clip check (SKIP_TV_CLIPS_CHECK=1)"
+else
+  npm run check:tv-clips
+fi
 
 if [[ "${ALLOW_DIRTY:-0}" != "1" ]] && [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
   echo "Deploy aborted: working tree is not clean after build." >&2
