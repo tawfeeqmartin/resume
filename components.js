@@ -20790,7 +20790,7 @@ function HelpFeature({ src, label = "03 · SELECTED WORK · MILL STITCH™ / HEL
         </div>
         ) : null}
         <div className="help-hero__player">
-          <HelpPlayer src={src} startOffset={2} />
+          <HelpPlayer src={src} startOffset={3} />
         </div>
       </div>
     </Section>
