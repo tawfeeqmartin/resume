@@ -141,6 +141,7 @@ const RESUME = {
   references: [
     {
       name: "Usman Shakeel",
+      linkedin: "https://www.linkedin.com/in/usman-shakeel-52bb751/",
       avatar: "media/imessage/generated/usman-avatar-v4.png",
       title: "Director of Engineering, Amazon AGI Infrastructure",
       sub: "Former Worldwide Technology Leader, M&E, AWS",
@@ -148,6 +149,7 @@ const RESUME = {
     },
     {
       name: "Regina Dugan",
+      linkedin: "https://www.linkedin.com/in/regina-dugan-321687121/",
       avatar: "media/imessage/generated/regina-avatar-v4.png",
       title: "CEO, Wellcome Leap",
       sub: "Former VP Building 8, Facebook (Meta); VP Engineering, Google ATAP; Director, DARPA",
@@ -155,6 +157,7 @@ const RESUME = {
     },
     {
       name: "Daniell Phillips",
+      linkedin: "https://www.linkedin.com/in/daniell-phillips-6ba20832/",
       avatar: "media/imessage/generated/dan-avatar-v4.png",
       title: "Director, Brand Partnerships, Residence",
       sub: "Former colleague, The Mill",

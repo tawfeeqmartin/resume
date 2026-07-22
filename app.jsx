@@ -960,16 +960,25 @@ function MobileReferences({ items }) {
   return (
     <MobileResumeSection label="References" tone="red">
       <ul className="mobile-references">
-        {items.map((item) => (
+        {items.map((item) => {
+          const name = item.linkedin
+            ? (
+              <a className="mobile-reference__link" href={item.linkedin} target="_blank" rel="noreferrer">
+                {item.name}
+              </a>
+            )
+            : item.name;
+          return (
           <li key={item.name} className="mobile-reference">
             <div>
-              <div className="mobile-reference__name">{item.name}</div>
+              <div className="mobile-reference__name">{name}</div>
               <div className="mobile-reference__title mono">{item.title}</div>
               {item.sub && <div className="mobile-reference__sub mono">{item.sub}</div>}
               <blockquote className="mobile-reference__quote serif">{item.quote}</blockquote>
             </div>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </MobileResumeSection>
   );

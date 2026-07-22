@@ -21172,11 +21172,18 @@ function ReferenceAvatar({ item, index, shapes }) {
 }
 
 function ReferenceMessage({ item, index, shapes }) {
+  const sender = item.linkedin
+    ? (
+      <a className="refs__sender-link" href={item.linkedin} target="_blank" rel="noreferrer">
+        {item.name}
+      </a>
+    )
+    : item.name;
   return (
     <article className="refs__message">
       <ReferenceAvatar item={item} index={index} shapes={shapes} />
       <div className="refs__message-stack">
-        <div className="refs__sender">{item.name}</div>
+        <div className="refs__sender">{sender}</div>
         <div className="refs__credential">
           <div className="refs__title mono">{item.title}</div>
           {item.sub && <div className="refs__sub mono dim">{item.sub}</div>}
