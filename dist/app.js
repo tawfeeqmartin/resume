@@ -808,7 +808,7 @@ ${h}</style>`,P.appendChild(b);let a="url('data:image/gif;base64,R0lGODlhAQABAIA
 .landing-v1-shell.is-crt .landing-v1__hero {
   /* Keep the stage identical before, during and after the CRT initializes so a
      refresh can never expose the old violet fallback or underlying sections. */
-  background: #1118f2;
+  background: #030305;
 }
 .landing-v1-shell.is-crt .landing-v1__demo .tv-hero,
 .landing-v1-shell.is-crt .landing-v1__demo .tv-hero__canvas {
@@ -1564,6 +1564,7 @@ ${h}</style>`,P.appendChild(b);let a="url('data:image/gif;base64,R0lGODlhAQABAIA
   text-transform: uppercase;
   opacity: 1;
   transition: opacity 90ms linear;
+  background: #030305;
 }
 .landing-v1__demo:has(.tv-hero.is-model-ready)::before,
 .landing-v1__demo.is-machine-ready::before {
