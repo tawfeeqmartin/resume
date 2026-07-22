@@ -65,6 +65,11 @@ window.addEventListener('beforeunload', resetLandingScroll);
   --chrome:'Silkscreen', ui-sans-serif, system-ui, sans-serif;
   --maxw: 2560px;
   --pad: clamp(1.5rem, 4vw, 4rem);
+  /* Shared chapter gutter. The compatibility aliases also keep the cinematic
+     feature bands on the same content rail as the editorial sections. */
+  --page-pad: var(--pad);
+  --content-max: var(--maxw);
+  --section-gutter: max(var(--pad), calc((100vw - var(--maxw)) / 2 + var(--pad)));
   --type-hero-name: 3.65rem;
   --type-hero-tag: 1.05rem;
   --type-summary: 1.18rem;
@@ -854,6 +859,12 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   display: grid;
   gap: 1rem;
 }
+#root > #blackbird {
+  padding-inline: var(--section-gutter);
+}
+#root > #hand-of-god .section__header {
+  padding-inline: var(--section-gutter);
+}
 @media (min-width: 1400px) {
   #blackbird {
     --blackbird-stack-gap: clamp(0.75rem, 1.35vh, 1rem);
@@ -980,7 +991,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 }
 html.has-inverted-help-preview #help {
   --immersive-maxw: min(100vw, 2560px);
-  --immersive-pad: clamp(1.25rem, 2.4vw, 4.25rem);
+  --immersive-pad: var(--pad);
   --ink: #f5f5f2;
   --ink-2: #d7d7d2;
   --ink-3: #9c9c98;
