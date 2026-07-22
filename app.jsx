@@ -9595,21 +9595,11 @@ function mountProfileSamplerPart(host, THREE, part) {
   let chipContext = null;
   let lastChipCell = '';
   const profileContent = host.closest('.landing-profile__content');
-  const matchingSampleColor = (unit) => {
-    const baseUnit = {
-      x: Math.round(Math.max(0, Math.min(1, unit.x)) * 6) / 6,
-      y: Math.round(Math.max(0, Math.min(1, unit.y)) * 5) / 5,
-    };
-    const baseColor = source.matchSculptureCieDisplayColorForFieldUnit(baseUnit);
-    const hsl = {};
-    baseColor.getHSL(hsl);
-    hsl.h = Math.round(hsl.h * 12) / 12;
-    return new THREE.Color().setHSL(
-      hsl.h,
-      Math.max(0.8, Math.min(1, hsl.s)),
-      0.51,
-    );
+  const samplerStore = window.__resumeProfileSamplerStore || {
+    listeners: new Set(),
+    last: null,
   };
+  window.__resumeProfileSamplerStore = samplerStore;
 
   if (part === 'wheel') {
     wheel = source.drawMatchSculptureColorWheelDisk(
@@ -9669,6 +9659,31 @@ function mountProfileSamplerPart(host, THREE, part) {
   observer.observe(host);
   resize();
 
+  const applyChipSample = (sample) => {
+    if (!chipContext || !chipTexture || !sample?.color) return;
+    const nextCell = sample.cell || '';
+    const paletteKey = sample.paletteKey || nextCell;
+    if (paletteKey !== lastChipCell) {
+      lastChipCell = paletteKey;
+      source.drawMatchSculptureSamplesTexture(chipContext, {
+        field: [sample.fieldUnit.x * 120, sample.fieldUnit.y * 80],
+      }, false, { goalId: `match-${sample.shuffleTick || 0}` });
+    }
+    // The fixed lower-center swatch samples the wheel's untouched center color.
+    chipContext.fillStyle = sample.color;
+    chipContext.fillRect(46, 42, 31, 27);
+    chipTexture.needsUpdate = true;
+    host.dataset.samplerFrame = String(sample.frame);
+    host.dataset.samplerCell = nextCell;
+    host.dataset.samplerColor = sample.color;
+    host.dataset.samplerPaletteKey = paletteKey;
+    renderer.render(scene, camera);
+  };
+  if (!wheel) {
+    samplerStore.listeners.add(applyChipSample);
+    applyChipSample(samplerStore.last);
+  }
+
   let frame = 0;
   let pausedAt = 0;
   if (!Number.isFinite(window.__resumeProfileSamplerStartedAt)) {
@@ -9680,24 +9695,29 @@ function mountProfileSamplerPart(host, THREE, part) {
     fieldUnit.x = Math.max(0, Math.min(1, 0.5 + Math.cos(time * 1.08) * 0.34));
     fieldUnit.y = Math.max(0, Math.min(1, 0.5 + Math.sin(time * 0.82) * 0.32));
     const cell = `${Math.round(fieldUnit.x * 6) / 6}:${Math.round(fieldUnit.y * 5) / 5}`;
+    const shuffleTick = Math.floor(time * 12);
     host.dataset.samplerFrame = String(Math.floor(time * 24));
     host.dataset.samplerCell = cell;
-    const matchingColor = matchingSampleColor(fieldUnit);
-    host.dataset.samplerColor = matchingColor.getStyle();
 
     if (wheel) {
+      const centerColor = source.matchSculptureCieDisplayColorForFieldUnit(fieldUnit);
+      const centerColorStyle = centerColor.getStyle();
       wheel.material.uniforms.uFieldUnit.value.set(fieldUnit.x, fieldUnit.y);
-      wheel.material.uniforms.uCenterColor.value.copy(matchingColor);
+      wheel.material.uniforms.uCenterColor.value.copy(centerColor);
+      host.dataset.samplerColor = centerColorStyle;
       profileContent?.style.setProperty(
         '--landing-profile-sampler-color',
-        matchingColor.getStyle(),
+        centerColorStyle,
       );
-    } else if (cell !== lastChipCell) {
-      lastChipCell = cell;
-      source.drawMatchSculptureSamplesTexture(chipContext, {
-        field: [fieldUnit.x * 120, fieldUnit.y * 80],
-      }, false, { goalId: 'match' });
-      chipTexture.needsUpdate = true;
+      samplerStore.last = {
+        cell,
+        color: centerColorStyle,
+        fieldUnit: { x: fieldUnit.x, y: fieldUnit.y },
+        frame: Math.floor(time * 24),
+        paletteKey: `${cell}:${shuffleTick}`,
+        shuffleTick,
+      };
+      samplerStore.listeners.forEach((listener) => listener(samplerStore.last));
     }
 
     renderer.render(scene, camera);
@@ -9720,6 +9740,7 @@ function mountProfileSamplerPart(host, THREE, part) {
   return () => {
     cancelAnimationFrame(frame);
     document.removeEventListener('visibilitychange', onVisibility);
+    samplerStore.listeners.delete(applyChipSample);
     observer.disconnect();
     scene.traverse((object) => {
       object.geometry?.dispose?.();
