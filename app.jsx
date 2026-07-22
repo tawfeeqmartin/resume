@@ -1185,6 +1185,24 @@ const LANDING_VARIANT_CSS = `
   width: 100%;
   height: 100%;
 }
+.landing-profile__instrument-link {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.landing-profile__instrument-link line {
+  stroke: var(--landing-profile-sampler-color, #245cff);
+  stroke-width: 2;
+  stroke-dasharray: 8 9;
+  stroke-linecap: square;
+  vector-effect: non-scaling-stroke;
+  mix-blend-mode: multiply;
+  transition: stroke 0.06s linear;
+}
 @media (max-width: 760px) {
   .landing-profile {
     min-height: 100svh;
@@ -9577,6 +9595,22 @@ function mountProfileSamplerPart(host, THREE, part) {
   let chipTexture = null;
   let chipContext = null;
   let lastChipCell = '';
+  const profileContent = host.closest('.landing-profile__content');
+  const matchingSampleColor = (unit) => {
+    const baseUnit = {
+      x: Math.round(Math.max(0, Math.min(1, unit.x)) * 6) / 6,
+      y: Math.round(Math.max(0, Math.min(1, unit.y)) * 5) / 5,
+    };
+    const baseColor = source.matchSculptureCieDisplayColorForFieldUnit(baseUnit);
+    const hsl = {};
+    baseColor.getHSL(hsl);
+    hsl.h = Math.round(hsl.h * 12) / 12;
+    return new THREE.Color().setHSL(
+      hsl.h,
+      Math.max(0.8, Math.min(1, hsl.s)),
+      0.51,
+    );
+  };
 
   if (part === 'wheel') {
     wheel = source.drawMatchSculptureColorWheelDisk(
@@ -9638,7 +9672,10 @@ function mountProfileSamplerPart(host, THREE, part) {
 
   let frame = 0;
   let pausedAt = 0;
-  let startedAt = performance.now();
+  if (!Number.isFinite(window.__resumeProfileSamplerStartedAt)) {
+    window.__resumeProfileSamplerStartedAt = performance.now();
+  }
+  let startedAt = window.__resumeProfileSamplerStartedAt;
   const render = (now) => {
     const time = (now - startedAt) / 1000;
     fieldUnit.x = Math.max(0, Math.min(1, 0.5 + Math.cos(time * 1.08) * 0.34));
@@ -9646,11 +9683,16 @@ function mountProfileSamplerPart(host, THREE, part) {
     const cell = `${Math.round(fieldUnit.x * 6) / 6}:${Math.round(fieldUnit.y * 5) / 5}`;
     host.dataset.samplerFrame = String(Math.floor(time * 24));
     host.dataset.samplerCell = cell;
+    const matchingColor = matchingSampleColor(fieldUnit);
+    host.dataset.samplerColor = matchingColor.getStyle();
 
     if (wheel) {
-      const centerColor = source.matchSculptureCieDisplayColorForFieldUnit(fieldUnit);
       wheel.material.uniforms.uFieldUnit.value.set(fieldUnit.x, fieldUnit.y);
-      wheel.material.uniforms.uCenterColor.value.copy(centerColor);
+      wheel.material.uniforms.uCenterColor.value.copy(matchingColor);
+      profileContent?.style.setProperty(
+        '--landing-profile-sampler-color',
+        matchingColor.getStyle(),
+      );
     } else if (cell !== lastChipCell) {
       lastChipCell = cell;
       source.drawMatchSculptureSamplesTexture(chipContext, {
@@ -9692,6 +9734,64 @@ function mountProfileSamplerPart(host, THREE, part) {
     renderer.dispose();
     host.replaceChildren();
   };
+}
+
+function LandingProfileInstrumentLink() {
+  const svgRef = useRef(null);
+  const lineRef = useRef(null);
+
+  useEffect(() => {
+    const svg = svgRef.current;
+    const line = lineRef.current;
+    const content = svg?.closest('.landing-profile__content');
+    const chips = content?.querySelector('.landing-profile__instrument--chips');
+    const wheel = content?.querySelector('.landing-profile__instrument--wheel');
+    if (!svg || !line || !content || !chips || !wheel) return undefined;
+
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const contentRect = content.getBoundingClientRect();
+      const chipRect = chips.getBoundingClientRect();
+      const wheelRect = wheel.getBoundingClientRect();
+      const chipAspect = chipRect.width / Math.max(1, chipRect.height);
+      const chipViewHeight = Math.max(96, 144 / chipAspect);
+      const chipScale = chipRect.height / chipViewHeight;
+      const x1 = wheelRect.left + wheelRect.width * 0.5 - contentRect.left;
+      const y1 = wheelRect.top + wheelRect.height * 0.5 - contentRect.top;
+      // In the 3x2 sample grid, slot 4 is the fixed current-color patch.
+      // Its canvas-space center is (61.5, 55.5) inside the 124x82 sprite.
+      const x2 = chipRect.left + chipRect.width * 0.5 - 0.5 * chipScale - contentRect.left;
+      const y2 = chipRect.top + chipRect.height * 0.5 + 14.5 * chipScale - contentRect.top;
+      line.setAttribute('x1', x1.toFixed(2));
+      line.setAttribute('y1', y1.toFixed(2));
+      line.setAttribute('x2', x2.toFixed(2));
+      line.setAttribute('y2', y2.toFixed(2));
+      svg.dataset.connectorStart = `${x1.toFixed(2)},${y1.toFixed(2)}`;
+      svg.dataset.connectorEnd = `${x2.toFixed(2)},${y2.toFixed(2)}`;
+    };
+    const schedule = () => {
+      if (!frame) frame = window.requestAnimationFrame(update);
+    };
+    const observer = new ResizeObserver(schedule);
+    observer.observe(content);
+    observer.observe(chips);
+    observer.observe(wheel);
+    window.addEventListener('resize', schedule, { passive: true });
+    document.fonts?.ready?.then(schedule).catch(() => {});
+    schedule();
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener('resize', schedule);
+    };
+  }, []);
+
+  return (
+    <svg className="landing-profile__instrument-link" aria-hidden="true" ref={svgRef}>
+      <line ref={lineRef} />
+    </svg>
+  );
 }
 
 function BeautifulGameLoadingSummaryInstrument({ part }) {
@@ -9748,6 +9848,7 @@ function LandingPageV1() {
           <main>
             <section className="landing-profile" aria-labelledby="landing-profile-name">
               <div className="landing-profile__content">
+                <LandingProfileInstrumentLink />
                 <div className="landing-profile__name-row">
                   <h1
                     className="landing-profile__name"
