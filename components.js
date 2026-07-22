@@ -3997,10 +3997,10 @@ function KissNewEraFeature({
             and energy of KISS beyond the limits of a physical stage.
           </p>
           <p>
-            As a creative engineer on ILM’s StageCraft R&amp;D team, I helped build the
-            real-time digital-human systems behind the project with Pophouse Entertainment—
-            bringing the band to life as expressive virtual characters and opening a new
-            model for live performance and artist IP.
+            As a creative engineer on ILM’s StageCraft R&amp;D team I worked on some of the
+            real-time / digital-human performance capture systems bringing the band to life
+            as expressive virtual characters and opening a new model for live performance
+            and artist IP.
           </p>
           <p className="mono" style={{ marginTop: '1rem', fontSize: '0.68rem', lineHeight: 1.75 }}>
             INDUSTRIAL LIGHT &amp; MAGIC · POPHOUSE ENTERTAINMENT · PERFORMANCE CAPTURE · REAL-TIME DIGITAL HUMANS
