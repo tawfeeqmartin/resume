@@ -1195,7 +1195,7 @@ const LANDING_VARIANT_CSS = `
   pointer-events: none;
 }
 .landing-profile__instrument-link line {
-  stroke: var(--landing-profile-sampler-color, #245cff);
+  stroke: #111;
   stroke-width: 2;
   stroke-dasharray: 8 9;
   stroke-linecap: square;

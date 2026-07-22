@@ -684,7 +684,7 @@ ${h}</style>`,A.appendChild(b);let a="url('data:image/gif;base64,R0lGODlhAQABAIA
   pointer-events: none;
 }
 .landing-profile__instrument-link line {
-  stroke: var(--landing-profile-sampler-color, #245cff);
+  stroke: #111;
   stroke-width: 2;
   stroke-dasharray: 8 9;
   stroke-linecap: square;
