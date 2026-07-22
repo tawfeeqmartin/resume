@@ -1224,20 +1224,6 @@ const LANDING_VARIANT_CSS = `
   opacity: 0.88;
   animation: landing-profile-wheel-mark-flow 1280ms linear infinite;
 }
-.landing-profile__instrument-link .landing-profile__signal-arc {
-  stroke-width: 1;
-  stroke-dasharray: 7 8;
-  opacity: 0.74;
-  animation: landing-profile-signal-arc-flow 920ms linear infinite;
-}
-.landing-profile__instrument-link .landing-profile__signal-arc:nth-of-type(4) {
-  animation-delay: 80ms;
-  opacity: 0.68;
-}
-.landing-profile__instrument-link .landing-profile__signal-arc:nth-of-type(5) {
-  animation-delay: 160ms;
-  opacity: 0.54;
-}
 @keyframes landing-profile-connector-flow {
   from { stroke-dashoffset: 0; }
   to { stroke-dashoffset: -26; }
@@ -1245,11 +1231,6 @@ const LANDING_VARIANT_CSS = `
 @keyframes landing-profile-wheel-mark-flow {
   from { stroke-dashoffset: 0; }
   to { stroke-dashoffset: -34; }
-}
-@keyframes landing-profile-signal-arc-flow {
-  from { stroke-dashoffset: 0; opacity: 0.18; }
-  24%, 74% { opacity: 0.84; }
-  to { stroke-dashoffset: -30; opacity: 0.18; }
 }
 @keyframes landing-profile-connector-arrive {
   0%, 74% { opacity: 0.38; transform: scale(0.86); }
@@ -9938,7 +9919,6 @@ function LandingProfileInstrumentLink() {
   const startDotRef = useRef(null);
   const endDotRef = useRef(null);
   const wheelMarkRefs = useRef([]);
-  const signalArcRefs = useRef([]);
 
   useEffect(() => {
     const svg = svgRef.current;
@@ -9946,7 +9926,6 @@ function LandingProfileInstrumentLink() {
     const startDot = startDotRef.current;
     const endDot = endDotRef.current;
     const wheelMarks = wheelMarkRefs.current;
-    const signalArcs = signalArcRefs.current;
     const content = svg?.closest('.landing-profile__content');
     const chips = content?.querySelector('.landing-profile__instrument--chips');
     const wheel = content?.querySelector('.landing-profile__instrument--wheel');
@@ -9975,8 +9954,6 @@ function LandingProfileInstrumentLink() {
       const px = -uy;
       const py = ux;
       const wheelRadius = Math.min(wheelRect.width, wheelRect.height) * 0.26;
-      const wheelEdgeX = x1 + ux * wheelRadius;
-      const wheelEdgeY = y1 + uy * wheelRadius;
       line.setAttribute('x1', x1.toFixed(2));
       line.setAttribute('y1', y1.toFixed(2));
       line.setAttribute('x2', x2.toFixed(2));
@@ -9998,22 +9975,6 @@ function LandingProfileInstrumentLink() {
         mark.setAttribute('y1', (y1 + mixY * inner).toFixed(2));
         mark.setAttribute('x2', (x1 + mixX * outer).toFixed(2));
         mark.setAttribute('y2', (y1 + mixY * outer).toFixed(2));
-      });
-      signalArcs.forEach((arc, index) => {
-        if (!arc) return;
-        const t0 = 0.17 + index * 0.13;
-        const t1 = 0.4 + index * 0.12;
-        const bow = Math.min(44, Math.max(15, length * (0.09 + index * 0.035)));
-        const startX = wheelEdgeX + dx * t0 * 0.5 + px * (index - 1) * 7;
-        const startY = wheelEdgeY + dy * t0 * 0.5 + py * (index - 1) * 7;
-        const endX = x1 + dx * Math.min(0.86, t1) + px * (index - 1) * 5;
-        const endY = y1 + dy * Math.min(0.86, t1) + py * (index - 1) * 5;
-        const controlX = (startX + endX) * 0.5 + px * bow;
-        const controlY = (startY + endY) * 0.5 + py * bow;
-        arc.setAttribute(
-          'd',
-          `M ${startX.toFixed(2)} ${startY.toFixed(2)} Q ${controlX.toFixed(2)} ${controlY.toFixed(2)} ${endX.toFixed(2)} ${endY.toFixed(2)}`,
-        );
       });
     };
     const schedule = () => {
@@ -10040,13 +10001,6 @@ function LandingProfileInstrumentLink() {
           className="landing-profile__wheel-mark"
           key={`wheel-mark-${index}`}
           ref={(el) => { wheelMarkRefs.current[index] = el; }}
-        />
-      ))}
-      {[0, 1, 2].map((index) => (
-        <path
-          className="landing-profile__signal-arc"
-          key={`signal-arc-${index}`}
-          ref={(el) => { signalArcRefs.current[index] = el; }}
         />
       ))}
       <line className="landing-profile__connector-line" ref={lineRef} />
