@@ -66,6 +66,8 @@ const HELP_VIDEO_URLS = IS_MOBILE_MEDIA_TARGET
 const BLACKBIRD_INNOVATION_VIDEO_URL = mediaUrl("media/blackbird-innovation.mp4");
 const BLACKBIRD_VIDEO_URL = mediaUrl("media/blackbird.mp4");
 const HAND_OF_GOD_DEMO_URL = sameOriginMediaUrl("media/interactive/hand-of-god.html");
+const KISS_NEW_ERA_VIDEO_URL = sameOriginMediaUrl("media/kiss-a-new-era-720.mp4");
+const KISS_NEW_ERA_POSTER_URL = sameOriginMediaUrl("media/kiss-a-new-era-poster.jpg");
 const HUMAN_RACE_VIDEO_URL = mediaUrl("media/blackbird-original-16x9.mp4");
 const HUMAN_RACE_POSTER_URL = mediaUrl("media/human-race-poster.jpg");
 const CONNECTION_HINT = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
@@ -2668,7 +2670,7 @@ function VersionRouteNav({ current = 'legacy' }) {
   const links = [
     { id: 'current', href: 'Resume.html', label: 'current' },
     { id: 'landing-v1', href: 'landing-v1.html', label: 'landing-v1' },
-    { id: 'resume', href: 'resume-readonly.html', label: 'resume' },
+    { id: 'resume', href: '/Resume.html', label: 'resume' },
   ];
   return (
     <nav className={`version-route-nav version-route-nav--${current} mono`} aria-label="Versioned site routes">
@@ -3145,7 +3147,7 @@ function LandingClosingCta() {
         <div className="landing-cta__actions mono">
           <a className="landing-v1__action landing-v1__action--primary" href={`mailto:${RESUME.email}`}>email tawfeeq</a>
           <a className="landing-v1__action" href="https://www.linkedin.com/in/tawfeeq-martin-82991a14/" target="_blank" rel="noreferrer">linkedin</a>
-          <a className="landing-v1__action" href="resume-readonly.html">resume</a>
+          <a className="landing-v1__action" href="/Resume.html">resume</a>
         </div>
       </div>
     </section>
@@ -9763,15 +9765,15 @@ function LandingPageV1() {
                       Award-winning creative technologist with 20+ years defining and shipping
                       products at the intersection of emerging technology and cinematic storytelling.
                       Research and Development / StageCraft team at Industrial Light &amp; Magic.
-                      Previously Technical Innovations Manager — Head of Creative Engineering / Creative
-                      Technology Director at The Mill, where I led 0-to-1 product
+                      Previously Head of Creative Engineering / Creative Technology Director at The
+                      Mill, where I led 0-to-1 product
                       development on landmark projects including Google Spotlight Stories ‘HELP’ (dir.
                       Justin Lin) — a double Gold Cannes Lion–winning immersive 360° film — and was one
                       of the inventors of Mill Stitch™ and the Mill Blackbird car rig. Independent
                       developer of AI tools and generative creative systems.
                     </p>
                     <nav className="landing-profile__links" aria-label="Profile links">
-                      <a href="resume-readonly.html">Resume</a>
+                      <a href="/Resume.html">Resume</a>
                       <a href={RESUME.linkedin} target="_blank" rel="noreferrer">LinkedIn</a>
                     </nav>
                   </div>
@@ -9818,6 +9820,7 @@ function LandingPageV1() {
         behindScenesSrc={BLACKBIRD_VIDEO_URL}
       />
       <HandOfGodFeature src={HAND_OF_GOD_DEMO_URL} />
+      <KissNewEraFeature src={KISS_NEW_ERA_VIDEO_URL} poster={KISS_NEW_ERA_POSTER_URL} />
       <LandingEndProof awards={RESUME.awards} references={RESUME.references} />
     </>
   );

@@ -3981,6 +3981,49 @@ function HandOfGodFeature({
   );
 }
 
+function KissNewEraFeature({
+  src,
+  poster,
+  label = "06 · REAL-TIME DIGITAL HUMANS · KISS / A NEW ERA BEGINS",
+}) {
+  return (
+    <Section id="kiss-new-era" label={label}>
+      <div className="help-hero">
+        <div className="help-hero__intro">
+          <h3 className="serif">The final bow became a new beginning.</h3>
+          <p>
+            <em>KISS — A New Era Begins</em> introduced the band as performance-captured
+            digital avatars: virtual performers designed to carry the scale, mythology,
+            and energy of KISS beyond the limits of a physical stage.
+          </p>
+          <p>
+            As a creative engineer on ILM’s StageCraft R&amp;D team, I helped build the
+            real-time digital-human systems behind the project with Pophouse Entertainment—
+            bringing the band to life as expressive virtual characters and opening a new
+            model for live performance and artist IP.
+          </p>
+          <p className="mono" style={{ marginTop: '1rem', fontSize: '0.68rem', lineHeight: 1.75 }}>
+            INDUSTRIAL LIGHT &amp; MAGIC · POPHOUSE ENTERTAINMENT · PERFORMANCE CAPTURE · REAL-TIME DIGITAL HUMANS
+          </p>
+        </div>
+        <div className="help-hero__player">
+          <VideoSlot
+            hero
+            src={src}
+            poster={poster}
+            fallbackPath="resume/media/kiss-a-new-era-720.mp4"
+            label="avatar reveal · kiss / a new era begins"
+          />
+          <p className="mono" style={{ margin: '0.75rem 0 0', fontSize: '0.72rem', textAlign: 'center' }}>
+            KISS · A New Era Begins · 2023
+            {' · '}<a href="https://www.youtube.com/watch?v=Yl5PGoy5X6g" target="_blank" rel="noreferrer">Original film</a>
+          </p>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
 function LouisVuittonFeature({ src, poster, label = "05 · SELECTED WORK · LOUIS VUITTON SS20" }) {
   const collaborators = [
     ["Phil Crowe", "https://www.linkedin.com/in/phil-crowe-8b349738/"],
@@ -5895,11 +5938,9 @@ const MAC_TERMINAL_COMMAND_LINES = [
   'about    describe this system',
 ];
 const MAC_TERMINAL_BOOT_LINES = [
-  'MacTerminal 1.1',
-  'System 1 Finder session',
+  'Last login: today on console',
   '',
-  'commands',
-  ...MAC_TERMINAL_COMMAND_LINES,
+  'Type HELP for commands.',
 ];
 
 function getDoomIframeUrl() {
@@ -6134,7 +6175,66 @@ const MAC_KEY_ALIASES = {
 };
 
 const MAC_GHOSTWRITER_STORAGE_KEY = 'resume-mac-ghostwriter-v3';
-const MAC_TERMINAL_FONT = 'Monaco, "SFMono-Regular", Menlo, monospace';
+// Macintosh screen language. The palette mirrors the three physical accent
+// keys and follows the OP-1/Field principle that colour identifies a function
+// instead of decorating the whole display. Every screen is painted from these
+// tokens so the CRT reads as one instrument across shell, prompts and tools.
+const MAC_TERMINAL_FONT = '"Cascadia Code", "SFMono-Regular", Menlo, Monaco, "IBM Plex Mono", monospace';
+const MAC_UI_FONT = 'Inter, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif';
+const MAC_UI = Object.freeze({
+  paper: '#f3f1e8',
+  paperBright: '#fbfaf5',
+  ink: '#11110f',
+  muted: '#77766f',
+  hairline: '#b7b5ac',
+  blue: '#1c5f9f',
+  yellow: '#fac22b',
+  red: '#d42a20',
+  green: '#2c7a4b',
+});
+
+function drawMacUiSurface(ctx, width, height, options = {}) {
+  const paper = options.paper || MAC_UI.paper;
+  const accent = options.accent || MAC_UI.ink;
+  const inset = Math.round(width * 0.055);
+  const top = Math.round(height * 0.052);
+  const ruleY = Math.round(height * 0.103);
+  ctx.fillStyle = paper;
+  ctx.fillRect(0, 0, width, height);
+  if (options.quiet) return { inset, top, ruleY };
+
+  // A precise instrument rail: one functional colour, one index and a status.
+  // No bevel, shadow or fake window furniture.
+  ctx.fillStyle = accent;
+  ctx.fillRect(inset, top, Math.max(8, Math.round(width * 0.022)), Math.max(5, Math.round(height * 0.009)));
+  ctx.fillStyle = MAC_UI.ink;
+  ctx.font = `500 ${Math.round(height * 0.018)}px ${MAC_UI_FONT}`;
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillText(String(options.label || 'TM—OS').toUpperCase(), inset + Math.round(width * 0.033), top + Math.round(height * 0.004));
+  ctx.textAlign = 'right';
+  ctx.fillStyle = MAC_UI.muted;
+  ctx.fillText(String(options.status || 'READY').toUpperCase(), width - inset, top + Math.round(height * 0.004));
+  ctx.strokeStyle = MAC_UI.hairline;
+  ctx.lineWidth = Math.max(1, Math.round(height * 0.0014));
+  ctx.beginPath();
+  ctx.moveTo(inset, ruleY);
+  ctx.lineTo(width - inset, ruleY);
+  ctx.stroke();
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  return { inset, top, ruleY };
+}
+
+function drawMacUiCursor(ctx, x, baseline, size, color = MAC_UI.ink) {
+  ctx.fillStyle = color;
+  ctx.fillRect(
+    Math.round(x),
+    Math.round(baseline - size * 0.78),
+    Math.max(5, Math.round(size * 0.18)),
+    Math.round(size * 0.94),
+  );
+}
 const MAC_GHOSTWRITER_PHRASES = [
   {
     id: 'inevitable',
@@ -10809,7 +10909,7 @@ function createMacStickyNote(THREE, caseBox, screenBox, options = {}) {
   if (!THREE || !caseBox || caseBox.isEmpty()) return null;
   const {
     text = 'resume',
-    href = 'resume-readonly.html',
+    href = '/Resume.html',
     hitType = 'resume',
     placement = 'left',
     rotationDeg = placement === 'right' ? 4 : -5,
@@ -12882,7 +12982,10 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     // CRT channels own the screen — except the boot channel, which IS the
     // terminal and asks for it explicitly via forceTerminal.
     if (stateRef.current.pageMode && !stateRef.current.forceTerminal) return;
-    if (wrapRef.current) wrapRef.current.dataset.screenPaint = 'terminal';
+    if (wrapRef.current) {
+      wrapRef.current.dataset.screenPaint = 'terminal';
+      wrapRef.current.dataset.macUiLanguage = 'instrument-v1';
+    }
     setScreenCanvasSize('terminal');
     setScreenTextureSampling('terminal');
     const w = screenCanvas.width, h = screenCanvas.height;
@@ -12890,7 +12993,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     const px = (value) => Math.round(value);
     ctx2d.save();
     ctx2d.imageSmoothingEnabled = false;
-	    const desktopPaper = '#f8f7ee';
+	    const desktopPaper = MAC_UI.paper;
 	    ctx2d.fillStyle = desktopPaper;
 	    ctx2d.fillRect(0, 0, w, h);
 
@@ -12899,10 +13002,12 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	        0,
 	        Math.min(1, Number(stateRef.current.openingVoiceLevel) || 0),
 	      );
-	      const face = '#02050b';
-	      const blue = '#0a84ff';
-	      ctx2d.fillStyle = face;
-	      ctx2d.fillRect(0, 0, w, h);
+	      const blue = MAC_UI.blue;
+	      drawMacUiSurface(ctx2d, w, h, {
+	        accent: blue,
+	        label: 'VOICE / INPUT',
+	        status: stateRef.current.openingVoiceKind || 'LISTENING',
+	      });
 
 	      // A single oscilloscope trace replaces the earlier nested voice
 	      // instrument. Its amplitude follows the authored vocal envelope while
@@ -12923,7 +13028,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	      const sampleCount = 112;
 
 	      ctx2d.globalAlpha = 1;
-	      ctx2d.strokeStyle = 'rgba(10,132,255,0.18)';
+	      ctx2d.strokeStyle = 'rgba(28,95,159,0.18)';
 	      ctx2d.lineWidth = Math.max(1, px(h * 0.003));
 	      ctx2d.beginPath();
 	      ctx2d.moveTo(left, centerY);
@@ -12945,16 +13050,16 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	        else ctx2d.lineTo(x, y);
 	      }
 	      const waveGradient = ctx2d.createLinearGradient(left, 0, right, 0);
-	      waveGradient.addColorStop(0, 'rgba(10,132,255,0)');
-	      waveGradient.addColorStop(0.08, 'rgba(10,132,255,0.82)');
+	      waveGradient.addColorStop(0, 'rgba(28,95,159,0)');
+	      waveGradient.addColorStop(0.08, 'rgba(28,95,159,0.82)');
 	      waveGradient.addColorStop(0.5, blue);
-	      waveGradient.addColorStop(0.92, 'rgba(10,132,255,0.82)');
-	      waveGradient.addColorStop(1, 'rgba(10,132,255,0)');
+	      waveGradient.addColorStop(0.92, 'rgba(28,95,159,0.82)');
+	      waveGradient.addColorStop(1, 'rgba(28,95,159,0)');
 	      ctx2d.strokeStyle = waveGradient;
 	      ctx2d.lineCap = 'round';
 	      ctx2d.lineJoin = 'round';
-	      ctx2d.shadowColor = 'rgba(10,132,255,0.72)';
-	      ctx2d.shadowBlur = px(h * (0.015 + easedLevel * 0.022));
+	      ctx2d.shadowColor = 'rgba(28,95,159,0.32)';
+	      ctx2d.shadowBlur = px(h * (0.005 + easedLevel * 0.008));
 	      ctx2d.lineWidth = Math.max(2, h * 0.008);
 	      ctx2d.stroke();
 	      ctx2d.shadowBlur = 0;
@@ -12974,19 +13079,21 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    wrapRef.current?.setAttribute('data-opening-invitation-screen', 'hidden');
 
 	    if (stateRef.current.visitorNamePromptActive) {
-	      const black = '#050505';
-	      const paper = '#ffffff';
+	      const black = MAC_UI.ink;
 	      // Match the companion controller's typography so the two screens
 	      // read as one interface, not adjacent visual systems.
-	      const monoFont = 'ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace';
+	      const monoFont = MAC_TERMINAL_FONT;
 	      const frame = px(Math.max(14, h * 0.04));
 	      const name = String(stateRef.current.visitorName || '').slice(0, 24);
-	      const cursor = ensureMacTerminal().cursorOn ? '█' : ' ';
+	      const cursorOn = ensureMacTerminal().cursorOn;
 	      const questionSize = px(h * 0.056);
 	      const answerSize = px(h * 0.05);
 
-	      ctx2d.fillStyle = paper;
-	      ctx2d.fillRect(0, 0, w, h);
+	      drawMacUiSurface(ctx2d, w, h, {
+	        accent: MAC_UI.yellow,
+	        label: 'IDENTITY / 00',
+	        status: 'INPUT',
+	      });
 
 	      ctx2d.fillStyle = black;
 	      ctx2d.textAlign = 'left';
@@ -12996,7 +13103,17 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	      ctx2d.font = `700 ${questionSize}px ${monoFont}`;
 	      ctx2d.fillText('WHAT SHOULD I CALL YOU?', frame + promptIndent, px(h * 0.43));
 	      ctx2d.font = `500 ${answerSize}px ${monoFont}`;
-	      ctx2d.fillText(`> ${name}${cursor}`, frame, px(h * 0.58));
+	      const answer = `> ${name}`;
+	      const answerBaseline = px(h * 0.58);
+	      ctx2d.fillText(answer, frame, answerBaseline);
+	      if (cursorOn) {
+	        drawMacUiCursor(
+	          ctx2d,
+	          frame + ctx2d.measureText(answer).width + px(answerSize * 0.08),
+	          answerBaseline,
+	          answerSize,
+	        );
+	      }
 
 	      stateRef.current.contactFormRects = null;
 	      wrapRef.current?.setAttribute('data-visitor-name-screen', 'visible');
@@ -13038,31 +13155,26 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	      return;
 	    }
 	    if (stateRef.current.companionQrVisible && companionQr) {
-	      const black = '#050505';
-	      const paper = '#ffffff';
-	      const monoFont = 'Monaco, "IBM Plex Mono", "Courier New", monospace';
-	      const frame = px(Math.max(10, h * 0.022));
-	      const headerH = px(h * 0.11);
+	      const black = MAC_UI.ink;
+	      const paper = MAC_UI.paperBright;
+	      const monoFont = MAC_TERMINAL_FONT;
+	      const frame = px(Math.max(10, h * 0.028));
+	      const headerH = px(h * 0.105);
 	      const qrSize = px(Math.min(h * 0.56, w * 0.50));
 	      const qrX = px((w - qrSize) / 2);
 	      const qrY = px(headerH + (h - headerH - qrSize) / 2 - h * 0.025);
 
-	      ctx2d.fillStyle = paper;
-	      ctx2d.fillRect(0, 0, w, h);
-	      ctx2d.fillStyle = black;
-	      ctx2d.fillRect(0, 0, w, headerH);
-	      ctx2d.fillStyle = paper;
-	      ctx2d.font = `700 ${px(h * 0.032)}px ${monoFont}`;
-	      ctx2d.textAlign = 'left';
-	      ctx2d.textBaseline = 'middle';
-	      ctx2d.fillText('PHONE REMOTE / 001', frame, headerH / 2);
-	      ctx2d.textAlign = 'right';
-	      ctx2d.fillText('READY', w - frame, headerH / 2);
+	      drawMacUiSurface(ctx2d, w, h, {
+	        paper,
+	        accent: MAC_UI.blue,
+	        label: 'REMOTE / 01',
+	        status: 'PAIR',
+	      });
 
 	      ctx2d.fillStyle = paper;
 	      ctx2d.fillRect(qrX - frame, qrY - frame, qrSize + frame * 2, qrSize + frame * 2);
-	      ctx2d.strokeStyle = black;
-	      ctx2d.lineWidth = Math.max(3, px(h * 0.004));
+	      ctx2d.strokeStyle = MAC_UI.hairline;
+	      ctx2d.lineWidth = Math.max(1, px(h * 0.002));
 	      ctx2d.strokeRect(qrX - frame, qrY - frame, qrSize + frame * 2, qrSize + frame * 2);
 	      ctx2d.imageSmoothingEnabled = false;
 	      ctx2d.drawImage(companionQr, qrX, qrY, qrSize, qrSize);
@@ -13070,7 +13182,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	      ctx2d.fillStyle = black;
 	      ctx2d.textAlign = 'center';
 	      ctx2d.textBaseline = 'alphabetic';
-	      ctx2d.font = `700 ${px(h * 0.024)}px ${monoFont}`;
+	      ctx2d.font = `500 ${px(h * 0.022)}px ${monoFont}`;
 	      ctx2d.fillText(
 	        'SCAN ON PHONE  ·  TAP START',
 	        w / 2,
@@ -13088,57 +13200,48 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    }
 	    wrapRef.current?.setAttribute('data-companion-qr-screen', 'hidden');
 
-	    const contact = stateRef.current.contactForm;
+    const contact = stateRef.current.contactForm;
     if (contact?.open) {
-      const black = '#000000';
-      const muted = '#6f6f69';
-      const uiFont = 'Arial, Helvetica, sans-serif';
-      const headingFont = '"Arial Black", "Helvetica Neue", Arial, sans-serif';
-      const monoFont = 'Monaco, "IBM Plex Mono", "Courier New", monospace';
+      const black = MAC_UI.ink;
+      const muted = MAC_UI.muted;
+      const uiFont = MAC_UI_FONT;
+      const headingFont = MAC_UI_FONT;
+      const monoFont = MAC_TERMINAL_FONT;
       const panel = {
-        x: px(w * 0.14),
-        y: px(h * 0.10),
-        w: px(w * 0.72),
-        h: px(h * 0.80),
+        x: px(w * 0.09),
+        y: px(h * 0.04),
+        w: px(w * 0.82),
+        h: px(h * 0.90),
       };
-      ctx2d.fillStyle = desktopPaper;
-      ctx2d.fillRect(panel.x, panel.y, panel.w, panel.h);
-      ctx2d.strokeStyle = black;
-      ctx2d.lineWidth = Math.max(3, px(h * 0.003));
-      ctx2d.strokeRect(panel.x, panel.y, panel.w, panel.h);
-      ctx2d.lineWidth = Math.max(1, px(h * 0.0012));
-      ctx2d.strokeRect(panel.x + 8, panel.y + 8, panel.w - 16, panel.h - 16);
-
-      const titleBarH = px(h * 0.048);
-      ctx2d.fillStyle = black;
-      ctx2d.fillRect(panel.x + 8, panel.y + 8, panel.w - 16, titleBarH);
-      ctx2d.fillStyle = '#ffffff';
-      ctx2d.font = `700 ${px(h * 0.016)}px ${monoFont}`;
-      ctx2d.textAlign = 'left';
-      ctx2d.textBaseline = 'middle';
-      ctx2d.fillText('CONTACT / TM', panel.x + px(w * 0.018), panel.y + 8 + titleBarH / 2);
+      drawMacUiSurface(ctx2d, w, h, {
+        accent: MAC_UI.red,
+        label: 'CONTACT / 04',
+        status: contact.sending ? 'SENDING' : contact.sent ? 'SENT' : 'READY',
+      });
+      const titleBarH = px(h * 0.05);
       const closeRect = {
-        x: panel.x + panel.w - px(w * 0.16),
+        x: panel.x + panel.w - px(w * 0.08),
         y: panel.y,
-        w: px(w * 0.15),
-        h: px(h * 0.09),
+        w: px(w * 0.08),
+        h: px(h * 0.08),
       };
       ctx2d.textAlign = 'center';
-      ctx2d.font = `900 ${px(h * 0.024)}px ${uiFont}`;
-      ctx2d.fillText('×', panel.x + panel.w - px(w * 0.035), panel.y + 8 + titleBarH / 2);
+      ctx2d.fillStyle = black;
+      ctx2d.font = `500 ${px(h * 0.022)}px ${uiFont}`;
+      ctx2d.fillText('×', panel.x + panel.w - px(w * 0.025), panel.y + px(h * 0.036));
 
       ctx2d.fillStyle = black;
       ctx2d.textAlign = 'left';
       ctx2d.textBaseline = 'alphabetic';
-      ctx2d.font = `900 ${px(h * 0.056)}px ${headingFont}`;
-      ctx2d.fillText('WASSUP?', px(w * 0.18), px(h * 0.245));
+      ctx2d.font = `600 ${px(h * 0.050)}px ${headingFont}`;
+      ctx2d.fillText('WASSUP?', px(w * 0.13), px(h * 0.245));
 
       const rects = {
-        name: { x: px(w * 0.18), y: px(h * 0.31), w: px(w * 0.29), h: px(h * 0.052) },
-        email: { x: px(w * 0.53), y: px(h * 0.31), w: px(w * 0.29), h: px(h * 0.052) },
-        message: { x: px(w * 0.18), y: px(h * 0.445), w: px(w * 0.64), h: px(h * 0.19) },
+        name: { x: px(w * 0.13), y: px(h * 0.31), w: px(w * 0.33), h: px(h * 0.052) },
+        email: { x: px(w * 0.54), y: px(h * 0.31), w: px(w * 0.33), h: px(h * 0.052) },
+        message: { x: px(w * 0.13), y: px(h * 0.445), w: px(w * 0.74), h: px(h * 0.19) },
         close: closeRect,
-        send: { x: px(w * 0.53), y: px(h * 0.79), w: px(w * 0.29), h: px(h * 0.058) },
+        send: { x: px(w * 0.62), y: px(h * 0.79), w: px(w * 0.25), h: px(h * 0.058) },
       };
       stateRef.current.contactFormRects = rects;
 
@@ -13152,10 +13255,10 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
           ctx2d.font = `700 ${px(h * 0.016)}px ${monoFont}`;
           ctx2d.fillText(`${active ? '> ' : ''}${label}`, rect.x, rect.y - px(h * 0.012));
         }
-        ctx2d.fillStyle = '#ffffff';
+        ctx2d.fillStyle = MAC_UI.paperBright;
         ctx2d.fillRect(rect.x, rect.y, rect.w, rect.h);
-        ctx2d.strokeStyle = invalid ? '#d71920' : black;
-        ctx2d.lineWidth = active ? Math.max(4, px(h * 0.004)) : Math.max(2, px(h * 0.002));
+        ctx2d.strokeStyle = invalid ? MAC_UI.red : active ? MAC_UI.blue : MAC_UI.hairline;
+        ctx2d.lineWidth = active ? Math.max(3, px(h * 0.003)) : Math.max(1, px(h * 0.0015));
         ctx2d.strokeRect(rect.x, rect.y, rect.w, rect.h);
         ctx2d.save();
         ctx2d.beginPath();
@@ -13171,8 +13274,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
           if (active && stateRef.current.macOvertureCursorOn !== false) {
             const textWidth = ctx2d.measureText(displayValue).width;
             const cursorX = Math.min(rect.x + rect.w - 24, rect.x + 20 + (value ? textWidth : 0));
-            ctx2d.fillStyle = black;
-            ctx2d.fillRect(cursorX, baseline - fontSize * 0.48, Math.max(6, fontSize * 0.32), fontSize * 1.02);
+            drawMacUiCursor(ctx2d, cursorX, baseline, fontSize);
           }
         } else {
           const maxWidth = rect.w - 38;
@@ -13212,8 +13314,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
             const finalLine = visibleLines[visibleLines.length - 1] || '';
             const cursorX = Math.min(rect.x + rect.w - 24, rect.x + 20 + ctx2d.measureText(finalLine).width);
             const cursorY = rect.y + fontSize * 0.88 + (visibleLines.length - 1) * lineHeight;
-            ctx2d.fillStyle = black;
-            ctx2d.fillRect(cursorX, cursorY - fontSize * 0.48, Math.max(6, fontSize * 0.32), fontSize * 1.02);
+            drawMacUiCursor(ctx2d, cursorX, cursorY, fontSize);
           }
         }
         ctx2d.restore();
@@ -13229,19 +13330,19 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       const drawButton = (key, label, enabled = true) => {
         const rect = rects[key];
         const active = contact.activeField === key;
-        ctx2d.fillStyle = enabled && key === 'send' ? black : '#ffffff';
+        ctx2d.fillStyle = enabled && key === 'send' ? MAC_UI.yellow : MAC_UI.paperBright;
         ctx2d.fillRect(rect.x, rect.y, rect.w, rect.h);
-        ctx2d.strokeStyle = enabled ? black : muted;
-        ctx2d.lineWidth = active ? Math.max(4, px(h * 0.004)) : Math.max(2, px(h * 0.002));
+        ctx2d.strokeStyle = enabled ? black : MAC_UI.hairline;
+        ctx2d.lineWidth = active ? Math.max(3, px(h * 0.003)) : Math.max(1, px(h * 0.0015));
         ctx2d.strokeRect(rect.x, rect.y, rect.w, rect.h);
-        ctx2d.fillStyle = enabled && key === 'send' ? '#ffffff' : (enabled ? black : muted);
+        ctx2d.fillStyle = enabled ? black : muted;
         ctx2d.textAlign = 'center';
         ctx2d.textBaseline = 'middle';
-        ctx2d.font = `800 ${px(h * 0.018)}px ${uiFont}`;
+        ctx2d.font = `600 ${px(h * 0.018)}px ${uiFont}`;
         if (key === 'send' && label === 'SEND') {
           ctx2d.fillText(label, rect.x + rect.w * 0.42, rect.y + rect.h / 2);
           ctx2d.textAlign = 'right';
-          ctx2d.font = `900 ${px(h * 0.022)}px ${uiFont}`;
+          ctx2d.font = `600 ${px(h * 0.022)}px ${uiFont}`;
           ctx2d.fillText('↗', rect.x + rect.w * 0.88, rect.y + rect.h / 2);
         } else {
           ctx2d.fillText(label, rect.x + rect.w / 2, rect.y + rect.h / 2);
@@ -13258,7 +13359,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       ctx2d.font = `700 ${px(h * 0.015)}px ${monoFont}`;
       ctx2d.fillStyle = contact.error ? black : muted;
       if (contact.error || contact.status) {
-        ctx2d.fillText(contact.error || contact.status, px(w * 0.18), px(h * 0.715));
+        ctx2d.fillText(contact.error || contact.status, px(w * 0.13), px(h * 0.715));
       }
 
       ctx2d.restore();
@@ -13281,8 +13382,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       }
       stateRef.current.contactFormRects = null;
       stateRef.current.macGhostwriterShareRects = null;
-      const ink = '#050505';
-      const paper = '#f8f7ee';
+      const ink = MAC_UI.ink;
+      const paper = MAC_UI.paper;
       const monoFont = MAC_TERMINAL_FONT;
       const promptX = px(w * 0.07);
       const headerY = px(h * 0.15);
@@ -13295,8 +13396,12 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       const words = revealed.split(' ');
       const lines = [];
       let line = '';
-      ctx2d.fillStyle = paper;
-      ctx2d.fillRect(0, 0, w, h);
+      drawMacUiSurface(ctx2d, w, h, {
+        paper,
+        accent: MAC_UI.blue,
+        label: 'GHOSTWRITER / 05',
+        status: ghostwriter.phase || 'READY',
+      });
       ctx2d.textAlign = 'left';
       ctx2d.textBaseline = 'alphabetic';
       ctx2d.fillStyle = ink;
@@ -13326,12 +13431,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         + px(phraseSize * 0.08);
       const cursorY = px(firstY + (lines.length - 1) * lineHeight);
       if (ghostwriter.phase === 'revealing' && ensureMacTerminal().cursorOn) {
-        ctx2d.fillRect(
-          cursorX,
-          cursorY - phraseSize * 0.78,
-          Math.max(5, px(phraseSize * 0.18)),
-          phraseSize * 0.94,
-        );
+        drawMacUiCursor(ctx2d, cursorX, cursorY, phraseSize);
       }
       if (ghostwriter.phase === 'response') {
         ctx2d.fillStyle = ink;
@@ -13391,8 +13491,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     if (!stateRef.current.visualReelMode && stateRef.current.macOvertureBootBlank) {
       if (wrapRef.current) wrapRef.current.dataset.screenPaint = 'idle-cursor';
       stateRef.current.contactFormRects = null;
-      ctx2d.fillStyle = '#f8f7ee';
-      ctx2d.fillRect(0, 0, w, h);
+      drawMacUiSurface(ctx2d, w, h, { paper: MAC_UI.paper, quiet: true });
       // Nothing but a live terminal insertion point: the first deliberate key
       // is both the visitor's consent to sound and the command to begin.
       // Reuse the post-intro ghostwriter prompt, font metrics, baseline and
@@ -13402,19 +13501,17 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       const cursorSize = px(h * 0.063);
       const cursorX = px(w * 0.07);
       const cursorBaseline = px(h * 0.43);
-      ctx2d.fillStyle = '#050505';
+      ctx2d.fillStyle = MAC_UI.ink;
       ctx2d.textAlign = 'left';
       ctx2d.textBaseline = 'alphabetic';
       ctx2d.font = `400 ${cursorSize}px ${MAC_TERMINAL_FONT}`;
       ctx2d.fillText('> ', cursorX, cursorBaseline);
       if (stateRef.current.macOvertureCursorOn !== false) {
-        ctx2d.fillRect(
-          cursorX
-            + ctx2d.measureText('> ').width
-            + px(cursorSize * 0.08),
-          cursorBaseline - cursorSize * 0.78,
-          Math.max(5, px(cursorSize * 0.18)),
-          cursorSize * 0.94,
+        drawMacUiCursor(
+          ctx2d,
+          cursorX + ctx2d.measureText('> ').width + px(cursorSize * 0.08),
+          cursorBaseline,
+          cursorSize,
         );
       }
       ctx2d.restore();
@@ -13427,16 +13524,20 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     if (!stateRef.current.visualReelMode && stateRef.current.macStoryTypeActive) {
       if (wrapRef.current) wrapRef.current.dataset.screenPaint = 'make-story-typing';
       stateRef.current.contactFormRects = null;
-      const ink = '#050505';
-      const paper = '#f8f7ee';
+      const ink = MAC_UI.ink;
+      const paper = MAC_UI.paper;
       const monoFont = MAC_TERMINAL_FONT;
       const typedText = String(stateRef.current.macStoryTypedText || '');
       const promptX = px(w * 0.075);
       const promptY = px(h * 0.20);
       const commandY = px(h * 0.54);
       const commandSize = px(h * 0.068);
-      ctx2d.fillStyle = paper;
-      ctx2d.fillRect(0, 0, w, h);
+      drawMacUiSurface(ctx2d, w, h, {
+        paper,
+        accent: MAC_UI.red,
+        label: 'MAKE / INPUT',
+        status: 'TYPE',
+      });
       ctx2d.textAlign = 'left';
       ctx2d.textBaseline = 'alphabetic';
       ctx2d.fillStyle = ink;
@@ -13447,12 +13548,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       ctx2d.fillText(command, promptX, commandY);
       if (stateRef.current.macOvertureCursorOn !== false) {
         const cursorX = promptX + ctx2d.measureText(command).width + px(commandSize * 0.12);
-        ctx2d.fillRect(
-          cursorX,
-          commandY - commandSize * 0.78,
-          Math.max(7, px(commandSize * 0.28)),
-          commandSize * 0.92,
-        );
+        drawMacUiCursor(ctx2d, cursorX, commandY, commandSize);
       }
       ctx2d.restore();
       if (screenTex) {
@@ -13541,6 +13637,16 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
           stageIndex = index;
         }
       }
+      const stageUi = [
+        { accent: MAC_UI.yellow, label: 'DESIGN / 01' },
+        { accent: MAC_UI.red, label: 'MAKE / 02' },
+        { accent: MAC_UI.blue, label: 'BELIEVE / 03' },
+      ][stageIndex];
+      drawMacUiSurface(ctx2d, w, h, {
+        accent: stageUi.accent,
+        label: stageUi.label,
+        status: 'RUN',
+      });
       const nextAt = stages[stageIndex + 1]?.at ?? 1;
       const loopIndex = Math.max(0, Number(stateRef.current.macOvertureLoopIndex) || 0);
       const localProgress = stageIndex === 0
@@ -13742,7 +13848,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
           renderedText: frame.text,
         };
       };
-      const black = '#000000';
+      const black = MAC_UI.ink;
       const headingFont = MAC_TERMINAL_FONT;
       ctx2d.textAlign = 'left';
       ctx2d.textBaseline = 'alphabetic';
@@ -13753,7 +13859,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       // Terminal-safe inset inside the curved Macintosh glass. The shell
       // prompt is persistent; only the executable is typed by the keyboard.
       const promptX = px(w * 0.055);
-      const headingY = px(h * 0.12);
+      const headingY = px(h * 0.175);
       let headingSize = px(h * 0.043);
       ctx2d.letterSpacing = '0px';
       ctx2d.font = `400 ${headingSize}px ${headingFont}`;
@@ -13880,16 +13986,14 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       if (revealProgress < 0.999
         && !typingState.cursorOnNextLine
         && stateRef.current.macOvertureCursorOn !== false) {
-        const cursorW = Math.max(5, px(headingSize * 0.16));
-        const cursorH = Math.max(10, px(headingSize * 0.78));
         const cursorY = typingState.cursorOnNextLine
           ? headingY + headingSize * 0.72
           : headingY;
-        ctx2d.fillRect(
+        drawMacUiCursor(
+          ctx2d,
           px(typingState.cursorX + headingSize * 0.10),
-          px(cursorY - cursorH * 0.83),
-          cursorW,
-          cursorH,
+          cursorY,
+          headingSize,
         );
       }
       ctx2d.restore();
@@ -13900,83 +14004,26 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       return;
     }
 
-    const black = '#000000';
-    const paper = '#f8f7ee';
-    // The phone is now the channel controller, so the old Mac menu/toolbar no
-    // longer belongs on the CRT. Keep the terminal content itself, edge to edge.
-    const menuH = 0;
+    const black = MAC_UI.ink;
     const monoFont = MAC_TERMINAL_FONT;
-
-    // A compact classic-Mac window: white field, black hairlines, title-bar
-    // stripes, close box, and a small scroll bar. The original display was
-    // 1-bit, so this stays black/white instead of a modern dark terminal.
-    const terminalWindowScale = 0.8;
-    const baseWx = w * 0.085;
-    const baseWy = h * 0.058;
-    const baseWw = w * 0.83;
-    const baseWh = h * 0.71;
-    const wx = px(baseWx + baseWw * (1 - terminalWindowScale) * 0.5);
-    const wy = px(baseWy + baseWh * (1 - terminalWindowScale) * 0.5);
-    const ww = px(baseWw * terminalWindowScale);
-    const wh = px(baseWh * terminalWindowScale);
-    const titleH = px(h * 0.048 * terminalWindowScale);
-    ctx2d.fillStyle = paper;
-    ctx2d.fillRect(wx, wy, ww, wh);
-    ctx2d.strokeStyle = black;
-    ctx2d.lineWidth = 2;
-    ctx2d.strokeRect(wx, wy, ww, wh);
-    ctx2d.lineWidth = 2;
-    const innerInset = px(5 * terminalWindowScale);
-    ctx2d.strokeRect(wx + innerInset, wy + innerInset, ww - innerInset * 2, wh - innerInset * 2);
-
-    const titleY = wy + px(6 * terminalWindowScale);
-    const titleText = 'MacTerminal';
+    drawMacUiSurface(ctx2d, w, h, {
+      accent: MAC_UI.blue,
+      label: 'TERMINAL / 00',
+      status: term.focused ? 'READY' : 'IDLE',
+    });
     ctx2d.save();
     ctx2d.beginPath();
-    const windowInset = px(8 * terminalWindowScale);
-    ctx2d.rect(wx + windowInset, titleY, ww - windowInset * 2, titleH - windowInset);
-    ctx2d.clip();
-    ctx2d.strokeStyle = black;
-    ctx2d.lineWidth = 2;
-    for (let y = titleY + px(4 * terminalWindowScale); y < titleY + titleH - windowInset; y += px(8 * terminalWindowScale)) {
-      ctx2d.beginPath();
-      ctx2d.moveTo(wx + px(12 * terminalWindowScale), y);
-      ctx2d.lineTo(wx + ww - px(12 * terminalWindowScale), y);
-      ctx2d.stroke();
-    }
-    ctx2d.restore();
-    ctx2d.fillStyle = paper;
-    const titleW = px(w * 0.17 * terminalWindowScale);
-    const titleX = px(wx + ww / 2 - titleW / 2);
-    ctx2d.fillRect(titleX, wy + px(6 * terminalWindowScale), titleW, titleH - windowInset);
-    ctx2d.font = `bold ${px(h * 0.021 * terminalWindowScale)}px ${uiFont}`;
-    ctx2d.fillStyle = black;
-    ctx2d.textAlign = 'center';
-    ctx2d.fillText(titleText, wx + ww / 2, wy + px(titleH * 0.68));
-    ctx2d.fillText(titleText, wx + ww / 2 + uiTextOffset, wy + px(titleH * 0.68));
-    ctx2d.textAlign = 'left';
-
-    const closeSize = px(h * 0.024 * terminalWindowScale);
-    const scrollW = px(w * 0.015 * terminalWindowScale);
-    const scrollX = wx + ww - px(w * 0.034 * terminalWindowScale);
-    ctx2d.strokeRect(wx + px(w * 0.018 * terminalWindowScale), wy + px(h * 0.015 * terminalWindowScale), closeSize, closeSize);
-    ctx2d.strokeRect(scrollX, wy + titleH + px(4 * terminalWindowScale), scrollW, wh - titleH - px(h * 0.043 * terminalWindowScale));
-    ctx2d.fillRect(scrollX, wy + titleH + px(4 * terminalWindowScale), scrollW, 2);
-    ctx2d.fillRect(scrollX, wy + wh - px(h * 0.04 * terminalWindowScale), scrollW, 2);
-
-    ctx2d.save();
-    ctx2d.beginPath();
-    const tx = wx + px(w * 0.034 * terminalWindowScale);
-    const ty = wy + titleH + px(h * 0.034 * terminalWindowScale);
-    const tw = ww - px(w * 0.088 * terminalWindowScale);
-    const th = wh - titleH - px(h * 0.072 * terminalWindowScale);
+    const tx = px(w * 0.055);
+    const ty = px(h * 0.145);
+    const tw = px(w * 0.89);
+    const th = px(h * 0.79);
     ctx2d.rect(tx, ty, tw, th);
     ctx2d.clip();
     ctx2d.fillStyle = black;
-    const fontSize = px(h * 0.0335 * terminalWindowScale);
-    const lineHeight = px(fontSize * 1.42);
-    ctx2d.font = `${fontSize}px ${monoFont}`;
-    const prompt = 'tawfeeq$ ';
+    const fontSize = px(h * 0.028);
+    const lineHeight = px(fontSize * 1.36);
+    ctx2d.font = `400 ${fontSize}px ${monoFont}`;
+    const prompt = 'tm@Mac Dev % ';
     const maxTextWidth = tw - px(fontSize * 0.7);
     const continuation = ' '.repeat(prompt.length);
     const wrapText = (value, width) => {
@@ -14025,10 +14072,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     const visibleCount = Math.max(6, Math.floor(th / lineHeight));
     const visible = allLines.slice(-visibleCount);
     const textX = tx;
-    const drawTerminalText = (line, x, baseline) => {
-      ctx2d.fillText(line, x, baseline);
-      ctx2d.fillText(line, x + Math.max(1, px(fontSize * 0.018)), baseline);
-    };
+    const drawTerminalText = (line, x, baseline) => ctx2d.fillText(line, x, baseline);
     let y = ty + fontSize;
     let cursor = null;
     for (const row of visible) {
@@ -14042,8 +14086,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       y += lineHeight;
     }
     if (term.cursorOn && cursor) {
-      ctx2d.fillStyle = black;
-      ctx2d.fillRect(cursor.x + 2, cursor.y, px(fontSize * 0.58), px(fontSize * 1.05));
+      drawMacUiCursor(ctx2d, cursor.x + px(fontSize * 0.10), cursor.y + px(fontSize * 0.78), fontSize);
     }
     ctx2d.restore();
 
@@ -15852,7 +15895,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     const lower = cmd.toLowerCase();
     const state = stateRef.current;
     const engine = window.__resumeStrudelAudioEngine;
-    pushMacTerminalLine(`tawfeeq$ ${cmd}`);
+    pushMacTerminalLine(`tm@Mac Dev % ${cmd}`);
     if (!lower) {
       drawMacOffScreen();
       return;
@@ -17857,14 +17900,18 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         const st = stateRef.current, sc = st.screenCanvas, cx = st.ctx2d, tex = st.screenTex;
         if (!sc || !cx) return;
         const W = sc.width, H = sc.height;
-        cx.fillStyle = '#080807'; cx.fillRect(0, 0, W, H);
-        cx.textAlign = 'center';
-        cx.fillStyle = '#b1140e';
-        cx.font = `${Math.round(H * 0.17)}px "Anton", Impact, system-ui, sans-serif`;
-        cx.fillText('DOOM', W / 2, H * 0.5);
-        cx.fillStyle = '#9a8f86';
-        cx.font = `${Math.round(H * 0.028)}px "VT323", Monaco, monospace`;
-        cx.fillText('press  RETURN  to boot', W / 2, H * 0.64);
+        drawMacUiSurface(cx, W, H, {
+          accent: MAC_UI.red,
+          label: 'DOOM / 06',
+          status: 'ARMED',
+        });
+        cx.textAlign = 'left';
+        cx.fillStyle = MAC_UI.ink;
+        cx.font = `600 ${Math.round(H * 0.14)}px ${MAC_UI_FONT}`;
+        cx.fillText('DOOM', Math.round(W * 0.10), Math.round(H * 0.51));
+        cx.fillStyle = MAC_UI.muted;
+        cx.font = `400 ${Math.round(H * 0.026)}px ${MAC_TERMINAL_FONT}`;
+        cx.fillText('press RETURN to boot', Math.round(W * 0.10), Math.round(H * 0.63));
         cx.textAlign = 'left';
         if (tex) tex.needsUpdate = true;
         st.requestRender?.();
@@ -20357,7 +20404,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	      }
 	      if (target.type === 'signature') return;
 	      if (['resume', 'linkedin', 'link'].includes(target.type)) {
-	        const href = target.href || (target.type === 'resume' ? 'resume-readonly.html' : '');
+	        const href = target.href || (target.type === 'resume' ? '/Resume.html' : '');
 	        if (!href) return;
 	        if (/^https?:\/\//i.test(href)) {
 	          const opened = window.open(href, '_blank', 'noopener,noreferrer');
@@ -21048,5 +21095,5 @@ function Footer({ data }) {
 Object.assign(window, {
   HelpPlayer, HelpFeature, Summary,
   Experience, ProjectCard, LiveSystemFeature, Awards, Skills, Education, References, Footer,
-  VideoSlot, BlackbirdFeature, HandOfGodFeature, ScrollAudioLayers, StrudelReplFeature, TvHero, DoomOverlay
+  VideoSlot, BlackbirdFeature, HandOfGodFeature, KissNewEraFeature, ScrollAudioLayers, StrudelReplFeature, TvHero, DoomOverlay
 });

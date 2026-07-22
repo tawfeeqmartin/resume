@@ -12,13 +12,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Cascadia+Code:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --paper: #f7f5ef;
-      --ink: #171717;
-      --soft: #686b70;
-      --rule: #d3cfc4;
-      --blue: #194ed8;
-      --red: #df342f;
-      --gold: #e9b51e;
+      --paper: #ffffff;
+      --ink: #1d1d1f;
+      --soft: #6e6e73;
+      --rule: #d2d2d7;
+      --blue: #0071e3;
+      --red: #d42a20;
+      --gold: #fac22b;
       --white: #fff;
       --serif: ui-serif, "New York", "Newsreader", Georgia, serif;
       --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
@@ -63,9 +63,9 @@
       align-items: center;
       gap: 1rem;
       padding: .75rem var(--gutter);
-      border-bottom: 1px solid rgba(211, 207, 196, .82);
-      background: rgba(247, 245, 239, .94);
-      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(210, 210, 215, .82);
+      background: rgba(255, 255, 255, .96);
+      backdrop-filter: blur(12px);
     }
     .site-nav a {
       font: 600 .68rem/1 var(--mono);
@@ -77,7 +77,7 @@
 
     .page {
       width: min(100%, var(--max));
-      min-height: 100vh;
+      min-height: auto;
       margin: 0 auto;
       padding: clamp(3rem, 7vw, 6rem) var(--gutter);
       border-bottom: 1px solid var(--rule);
@@ -260,22 +260,22 @@
     .work {
       position: relative;
       display: block;
-      overflow: hidden;
-      border: 1px solid var(--rule);
-      background: rgba(255, 255, 255, .5);
+      border: 0;
+      border-top: 1px solid var(--rule);
+      background: transparent;
       text-decoration: none;
-      transition: transform .18s ease, border-color .18s ease;
+      transition: opacity .18s ease;
     }
-    .work:hover, .work:focus-visible { transform: translateY(-3px); border-color: var(--blue); color: inherit; }
+    .work:hover, .work:focus-visible { opacity: .78; color: inherit; }
     .work__image {
       width: 100%;
       aspect-ratio: 16 / 5;
       object-fit: cover;
       display: block;
-      background: #ddd;
-      filter: saturate(.92) contrast(1.02);
+      background: #f5f5f7;
+      filter: none;
     }
-    .work__body { min-height: 8.4rem; padding: 1.05rem 1.2rem 1.2rem; }
+    .work__body { min-height: 0; padding: 1rem 0 1.4rem; }
     .work__meta {
       display: flex;
       gap: .65rem;
@@ -290,7 +290,7 @@
     .work:nth-child(3n) .work__meta b { color: var(--gold); }
     .work h3 { margin: 0 0 .35rem; font-size: 1.14rem; letter-spacing: -.03em; }
     .work p { margin: 0; color: #5d6066; font-size: .84rem; }
-    .work__arrow { position: absolute; right: 1rem; bottom: .8rem; color: var(--red); font-weight: 800; }
+    .work__arrow { position: absolute; right: 0; bottom: 1.25rem; color: var(--red); font-weight: 600; }
     .folio {
       margin-top: 4rem;
       color: #99948a;
@@ -362,7 +362,7 @@
 </head>
 <body>
   <nav class="site-nav" aria-label="Resume navigation">
-    <a href="Resume.html">← Portfolio</a>
+    <a href="/">← Portfolio</a>
     <div class="site-nav__right">
       <a href="#experience">Experience</a>
       <a href="#works">Selected works</a>
@@ -378,7 +378,6 @@
       <p class="hero__strap">Forward-deployed innovation · 0-to-1 product delivery · AI and real-time systems</p>
       <div class="contact" aria-label="Contact">
         <span>Los Angeles, CA</span>
-        <span><a href="tel:+13104039849">+1 310 403 9849</a></span>
         <span><a href="mailto:tawfeeqmartin@gmail.com">tawfeeqmartin@gmail.com</a></span>
         <span><a href="https://tawfeeqmartin.com/">tawfeeqmartin.com</a></span>
         <span><a href="https://www.linkedin.com/in/tawfeeqmartin/">linkedin.com/in/tawfeeqmartin</a></span>
@@ -473,7 +472,7 @@
         <div>
           <article class="role">
             <div class="role__head">
-              <h3>Head of Creative Engineering, Mill Experience</h3>
+              <h3>Head of Creative Engineering / Creative Technology Director, Mill Experience</h3>
               <time>OCT 2010 – JUN 2020</time>
             </div>
             <a class="role__org" href="https://www.themill.com/">The Mill</a>
@@ -606,7 +605,6 @@
       <footer class="cta">
         <h2>Let's build what's next<span>.</span></h2>
         <div class="contact">
-          <span><a href="tel:+13104039849">+1 310 403 9849</a></span>
           <span><a href="mailto:tawfeeqmartin@gmail.com">tawfeeqmartin@gmail.com</a></span>
           <span><a href="https://tawfeeqmartin.com/">tawfeeqmartin.com</a></span>
           <span><a href="https://www.linkedin.com/in/tawfeeqmartin/">linkedin.com/in/tawfeeqmartin</a></span>

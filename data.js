@@ -4,7 +4,6 @@ const RESUME = {
   title: "Creative Engineer / Creative Technologist",
   roleLabel: "Creative Engineer / Creative Technologist",
   location: "Los Angeles, CA",
-  phone: "+1 310 403 9849",
   email: "tawfeeqmartin@gmail.com",
   site: "tawfeeqmartin.com",
   linkedin: "https://www.linkedin.com/in/tawfeeqmartin",
@@ -59,7 +58,7 @@ const RESUME = {
       ],
     },
     {
-      role: "Head of Creative Engineering, Mill Experience",
+      role: "Head of Creative Engineering / Creative Technology Director, Mill Experience",
       org: "The Mill",
       where: "",
       period: "Oct 2010 - Jun 2020",

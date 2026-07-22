@@ -30,6 +30,8 @@ const REQUIRED_FILES = [
   'media/3d/apple_macintosh.glb',
   'media/interactive/hand-of-god.html',
   'media/interactive/hand-of-god-source.html',
+  'media/kiss-a-new-era-720.mp4',
+  'media/kiss-a-new-era-poster.jpg',
   'media/demo/mac4.jpg',
   'media/believe-blackbird-selected.jpg',
   'media/bg.poster.jpg',
@@ -58,6 +60,7 @@ const HELP_FORBIDDEN_PATTERNS = [
 ];
 
 const VERSIONED_ASSETS = [
+  { label: 'favicon.svg', regex: /(favicon\.svg\?v=)[^"')]+/g },
   { label: 'data.js', regex: /(data\.js\?v=)[^"')]+/g },
   { label: 'spotlight-bundle.js', regex: /(spotlight-bundle\.js\?v=)[^"')]+/g },
   { label: 'dist/app.js', regex: /(dist\/app\.js\?v=)[^"')]+/g },
@@ -113,6 +116,20 @@ async function rewriteHtmlAssetVersions(file) {
   await fs.writeFile(filePath, html);
 }
 
+async function routeRootAssetsThroughPinnedDemo(file) {
+  const filePath = path.join(stageDir, file);
+  let html = await fs.readFile(filePath, 'utf8');
+  if (html.includes('<base ')) {
+    throw new Error(`${file} already contains a base element.`);
+  }
+  const headCount = (html.match(/<head>/g) || []).length;
+  if (headCount !== 1) {
+    throw new Error(`${file} should contain exactly one <head>; found ${headCount}.`);
+  }
+  html = html.replace('<head>', '<head>\n<base href="/demo/">');
+  await fs.writeFile(filePath, html);
+}
+
 await fs.access(stageDir);
 
 for (const file of REQUIRED_FILES) {
@@ -133,6 +150,7 @@ if (routes.version !== 1
 
 await rewriteHtmlAssetVersions('Resume.html');
 await rewriteHtmlAssetVersions('index.html');
+if (branch !== 'main') await routeRootAssetsThroughPinnedDemo('index.html');
 
 const files = {
   data: 'data.js',
@@ -145,6 +163,8 @@ const files = {
   macModel: 'media/3d/apple_macintosh.glb',
   handOfGod: 'media/interactive/hand-of-god.html',
   handOfGodSource: 'media/interactive/hand-of-god-source.html',
+  kissNewEraVideo: 'media/kiss-a-new-era-720.mp4',
+  kissNewEraPoster: 'media/kiss-a-new-era-poster.jpg',
 };
 
 const deployInfo = {

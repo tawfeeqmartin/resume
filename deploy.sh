@@ -147,6 +147,8 @@ cp resume-readonly.html "$STAGE_DIR/"
 cp \
   media/believe-blackbird-selected.jpg \
   media/bg.poster.jpg \
+  media/kiss-a-new-era-720.mp4 \
+  media/kiss-a-new-era-poster.jpg \
   media/louis-vuitton-ss20-poster.jpg \
   media/stagecraft-hero.png \
   media/believe-help-source.jpg \
