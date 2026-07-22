@@ -1210,6 +1210,13 @@ const LANDING_VARIANT_CSS = `
     min-height: 100svh;
     padding-top: clamp(3.5rem, 10vh, 5rem);
   }
+  .landing-profile--summary-only {
+    min-height: 0;
+    padding-bottom: clamp(3.5rem, 12vw, 5rem);
+  }
+  .landing-mobile-summary .landing-cta {
+    margin-top: 0;
+  }
   .landing-profile__name-row {
     grid-template-columns: 1fr;
     gap: 1.75rem;
@@ -3155,7 +3162,7 @@ function setupTabTitle() {
   });
 }
 
-function LandingClosingCta() {
+function LandingClosingCta({ linkedInOnly = false } = {}) {
   return (
     <section className="landing-cta" aria-label="Contact Tawfeeq Martin">
       <div className="landing-cta__inner">
@@ -3165,9 +3172,18 @@ function LandingClosingCta() {
           Have a hard problem, an impossible brief, or a half-formed idea? I&rsquo;d like to hear it.
         </p>
         <div className="landing-cta__actions mono">
-          <a className="landing-v1__action landing-v1__action--primary" href={`mailto:${RESUME.email}`}>email tawfeeq</a>
-          <a className="landing-v1__action" href="https://www.linkedin.com/in/tawfeeq-martin-82991a14/" target="_blank" rel="noreferrer">linkedin</a>
-          <a className="landing-v1__action" href="/Resume.html">resume</a>
+          {!linkedInOnly && (
+            <a className="landing-v1__action landing-v1__action--primary" href={`mailto:${RESUME.email}`}>email tawfeeq</a>
+          )}
+          <a
+            className={`landing-v1__action${linkedInOnly ? ' landing-v1__action--primary' : ''}`}
+            href="https://www.linkedin.com/in/tawfeeq-martin-82991a14/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            linkedin
+          </a>
+          {!linkedInOnly && <a className="landing-v1__action" href="/Resume.html">resume</a>}
         </div>
       </div>
     </section>
@@ -9856,7 +9872,69 @@ function BeautifulGameLoadingSummaryInstrument({ part }) {
   );
 }
 
-function LandingPageV1() {
+function LandingProfileSection({ summaryOnly = false } = {}) {
+  return (
+    <section
+      className={`landing-profile${summaryOnly ? ' landing-profile--summary-only' : ''}`}
+      aria-labelledby="landing-profile-name"
+    >
+      <div className="landing-profile__content">
+        {!summaryOnly && <LandingProfileInstrumentLink />}
+        <div className="landing-profile__name-row">
+          <h1
+            className="landing-profile__name"
+            id="landing-profile-name"
+            aria-label="Tawfeeq Martin"
+          >
+            <span>Tawfeeq</span>
+            <span>Martin</span>
+          </h1>
+          {!summaryOnly && <BeautifulGameLoadingSummaryInstrument part="chips" />}
+        </div>
+        <div className="landing-profile__story">
+          <div className="landing-profile__copy">
+            <p className="landing-profile__bio">
+              Award-winning creative technologist with 20+ years defining and shipping
+              products at the intersection of emerging technology and cinematic storytelling.
+              Research and Development / StageCraft team at Industrial Light &amp; Magic.
+              Previously Head of Creative Engineering / Creative Technology Director at The
+              Mill, where I led 0-to-1 product
+              development on landmark projects including Google Spotlight Stories ‘HELP’ (dir.
+              Justin Lin) — a double Gold Cannes Lion–winning immersive 360° film — and was one
+              of the inventors of Mill Stitch™ and the Mill Blackbird car rig. Independent
+              developer of AI tools and generative creative systems.
+            </p>
+            {!summaryOnly && (
+              <nav className="landing-profile__links" aria-label="Profile links">
+                <a href="/Resume.html">Resume</a>
+                <a href={RESUME.linkedin} target="_blank" rel="noreferrer">LinkedIn</a>
+              </nav>
+            )}
+          </div>
+          {!summaryOnly && <BeautifulGameLoadingSummaryInstrument part="wheel" />}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LandingPageV1({ mobile = false }) {
+  if (mobile) {
+    return (
+      <>
+        <VariantStyles />
+        <div className="landing-v1-shell landing-mobile-summary" data-mobile-summary="true">
+          <div className="page landing-v1__page">
+            <main>
+              <LandingProfileSection summaryOnly />
+              <LandingClosingCta linkedInOnly />
+            </main>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <VariantStyles />
@@ -9879,42 +9957,7 @@ function LandingPageV1() {
         </div>
         <div className="page landing-v1__page">
           <main>
-            <section className="landing-profile" aria-labelledby="landing-profile-name">
-              <div className="landing-profile__content">
-                <LandingProfileInstrumentLink />
-                <div className="landing-profile__name-row">
-                  <h1
-                    className="landing-profile__name"
-                    id="landing-profile-name"
-                    aria-label="Tawfeeq Martin"
-                  >
-                    <span>Tawfeeq</span>
-                    <span>Martin</span>
-                  </h1>
-                  <BeautifulGameLoadingSummaryInstrument part="chips" />
-                </div>
-                <div className="landing-profile__story">
-                  <div className="landing-profile__copy">
-                    <p className="landing-profile__bio">
-                      Award-winning creative technologist with 20+ years defining and shipping
-                      products at the intersection of emerging technology and cinematic storytelling.
-                      Research and Development / StageCraft team at Industrial Light &amp; Magic.
-                      Previously Head of Creative Engineering / Creative Technology Director at The
-                      Mill, where I led 0-to-1 product
-                      development on landmark projects including Google Spotlight Stories ‘HELP’ (dir.
-                      Justin Lin) — a double Gold Cannes Lion–winning immersive 360° film — and was one
-                      of the inventors of Mill Stitch™ and the Mill Blackbird car rig. Independent
-                      developer of AI tools and generative creative systems.
-                    </p>
-                    <nav className="landing-profile__links" aria-label="Profile links">
-                      <a href="/Resume.html">Resume</a>
-                      <a href={RESUME.linkedin} target="_blank" rel="noreferrer">LinkedIn</a>
-                    </nav>
-                  </div>
-                  <BeautifulGameLoadingSummaryInstrument part="wheel" />
-                </div>
-              </div>
-            </section>
+            <LandingProfileSection />
             <section className="crt-enter">
               <div className="crt-enter__sticky">
                 <section className="landing-v1__hero" aria-label="Interactive portfolio demo">
@@ -10041,7 +10084,8 @@ function App() {
   const landingRoute = RESUME_APP_VARIANT === 'landing-v1';
   const landingV2Route = RESUME_APP_VARIANT === 'landing-v2';
   const resumeRoute = RESUME_APP_VARIANT === 'resume';
-  const interactiveMode = landingRoute || landingV2Route || (!resumeRoute && !mobileResume && desktopMode !== 'read-only');
+  const interactiveMode = ((landingRoute || landingV2Route) && !mobileResume)
+    || (!resumeRoute && !mobileResume && desktopMode !== 'read-only');
   useHelpMediaWarmup(interactiveMode);
 
   useEffect(() => {
@@ -10069,7 +10113,7 @@ function App() {
     );
   }
 
-  if (landingRoute) return <LandingPageV1 />;
+  if (landingRoute) return <LandingPageV1 mobile={mobileResume} />;
   if (landingV2Route) return <LandingPageV2 />;
 
   if (mobileResume) return <MobileResume />;
