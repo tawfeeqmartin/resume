@@ -1202,6 +1202,9 @@ const LANDING_VARIANT_CSS = `
   vector-effect: non-scaling-stroke;
   mix-blend-mode: multiply;
 }
+.landing-profile__instrument-link circle {
+  fill: #111;
+}
 @media (max-width: 760px) {
   .landing-profile {
     min-height: 100svh;
@@ -9759,14 +9762,18 @@ function mountProfileSamplerPart(host, THREE, part) {
 function LandingProfileInstrumentLink() {
   const svgRef = useRef(null);
   const lineRef = useRef(null);
+  const startDotRef = useRef(null);
+  const endDotRef = useRef(null);
 
   useEffect(() => {
     const svg = svgRef.current;
     const line = lineRef.current;
+    const startDot = startDotRef.current;
+    const endDot = endDotRef.current;
     const content = svg?.closest('.landing-profile__content');
     const chips = content?.querySelector('.landing-profile__instrument--chips');
     const wheel = content?.querySelector('.landing-profile__instrument--wheel');
-    if (!svg || !line || !content || !chips || !wheel) return undefined;
+    if (!svg || !line || !startDot || !endDot || !content || !chips || !wheel) return undefined;
 
     let frame = 0;
     const update = () => {
@@ -9787,6 +9794,10 @@ function LandingProfileInstrumentLink() {
       line.setAttribute('y1', y1.toFixed(2));
       line.setAttribute('x2', x2.toFixed(2));
       line.setAttribute('y2', y2.toFixed(2));
+      startDot.setAttribute('cx', x1.toFixed(2));
+      startDot.setAttribute('cy', y1.toFixed(2));
+      endDot.setAttribute('cx', x2.toFixed(2));
+      endDot.setAttribute('cy', y2.toFixed(2));
       svg.dataset.connectorStart = `${x1.toFixed(2)},${y1.toFixed(2)}`;
       svg.dataset.connectorEnd = `${x2.toFixed(2)},${y2.toFixed(2)}`;
     };
@@ -9810,6 +9821,8 @@ function LandingProfileInstrumentLink() {
   return (
     <svg className="landing-profile__instrument-link" aria-hidden="true" ref={svgRef}>
       <line ref={lineRef} />
+      <circle ref={startDotRef} r="1.5" />
+      <circle ref={endDotRef} r="1.5" />
     </svg>
   );
 }
