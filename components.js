@@ -13552,7 +13552,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       ctx2d.font = `400 ${cursorSize}px ${MAC_TERMINAL_FONT}`;
       const idlePrompt = stateRef.current.macTryItPromptVisible
         ? '> try it '
-        : '> headphones recommended ';
+        : '> better with audio ';
       ctx2d.fillText(idlePrompt, cursorX, cursorBaseline);
       if (stateRef.current.macOvertureCursorOn !== false) {
         drawMacUiCursor(

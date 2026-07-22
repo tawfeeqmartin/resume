@@ -1218,19 +1218,9 @@ const LANDING_VARIANT_CSS = `
   transform-origin: center;
   animation: landing-profile-connector-arrive 920ms linear infinite;
 }
-.landing-profile__instrument-link .landing-profile__wheel-mark {
-  stroke-width: 1.15;
-  stroke-dasharray: 8 9;
-  opacity: 0.88;
-  animation: landing-profile-wheel-mark-flow 1280ms linear infinite;
-}
 @keyframes landing-profile-connector-flow {
   from { stroke-dashoffset: 0; }
   to { stroke-dashoffset: -26; }
-}
-@keyframes landing-profile-wheel-mark-flow {
-  from { stroke-dashoffset: 0; }
-  to { stroke-dashoffset: -34; }
 }
 @keyframes landing-profile-connector-arrive {
   0%, 74% { opacity: 0.38; transform: scale(0.86); }
@@ -9918,14 +9908,12 @@ function LandingProfileInstrumentLink() {
   const lineRef = useRef(null);
   const startDotRef = useRef(null);
   const endDotRef = useRef(null);
-  const wheelMarkRefs = useRef([]);
 
   useEffect(() => {
     const svg = svgRef.current;
     const line = lineRef.current;
     const startDot = startDotRef.current;
     const endDot = endDotRef.current;
-    const wheelMarks = wheelMarkRefs.current;
     const content = svg?.closest('.landing-profile__content');
     const chips = content?.querySelector('.landing-profile__instrument--chips');
     const wheel = content?.querySelector('.landing-profile__instrument--wheel');
@@ -9946,14 +9934,6 @@ function LandingProfileInstrumentLink() {
       // Its canvas-space center is (61.5, 55.5) inside the 124x82 sprite.
       const x2 = chipRect.left + chipRect.width * 0.5 - 0.5 * chipScale - contentRect.left;
       const y2 = chipRect.top + chipRect.height * 0.5 + 14.5 * chipScale - contentRect.top;
-      const dx = x2 - x1;
-      const dy = y2 - y1;
-      const length = Math.max(1, Math.hypot(dx, dy));
-      const ux = dx / length;
-      const uy = dy / length;
-      const px = -uy;
-      const py = ux;
-      const wheelRadius = Math.min(wheelRect.width, wheelRect.height) * 0.26;
       line.setAttribute('x1', x1.toFixed(2));
       line.setAttribute('y1', y1.toFixed(2));
       line.setAttribute('x2', x2.toFixed(2));
@@ -9964,18 +9944,6 @@ function LandingProfileInstrumentLink() {
       endDot.setAttribute('cy', y2.toFixed(2));
       svg.dataset.connectorStart = `${x1.toFixed(2)},${y1.toFixed(2)}`;
       svg.dataset.connectorEnd = `${x2.toFixed(2)},${y2.toFixed(2)}`;
-      wheelMarks.forEach((mark, index) => {
-        if (!mark) return;
-        const spread = (index - 1) * 0.32;
-        const inner = wheelRadius * (0.55 + index * 0.04);
-        const outer = wheelRadius * (0.86 + index * 0.025);
-        const mixX = ux * Math.cos(spread) + px * Math.sin(spread);
-        const mixY = uy * Math.cos(spread) + py * Math.sin(spread);
-        mark.setAttribute('x1', (x1 + mixX * inner).toFixed(2));
-        mark.setAttribute('y1', (y1 + mixY * inner).toFixed(2));
-        mark.setAttribute('x2', (x1 + mixX * outer).toFixed(2));
-        mark.setAttribute('y2', (y1 + mixY * outer).toFixed(2));
-      });
     };
     const schedule = () => {
       if (!frame) frame = window.requestAnimationFrame(update);
@@ -9996,13 +9964,6 @@ function LandingProfileInstrumentLink() {
 
   return (
     <svg className="landing-profile__instrument-link" aria-hidden="true" ref={svgRef}>
-      {[0, 1, 2].map((index) => (
-        <line
-          className="landing-profile__wheel-mark"
-          key={`wheel-mark-${index}`}
-          ref={(el) => { wheelMarkRefs.current[index] = el; }}
-        />
-      ))}
       <line className="landing-profile__connector-line" ref={lineRef} />
       <circle ref={startDotRef} r="1.5" />
       <circle ref={endDotRef} r="1.5" />
