@@ -6268,7 +6268,7 @@ function drawMacUiCursor(ctx, x, baseline, size, color = MAC_UI.ink) {
   ctx.fillRect(
     Math.round(x),
     Math.round(baseline - size * 0.78),
-    Math.max(5, Math.round(size * 0.18)),
+    Math.max(9, Math.round(size * 0.58)),
     Math.round(size * 0.94),
   );
 }
@@ -13445,21 +13445,24 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       ctx2d.fillStyle = ink;
       ctx2d.font = `400 ${px(h * 0.024)}px ${monoFont}`;
       ctx2d.fillText('tm@Mac Dev % ./ghostwriter', promptX, headerY);
-      if (stateRef.current.macTryItPromptVisible) {
-        ctx2d.font = `400 ${phraseSize}px ${monoFont}`;
-        ctx2d.fillText('try it', promptX + ctx2d.measureText('> ').width, px(h * 0.35));
-      }
       ctx2d.font = `400 ${phraseSize}px ${monoFont}`;
-      words.forEach((word, index) => {
-        const candidate = line ? `${line} ${word}` : word;
-        if (line && ctx2d.measureText(`> ${candidate}`).width > maxWidth) {
-          lines.push(line);
-          line = word;
-        } else {
-          line = candidate;
-        }
-        if (index === words.length - 1) lines.push(line);
-      });
+      const showInlineTryIt = stateRef.current.macTryItPromptVisible
+        && ghostwriter.phase === 'revealing'
+        && !revealed;
+      if (showInlineTryIt) {
+        lines.push('try it');
+      } else {
+        words.forEach((word, index) => {
+          const candidate = line ? `${line} ${word}` : word;
+          if (line && ctx2d.measureText(`> ${candidate}`).width > maxWidth) {
+            lines.push(line);
+            line = word;
+          } else {
+            line = candidate;
+          }
+          if (index === words.length - 1) lines.push(line);
+        });
+      }
       if (!lines.length) lines.push('');
       // Keep every authored sentence on one terminal baseline. Line wrapping
       // may add rows beneath it, but must never recenter the first row.
@@ -13547,15 +13550,12 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       ctx2d.textAlign = 'left';
       ctx2d.textBaseline = 'alphabetic';
       ctx2d.font = `400 ${cursorSize}px ${MAC_TERMINAL_FONT}`;
-      if (stateRef.current.macTryItPromptVisible) {
-        ctx2d.fillText('try it', cursorX + ctx2d.measureText('> ').width, px(h * 0.35));
-        ctx2d.font = `400 ${cursorSize}px ${MAC_TERMINAL_FONT}`;
-      }
-      ctx2d.fillText('> ', cursorX, cursorBaseline);
+      const idlePrompt = stateRef.current.macTryItPromptVisible ? '> try it ' : '> ';
+      ctx2d.fillText(idlePrompt, cursorX, cursorBaseline);
       if (stateRef.current.macOvertureCursorOn !== false) {
         drawMacUiCursor(
           ctx2d,
-          cursorX + ctx2d.measureText('> ').width + px(cursorSize * 0.08),
+          cursorX + ctx2d.measureText(idlePrompt).width + px(cursorSize * 0.08),
           cursorBaseline,
           cursorSize,
         );
@@ -19699,6 +19699,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         || code === 'Enter'
         || options.key === 'Enter';
       if (isAutocompleteKey) {
+        stateRef.current.macTryItPromptVisible = false;
         ghostwriter.revealIndex = phraseLength;
         ghostwriter.phase = 'complete';
         ensureMacTerminal().cursorOn = true;
@@ -19708,6 +19709,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         paintGhostwriter();
         return true;
       }
+      stateRef.current.macTryItPromptVisible = false;
       ghostwriter.revealIndex = Math.min(phraseLength, ghostwriter.revealIndex + 1);
       if (ghostwriter.revealIndex >= phraseLength) ghostwriter.phase = 'complete';
       ensureMacTerminal().cursorOn = true;
