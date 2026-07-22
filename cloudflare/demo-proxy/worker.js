@@ -1,5 +1,5 @@
 const DEMO_PREFIX = '/demo';
-const DEMO_UPSTREAM = 'https://a96edba6.resume-bmd.pages.dev';
+const DEMO_UPSTREAM = 'https://a5588560.resume-bmd.pages.dev';
 
 function upstreamPath(pathname) {
   if (pathname === DEMO_PREFIX || pathname === `${DEMO_PREFIX}/`) return '/';

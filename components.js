@@ -3876,7 +3876,7 @@ function BlackbirdFeature({
 
 function HandOfGodFeature({
   src = "media/interactive/hand-of-god.html",
-  label = "05 · INTERACTIVE · BEAUTIFUL GAME / HAND OF GOD",
+  label = "05 · DATA VISUALIZATION · THE BEAUTIFUL GAME / HAND OF GOD",
 }) {
   const featureRef = useRef(null);
   const frameRef = useRef(null);
