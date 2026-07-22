@@ -2888,16 +2888,16 @@ function HelpIntroStage({ src }) {
           <div className="his-bg his-bg--a" aria-hidden="true" />
           <div className="his-veil" aria-hidden="true" />
           <div className="help-intro-stage__copy">
-            <h3 className="serif">A 360 degree film, served from its native projection.</h3>
+            <h3 className="serif">A Hollywood-scale immersive film, built for mobile.</h3>
             <p>
               <em>HELP</em> (dir. Justin Lin) was the first Hollywood-scale immersive cinematic
-              experience built for mobile - a Google Spotlight Stories title delivered in a custom
-              MESH projection rather than equirectangular video.
+              experience built for mobile — a Google Spotlight Stories title produced more than
+              ten years ahead of its time.
             </p>
             <p>
-              As Technical Innovations Manager and Product Manager, I built the 360 degree camera rig{' '}
-              <strong>Mill Stitch&trade;</strong> and the real-time pipeline that let the director see
-              the surround action live during principal photography in the LA River basin.
+              As Creative Technology Director, I worked with our artists, engineers, and partners
+              at Google, Derivative, and Keslow Camera from concept through a first-of-its-kind,
+              award-winning deliverable powered by <strong>Mill Stitch&trade;</strong>.
             </p>
           </div>
         </div>

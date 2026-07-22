@@ -20783,21 +20783,27 @@ function HelpFeature({ src, label = "03 · SELECTED WORK · MILL STITCH™ / HEL
       <div className="help-hero">
         {showIntro ? (
         <div className="help-hero__intro">
-          <h3 className="serif">A 360° film, served from its native projection.</h3>
+          <h3 className="serif">A Hollywood-scale immersive film, built for mobile.</h3>
           <ProofStampRow items={HELP_AWARD_STAMPS} className="proof-stamps--no-rails proof-stamps--under-heading proof-stamps--help-title" />
           <p>
             <em>HELP</em> (dir. Justin Lin) was the first Hollywood-scale immersive cinematic
-            experience built for mobile — a Google Spotlight Stories title delivered in a
-            custom MESH projection rather than equirectangular video.
+            experience built for mobile — a Google Spotlight Stories title produced more than
+            ten years ahead of its time.
           </p>
           <p>
-            As Technical Innovations Manager and Product Manager, I worked with our artists,
-            engineers, and partners at Google, Derivative, and Keslow Camera to produce the
-            360° camera rig, <strong>Mill Stitch™</strong>, and the on-set and post-production
-            technology that enabled this first-of-its-kind deliverable. Mill Stitch was the
-            real-time 360° pipeline that let the director see the surround action live during
-            principal photography in the LA River basin. Use <span className="mono">W / A / S / D</span>{' '}
-            keys or drag to look around.
+            As Creative Technology Director, I worked with our artists, engineers, and partners
+            at Google, Derivative, and Keslow Camera from concept through a first-of-its-kind,
+            award-winning deliverable powered by <strong>Mill Stitch™</strong>.
+          </p>
+          <p>
+            Mill Stitch enabled director Justin Lin to “frame” an entire 360-degree shoot using
+            interactive camera and joystick controls, plus a novel lat-long touchscreen that
+            mapped an area of interest to a secondary rectilinear view live during principal
+            photography in the LA River basin. His key camera-moving beats were captured on set
+            and helped us shape narrative cues to keep the viewer engaged throughout.
+          </p>
+          <p>
+            To try it, press <span className="mono">W / A / S / D</span> to look around the film.
           </p>
         </div>
         ) : null}
