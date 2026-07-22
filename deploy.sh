@@ -82,10 +82,10 @@ node --check scripts/serve-local.mjs
 node --check spotlight-bundle.js
 npm run check:tv-clips
 
-if [[ "${ALLOW_DIRTY:-0}" != "1" ]] && [[ -n "$(git status --porcelain)" ]]; then
+if [[ "${ALLOW_DIRTY:-0}" != "1" ]] && [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
   echo "Deploy aborted: working tree is not clean after build." >&2
   echo "Commit the build output first, or rerun with ALLOW_DIRTY=1 for an intentional preview-only deploy." >&2
-  git status --short >&2
+  git status --short --untracked-files=no >&2
   exit 1
 fi
 
