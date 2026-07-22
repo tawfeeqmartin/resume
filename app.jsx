@@ -3177,7 +3177,7 @@ function LandingClosingCta({ linkedInOnly = false } = {}) {
           )}
           <a
             className={`landing-v1__action${linkedInOnly ? ' landing-v1__action--primary' : ''}`}
-            href="https://www.linkedin.com/in/tawfeeq-martin-82991a14/"
+            href="https://www.linkedin.com/in/tawfeeqmartin/"
             target="_blank"
             rel="noreferrer"
           >
