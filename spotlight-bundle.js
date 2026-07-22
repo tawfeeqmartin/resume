@@ -553,7 +553,9 @@ function makeVideoElement(videoUrl, inlineVideoFallback) {
   video.setAttribute('webkit-playsinline', '');
   video.muted = true;
   setVideoVolume(video, HELP_PLAYBACK_VOLUME);
-  video.preload = 'auto';
+  // HELP is a 596 MB source. Metadata preload is enough to decode its first
+  // frame and avoids a full background transfer competing with later sections.
+  video.preload = 'metadata';
   video.style.cssText = `position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:${inlineVideoFallback ? '1' : '0'};pointer-events:none;`;
   return video;
 }

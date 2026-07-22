@@ -2875,10 +2875,17 @@ function HelpPlayer({ src }) {
 	  useEffect(() => {
 	    if (!shouldLoad) return undefined;
 	    let cancelled = false;
-    async function go() {
-      try {
-        const sources = Array.isArray(src) ? src : [src];
-        const spotlightLoader = window.__loadSpotlightBundle || (() => window.__spotlightBundlePromise);
+	    let retryTimerId = 0;
+	    async function go(attempt = 0) {
+	      if (cancelled) return;
+	      setStatus('loading');
+	      if (hostRef.current) {
+	        hostRef.current.dataset.helpMountAttempt = String(attempt + 1);
+	        hostRef.current.dataset.helpMountStatus = attempt ? 'reconnecting' : 'loading';
+	      }
+	      try {
+	        const sources = Array.isArray(src) ? src : [src];
+	        const spotlightLoader = window.__loadSpotlightBundle || (() => window.__spotlightBundlePromise);
         const mod = await spotlightLoader();
         if (cancelled) return;
         const errors = [];
@@ -2902,26 +2909,37 @@ function HelpPlayer({ src }) {
                   detail: { id: 'help-player', active },
                 }));
               }
-            });
-            setProjection(result.projection);
-            setStatus('ready');
-            return;
+	            });
+	            setProjection(result.projection);
+	            if (hostRef.current) hostRef.current.dataset.helpMountStatus = 'ready';
+	            setStatus('ready');
+	            return;
           } catch (err) {
             errors.push(err);
             console.warn('[help-player] source failed, trying next HELP source', getVideoUrl(candidate), err);
           }
         }
         if (!sawPlayableSource) { if (!cancelled) setStatus('missing'); return; }
-        throw errors[errors.length - 1] || new Error('No HELP source mounted.');
-      } catch (err) {
-        console.error('[help-player]', err);
-        if (!cancelled) setStatus('error');
-      }
-    }
+	        throw errors[errors.length - 1] || new Error('No HELP source mounted.');
+	      } catch (err) {
+	        if (cancelled) return;
+	        const retryDelay = Math.min(8000, 900 * (2 ** Math.min(attempt, 4)));
+	        if (hostRef.current) {
+	          hostRef.current.dataset.helpMountStatus = 'reconnecting';
+	          hostRef.current.dataset.helpRetryDelay = String(retryDelay);
+	        }
+	        console.warn(`[help-player] reconnecting in ${retryDelay}ms`, err);
+	        retryTimerId = window.setTimeout(() => {
+	          retryTimerId = 0;
+	          go(attempt + 1);
+	        }, retryDelay);
+	      }
+	    }
     go();
-    return () => {
-      cancelled = true;
-      audibleRef.current = false;
+	    return () => {
+	      cancelled = true;
+	      if (retryTimerId) window.clearTimeout(retryTimerId);
+	      audibleRef.current = false;
       window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
         detail: { id: 'help-player', active: false },
       }));
