@@ -690,7 +690,6 @@ ${h}</style>`,A.appendChild(y);let a="url('data:image/gif;base64,R0lGODlhAQABAIA
   stroke-linecap: square;
   vector-effect: non-scaling-stroke;
   mix-blend-mode: multiply;
-  transition: stroke 0.06s linear;
 }
 @media (max-width: 760px) {
   .landing-profile {

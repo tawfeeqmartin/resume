@@ -1201,7 +1201,6 @@ const LANDING_VARIANT_CSS = `
   stroke-linecap: square;
   vector-effect: non-scaling-stroke;
   mix-blend-mode: multiply;
-  transition: stroke 0.06s linear;
 }
 @media (max-width: 760px) {
   .landing-profile {
