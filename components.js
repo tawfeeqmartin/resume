@@ -2802,7 +2802,6 @@ function HelpPlayer({ src, startOffset = 0 }) {
   const keyboardStartPendingRef = useRef(false);
   const resizeTimerRef = useRef(null);
   const offscreenPauseTimerRef = useRef(null);
-  const startOffsetCleanupRef = useRef(null);
   const startOffsetSeconds = Math.max(0, Number(startOffset) || 0);
 
   const seekToStartOffset = React.useCallback((renderer = rendererRef.current, { force = false } = {}) => {
@@ -2817,27 +2816,9 @@ function HelpPlayer({ src, startOffset = 0 }) {
     if (!Number.isFinite(target) || target <= 0) return;
     if (!force && Number.isFinite(video.currentTime) && video.currentTime >= target - 0.15) return;
     try {
-      if (typeof video.fastSeek === 'function') video.fastSeek(target);
-      else video.currentTime = target;
+      video.currentTime = target;
     } catch (_) {}
   }, [startOffsetSeconds]);
-
-  const armStartOffsetCue = React.useCallback((renderer = rendererRef.current) => {
-    startOffsetCleanupRef.current?.();
-    startOffsetCleanupRef.current = null;
-    if (!startOffsetSeconds || !renderer) return;
-    const video = renderer.current?.loaded?.video;
-    if (!video) return;
-    const cue = () => seekToStartOffset(renderer, { force: true });
-    const events = ['loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough'];
-    events.forEach((eventName) => video.addEventListener(eventName, cue));
-    const timers = [0, 120, 420, 900].map((delay) => window.setTimeout(cue, delay));
-    startOffsetCleanupRef.current = () => {
-      events.forEach((eventName) => video.removeEventListener(eventName, cue));
-      timers.forEach((timer) => window.clearTimeout(timer));
-    };
-    cue();
-  }, [seekToStartOffset, startOffsetSeconds]);
 
 	  const forceRendererResize = React.useCallback(() => {
 	    const renderer = rendererRef.current;
@@ -2933,7 +2914,6 @@ function HelpPlayer({ src, startOffset = 0 }) {
             const result = await mod.mountSpotlight(hostRef.current, candidate);
             if (cancelled) { result.renderer.dispose(); return; }
             rendererRef.current = result.renderer;
-            armStartOffsetCue(result.renderer);
             result.renderer.setStateCallback((state) => {
               mutedRef.current = state.muted;
               pausedRef.current = state.paused;
@@ -2982,15 +2962,13 @@ function HelpPlayer({ src, startOffset = 0 }) {
       }));
       emitHelpImmersiveState(false, 'unmount');
       if (rendererRef.current) { rendererRef.current.dispose(); rendererRef.current = null; }
-      startOffsetCleanupRef.current?.();
-      startOffsetCleanupRef.current = null;
       clearOffscreenPauseTimer();
       if (resizeTimerRef.current) {
         window.clearTimeout(resizeTimerRef.current);
         resizeTimerRef.current = null;
       }
     };
-	  }, [src, shouldLoad, forceRendererResize, canPlaySource, getVideoUrl, clearOffscreenPauseTimer, emitHelpImmersiveState, armStartOffsetCue]);
+	  }, [src, shouldLoad, forceRendererResize, canPlaySource, getVideoUrl, clearOffscreenPauseTimer, emitHelpImmersiveState]);
 
   useEffect(() => {
     const onKey = (e) => {
