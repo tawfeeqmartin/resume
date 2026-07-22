@@ -4061,7 +4061,13 @@ function KissNewEraFeature({
   );
 }
 
-function LouisVuittonFeature({ src, poster, label = "05 · SELECTED WORK · LOUIS VUITTON SS20" }) {
+function LouisVuittonFeature({
+  src,
+  poster,
+  label = "05 · SELECTED WORK · LOUIS VUITTON SS20",
+  id = "louis-vuitton-ss20",
+  mediaFirst = false,
+}) {
   const collaborators = [
     ["Phil Crowe", "https://www.linkedin.com/in/phil-crowe-8b349738/"],
     ["Glyn Tebbutt", "https://www.linkedin.com/in/glyn-tebbutt-a83515171/"],
@@ -4069,10 +4075,8 @@ function LouisVuittonFeature({ src, poster, label = "05 · SELECTED WORK · LOUI
     ["Hiroyuki Miyoshi", "https://www.linkedin.com/in/hiroyuki-miyoshi-1bb110/"],
     ["Juan S. Gomez", "https://www.linkedin.com/in/juan-s-gomez-0773368/"],
   ];
-  return (
-    <Section id="louis-vuitton-ss20" label={label}>
-      <div className="help-hero">
-        <div className="help-hero__intro">
+  const story = (
+    <div className="help-hero__intro louis-vuitton-feature__story">
           <h3 className="serif">One week. One enormous screen. No room to miss.</h3>
           <p>
             For Louis Vuitton’s Women’s Spring–Summer 2020 show, I helped produce the
@@ -4093,15 +4097,23 @@ function LouisVuittonFeature({ src, poster, label = "05 · SELECTED WORK · LOUI
             <br />
             WITH OBJECT &amp; ANIMAL · EPIC GAMES · LUX MACHINA · VFX LEAD LISA RYAN SMITH
           </p>
-        </div>
-        <div className="help-hero__player">
+    </div>
+  );
+  const media = (
+    <div className="help-hero__player louis-vuitton-feature__media">
           <VideoSlot hero startTime={628} src={src} poster={poster} fallbackPath="resume/media/louis-vuitton-ss20-1080.mp4" label="women’s spring–summer 2020 show · louis vuitton" />
           <p className="mono" style={{ margin: '0.75rem 0 0', fontSize: '0.72rem', textAlign: 'center' }}>
             Full runway film · Louis Vuitton · Louvre Cour Carrée · 01 October 2019
             {' · '}<a href="https://www.youtube.com/watch?v=XQlh2e8cD6M" target="_blank" rel="noreferrer">Original film</a>
             {' · '}<a href="https://lisaryansmith.com/portfolio/louis-vuitton-ss20" target="_blank" rel="noreferrer">Production credit</a>
           </p>
-        </div>
+    </div>
+  );
+  return (
+    <Section id={id} label={label}>
+      <div className={`help-hero louis-vuitton-feature${mediaFirst ? ' louis-vuitton-feature--media-first' : ''}`}>
+        {mediaFirst ? media : story}
+        {mediaFirst ? story : media}
       </div>
     </Section>
   );

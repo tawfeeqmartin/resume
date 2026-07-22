@@ -749,6 +749,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 /* ── HELP feature ────────────────────────────────────── */
 #louis-vuitton-ss20,
+#louis-vuitton-ss20-after-kiss,
 #human-race {
   --ink: #f5f5f2;
   --ink-2: #d7d7d2;
@@ -763,9 +764,35 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   color: var(--ink);
 }
 #louis-vuitton-ss20 .video-slot,
+#louis-vuitton-ss20-after-kiss .video-slot,
 #human-race .video-slot { border-radius: 0; box-shadow: none; }
 #louis-vuitton-ss20 .section__rule,
+#louis-vuitton-ss20-after-kiss .section__rule,
 #human-race .section__rule { display: none; }
+
+#louis-vuitton-ss20-after-kiss .louis-vuitton-feature {
+  grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.9fr);
+  grid-template-areas: "player intro";
+  gap: clamp(1.4rem, 3vw, 3rem);
+  align-items: center;
+}
+#louis-vuitton-ss20-after-kiss .help-hero__intro {
+  max-width: 58ch;
+  margin: 0;
+  text-align: left;
+}
+#louis-vuitton-ss20-after-kiss .help-hero__player {
+  width: 100%;
+  max-width: none;
+}
+@media (max-width: 900px) {
+  #louis-vuitton-ss20-after-kiss .louis-vuitton-feature {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "player"
+      "intro";
+  }
+}
 
 .help-feature {
   display: grid;

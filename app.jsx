@@ -10135,6 +10135,13 @@ function LandingPageV1({ mobile = false }) {
       />
       <HandOfGodFeature src={HAND_OF_GOD_DEMO_URL} />
       <KissNewEraFeature src={KISS_NEW_ERA_VIDEO_URL} poster={KISS_NEW_ERA_POSTER_URL} />
+      <LouisVuittonFeature
+        id="louis-vuitton-ss20-after-kiss"
+        src={LOUIS_VUITTON_SS20_VIDEO_URL}
+        poster={LOUIS_VUITTON_SS20_POSTER_URL}
+        label="07 · SELECTED WORK · LOUIS VUITTON SS20"
+        mediaFirst
+      />
       <LandingEndProof awards={RESUME.awards} references={RESUME.references} />
     </>
   );
