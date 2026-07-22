@@ -1,0 +1,9 @@
+name = "resume-demo-proxy"
+main = "worker.js"
+account_id = "0dc8091911bb938dc2f50bbb8defa12b"
+compatibility_date = "2026-07-21"
+
+routes = [
+  { pattern = "tawfeeqmartin.com/demo*", zone_name = "tawfeeqmartin.com" },
+  { pattern = "www.tawfeeqmartin.com/demo*", zone_name = "tawfeeqmartin.com" }
+]

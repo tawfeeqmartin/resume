@@ -92,6 +92,13 @@ fi
 COMMIT_HASH="$(git rev-parse HEAD)"
 COMMIT_SHORT="$(git rev-parse --short HEAD)"
 ASSET_VERSION="git-${COMMIT_SHORT}"
+if [[ "${ALLOW_DIRTY:-0}" == "1" ]]; then
+  # Preview deployments may intentionally contain uncommitted work. Reusing
+  # the commit-only immutable key in that case lets browsers keep an older
+  # bundle even after a successful upload, making the branch alias appear
+  # unchanged. Production still requires a clean tree and retains git-* keys.
+  ASSET_VERSION="preview-${COMMIT_SHORT}-$(date -u +%Y%m%d%H%M%S)"
+fi
 MSG="$(git log -1 --pretty=%s)"
 
 echo "→ staging deploy tree in $STAGE_DIR"
@@ -129,9 +136,43 @@ rsync -a \
 echo "→ adding whitelisted runtime media"
 mkdir -p \
   "$STAGE_DIR/media/3d" \
+  "$STAGE_DIR/media/audio/glitches/dry" \
   "$STAGE_DIR/media/demo" \
-  "$STAGE_DIR/media/imessage/generated"
+  "$STAGE_DIR/media/imessage/generated" \
+  "$STAGE_DIR/media/interactive" \
+  "$STAGE_DIR/media/resume"
+# Resume variants are excluded from the broad deploy copy above. The public
+# landing page links to this authored HTML resume, so whitelist it explicitly.
+cp resume-readonly.html "$STAGE_DIR/"
+cp \
+  media/believe-blackbird-selected.jpg \
+  media/bg.poster.jpg \
+  media/louis-vuitton-ss20-poster.jpg \
+  media/stagecraft-hero.png \
+  media/believe-help-source.jpg \
+  media/human-race-poster.jpg \
+  "$STAGE_DIR/media/"
+cp \
+  media/demo/help-bts.webp \
+  media/demo/help-bts-2.webp \
+  "$STAGE_DIR/media/demo/"
+cp media/resume/*.jpg "$STAGE_DIR/media/resume/"
 cp media/3d/apple_macintosh.glb "$STAGE_DIR/media/3d/"
+cp \
+  media/interactive/hand-of-god.html \
+  media/interactive/hand-of-god-source.html \
+  "$STAGE_DIR/media/interactive/"
+# The short dry glitch pool is deliberately same-origin: these files are used
+# by both HTMLAudioElement and Web Audio fallback paths during the first user
+# gesture. Keep them in Pages while large/long-form media remains on R2.
+cp media/audio/glitches/dry/*.wav "$STAGE_DIR/media/audio/glitches/dry/"
+# These two small authored DESIGN animations are part of the intro's semantic
+# frame order. Shipping them with Pages prevents a missing video from being
+# replaced by the first (photoreal) still plate on staging.
+cp \
+  media/taurus-animalpose-walkcycle-48f.mp4 \
+  media/taurus-animalpose-colored-skeleton-48f.mp4 \
+  "$STAGE_DIR/media/"
 cp media/demo/mac4.jpg "$STAGE_DIR/media/demo/"
 cp media/imessage/generated/*-avatar-v4.png "$STAGE_DIR/media/imessage/generated/"
 

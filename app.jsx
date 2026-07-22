@@ -5,9 +5,12 @@ const IS_LAN_PREVIEW = IS_LOCAL_PREVIEW
   || /^192\.168\./.test(window.location.hostname)
   || /^172\.(1[6-9]|2\d|3[01])\./.test(window.location.hostname);
 const IS_CLOUDFLARE_PREVIEW = /\.pages\.dev$/i.test(window.location.hostname);
-const COMPANION_GATE_ENABLED = IS_LAN_PREVIEW || IS_CLOUDFLARE_PREVIEW;
+const COMPANION_GATE_ENABLED = (IS_LAN_PREVIEW || IS_CLOUDFLARE_PREVIEW)
+  && new URLSearchParams(window.location.search).get('companion') === '1';
+const MAC_WAIT_FOR_KEYBOARD = true;
 if (typeof window !== 'undefined') {
   window.__resumeCompanionGateEnabled = COMPANION_GATE_ENABLED;
+  window.__resumeMacWaitForKeyboard = MAC_WAIT_FOR_KEYBOARD;
 }
 const COMPANION_SESSION_STORAGE_KEY = 'resume.companion.session.v1';
 const ENABLE_LOCAL_VOICE_OVER = IS_LOCAL_PREVIEW;
@@ -62,6 +65,7 @@ const HELP_VIDEO_URLS = IS_MOBILE_MEDIA_TARGET
   : HELP_DESKTOP_SOURCES;
 const BLACKBIRD_INNOVATION_VIDEO_URL = mediaUrl("media/blackbird-innovation.mp4");
 const BLACKBIRD_VIDEO_URL = mediaUrl("media/blackbird.mp4");
+const HAND_OF_GOD_DEMO_URL = sameOriginMediaUrl("media/interactive/hand-of-god.html");
 const HUMAN_RACE_VIDEO_URL = mediaUrl("media/blackbird-original-16x9.mp4");
 const HUMAN_RACE_POSTER_URL = mediaUrl("media/human-race-poster.jpg");
 const CONNECTION_HINT = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
@@ -745,12 +749,16 @@ function AwardStamp({ tier, className = "award-stamp" }) {
 // Awards: heavyweights (Engineering Emmys + Cannes Gold) get a hero
 // treatment, everything else collapses into a tight list below. The
 // override picks up here so the live-site rendering matches the design.
-Awards = function Awards({ items }) {
+Awards = function Awards({
+  items,
+  id = 'awards',
+  label = '06 · AWARDS & RECOGNITION',
+}) {
   // Every gold gets hero treatment. Silver + honor compress into the list.
   const featured = items.filter((a) => a.tier === 'gold');
   const rest = items.filter((a) => a.tier !== 'gold');
   return (
-    <Section id="awards" label="06 · AWARDS & RECOGNITION">
+    <Section id={id} label={label}>
       <ul className="awards-hero">
         {featured.map((a, i) => (
           <li key={i} className="award-hero">
@@ -1081,7 +1089,125 @@ const LANDING_VARIANT_CSS = `
   padding-top: 0;
   padding-bottom: 0;
 }
-
+.landing-profile {
+  position: relative;
+  z-index: 12;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  min-height: max(100svh, 52rem);
+  padding: clamp(5rem, 12vh, 8.5rem) var(--pad) clamp(4rem, 9vh, 7rem);
+  color: var(--ink);
+  background: var(--paper);
+}
+.landing-profile__content {
+  position: relative;
+  width: min(100%, var(--maxw));
+  margin: 0 auto;
+}
+.landing-profile__name-row {
+  display: grid;
+  grid-template-columns: max-content minmax(10rem, 1fr);
+  align-items: center;
+  gap: clamp(2rem, 5vw, 6rem);
+}
+.landing-profile__name {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: clamp(3.25rem, 8vw, 8rem);
+  font-weight: 700;
+  line-height: 0.92;
+  letter-spacing: -0.055em;
+}
+.landing-profile__name span {
+  display: inline;
+}
+.landing-profile__name span + span {
+  margin-left: 0.18em;
+}
+.landing-profile__story {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: clamp(2.5rem, 6vw, 7rem);
+  margin-top: clamp(2.75rem, 6vh, 4.75rem);
+}
+.landing-profile__bio {
+  margin: 0;
+  max-width: none;
+  color: var(--ink-2);
+  font-family: var(--serif);
+  font-size: clamp(1.12rem, 1.7vw, 1.55rem);
+  line-height: 1.55;
+}
+.landing-profile__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem 1.8rem;
+  margin-top: clamp(1.5rem, 3.5vh, 2.25rem);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.landing-profile__links a {
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 0.15em;
+}
+.landing-profile__links a:hover,
+.landing-profile__links a:focus-visible {
+  color: #245cff;
+}
+.landing-profile__instrument {
+  position: relative;
+  color: var(--ink);
+  pointer-events: none;
+  user-select: none;
+  overflow: hidden;
+}
+.landing-profile__instrument--chips {
+  justify-self: end;
+  width: clamp(10rem, 20vw, 19rem);
+  height: clamp(5.75rem, 9vw, 8.5rem);
+}
+.landing-profile__instrument--wheel {
+  justify-self: stretch;
+  width: 100%;
+  height: clamp(20rem, 34vw, 31rem);
+}
+.landing-profile__instrument-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+@media (max-width: 760px) {
+  .landing-profile {
+    min-height: 100svh;
+    padding-top: clamp(3.5rem, 10vh, 5rem);
+  }
+  .landing-profile__name-row {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+  }
+  .landing-profile__instrument--chips {
+    justify-self: start;
+    width: min(58vw, 15rem);
+    height: clamp(5rem, 22vw, 7rem);
+  }
+  .landing-profile__story {
+    grid-template-columns: 1fr;
+    gap: clamp(2.5rem, 8vh, 4rem);
+    margin-top: clamp(2.5rem, 8vh, 4rem);
+  }
+  .landing-profile__instrument--wheel {
+    width: min(100%, 31rem);
+    height: min(92vw, 27rem);
+    justify-self: center;
+  }
+}
 /* ── CRT zoom: scroll "into" the real 3D Mac until the screen fills the
       viewport, then the page sections render inside the projected screen
       rectangle and scroll there, with a subtle scanline/vignette veil so they
@@ -1097,6 +1223,8 @@ const LANDING_VARIANT_CSS = `
   width: 100vw;
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
 }
 .crt-enter__sticky {
   position: relative;
@@ -1177,6 +1305,23 @@ const LANDING_VARIANT_CSS = `
   margin: 0;
   transform: none;
   z-index: 0;
+}
+/* Before the Macintosh section reaches the viewport it participates in normal
+   document flow. Only dock it to the viewport at the section boundary; this
+   prevents the profile page from peeling away over an already-fixed stage. */
+.landing-v1-shell.is-crt:not(.has-entered-mac) .landing-v1__demo {
+  position: relative;
+}
+.landing-v1-shell.is-crt:not(.has-entered-mac) .landing-v1__demo .tv-hero,
+.landing-v1-shell.is-crt:not(.has-entered-mac) .landing-v1__demo .tv-hero__canvas {
+  position: absolute;
+}
+/* The Macintosh owns exactly one document section. Once that section leaves
+   the viewport, remove its fixed WebGL surface instead of letting later work
+   sections paint over a still-running machine. */
+.landing-v1-shell.is-crt:not(.is-mac-section-active) .landing-v1__demo {
+  visibility: hidden;
+  pointer-events: none;
 }
 /* Pages on the glass: .crt-content is NOT shown in the viewport. It is laid out
    offscreen at the projection width and rasterized into the screen texture, so
@@ -1990,6 +2135,84 @@ const LANDING_VARIANT_CSS = `
 .landing-v1-shell #landing-awards .section__label-num { color: var(--lv-accent-2); }
 .landing-v1-shell #landing-refs .section__label-num { color: var(--ink); }
 
+/* The final Beautiful Game chapter mounts the original standalone export
+   whole so its renderer, controls, and embedded assets stay unchanged. */
+#hand-of-god.section {
+  width: 100%;
+  min-height: 100svh;
+  margin-top: clamp(4rem, 8vw, 7rem);
+  padding: 0;
+  background: #020306;
+  color: #f5f5f2;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+#hand-of-god .section__header {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 4rem;
+  margin: 0;
+  padding: 1rem var(--pad);
+  justify-content: center;
+  border-bottom: 1px solid rgba(245, 245, 242, 0.14);
+  background: #020306;
+}
+#hand-of-god .section__label,
+#hand-of-god .section__label-num,
+#hand-of-god .section__label-title {
+  color: #f5f5f2;
+}
+#hand-of-god .section__body,
+.hand-of-god-feature {
+  width: 100%;
+}
+.hand-of-god-feature {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(19rem, 25vw, 25rem);
+  height: calc(100svh - 4rem);
+  min-height: 42rem;
+  overflow: hidden;
+  background: #020306;
+}
+.hand-of-god-feature__frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #020306;
+}
+.hand-of-god-feature__note {
+  display: flex;
+  align-items: center;
+  padding: clamp(2rem, 4vw, 4rem);
+  border-left: 1px solid rgba(245, 245, 242, 0.16);
+  background: #020306;
+}
+.hand-of-god-feature__note p {
+  max-width: 34ch;
+  margin: 0;
+  color: rgba(245, 245, 242, 0.86);
+  font-family: var(--serif);
+  font-size: clamp(1rem, 1.25vw, 1.22rem);
+  line-height: 1.58;
+  text-wrap: pretty;
+}
+@media (max-width: 900px) {
+  .hand-of-god-feature {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .hand-of-god-feature__note {
+    padding: 1.25rem var(--pad) 1.5rem;
+    border-top: 1px solid rgba(245, 245, 242, 0.16);
+    border-left: 0;
+  }
+  .hand-of-god-feature__note p {
+    max-width: 66ch;
+    font-size: 0.95rem;
+  }
+}
+
 /* HELP intro stage: a sticky two-panel scroll sequence that runs BEFORE the
    live-demo section. Panel A (crew on set) holds while you read; a horizontal
    side-swipe then reveals panel B (Justin Lin directing); continuing on scrolls
@@ -2367,6 +2590,36 @@ const LANDING_VARIANT_CSS = `
   margin-top: clamp(3rem, 6vw, 5rem);
 }
 
+/* ── closing proof chapter ── */
+.landing-end-proof {
+  position: relative;
+  z-index: 12;
+  width: 100%;
+  padding: clamp(4.5rem, 9vw, 8rem) 0 0;
+  color: var(--ink);
+  background: var(--paper);
+}
+.landing-end-proof__inner,
+.landing-end-proof__footer {
+  box-sizing: border-box;
+  width: min(100%, var(--maxw));
+  margin: 0 auto;
+  padding-right: var(--pad);
+  padding-left: var(--pad);
+}
+.landing-end-proof #landing-end-awards {
+  margin-top: 0;
+}
+.landing-end-proof #landing-end-endorsements {
+  margin-top: clamp(5rem, 10vw, 9rem);
+}
+.landing-end-proof .landing-cta {
+  margin-top: clamp(5rem, 11vw, 10rem);
+}
+.landing-end-proof__footer .page-footer {
+  margin-top: 0;
+}
+
 @media (max-width: 980px) {
   .landing-v1__hero {
     grid-template-columns: 1fr;
@@ -2400,6 +2653,9 @@ const LANDING_VARIANT_CSS = `
   }
   .landing-v1-shell .section__label-num {
     font-size: clamp(2.2rem, 11vw, 3.4rem);
+  }
+  .hand-of-god-feature {
+    min-height: 36rem;
   }
 }
 `;
@@ -2879,20 +3135,43 @@ function setupTabTitle() {
 
 function LandingClosingCta() {
   return (
-    <section className="landing-cta" aria-label="Keep exploring">
+    <section className="landing-cta" aria-label="Contact Tawfeeq Martin">
       <div className="landing-cta__inner">
-        <p className="landing-cta__eyebrow mono">Keep exploring</p>
-        <h2 className="landing-cta__title">See the full picture.</h2>
+        <p className="landing-cta__eyebrow mono">Say hello</p>
+        <h2 className="landing-cta__title">Let&rsquo;s make something strange.</h2>
         <p className="landing-cta__text">
-          Twenty years of production tools, real-time systems, and generative
-          experiments — dig through the complete interactive site or connect directly.
+          Have a hard problem, an impossible brief, or a half-formed idea? I&rsquo;d like to hear it.
         </p>
         <div className="landing-cta__actions mono">
-          <a className="landing-v1__action landing-v1__action--primary" href="Resume.html">current full site</a>
+          <a className="landing-v1__action landing-v1__action--primary" href={`mailto:${RESUME.email}`}>email tawfeeq</a>
           <a className="landing-v1__action" href="https://www.linkedin.com/in/tawfeeq-martin-82991a14/" target="_blank" rel="noreferrer">linkedin</a>
+          <a className="landing-v1__action" href="resume-readonly.html">resume</a>
         </div>
       </div>
     </section>
+  );
+}
+
+function LandingEndProof({ awards, references }) {
+  return (
+    <div className="landing-end-proof">
+      <div className="landing-end-proof__inner">
+        <Awards
+          items={awards}
+          id="landing-end-awards"
+          label="07 · AWARDS & RECOGNITION"
+        />
+        <References
+          items={references}
+          id="landing-end-endorsements"
+          label="08 · ENDORSEMENTS"
+        />
+      </div>
+      <LandingClosingCta />
+      <div className="landing-end-proof__footer">
+        <Footer data={RESUME} />
+      </div>
+    </div>
   );
 }
 
@@ -3166,6 +3445,10 @@ const CRT_RESOLVE_GLITCH_INDEX = CRT_GLITCH_AUDIO_SOURCES.indexOf(
 const CRT_GLITCH_AUDIO_TAIL_SCALE = 1.10;
 // Keep the broadcast reset intact while the melodic Sosumi wink is muted.
 const CRT_SOSUMI_RESOLVE_ENABLED = false;
+// Long enough to register as a broadcast calibration card, short enough to
+// land as punctuation rather than a second ending.
+const CRT_CALIBRATION_TONE_HOLD_MS = 1600;
+const CRT_CALIBRATION_TONE_FADE_MS = 85;
 const CRT_PHASE_NOTE_FREQUENCIES = {
   design: 329.63, // E4 — the question
   make: 293.66,   // D4 — the machine gathers force
@@ -3305,6 +3588,9 @@ const CRT_MAKE_STORY_STEPS = [
     codeVariant: 'lockout',
     codeCut: 'channel-tear',
     visualDurationMs: 118,
+    camera: 'resist',
+    cameraDurationMs: 340,
+    cameraEasing: 'cinematic',
   },
   {
     frame: 2,
@@ -3316,6 +3602,10 @@ const CRT_MAKE_STORY_STEPS = [
     codeCut: 'scan-slice',
     crashFrame: 'nt-stop',
     visualDurationMs: 104,
+    errorHoldMs: 92,
+    camera: 'buttons',
+    cameraDurationMs: 480,
+    cameraEasing: 'snap',
   },
   {
     frame: 1,
@@ -3327,6 +3617,10 @@ const CRT_MAKE_STORY_STEPS = [
     codeCut: 'white-flash',
     crashFrame: 'win95-dialog',
     visualDurationMs: 132,
+    errorHoldMs: 116,
+    typeText: 'try it',
+    typeDelayMs: 72,
+    typeIntervalMs: 58,
   },
   {
     frame: 4,
@@ -3340,6 +3634,7 @@ const CRT_MAKE_STORY_STEPS = [
     codeCut: 'block-shift',
     crashFrame: 'modern-stop',
     visualDurationMs: 146,
+    errorHoldMs: 112,
   },
   {
     frame: 3,
@@ -3352,6 +3647,10 @@ const CRT_MAKE_STORY_STEPS = [
     codeVariant: 'wireframe',
     codeCut: 'line-collapse',
     visualDurationMs: 126,
+    camera: 'design',
+    cameraDurationMs: 380,
+    cameraEasing: 'snap',
+    clearTypedText: true,
   },
   {
     frame: 5,
@@ -3434,6 +3733,9 @@ const CRT_OPENING_VOCAL_STEPS = [
 // tail, then leave a deliberate 280ms landing before the terminal punctuation.
 const CRT_OPENING_VOCAL_DURATION = 3860;
 const CRT_NAME_TO_QUESTION_PAUSE_MS = 360;
+// Keep the personalized voice prologue available behind the checkpointed flag,
+// but launch the active experience directly into ./design.
+const CRT_PERSONALIZED_PROLOGUE_ENABLED = false;
 // The theme begins only after the sampled question is complete and remains its
 // own continuous bed through MAKE's Return and hyperspace. Hyperspace's exit
 // starts a second, untouched source clip containing the blooper and dialogue.
@@ -3882,6 +4184,7 @@ function CrtForeshadowField() {
                 key={media.src}
                 start={media.start}
                 end={media.end}
+                preload="auto"
                 data-art-frame={index}
                 data-additive-polarity={media.additivePolarity}
               />
@@ -4553,13 +4856,21 @@ function CrtForeshadowSync() {
       activeCalibrationToneGain = calibrationGain;
       shell.dataset.testTone = 'holding';
       shell.dataset.testToneStartedAt = performance.now().toFixed(1);
-      shell.dataset.testToneDurationMs = '3000';
+      shell.dataset.testToneDurationMs = String(CRT_CALIBRATION_TONE_HOLD_MS);
       calibrationToneTimer = window.setTimeout(() => {
         if (activeCalibrationTone !== calibrationTone) return;
         calibrationToneCompletedForResolve = true;
         shell.dataset.testTone = 'auto-fading';
-        cutActiveCalibrationTone(context, 0.085);
-      }, 3000);
+        cutActiveCalibrationTone(context, CRT_CALIBRATION_TONE_FADE_MS / 1000);
+        window.setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('resume-crt-calibration-tone-complete', {
+            detail: {
+              source: 'tone-auto-stop',
+              durationMs: CRT_CALIBRATION_TONE_HOLD_MS,
+            },
+          }));
+        }, CRT_CALIBRATION_TONE_FADE_MS + 8);
+      }, CRT_CALIBRATION_TONE_HOLD_MS);
       return true;
     };
     const sharedGlitchStartAt = (context, scheduledAt, minimumLeadSeconds = 0.004) => {
@@ -5244,8 +5555,41 @@ function CrtForeshadowSync() {
         });
       };
       let htmlReady = false;
+      let readyEventDispatched = false;
+      let contextStateListener = null;
+      const commitAudioReady = (source = '') => {
+        if (!isResumeForeground()) return false;
+        const sharedReady = macContext?.state === 'running';
+        if (!sharedReady && !htmlReady) return false;
+        audioUnlocked = true;
+        pendingAudioProgress = null;
+        lastAudioKey = '';
+        shell.dataset.glitchContext = macContext?.state || source || 'html-audio';
+        shell.dataset.glitchAudio = 'ready';
+        if (sharedReady) {
+          prepareParkedSamples();
+          prepareBelieveVocals();
+        }
+        if (contextStateListener && macContext?.removeEventListener) {
+          macContext.removeEventListener('statechange', contextStateListener);
+          contextStateListener = null;
+        }
+        if (!readyEventDispatched) {
+          readyEventDispatched = true;
+          window.dispatchEvent(new CustomEvent('resume-glitch-audio-ready', {
+            detail: { context: macContext?.state || source || 'html-audio' },
+          }));
+        }
+        return true;
+      };
+      if (macContext?.addEventListener && macContext.state !== 'running') {
+        contextStateListener = () => { commitAudioReady('audio-context'); };
+        macContext.addEventListener('statechange', contextStateListener);
+      }
       const sharedUnlock = macContext
-        ? Promise.resolve(macContext.resume?.()).catch(() => false)
+        ? Promise.resolve(macContext.resume?.())
+          .then(() => commitAudioReady('audio-context'))
+          .catch(() => false)
         : Promise.resolve(false);
       // Invoke both unlock mechanisms inside the original user gesture.
       // AudioContext.resume() is allowed to remain pending by some browsers,
@@ -5253,6 +5597,7 @@ function CrtForeshadowSync() {
       // "arming" for the rest of the phase.
       const htmlUnlock = unlockHtmlFallback().then((ready) => {
         htmlReady = ready;
+        if (ready) commitAudioReady('html-audio');
         return ready;
       });
       const unlockDeadline = new Promise((resolve) => {
@@ -5263,15 +5608,12 @@ function CrtForeshadowSync() {
         unlockDeadline,
       ]).then(() => {
         const sharedReady = macContext?.state === 'running';
-        if (sharedReady) {
-          prepareParkedSamples();
-          prepareBelieveVocals();
-        }
-        audioUnlocked = sharedReady || htmlReady;
+        audioUnlocked = audioUnlocked || sharedReady || htmlReady;
         pendingAudioProgress = null;
         lastAudioKey = '';
         shell.dataset.glitchContext = macContext?.state || 'none';
         shell.dataset.glitchAudio = audioUnlocked ? 'ready' : 'blocked';
+        if (audioUnlocked) commitAudioReady(htmlReady ? 'html-audio' : 'audio-context');
         return audioUnlocked;
       }).finally(() => {
         primePromise = null;
@@ -5537,7 +5879,10 @@ function CrtForeshadowSync() {
     window.addEventListener('click', primeAudio, { passive: true, capture: true });
     window.addEventListener('keydown', primeAudio, { passive: true, capture: true });
     window.addEventListener('touchstart', primeAudio, { passive: true, capture: true });
-    window.addEventListener('wheel', primeAudio, { passive: true, capture: true });
+    if (CRT_SCROLL_INTERACTION_ENABLED) {
+      window.addEventListener('wheel', primeAudio, { passive: true, capture: true });
+    }
+    window.__resumePrimeIntroAudio = primeAudio;
     window.addEventListener('resume-glitch-audio-unlock', primeAudio);
     window.addEventListener('resume-crt-parked-glitch', onParkedGlitch);
     window.addEventListener('resume-mac-audio-ready', onSharedAudioReady);
@@ -5560,7 +5905,12 @@ function CrtForeshadowSync() {
       window.removeEventListener('click', primeAudio, true);
       window.removeEventListener('keydown', primeAudio, true);
       window.removeEventListener('touchstart', primeAudio, true);
-      window.removeEventListener('wheel', primeAudio, true);
+      if (CRT_SCROLL_INTERACTION_ENABLED) {
+        window.removeEventListener('wheel', primeAudio, true);
+      }
+      if (window.__resumePrimeIntroAudio === primeAudio) {
+        delete window.__resumePrimeIntroAudio;
+      }
       window.removeEventListener('resume-glitch-audio-unlock', primeAudio);
       window.removeEventListener('resume-crt-parked-glitch', onParkedGlitch);
       window.removeEventListener('resume-mac-audio-ready', onSharedAudioReady);
@@ -5618,6 +5968,7 @@ const CRT_ZOOM_RUNWAY_VH = 1.0;
 const CRT_RUNWAY_VH = CRT_TEXT_RUNWAY_VH + CRT_REEL_HOLD_VH + CRT_ZOOM_RUNWAY_VH;
 const CRT_LOCK_P = 0.985;      // scroll progress at which the dock locks
 const CRT_DOCK_HOLD_VH = 2.0;  // extra scroll room after docking, without tuning
+const CRT_SCROLL_INTERACTION_ENABLED = false;
 // The screen copy now runs as a self-playing title sequence. Scroll is reserved
 // for the physical interaction: inserting the floppy, starting the reel, and
 // eventually docking into the CRT.
@@ -5719,7 +6070,7 @@ const CRT_RESOLVE_PHASE_MS = 1500;
 // + About channels are rasterized DOM; Doom is a boot card.
 const CRT_CHANNELS = [
   { id: 'boot', label: 'System', type: 'boot' },
-  { id: 'help', label: 'Help', type: 'page', sel: '#help-intro' },
+  { id: 'help', label: 'Help', type: 'page', sel: '#help' },
   {
     id: 'blackbird',
     label: 'Blackbird',
@@ -5762,10 +6113,12 @@ function CompanionIntroGate() {
     let pollTimer = 0;
     let activeSessionId = '';
     let activeServerInstance = '';
+    let activePollController = null;
+    let lastStateUpdatedAt = 0;
     let publishedDisplayMode = '';
     let channelsUnlocked = false;
-    const foregroundPollMs = 2000;
-    const retryPollMs = 5000;
+    const longPollSeconds = 25;
+    const retryPollMs = 3000;
 
     const publishDisplayMode = (mode) => {
       const normalized = mode === 'channels' ? 'channels' : 'intro';
@@ -5777,6 +6130,18 @@ function CompanionIntroGate() {
         body: JSON.stringify({ session: activeSessionId, mode: normalized }),
       }).catch(() => {});
     };
+    const onResetToStart = () => {
+      channelsUnlocked = false;
+      publishedDisplayMode = 'intro';
+      if (!activeSessionId) return;
+      // Mirror the automatic end-of-show reset to the reusable phone link so
+      // both screens return to the same first-load state.
+      fetch('/api/companion/stop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session: activeSessionId }),
+      }).catch(() => {});
+    };
     const onOvertureProgress = (event) => {
       if (event.detail?.resolve) {
         channelsUnlocked = true;
@@ -5786,25 +6151,35 @@ function CompanionIntroGate() {
       }
     };
     window.addEventListener('resume-crt-overture-progress', onOvertureProgress);
+    window.addEventListener('resume-companion-reset-to-start', onResetToStart);
 
     const poll = async (id) => {
       if (cancelled) return;
       if (!isResumeForeground()) {
         // Background tabs are deliberately dormant. The shared page-activity
         // coordinator performs one immediate catch-up poll when foregrounded.
+        activePollController?.abort();
+        activePollController = null;
         pollTimer = 0;
         return;
       }
-      let delayMs = foregroundPollMs;
+      let delayMs = 0;
       try {
         window.__resumeCompanionStatePolls = (window.__resumeCompanionStatePolls || 0) + 1;
         document.documentElement.dataset.companionStatePolls = String(window.__resumeCompanionStatePolls);
+        activePollController?.abort();
+        const controller = new AbortController();
+        activePollController = controller;
         const response = await fetch(
-          `/api/companion/state?session=${encodeURIComponent(id)}`,
-          { cache: 'no-store' },
+          `/api/companion/state?session=${encodeURIComponent(id)}`
+            + `&since=${encodeURIComponent(lastStateUpdatedAt)}`
+            + `&wait=${longPollSeconds}`,
+          { cache: 'no-store', signal: controller.signal },
         );
+        if (activePollController === controller) activePollController = null;
         if (!response.ok) throw new Error(`state ${response.status}`);
         const payload = await response.json();
+        lastStateUpdatedAt = Math.max(lastStateUpdatedAt, Number(payload.updatedAt) || 0);
         const serverInstance = String(payload.instanceId || '');
         if (serverInstance && activeServerInstance && serverInstance !== activeServerInstance) {
           // A restarted server may restore an older numeric revision. Reset the
@@ -5845,7 +6220,8 @@ function CompanionIntroGate() {
             publishedDisplayMode = 'intro';
           }
         }
-      } catch (_) {
+      } catch (error) {
+        if (error?.name === 'AbortError') return;
         // Keep polling. The Macintosh pairing screen remains a useful,
         // deterministic idle state during a brief LAN interruption.
         delayMs = retryPollMs;
@@ -5855,7 +6231,16 @@ function CompanionIntroGate() {
       }
     };
     const onPageActivity = () => {
-      if (!isResumeForeground() || !activeSessionId || cancelled) return;
+      if (!activeSessionId || cancelled) return;
+      if (!isResumeForeground()) {
+        activePollController?.abort();
+        activePollController = null;
+        window.clearTimeout(pollTimer);
+        pollTimer = 0;
+        return;
+      }
+      activePollController?.abort();
+      activePollController = null;
       window.clearTimeout(pollTimer);
       pollTimer = 0;
       poll(activeSessionId);
@@ -5880,6 +6265,7 @@ function CompanionIntroGate() {
         if (cancelled) return;
         activeSessionId = payload.session;
         activeServerInstance = String(payload.instanceId || '');
+        lastStateUpdatedAt = Number(payload.updatedAt) || 0;
         try {
           window.localStorage.setItem(COMPANION_SESSION_STORAGE_KEY, payload.session);
           window.sessionStorage.setItem(COMPANION_SESSION_STORAGE_KEY, payload.session);
@@ -5922,8 +6308,11 @@ function CompanionIntroGate() {
     document.addEventListener('visibilitychange', onPageActivity);
     return () => {
       cancelled = true;
+      activePollController?.abort();
+      activePollController = null;
       window.clearTimeout(pollTimer);
       window.removeEventListener('resume-crt-overture-progress', onOvertureProgress);
+      window.removeEventListener('resume-companion-reset-to-start', onResetToStart);
       window.removeEventListener('resume-page-activity-change', onPageActivity);
       document.removeEventListener('visibilitychange', onPageActivity);
     };
@@ -5936,6 +6325,7 @@ function CrtZoom() {
   useEffect(() => {
     const enter = document.querySelector('.crt-enter');
     const shell = document.querySelector('.landing-v1-shell');
+    const profile = document.querySelector('.landing-profile');
     if (!enter || !shell) return undefined;
 
     // Only engage where it can be smooth — otherwise leave the flat flowing page.
@@ -5950,6 +6340,7 @@ function CrtZoom() {
     // restore scroll on reload, which otherwise boots directly into a zoomed
     // camera with the disk already inserted and the reel still selected.
     window.scrollTo(0, 0);
+    shell.classList.remove('has-entered-mac');
     window.__tvHeroStopReel?.();
     window.__resumeStrudelAudioEngine?.setEnabled?.(false);
     window.__tvHeroPageMode?.(false);
@@ -5965,6 +6356,7 @@ function CrtZoom() {
 
     const clamp01 = (v) => Math.min(Math.max(v, 0), 1);
     const ss = (t) => t * t * (3 - 2 * t);
+    const heroScrollTop = () => Math.max(0, Number(profile?.offsetHeight) || 0);
     const autoplayProgressAt = (elapsed, directCompanionStart = false) => {
       let timelineElapsed = elapsed;
       if (directCompanionStart) {
@@ -6019,11 +6411,15 @@ function CrtZoom() {
     let companionIntermissionHeld = false;
     let companionIntermissionCommitted = false;
     let companionIntermissionCommit = 0;
+    let intermissionResolveFallbackTimer = 0;
     let introTransportPaused = false;
     let introTransportPausedAt = 0;
     let loopResolveStartedAt = 0;
     let loopResolveUntil = 0;
     let wheelSync = 0;
+    let macSectionSnapTimer = 0;
+    let macSectionSnapHoldUntil = 0;
+    let pendingTrustedAudioStart = null;
     let locked = false;
     let projecting = false;
     let projected = false;
@@ -6051,6 +6447,7 @@ function CrtZoom() {
     let designStoryDeadline = 0;
     let designStoryRemainingMs = 0;
     let makeStoryTimer = 0;
+    const makeStoryInteractionTimers = new Set();
     let makeStoryActive = false;
     let makeStoryIndex = 0;
     let makeStoryBeat = null;
@@ -6200,9 +6597,16 @@ function CrtZoom() {
     const clearMakeStory = ({ reset = true } = {}) => {
       window.clearTimeout(makeStoryTimer);
       makeStoryTimer = 0;
+      makeStoryInteractionTimers.forEach((timer) => window.clearTimeout(timer));
+      makeStoryInteractionTimers.clear();
+      window.dispatchEvent(new CustomEvent('resume-mac-story-type', {
+        detail: { action: 'clear', source: 'make-story-clear' },
+      }));
       makeStoryActive = false;
       delete shell.dataset.makeStoryAwaitingDialogue;
       if (reset) {
+        delete shell.dataset.makeKeyboardPhrase;
+        delete shell.dataset.makeKeyboardPhraseState;
         makeStoryIndex = 0;
         makeStoryBeat = null;
         makeStoryDeadline = 0;
@@ -6236,7 +6640,11 @@ function CrtZoom() {
         detail: {
           phase: normalizedPhase,
           frameIndex: Number.isFinite(frameIndex) ? frameIndex : 0,
-          resolve: companionIntermissionHeld || shell.dataset.overtureResolveCard === 'bars',
+          // Holding at intermission does not mean the calibration card is
+          // still live. Once the 1 kHz tone completes, foregrounding must
+          // restore the blue/default wall instead of resurrecting the bars.
+          resolve: shell.dataset.overtureResolve === 'true'
+            && shell.dataset.overtureResolveCard === 'bars',
           codeStable: normalizedPhase === 'make',
           codeVariant: shell.dataset.makeStoryVariant || '',
           codeCut: shell.dataset.makeStoryCut || '',
@@ -6781,6 +7189,21 @@ function CrtZoom() {
         openingVocalTimers.add(completionTimer);
       });
     };
+    const scheduleDirectIntroBed = (launchSequence) => {
+      // Preserve the authored theme-to-typing relationship from the longer
+      // prologue: the bed used to begin 420ms after the question completed,
+      // while the machine prepared and the floppy entered.
+      const delay = Math.max(0, CRT_INTRO_CUE_AT_MS - CRT_OPENING_VOCAL_DURATION);
+      const timer = window.setTimeout(() => {
+        openingVocalTimers.delete(timer);
+        if (launchSequence !== companionStartSequence
+          || !companionStartRequested
+          || !pageActive
+          || !isResumeForeground()) return;
+        window.dispatchEvent(new CustomEvent('resume-intro-bed-start'));
+      }, delay);
+      openingVocalTimers.add(timer);
+    };
     const onChannelGlitch = (event) => {
       if (!pageActive || !isResumeForeground()) return;
       const detail = event.detail || {};
@@ -7010,6 +7433,92 @@ function CrtZoom() {
         window.__resumeMakeCodeCutTrace = [];
       }
       makeStoryActive = true;
+      const scheduleMakeInteraction = (callback, delayMs) => {
+        const timer = window.setTimeout(() => {
+          makeStoryInteractionTimers.delete(timer);
+          if (!pageActive
+            || !isResumeForeground()
+            || crtPhaseForBeat(shell.dataset.overtureBeat) !== 'make'
+            || reelStarted
+            || locked) return;
+          callback();
+        }, Math.max(0, Number(delayMs) || 0));
+        makeStoryInteractionTimers.add(timer);
+      };
+      const runMakeCameraBeat = (step) => {
+        if (step.clearTypedText) {
+          window.dispatchEvent(new CustomEvent('resume-mac-story-type', {
+            detail: { action: 'clear', source: step.label },
+          }));
+        }
+        if (!step.camera) return;
+        const duration = Math.max(240, Number(step.cameraDurationMs) || 360);
+        const easing = String(step.cameraEasing || 'smooth');
+        shell.dataset.introCameraBeat = step.label;
+        shell.dataset.introCameraPreset = step.camera;
+        shell.dataset.introCameraDuration = String(duration);
+        shell.dataset.introCameraEasing = easing;
+        invokeTvHeroControl(
+          '__tvHeroCompanionCamera',
+          [
+            step.camera,
+            {
+              duration,
+              easing,
+              source: 'intro',
+              beat: step.label,
+            },
+          ],
+          0,
+          () => !reelStarted
+            && !locked
+            && shell.dataset.makeStoryLabel === step.label,
+        );
+      };
+      const typeMakePhraseOnKeyboard = (step) => {
+        const phrase = String(step.typeText || '');
+        if (!phrase) return;
+        shell.dataset.makeKeyboardPhrase = phrase;
+        shell.dataset.makeKeyboardPhraseState = 'typing';
+        const intervalMs = Math.max(36, Number(step.typeIntervalMs) || 64);
+        const delayMs = Math.max(0, Number(step.typeDelayMs) || 0);
+        scheduleMakeInteraction(() => {
+          window.dispatchEvent(new CustomEvent('resume-mac-story-type', {
+            detail: {
+              action: 'begin',
+              phrase,
+              source: step.label,
+            },
+          }));
+        }, Math.max(0, delayMs - 24));
+        [...phrase].forEach((char, index) => {
+          scheduleMakeInteraction(() => {
+            window.dispatchEvent(new CustomEvent('resume-mac-story-type', {
+              detail: {
+                action: 'type',
+                char,
+                phrase,
+                phraseIndex: index,
+                source: step.label,
+              },
+            }));
+            window.dispatchEvent(new CustomEvent('resume-mac-screen-character', {
+              detail: {
+                action: 'type',
+                char,
+                stage: 1,
+                story: 'make-button-struggle',
+                phrase,
+                phraseIndex: index,
+                timestamp: performance.now(),
+              },
+            }));
+            if (index === phrase.length - 1) {
+              shell.dataset.makeKeyboardPhraseState = 'complete';
+            }
+          }, delayMs + index * intervalMs);
+        });
+      };
       const fireStep = () => {
         if (!pageActive
           || !isResumeForeground()
@@ -7062,6 +7571,8 @@ function CrtZoom() {
         } else if (activeNameUtterance && shell.dataset.systemPhraseVoice) {
           stopVisitorNameVoice();
         }
+        runMakeCameraBeat(step);
+        typeMakePhraseOnKeyboard(step);
         if (step.startSinging) {
           window.dispatchEvent(new CustomEvent('resume-believe-singing-motif'));
         }
@@ -7082,6 +7593,7 @@ function CrtZoom() {
           codeVariant: step.codeVariant,
           codeCut: step.codeCut,
           codeCrash: step.crashFrame,
+          codeCrashHoldMs: step.errorHoldMs,
           codeLabel: step.label,
           durationMs: step.dwellMs,
           vocalId: step.vocalId,
@@ -7327,6 +7839,7 @@ function CrtZoom() {
       const transitionToken = ++reelTransitionToken;
       activeChannel = 0;
       channelWithin = 0;
+      window.__tvHeroSetChannelDefs?.(CRT_CHANNELS, { active: activeChannel });
       invokeTvHeroControl(
         '__tvHeroStopReel',
         [{ roll: true, eject: true }],
@@ -7370,7 +7883,7 @@ function CrtZoom() {
 
     const sizeRunway = () => {
       const vh = window.innerHeight || 1;
-      enter.style.height = `${Math.round(vh + (CRT_RUNWAY_VH + CRT_DOCK_HOLD_VH) * vh)}px`;
+      enter.style.height = `${Math.round(vh)}px`;
     };
     const emitLock = () => {
       window.dispatchEvent(new CustomEvent('resume-crt-lock-change', {
@@ -7453,6 +7966,8 @@ function CrtZoom() {
       loopResolveUntil = Number.POSITIVE_INFINITY;
       window.clearTimeout(programLaunchTimer);
       programLaunchTimer = 0;
+      window.clearTimeout(intermissionResolveFallbackTimer);
+      intermissionResolveFallbackTimer = 0;
       window.clearTimeout(parkedGlitchTimer);
       parkedGlitchTimer = 0;
       window.clearTimeout(introHyperspaceTimer);
@@ -7535,10 +8050,61 @@ function CrtZoom() {
         immediateTone: true,
         toneDelayMs: 0,
       });
+      // Audio owns the normal handoff. This fallback also clears the bars if
+      // autoplay policy prevents the oscillator from starting at all.
+      window.clearTimeout(intermissionResolveFallbackTimer);
+      intermissionResolveFallbackTimer = window.setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('resume-crt-calibration-tone-complete', {
+          detail: {
+            source: 'visual-fallback',
+            intermissionCommit: commit,
+          },
+        }));
+      }, CRT_CALIBRATION_TONE_HOLD_MS + CRT_CALIBRATION_TONE_FADE_MS + 350);
       // Warm the page channels without allowing the async completion to retune
       // channel zero over this committed frame.
       project(true);
       return true;
+    };
+    const onCalibrationToneComplete = (event) => {
+      if (!companionIntermissionCommitted || !companionIntermissionHeld) return;
+      const eventCommit = Number(event.detail?.intermissionCommit) || 0;
+      if (eventCommit && eventCommit !== companionIntermissionCommit) return;
+      window.clearTimeout(intermissionResolveFallbackTimer);
+      intermissionResolveFallbackTimer = 0;
+      loopResolveUntil = 0;
+      // End the loop on the exact same authoritative path as Stop / reset:
+      // initial camera, floppy out, blank Macintosh, dark LED volume, blue
+      // tracking-screen environment, and a reusable phone Start control.
+      companionStartSequence += 1;
+      autoplayReady = false;
+      companionStartRequested = false;
+      companionStartReceived = false;
+      companionInsertComplete = false;
+      companionIntermissionHeld = false;
+      companionIntermissionCommitted = false;
+      resetToStart();
+      shell.dataset.companionGate = 'waiting';
+      sizeRunway();
+      window.dispatchEvent(new CustomEvent('resume-companion-reset-to-start', {
+        detail: {
+          source: event.detail?.source || 'calibration-tone-complete',
+          intermissionCommit: companionIntermissionCommit,
+        },
+      }));
+      window.dispatchEvent(new CustomEvent('resume-companion-stop-intro', {
+        detail: {
+          source: 'calibration-tone-complete',
+          intermissionCommit: companionIntermissionCommit,
+          localAlreadyReset: true,
+        },
+      }));
+      window.dispatchEvent(new CustomEvent('resume-mac-ghostwriter-start', {
+        detail: {
+          source: 'calibration-tone-complete',
+          intermissionCommit: companionIntermissionCommit,
+        },
+      }));
     };
     const onBelieveSingingComplete = () => {
       if (!pageActive
@@ -7558,9 +8124,17 @@ function CrtZoom() {
     const update = () => {
       raf = 0;
       if (!pageActive || !isResumeForeground()) return;
+      // The completed intro is parked independently of scroll position. Keep
+      // either its tone/bars or its post-tone blue reset authoritative until
+      // the phone chooses a channel.
+      if (companionIntermissionCommitted && companionIntermissionHeld) {
+        window.__tvHeroFloppyProgress?.(1);
+        return;
+      }
       const vh = window.innerHeight || 1;
-      const scrollY = window.scrollY || window.pageYOffset || 0;
-      const insertionP = clamp01(scrollY / (CRT_TEXT_RUNWAY_VH * vh));
+      // Page position never drives the Macintosh. Its screen, floppy, camera,
+      // and authored playback can only change through their explicit controls.
+      const insertionP = 0;
       const overtureP = autoplayProgress;
       const overtureWrapped = overtureP + 0.5 < lastOvertureProgress;
       lastOvertureProgress = overtureP;
@@ -7587,9 +8161,11 @@ function CrtZoom() {
           window.dispatchEvent(new CustomEvent('resume-believe-singing-motif'));
         }
       }
-      const zoomStart = (CRT_TEXT_RUNWAY_VH + CRT_REEL_HOLD_VH) * vh;
-      const zoomP = clamp01((scrollY - zoomStart) / (CRT_ZOOM_RUNWAY_VH * vh));
-      const zoomProgress = zoomP >= CRT_LOCK_P ? 1 : ss(zoomP);
+      // The Macintosh is a complete second section, not a portal. Keep the
+      // camera at its authored wide composition and let page scroll continue
+      // directly into the visible HELP section.
+      const zoomP = 0;
+      const zoomProgress = 0;
       const floppyProgress = companionStartReceived && !reelStarted
         ? 1
         : insertionP;
@@ -7951,13 +8527,36 @@ function CrtZoom() {
     };
     const onCompanionStart = async (event) => {
       if (!pageActive || !isResumeForeground()) return;
+      const requestedSource = String(event?.detail?.source || '');
+      const trustedKeyboardStart = requestedSource === 'keyboard';
+      const audioIsReady = ['ready', 'playing', 'idle-playing', 'text-playing']
+        .includes(String(shell.dataset.glitchAudio || ''));
+      if (!IS_LOCAL_PREVIEW
+        && !audioIsReady
+        && event?.detail?.audioUnlocked !== true
+        && !trustedKeyboardStart) {
+        pendingTrustedAudioStart = { ...(event?.detail || {}) };
+        shell.dataset.audioStartGate = 'awaiting-gesture';
+        shell.dataset.introTransport = 'waiting-for-sound';
+        return;
+      }
+      pendingTrustedAudioStart = null;
+      delete shell.dataset.audioStartGate;
+      window.dispatchEvent(new CustomEvent('resume-mac-ghostwriter-stop', {
+        detail: { source: event?.detail?.source || 'companion-start' },
+      }));
       window.clearTimeout(preludeRecoveryTimer);
       preludeRecoveryTimer = 0;
       preludeRecoveryPending = false;
       preludeRecoveryName = '';
       delete shell.dataset.introPreludeRecovery;
-      const introTrigger = event?.detail?.source === 'scroll' ? 'scroll' : 'companion';
-      const suppliedName = String(event?.detail?.visitorName || '').trim().slice(0, 24);
+      const requestedIntroSource = requestedSource;
+      const introTrigger = requestedIntroSource === 'scroll' || requestedIntroSource === 'keyboard'
+        ? requestedIntroSource
+        : 'companion';
+      const suppliedName = CRT_PERSONALIZED_PROLOGUE_ENABLED
+        ? String(event?.detail?.visitorName || '').trim().slice(0, 24)
+        : '';
       if (suppliedName) shell.dataset.visitorName = suppliedName;
       else if (introTrigger !== 'scroll') delete shell.dataset.visitorName;
       window.dispatchEvent(new CustomEvent('resume-visitor-name-change', {
@@ -7967,7 +8566,7 @@ function CrtZoom() {
           // Preserve the voice instrument face between the Enter key event
           // and the first spoken name frame; otherwise this synchronous state
           // handoff can paint a one-frame terminal flash.
-          opening: Boolean(shell.dataset.visitorName),
+          opening: CRT_PERSONALIZED_PROLOGUE_ENABLED && Boolean(shell.dataset.visitorName),
           source: introTrigger,
         },
       }));
@@ -7979,7 +8578,7 @@ function CrtZoom() {
       companionIntermissionHeld = false;
       delete shell.dataset.intermissionStatus;
       shell.dataset.introTrigger = introTrigger;
-      if (shell.dataset.visitorName) {
+      if (CRT_PERSONALIZED_PROLOGUE_ENABLED && shell.dataset.visitorName) {
         window.dispatchEvent(new CustomEvent('resume-opening-invitation-step', {
           detail: {
             index: -1,
@@ -8013,13 +8612,18 @@ function CrtZoom() {
           || !isResumeForeground()) return;
         shell.dataset.nameQuestionPause = 'complete';
       }
-      shell.dataset.companionGate = 'invitation';
-      const invitationCompleted = await playOpeningInvitation(sequence);
-      if (!invitationCompleted
-        || sequence !== companionStartSequence
-        || !companionStartRequested
-        || !pageActive
-        || !isResumeForeground()) return;
+      if (CRT_PERSONALIZED_PROLOGUE_ENABLED) {
+        shell.dataset.companionGate = 'invitation';
+        const invitationCompleted = await playOpeningInvitation(sequence);
+        if (!invitationCompleted
+          || sequence !== companionStartSequence
+          || !companionStartRequested
+          || !pageActive
+          || !isResumeForeground()) return;
+      } else {
+        shell.dataset.companionGate = 'direct-design';
+        scheduleDirectIntroBed(sequence);
+      }
       // The trailer theme is already running. Its instrumental lead-in is
       // expanded while the dialogue cadence remains untouched. MAKE's actual
       // Return edge starts hyperspace on the LED wall; the source bloop exits
@@ -8058,6 +8662,7 @@ function CrtZoom() {
       beginAutoplay();
     };
     const onVisitorNameSubmit = async (event) => {
+      if (!CRT_PERSONALIZED_PROLOGUE_ENABLED) return;
       if (!pageActive
         || !isResumeForeground()
         || companionStartRequested
@@ -8147,16 +8752,48 @@ function CrtZoom() {
     const toggleIntroTransport = () => (
       setIntroTransportPaused(!introTransportPaused)
     );
+    const onMacSectionWheel = (event) => {
+      if (event.ctrlKey || event.deltaY <= 0) return;
+      const heroTop = heroScrollTop();
+      const scrollOffset = window.scrollY || root.scrollTop || document.body.scrollTop || 0;
+      const now = performance.now();
+      // Absorb only the inertial tail that follows the authored snap. A fresh
+      // gesture after the hold continues normally into the next section.
+      if (now < macSectionSnapHoldUntil && Math.abs(scrollOffset - heroTop) <= 3) {
+        event.preventDefault();
+        return;
+      }
+      if (scrollOffset >= heroTop - 2) return;
+      const triggerDistance = Math.min((window.innerHeight || 1) * 0.28, 280);
+      const projectedOffset = scrollOffset + Math.max(0, Number(event.deltaY) || 0);
+      if (projectedOffset < heroTop - triggerDistance) return;
+
+      event.preventDefault();
+      window.clearTimeout(macSectionSnapTimer);
+      macSectionSnapHoldUntil = now + 760;
+      shell.dataset.sectionSnap = 'mac';
+      window.scrollTo({ top: heroTop, behavior: 'smooth' });
+      macSectionSnapTimer = window.setTimeout(() => {
+        macSectionSnapTimer = 0;
+        delete shell.dataset.sectionSnap;
+      }, 760);
+    };
     const onWheel = (event) => {
+      if (!CRT_SCROLL_INTERACTION_ENABLED) return;
       if (introTransportPaused) {
         event.preventDefault();
         return;
       }
       if (!pageActive || !isResumeForeground()) return;
       if (!locked) {
-        // A first forward wheel/trackpad gesture is an alternate Start button:
-        // it runs the exact same authored intro as the companion instead of
-        // converting page distance directly into a Hand of God launch.
+        const heroTop = heroScrollTop();
+        const scrollOffset = window.scrollY || root.scrollTop || document.body.scrollTop || 0;
+        // The editorial profile is a real first viewport. Let normal scrolling
+        // reveal the Macintosh; only take over once that viewport is reached.
+        if (event.deltaY > 0 && scrollOffset < heroTop - 2) return;
+        // The keyboard is now the intentional desktop Start gesture: it arms
+        // audio and lets the Macintosh ghostwrite ./design. Trackpad momentum
+        // stays parked at the landing cursor instead of silently starting.
         if (COMPANION_GATE_ENABLED
           && event.deltaY > 0
           && !companionStartRequested
@@ -8164,10 +8801,10 @@ function CrtZoom() {
           && !reelStarted
           && !companionIntermissionCommitted) {
           event.preventDefault();
-          window.scrollTo(0, 0);
-          root.scrollTop = 0;
-          document.body.scrollTop = 0;
-          void onCompanionStart({ detail: { source: 'scroll' } });
+          window.scrollTo(0, heroTop);
+          root.scrollTop = heroTop;
+          document.body.scrollTop = heroTop;
+          shell.dataset.introTransport = 'waiting-for-key';
           return;
         }
         // Discard trackpad momentum while the intro state machine is running
@@ -8177,13 +8814,15 @@ function CrtZoom() {
           && companionStartReceived
           && (!companionIntermissionCommitted || companionIntermissionHeld)) {
           event.preventDefault();
-          window.scrollTo(0, 0);
-          root.scrollTop = 0;
-          document.body.scrollTop = 0;
+          window.scrollTo(0, heroTop);
+          root.scrollTop = heroTop;
+          document.body.scrollTop = heroTop;
           return;
         }
         const vh = window.innerHeight || 1;
-        const currentInsertion = clamp01((window.scrollY || 0) / (CRT_TEXT_RUNWAY_VH * vh));
+        const currentInsertion = clamp01(
+          Math.max(0, (window.scrollY || 0) - heroTop) / (CRT_TEXT_RUNWAY_VH * vh),
+        );
         if (reelStarted && event.deltaY <= -2) {
           stopReelAtLimit(currentInsertion);
           autoplayStartedAt = performance.now();
@@ -8240,29 +8879,55 @@ function CrtZoom() {
         requestReelAudio();
       }
     };
+    const onTrustedAudioReady = () => {
+      if (!pendingTrustedAudioStart
+        || !pageActive
+        || !isResumeForeground()
+        || companionStartRequested
+        || autoplayReady) return;
+      const detail = pendingTrustedAudioStart;
+      pendingTrustedAudioStart = null;
+      delete shell.dataset.audioStartGate;
+      void onCompanionStart({ detail: { ...detail, audioUnlocked: true } });
+    };
+
+    const syncMacSectionOwnership = () => {
+      const bounds = enter.getBoundingClientRect();
+      const viewportHeight = window.innerHeight || root.clientHeight || 1;
+      shell.classList.toggle(
+        'is-mac-section-active',
+        bounds.bottom > 0 && bounds.top < viewportHeight,
+      );
+    };
 
     const onScroll = () => {
       if (!pageActive || !isResumeForeground()) return;
+      if (!CRT_SCROLL_INTERACTION_ENABLED) {
+        shell.classList.remove('has-entered-mac', 'is-crt-locked');
+        return;
+      }
       const scrollOffset = window.scrollY || root.scrollTop || document.body.scrollTop || 0;
+      const heroTop = heroScrollTop();
+      shell.classList.toggle('has-entered-mac', scrollOffset >= heroTop - 1);
       if (COMPANION_GATE_ENABLED
-        && scrollOffset > 0
+        && scrollOffset >= heroTop - 1
         && !companionStartRequested
         && !autoplayReady
         && !reelStarted
         && !companionIntermissionCommitted) {
-        window.scrollTo(0, 0);
-        root.scrollTop = 0;
-        document.body.scrollTop = 0;
-        void onCompanionStart({ detail: { source: 'scroll' } });
+        window.scrollTo(0, heroTop);
+        root.scrollTop = heroTop;
+        document.body.scrollTop = heroTop;
+        shell.dataset.introTransport = 'waiting-for-key';
         return;
       }
       if (COMPANION_GATE_ENABLED
         && companionStartReceived
         && (!companionIntermissionCommitted || companionIntermissionHeld)) {
-        if (scrollOffset > 0) {
-          window.scrollTo(0, 0);
-          root.scrollTop = 0;
-          document.body.scrollTop = 0;
+        if (Math.abs(scrollOffset - heroTop) > 1) {
+          window.scrollTo(0, heroTop);
+          root.scrollTop = heroTop;
+          document.body.scrollTop = heroTop;
         }
         return;
       }
@@ -8277,6 +8942,8 @@ function CrtZoom() {
       window.dispatchEvent(new CustomEvent('resume-intro-bed-stop'));
       window.clearTimeout(programLaunchTimer);
       programLaunchTimer = 0;
+      window.clearTimeout(intermissionResolveFallbackTimer);
+      intermissionResolveFallbackTimer = 0;
       delete shell.dataset.programLaunchPending;
       window.clearTimeout(parkedGlitchTimer);
       window.clearTimeout(introHyperspaceTimer);
@@ -8320,7 +8987,12 @@ function CrtZoom() {
       window.__tvHeroPageMode?.(false);
       // Reset to the same close waiting composition used on first load.
       // ./design Return owns the later release into the wide volume.
-      window.__tvHeroChannelCamera?.('camera:typing');
+      window.__tvHeroChannelCamera?.('camera:typing', {
+        instant: true,
+        duration: 0,
+        easing: 'snap',
+        source: 'reset-to-start',
+      });
       window.__tvHeroFloppyProgress?.(0);
       window.dispatchEvent(new CustomEvent('resume-crt-wall-power-reset'));
       shell.style.setProperty('--crt-overture-progress', '0');
@@ -8331,6 +9003,8 @@ function CrtZoom() {
       shell.dataset.overtureBeat = 'intro';
       shell.dataset.overtureMode = 'autoplay';
       shell.dataset.introTransport = 'waiting';
+      pendingTrustedAudioStart = null;
+      delete shell.dataset.audioStartGate;
       shell.dataset.overtureBreather = 'false';
       shell.dataset.overtureResolve = 'false';
       shell.dataset.overtureResolveProgress = '0.000';
@@ -8424,7 +9098,11 @@ function CrtZoom() {
         },
       }));
       window.dispatchEvent(new CustomEvent('resume-visitor-name-change', {
-        detail: { name: '', prompt: true, source: 'reset' },
+        detail: {
+          name: '',
+          prompt: CRT_PERSONALIZED_PROLOGUE_ENABLED,
+          source: 'reset',
+        },
       }));
       emitLock();
       emitChannel();
@@ -8433,21 +9111,33 @@ function CrtZoom() {
       const previousBodyBehavior = body.style.scrollBehavior;
       root.style.scrollBehavior = 'auto';
       body.style.scrollBehavior = 'auto';
-      window.scrollTo(0, 0);
-      root.scrollTop = 0;
-      body.scrollTop = 0;
+      const resetScrollTop = heroScrollTop();
+      shell.classList.add('has-entered-mac');
+      window.scrollTo(0, resetScrollTop);
+      root.scrollTop = resetScrollTop;
+      body.scrollTop = resetScrollTop;
       requestAnimationFrame(() => {
-        window.scrollTo(0, 0);
-        root.scrollTop = 0;
-        body.scrollTop = 0;
+        window.scrollTo(0, resetScrollTop);
+        root.scrollTop = resetScrollTop;
+        body.scrollTop = resetScrollTop;
         update();
         root.style.scrollBehavior = previousRootBehavior;
         body.style.scrollBehavior = previousBodyBehavior;
       });
     };
-    const onCompanionStop = () => {
+    const onCompanionStop = (event) => {
       if (introTransportPaused) setIntroTransportPaused(false);
+      // Tone completion already ran the authoritative reset even if the page
+      // was backgrounded. Keep this local visual broadcast idempotent.
+      if (event?.detail?.localAlreadyReset === true) return;
       if (!pageActive || !isResumeForeground()) return;
+      // A reusable phone session may reconnect with an old STOP revision on a
+      // fresh page load. The machine is already reset; replaying that command
+      // would unnecessarily skip the new editorial profile viewport.
+      if (!companionStartRequested && !companionStartReceived && !autoplayReady) {
+        shell.dataset.companionGate = 'waiting';
+        return;
+      }
       companionStartSequence += 1;
       autoplayReady = false;
       companionStartRequested = false;
@@ -8468,6 +9158,8 @@ function CrtZoom() {
       if (next < 0) return;
 
       companionIntermissionHeld = false;
+      window.clearTimeout(intermissionResolveFallbackTimer);
+      intermissionResolveFallbackTimer = 0;
       loopResolveUntil = 0;
       shell.dataset.companionGate = `channel-${channelId}`;
       activeChannel = next;
@@ -8615,19 +9307,23 @@ function CrtZoom() {
         // A foreground transition must restore the terminal intermission,
         // never restart the completed intro or revive its last camera route.
         if (companionIntermissionHeld) {
+          const resolveIsHolding = shell.dataset.overtureResolve === 'true'
+            && shell.dataset.overtureResolveCard === 'bars';
           shell.dataset.overtureBeat = 'intermission';
-          shell.dataset.overtureResolve = 'true';
-          shell.dataset.overtureResolveProgress = '1.000';
-          shell.dataset.overtureResolveCard = 'bars';
+          shell.dataset.overtureResolve = resolveIsHolding ? 'true' : 'false';
+          shell.dataset.overtureResolveProgress = resolveIsHolding ? '1.000' : '0.000';
+          shell.dataset.overtureResolveCard = resolveIsHolding ? 'bars' : 'none';
           window.dispatchEvent(new CustomEvent('resume-crt-overture-progress', {
             detail: {
               progress: autoplayProgress,
               floppyProgress: 1,
               zoomProgress: 0,
-              beat: 'intermission',
-              breather: true,
-              resolve: true,
-              resolveProgress: 1,
+              beat: resolveIsHolding ? 'intermission' : 'intermission-ready',
+              breather: false,
+              resolve: resolveIsHolding,
+              resolveProgress: resolveIsHolding ? 1 : 0,
+              blankScreen: !resolveIsHolding,
+              resetChannel: resolveIsHolding ? 0 : 1,
               intermissionCommit: companionIntermissionCommit,
             },
           }));
@@ -8733,6 +9429,7 @@ function CrtZoom() {
     let reproj = 0;
     const onResize = () => {
       sizeRunway();
+      syncMacSectionOwnership();
       clearTimeout(reproj);
       reproj = setTimeout(() => {
         projected = false;
@@ -8753,16 +9450,23 @@ function CrtZoom() {
     shell.dataset.pageActivity = pageActive ? 'foreground' : 'background-idle';
     window.__resumeToggleIntroTransport = toggleIntroTransport;
     update();
+    syncMacSectionOwnership();
     autoplayRaf = requestAnimationFrame(tickAutoplay);
-    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('wheel', onMacSectionWheel, { passive: false, capture: true });
+    window.addEventListener('scroll', syncMacSectionOwnership, { passive: true });
+    if (CRT_SCROLL_INTERACTION_ENABLED) {
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('wheel', onWheel, { passive: false, capture: true });
+    }
     window.addEventListener('resize', onResize, { passive: true });
-    window.addEventListener('wheel', onWheel, { passive: false, capture: true });
     window.addEventListener('resume-crt-channel-select', onChannelSelect);
     window.addEventListener('resume-audio-change', onAudioChange);
     window.addEventListener('tvhero:controlsready', onScroll);
     window.addEventListener('tvhero:screenbox', onScroll);
     window.addEventListener('keydown', onKey);
     window.addEventListener('pointerdown', onPointerDown, { passive: true });
+    window.addEventListener('resume-glitch-audio-ready', onTrustedAudioReady);
+    window.addEventListener('resume-keyboard-start-intro', onCompanionStart);
     window.addEventListener('resume-mac-screen-character', onMacProgramCharacter);
     window.addEventListener('resume-mac-overture-ready', onMacOvertureReady);
     window.addEventListener('resume-companion-start-intro', onCompanionStart);
@@ -8773,18 +9477,25 @@ function CrtZoom() {
     window.addEventListener('resume-crt-channel-glitch', onChannelGlitch);
     window.addEventListener('resume-intro-source-cue', onIntroSourceCue);
     window.addEventListener('resume-believe-singing-complete', onBelieveSingingComplete);
+    window.addEventListener('resume-crt-calibration-tone-complete', onCalibrationToneComplete);
     window.addEventListener('resume-page-activity-change', onPageActivity);
     window.addEventListener('keydown', onLifecycleTestKey);
     return () => {
-      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('wheel', onMacSectionWheel, true);
+      window.removeEventListener('scroll', syncMacSectionOwnership);
+      if (CRT_SCROLL_INTERACTION_ENABLED) {
+        window.removeEventListener('scroll', onScroll);
+        window.removeEventListener('wheel', onWheel, true);
+      }
       window.removeEventListener('resize', onResize);
-      window.removeEventListener('wheel', onWheel, true);
       window.removeEventListener('resume-crt-channel-select', onChannelSelect);
       window.removeEventListener('resume-audio-change', onAudioChange);
       window.removeEventListener('tvhero:controlsready', onScroll);
       window.removeEventListener('tvhero:screenbox', onScroll);
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('resume-glitch-audio-ready', onTrustedAudioReady);
+      window.removeEventListener('resume-keyboard-start-intro', onCompanionStart);
       window.removeEventListener('resume-mac-screen-character', onMacProgramCharacter);
       window.removeEventListener('resume-mac-overture-ready', onMacOvertureReady);
       window.removeEventListener('resume-companion-start-intro', onCompanionStart);
@@ -8795,17 +9506,20 @@ function CrtZoom() {
       window.removeEventListener('resume-crt-channel-glitch', onChannelGlitch);
       window.removeEventListener('resume-intro-source-cue', onIntroSourceCue);
       window.removeEventListener('resume-believe-singing-complete', onBelieveSingingComplete);
+      window.removeEventListener('resume-crt-calibration-tone-complete', onCalibrationToneComplete);
       window.removeEventListener('resume-page-activity-change', onPageActivity);
       window.removeEventListener('keydown', onLifecycleTestKey);
       clearTimeout(reproj);
       clearTimeout(projectRetry);
       clearTimeout(wheelSync);
+      clearTimeout(macSectionSnapTimer);
       clearTimeout(programLaunchTimer);
       clearTimeout(parkedGlitchTimer);
       clearTimeout(channelGlitchTimer);
       clearTimeout(introHyperspaceTimer);
       clearTimeout(introCodeHandoffTimer);
       clearTimeout(preludeRecoveryTimer);
+      clearTimeout(intermissionResolveFallbackTimer);
       clearParkedIdle();
       clearDesignStory();
       clearMakeStory();
@@ -8827,11 +9541,184 @@ function CrtZoom() {
       emitLock();
       window.__tvHeroPageMode?.(false);
       shell.classList.remove('is-crt', 'is-crt-locked', 'is-reel-playing');
+      shell.classList.remove('has-entered-mac');
+      shell.classList.remove('is-mac-section-active');
       root.style.scrollSnapType = previousRootSnapType;
       enter.style.height = '';
     };
   }, []);
   return null;
+}
+
+function mountProfileSamplerPart(host, THREE, part) {
+  if (!host || !THREE) return () => {};
+  const source = createMatchSculptureInstrumentSource(THREE);
+  const renderer = new THREE.WebGLRenderer({
+    alpha: true,
+    antialias: true,
+    powerPreference: 'high-performance',
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setClearColor(0x000000, 0);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.domElement.className = 'landing-profile__instrument-canvas';
+  host.replaceChildren(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const root = new THREE.Group();
+  scene.add(root);
+  const camera = new THREE.OrthographicCamera(-80, 80, 80, -80, 0.1, 100);
+  camera.position.set(0, 0, 10);
+
+  const fieldUnit = { x: 0.5, y: 0.5 };
+  let wheel = null;
+  let chipTexture = null;
+  let chipContext = null;
+  let lastChipCell = '';
+
+  if (part === 'wheel') {
+    wheel = source.drawMatchSculptureColorWheelDisk(
+      { selectorRoot: root },
+      root,
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(0, 1, 0),
+      66,
+      NaN,
+      {
+        fieldUnit,
+        centerColor: source.matchSculptureCieDisplayColorForFieldUnit(fieldUnit),
+        opacity: 1,
+        segments: 96,
+      },
+    );
+  } else {
+    const chipCanvas = document.createElement('canvas');
+    chipCanvas.width = 124;
+    chipCanvas.height = 82;
+    chipContext = chipCanvas.getContext('2d');
+    chipTexture = new THREE.CanvasTexture(chipCanvas);
+    chipTexture.minFilter = THREE.NearestFilter;
+    chipTexture.magFilter = THREE.NearestFilter;
+    chipTexture.generateMipmaps = false;
+    chipTexture.colorSpace = THREE.SRGBColorSpace;
+    const chipMaterial = new THREE.SpriteMaterial({
+      map: chipTexture,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+      toneMapped: false,
+    });
+    const chipSprite = new THREE.Sprite(chipMaterial);
+    chipSprite.scale.set(124, 82, 1);
+    root.add(chipSprite);
+  }
+
+  const resize = () => {
+    const rect = host.getBoundingClientRect();
+    const width = Math.max(1, rect.width);
+    const height = Math.max(1, rect.height);
+    const aspect = width / height;
+    const contentWidth = part === 'wheel' ? 150 : 144;
+    const contentHeight = part === 'wheel' ? 150 : 96;
+    const viewHeight = Math.max(contentHeight, contentWidth / aspect);
+    const viewWidth = viewHeight * aspect;
+    camera.left = viewWidth / -2;
+    camera.right = viewWidth / 2;
+    camera.top = viewHeight / 2;
+    camera.bottom = viewHeight / -2;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height, false);
+  };
+  const observer = new ResizeObserver(resize);
+  observer.observe(host);
+  resize();
+
+  let frame = 0;
+  let pausedAt = 0;
+  let startedAt = performance.now();
+  const render = (now) => {
+    const time = (now - startedAt) / 1000;
+    fieldUnit.x = Math.max(0, Math.min(1, 0.5 + Math.cos(time * 1.08) * 0.34));
+    fieldUnit.y = Math.max(0, Math.min(1, 0.5 + Math.sin(time * 0.82) * 0.32));
+    const cell = `${Math.round(fieldUnit.x * 6) / 6}:${Math.round(fieldUnit.y * 5) / 5}`;
+    host.dataset.samplerFrame = String(Math.floor(time * 24));
+    host.dataset.samplerCell = cell;
+
+    if (wheel) {
+      const centerColor = source.matchSculptureCieDisplayColorForFieldUnit(fieldUnit);
+      wheel.material.uniforms.uFieldUnit.value.set(fieldUnit.x, fieldUnit.y);
+      wheel.material.uniforms.uCenterColor.value.copy(centerColor);
+    } else if (cell !== lastChipCell) {
+      lastChipCell = cell;
+      source.drawMatchSculptureSamplesTexture(chipContext, {
+        field: [fieldUnit.x * 120, fieldUnit.y * 80],
+      }, false, { goalId: 'match' });
+      chipTexture.needsUpdate = true;
+    }
+
+    renderer.render(scene, camera);
+    frame = requestAnimationFrame(render);
+  };
+  frame = requestAnimationFrame(render);
+
+  const onVisibility = () => {
+    if (document.hidden) {
+      pausedAt = performance.now();
+      cancelAnimationFrame(frame);
+      frame = 0;
+    } else if (!frame) {
+      startedAt += performance.now() - pausedAt;
+      frame = requestAnimationFrame(render);
+    }
+  };
+  document.addEventListener('visibilitychange', onVisibility);
+
+  return () => {
+    cancelAnimationFrame(frame);
+    document.removeEventListener('visibilitychange', onVisibility);
+    observer.disconnect();
+    scene.traverse((object) => {
+      object.geometry?.dispose?.();
+      if (Array.isArray(object.material)) {
+        object.material.forEach((material) => material.dispose?.());
+      } else {
+        object.material?.dispose?.();
+      }
+    });
+    chipTexture?.dispose?.();
+    renderer.dispose();
+    host.replaceChildren();
+  };
+}
+
+function BeautifulGameLoadingSummaryInstrument({ part }) {
+  const hostRef = useRef(null);
+
+  useEffect(() => {
+    let dispose = () => {};
+    let cancelled = false;
+    const threeLoader = window.__loadThreeBundle || (() => window.__threePromise);
+    Promise.resolve(threeLoader?.()).then((bundle) => {
+      if (cancelled || !hostRef.current || !bundle?.THREE) return;
+      dispose = mountProfileSamplerPart(hostRef.current, bundle.THREE, part);
+    }).catch((error) => {
+      console.error('[loading-summary] Beautiful Game sampler failed', error);
+    });
+    return () => {
+      cancelled = true;
+      dispose();
+    };
+  }, [part]);
+
+  return (
+    <div
+      className={`landing-profile__instrument landing-profile__instrument--${part}`}
+      data-instrument-part={part}
+      aria-hidden="true"
+      ref={hostRef}
+    />
+  );
 }
 
 function LandingPageV1() {
@@ -8857,6 +9744,41 @@ function LandingPageV1() {
         </div>
         <div className="page landing-v1__page">
           <main>
+            <section className="landing-profile" aria-labelledby="landing-profile-name">
+              <div className="landing-profile__content">
+                <div className="landing-profile__name-row">
+                  <h1
+                    className="landing-profile__name"
+                    id="landing-profile-name"
+                    aria-label="Tawfeeq Martin"
+                  >
+                    <span>Tawfeeq</span>
+                    <span>Martin</span>
+                  </h1>
+                  <BeautifulGameLoadingSummaryInstrument part="chips" />
+                </div>
+                <div className="landing-profile__story">
+                  <div className="landing-profile__copy">
+                    <p className="landing-profile__bio">
+                      Award-winning creative technologist with 20+ years defining and shipping
+                      products at the intersection of emerging technology and cinematic storytelling.
+                      Research and Development / StageCraft team at Industrial Light &amp; Magic.
+                      Previously Technical Innovations Manager — Head of Creative Engineering / Creative
+                      Technology Director at The Mill, where I led 0-to-1 product
+                      development on landmark projects including Google Spotlight Stories ‘HELP’ (dir.
+                      Justin Lin) — a double Gold Cannes Lion–winning immersive 360° film — and was one
+                      of the inventors of Mill Stitch™ and the Mill Blackbird car rig. Independent
+                      developer of AI tools and generative creative systems.
+                    </p>
+                    <nav className="landing-profile__links" aria-label="Profile links">
+                      <a href="resume-readonly.html">Resume</a>
+                      <a href={RESUME.linkedin} target="_blank" rel="noreferrer">LinkedIn</a>
+                    </nav>
+                  </div>
+                  <BeautifulGameLoadingSummaryInstrument part="wheel" />
+                </div>
+              </div>
+            </section>
             <section className="crt-enter">
               <div className="crt-enter__sticky">
                 <section className="landing-v1__hero" aria-label="Interactive portfolio demo">
@@ -8870,8 +9792,6 @@ function LandingPageV1() {
               <div className="crt-content">
                 <div className="crt-content__scroll">
                   <div className="landing-v1__featured-demos">
-                    <HelpIntroStage src={HELP_VIDEO_URLS} />
-                    <BlackbirdFeature innovationSrc={BLACKBIRD_INNOVATION_VIDEO_URL} behindScenesSrc={BLACKBIRD_VIDEO_URL} label="02 · AUTOMOTIVE INNOVATION · THE MILL BLACKBIRD" />
                     <HumanRaceFeature src={HUMAN_RACE_VIDEO_URL} poster={HUMAN_RACE_POSTER_URL} label="03 · SELECTED WORK · CHEVROLET THE HUMAN RACE" />
                     <LouisVuittonFeature src={LOUIS_VUITTON_SS20_VIDEO_URL} poster={LOUIS_VUITTON_SS20_POSTER_URL} label="04 · SELECTED WORK · LOUIS VUITTON SS20" />
                     <StrudelReplFeature label="05 · INTERACTIVE LAB · POETRY IN PROOF" />
@@ -8892,6 +9812,13 @@ function LandingPageV1() {
           </main>
         </div>
       </div>
+      <HelpFeature src={HELP_VIDEO_URLS} />
+      <BlackbirdFeature
+        innovationSrc={BLACKBIRD_INNOVATION_VIDEO_URL}
+        behindScenesSrc={BLACKBIRD_VIDEO_URL}
+      />
+      <HandOfGodFeature src={HAND_OF_GOD_DEMO_URL} />
+      <LandingEndProof awards={RESUME.awards} references={RESUME.references} />
     </>
   );
 }

@@ -87,10 +87,12 @@
   const status = document.getElementById('status');
   const channels = [...document.querySelectorAll('[data-channel]')];
   const cameras = [...document.querySelectorAll('[data-camera]')];
-  const REMOTE_POLL_MS = 3000;
-  const REMOTE_RETRY_MS = 6000;
+  const REMOTE_LONG_POLL_SECONDS = 25;
+  const REMOTE_RETRY_MS = 3000;
   let syncTimer = 0;
   let syncInFlight = false;
+  let syncController = null;
+  let lastStateUpdatedAt = 0;
   window.__resumeCompanionStatePolls = 0;
 
   async function send(path, payload = {}) {
@@ -156,20 +158,28 @@
       return;
     }
     syncInFlight = true;
-    let delayMs = REMOTE_POLL_MS;
+    let delayMs = 0;
     try {
       window.__resumeCompanionStatePolls += 1;
       document.documentElement.dataset.companionStatePolls = String(window.__resumeCompanionStatePolls);
-      const response = await fetch('/api/companion/state?session=' + encodeURIComponent(session), {cache:'no-store'});
+      syncController?.abort();
+      const controller = new AbortController();
+      syncController = controller;
+      const response = await fetch('/api/companion/state?session=' + encodeURIComponent(session)
+        + '&since=' + encodeURIComponent(lastStateUpdatedAt)
+        + '&wait=' + REMOTE_LONG_POLL_SECONDS, {cache:'no-store',signal:controller.signal});
+      if (syncController === controller) syncController = null;
       if (!response.ok) throw new Error('State failed');
       const payload = await response.json();
+      lastStateUpdatedAt = Math.max(lastStateUpdatedAt, Number(payload.updatedAt) || 0);
       showMode(payload.displayMode || 'intro', payload.activeChannel || '', payload.activeCamera || 'hero');
       status.textContent = payload.displayMode === 'channels'
         ? 'Intermission · select the Macintosh monitor'
         : payload.command === 'start'
           ? 'Running · waiting for intermission'
           : 'Connected · waiting for you';
-    } catch (_) {
+    } catch (error) {
+      if (error?.name === 'AbortError') return;
       status.textContent = 'Connection interrupted · retrying';
       delayMs = REMOTE_RETRY_MS;
     } finally {
@@ -180,6 +190,8 @@
   }
   syncState();
   document.addEventListener('visibilitychange', () => {
+    syncController?.abort();
+    syncController = null;
     window.clearTimeout(syncTimer);
     syncTimer = 0;
     if (!document.hidden) syncState();

@@ -74,6 +74,7 @@ const companionSessions = new Map();
 const COMPANION_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const COMPANION_SESSION_ID_PATTERN = /^[A-Za-z0-9_-]{8,64}$/;
 const COMPANION_SERVER_INSTANCE = randomBytes(8).toString('base64url');
+const COMPANION_LONG_POLL_MAX_MS = 25_000;
 const COMPANION_STATE_PATH = process.env.COMPANION_STATE_PATH
   || path.join(os.tmpdir(), 'tawfeeq-resume-companion-sessions-v1.json');
 
@@ -1119,10 +1120,12 @@ const launchPanel = document.getElementById('launchPanel');
 const channelPanel = document.getElementById('channelPanel');
 const channelButtons = Array.from(document.querySelectorAll('[data-channel]'));
 const cameraButtons = Array.from(document.querySelectorAll('[data-camera]'));
-const REMOTE_POLL_MS = 3000;
-const REMOTE_RETRY_MS = 6000;
-let syncTimer = 0;
-let syncInFlight = false;
+const REMOTE_LONG_POLL_SECONDS = 25;
+const REMOTE_RETRY_MS = 3000;
+  let syncTimer = 0;
+  let syncInFlight = false;
+  let syncController = null;
+  let lastStateUpdatedAt = 0;
 let running = false;
 window.__resumeCompanionStatePolls = 0;
 
@@ -1223,15 +1226,22 @@ reset.addEventListener('click', async () => {
 async function syncState() {
   if (syncInFlight || document.hidden) return;
   syncInFlight = true;
-  let delayMs = REMOTE_POLL_MS;
+  let delayMs = 0;
   try {
     window.__resumeCompanionStatePolls += 1;
     document.documentElement.dataset.companionStatePolls = String(window.__resumeCompanionStatePolls);
-    const response = await fetch('/api/companion/state?session=' + encodeURIComponent(session), {
-      cache: 'no-store',
+    syncController?.abort();
+    const controller = new AbortController();
+    syncController = controller;
+    const response = await fetch('/api/companion/state?session=' + encodeURIComponent(session)
+      + '&since=' + encodeURIComponent(lastStateUpdatedAt)
+      + '&wait=' + REMOTE_LONG_POLL_SECONDS, {
+      cache: 'no-store', signal: controller.signal,
     });
+    if (syncController === controller) syncController = null;
     if (!response.ok) throw new Error('State failed');
     const payload = await response.json();
+    lastStateUpdatedAt = Math.max(lastStateUpdatedAt, Number(payload.updatedAt) || 0);
     showMode(
       payload.displayMode || 'intro',
       payload.activeChannel || '',
@@ -1253,7 +1263,8 @@ async function syncState() {
       button.disabled = false;
       status.textContent = 'Connected · waiting for you';
     }
-  } catch (_) {
+  } catch (error) {
+    if (error?.name === 'AbortError') return;
     status.textContent = 'Connection interrupted · retrying';
     delayMs = REMOTE_RETRY_MS;
   } finally {
@@ -1265,6 +1276,8 @@ async function syncState() {
 
 syncState();
 document.addEventListener('visibilitychange', () => {
+  syncController?.abort();
+  syncController = null;
   window.clearTimeout(syncTimer);
   syncTimer = 0;
   if (!document.hidden) syncState();
@@ -1338,10 +1351,23 @@ async function handleCompanionRoute(req, res, url) {
       sendJson(req, res, 404, { ok: false, error: 'Session expired.' });
       return true;
     }
-    session.updatedAt = Date.now();
+    const since = Math.max(0, Number(url.searchParams.get('since')) || 0);
+    const requestedWaitMs = Math.max(0, Number(url.searchParams.get('wait')) || 0) * 1000;
+    const waitMs = req.method === 'HEAD'
+      ? 0
+      : Math.min(COMPANION_LONG_POLL_MAX_MS, requestedWaitMs);
+    const deadline = Date.now() + waitMs;
+    while (waitMs > 0
+      && since > 0
+      && session.updatedAt <= since
+      && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, Math.min(250, deadline - Date.now())));
+      session = companionSessions.get(sessionId) || session;
+    }
     sendJson(req, res, 200, {
       ok: true,
       instanceId: COMPANION_SERVER_INSTANCE,
+      updatedAt: session.updatedAt,
       revision: session.revision,
       startedAt: session.startedAt,
       command: session.command,

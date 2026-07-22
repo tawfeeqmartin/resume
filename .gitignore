@@ -64,7 +64,8 @@ resume-adobe.html
 resume-apple.html
 resume-disney.html
 resume-framestore.html
-resume-readonly.html
+# The landing page links to this public HTML resume; keep it versioned.
+!resume-readonly.html
 Tawfeeq-Martin-*.pdf
 cover-letter-*.md
 outreach-*.md

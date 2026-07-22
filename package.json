@@ -12,6 +12,7 @@
     "esbuild": "^0.28.0"
   },
   "dependencies": {
+    "gifenc": "^1.0.3",
     "qrcode": "^1.5.4",
     "three": "^0.185.1"
   }

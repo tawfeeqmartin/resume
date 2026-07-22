@@ -18,6 +18,7 @@ if (!stageDir || !assetVersion || !commitHash || !commitShort) {
 
 const REQUIRED_FILES = [
   'Resume.html',
+  'resume-readonly.html',
   'index.html',
   'data.js',
   'spotlight-bundle.js',
@@ -27,7 +28,19 @@ const REQUIRED_FILES = [
   '_worker.js',
   '_routes.json',
   'media/3d/apple_macintosh.glb',
+  'media/interactive/hand-of-god.html',
+  'media/interactive/hand-of-god-source.html',
   'media/demo/mac4.jpg',
+  'media/believe-blackbird-selected.jpg',
+  'media/bg.poster.jpg',
+  'media/louis-vuitton-ss20-poster.jpg',
+  'media/stagecraft-hero.png',
+  'media/believe-help-source.jpg',
+  'media/human-race-poster.jpg',
+  'media/demo/help-bts.webp',
+  'media/demo/help-bts-2.webp',
+  'media/resume/mill-experience.jpg',
+  'media/resume/kiss-new-era.jpg',
 ];
 
 const FORBIDDEN_STAGE_FILES = [
@@ -130,6 +143,8 @@ const files = {
   worker: '_worker.js',
   routes: '_routes.json',
   macModel: 'media/3d/apple_macintosh.glb',
+  handOfGod: 'media/interactive/hand-of-god.html',
+  handOfGodSource: 'media/interactive/hand-of-god-source.html',
 };
 
 const deployInfo = {

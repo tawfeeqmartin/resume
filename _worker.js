@@ -5,6 +5,8 @@ const SAME_ORIGIN_MEDIA = new Set([
 const COMPANION_SESSION_PATTERN = /^[A-Za-z0-9_-]{8,64}$/;
 const COMPANION_INSTANCE = 'cloudflare-cache-v1';
 const COMPANION_TTL_SECONDS = 24 * 60 * 60;
+const COMPANION_LONG_POLL_MAX_SECONDS = 25;
+const COMPANION_LONG_POLL_STEP_MS = 1000;
 
 function companionJson(payload, status = 200) {
   return new Response(JSON.stringify(payload), {
@@ -66,6 +68,25 @@ async function companionPayload(request) {
   return request.json().catch(() => ({}));
 }
 
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function companionStatePayload(state) {
+  return {
+    ok: true,
+    instanceId: COMPANION_INSTANCE,
+    updatedAt: Number(state.updatedAt) || 0,
+    revision: Number(state.revision) || 0,
+    startedAt: Number(state.startedAt) || 0,
+    command: state.command || 'stop',
+    displayMode: state.displayMode || 'intro',
+    activeChannel: state.activeChannel || '',
+    activeCamera: state.activeCamera || 'hero',
+    visitorName: state.visitorName || '',
+  };
+}
+
 async function handleCompanionRequest(request, url) {
   if (!url.pathname.startsWith('/api/companion/')) return null;
   const payload = await companionPayload(request);
@@ -110,17 +131,27 @@ async function handleCompanionRequest(request, url) {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return companionJson({ ok: false, error: 'Method not allowed.' }, 405);
     }
-    return companionJson({
-      ok: true,
-      instanceId: COMPANION_INSTANCE,
-      revision: Number(state.revision) || 0,
-      startedAt: Number(state.startedAt) || 0,
-      command: state.command || 'stop',
-      displayMode: state.displayMode || 'intro',
-      activeChannel: state.activeChannel || '',
-      activeCamera: state.activeCamera || 'hero',
-      visitorName: state.visitorName || '',
-    });
+    const since = Math.max(0, Number(url.searchParams.get('since')) || 0);
+    const requestedWait = Math.max(0, Number(url.searchParams.get('wait')) || 0);
+    const waitSeconds = request.method === 'HEAD'
+      ? 0
+      : Math.min(COMPANION_LONG_POLL_MAX_SECONDS, requestedWait);
+    const deadline = Date.now() + (waitSeconds * 1000);
+
+    // Hold an unchanged request open instead of making both screens hit the
+    // Worker every few seconds. Cache API waits do not count as CPU time, and
+    // the 1 s cadence stays below the Free plan's 50 subrequests/invocation.
+    while (waitSeconds > 0
+      && since > 0
+      && (Number(state.updatedAt) || 0) <= since
+      && Date.now() < deadline) {
+      await wait(Math.min(COMPANION_LONG_POLL_STEP_MS, deadline - Date.now()));
+      const current = await readCompanionState(url, session);
+      if (!current) break;
+      state = current;
+    }
+
+    return companionJson(companionStatePayload(state));
   }
 
   if (url.pathname === '/api/companion/start' || url.pathname === '/api/companion/stop') {

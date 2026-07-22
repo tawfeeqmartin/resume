@@ -2489,7 +2489,7 @@ function ScrollAudioLayers() {
     };
     const sectionState = (id) => {
       if (id === 'summary' || id === 'experience') return 'yellow';
-      if (id === 'help' || id === 'blackbird' || id === 'system' || id === 'project') return 'blue';
+      if (id === 'help' || id === 'blackbird' || id === 'hand-of-god' || id === 'system' || id === 'project') return 'blue';
       if (id === 'awards' || id === 'skills' || id === 'edu' || id === 'refs') return 'red';
       return 'hero';
     };
@@ -3117,6 +3117,21 @@ function HelpPlayer({ src }) {
     window.addEventListener('resume-video-fullscreen-exit', onFullscreenExit);
     return () => window.removeEventListener('resume-video-fullscreen-exit', onFullscreenExit);
   }, [stopPlayback, forceRendererResize, emitHelpImmersiveState]);
+
+  // The production HELP player already owns tab visibility and offscreen
+  // cleanup. This placement adapter closes the one new race introduced by the
+  // third-section sticky boundary: once HELP unpins, stop it immediately even
+  // if IntersectionObserver delivered its offscreen entry one frame earlier.
+  useEffect(() => {
+    const onPinChange = (event) => {
+      const slot = hostRef.current?.closest('.help-player');
+      const section = event.detail?.section;
+      if (!slot || !section?.contains?.(slot) || event.detail?.pinned !== false) return;
+      stopPlayback();
+    };
+    window.addEventListener('resume-help-pin-change', onPinChange);
+    return () => window.removeEventListener('resume-help-pin-change', onPinChange);
+  }, [stopPlayback]);
 
   const playHelpWithSound = React.useCallback(() => {
     const renderer = rendererRef.current;
@@ -3799,13 +3814,24 @@ function ProofStampRow({ items, compact, className = "" }) {
   );
 }
 
-function BlackbirdFeature({ innovationSrc, behindScenesSrc, label = "04 · SELECTED WORK · THE MILL BLACKBIRD" }) {
+function BlackbirdFeature({
+  innovationSrc,
+  behindScenesSrc,
+  label = "04 · SELECTED WORK · THE MILL BLACKBIRD",
+}) {
   return (
     <Section id="blackbird" label={label}>
       <div className="help-feature">
         <div className="help-feature__player-col help-feature__player-col--wide">
           <div className="video-stack">
             <VideoSlot src={innovationSrc} fallbackPath="resume/media/blackbird-innovation.mp4" label="cannes lions innovation film · the mill blackbird" />
+            {behindScenesSrc ? (
+              <VideoSlot
+                src={behindScenesSrc}
+                fallbackPath="resume/media/blackbird.mp4"
+                label="virtual production case study · chevrolet the human race"
+              />
+            ) : null}
           </div>
         </div>
         <aside className="help-feature__notes help-feature__notes--match-stack">
@@ -3842,6 +3868,113 @@ function BlackbirdFeature({ innovationSrc, behindScenesSrc, label = "04 · SELEC
               <dd>A practical platform connecting vehicle photography, tracking, virtual production, and final CG finishing.</dd>
             </div>
           </dl>
+        </aside>
+      </div>
+    </Section>
+  );
+}
+
+function HandOfGodFeature({
+  src = "media/interactive/hand-of-god.html",
+  label = "05 · INTERACTIVE · BEAUTIFUL GAME / HAND OF GOD",
+}) {
+  const featureRef = useRef(null);
+  const frameRef = useRef(null);
+  const activeRef = useRef(false);
+
+  useEffect(() => {
+    if (window.location.hash !== '#hand-of-god') return undefined;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById('hand-of-god')?.scrollIntoView({ block: 'start' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    const feature = featureRef.current;
+    const iframe = frameRef.current;
+    if (!feature || !iframe) return undefined;
+
+    let commandedState = null;
+    const syncPlayback = ({ restart = false } = {}) => {
+      const playing = Boolean(activeRef.current);
+      if (!restart && commandedState === playing) return;
+      commandedState = playing;
+      feature.dataset.playbackRequested = playing ? 'play' : 'pause';
+      iframe.contentWindow?.postMessage({
+        type: 'beautifulgame:set-playback',
+        playing,
+        loop: true,
+        restart: Boolean(restart && playing),
+      }, window.location.origin);
+    };
+    const onDemoStatus = (event) => {
+      if (event.origin !== window.location.origin || event.source !== iframe.contentWindow) return;
+      if (event.data?.type !== 'beautifulgame:playback-status') return;
+      feature.dataset.demoPlaying = event.data.playing ? 'true' : 'false';
+      feature.dataset.demoReady = 'true';
+    };
+    const onFrameLoad = () => {
+      commandedState = null;
+      syncPlayback({ restart: activeRef.current });
+    };
+    const updatePlaybackActivity = () => {
+      const rect = feature.getBoundingClientRect();
+      const viewportHeight = window.innerHeight || 1;
+      const visibleHeight = Math.max(
+        0,
+        Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0)
+      );
+      const visibleRatio = visibleHeight / Math.max(1, Math.min(rect.height, viewportHeight));
+      const wasActive = activeRef.current;
+      activeRef.current = visibleRatio >= 0.35;
+      feature.dataset.playbackActive = activeRef.current ? 'true' : 'false';
+      syncPlayback({ restart: activeRef.current && !wasActive });
+    };
+    const schedulePlaybackActivity = () => updatePlaybackActivity();
+    const sectionObserver = new IntersectionObserver(schedulePlaybackActivity, {
+      threshold: [0, 0.35, 0.6, 1],
+    });
+
+    iframe.addEventListener('load', onFrameLoad);
+    window.addEventListener('message', onDemoStatus);
+    window.addEventListener('scroll', schedulePlaybackActivity, { passive: true });
+    window.addEventListener('resize', schedulePlaybackActivity, { passive: true });
+    window.addEventListener('pageshow', schedulePlaybackActivity);
+    sectionObserver.observe(feature);
+    schedulePlaybackActivity();
+    return () => {
+      activeRef.current = false;
+      syncPlayback();
+      iframe.removeEventListener('load', onFrameLoad);
+      window.removeEventListener('message', onDemoStatus);
+      window.removeEventListener('scroll', schedulePlaybackActivity);
+      window.removeEventListener('resize', schedulePlaybackActivity);
+      window.removeEventListener('pageshow', schedulePlaybackActivity);
+      sectionObserver.disconnect();
+    };
+  }, []);
+
+  return (
+    <Section id="hand-of-god" label={label}>
+      <div className="hand-of-god-feature" ref={featureRef}>
+        <iframe
+          ref={frameRef}
+          className="hand-of-god-feature__frame"
+          src={src}
+          title="Beautiful Game — Hand of God match sculpture"
+          loading="eager"
+          allow="autoplay; fullscreen"
+          allowFullScreen
+        />
+        <aside className="hand-of-god-feature__note">
+          <p>
+            Beautiful Game turns football match data into cinematic, interactive point-cloud
+            sculptures that trace the buildup to each goal. It combines real match events,
+            color-mapped ball movement, technical micrographics, and animated constellations
+            across field, flythrough, and reveal views. Each match can become a living digital
+            artwork, video export, or lightweight interactive token.
+          </p>
         </aside>
       </div>
     </Section>
@@ -5999,6 +6132,459 @@ const MAC_KEY_ALIASES = {
   B: 'KeyB',
   space: 'Space',
 };
+
+const MAC_GHOSTWRITER_STORAGE_KEY = 'resume-mac-ghostwriter-v3';
+const MAC_TERMINAL_FONT = 'Monaco, "SFMono-Regular", Menlo, monospace';
+const MAC_GHOSTWRITER_PHRASES = [
+  {
+    id: 'inevitable',
+    phrase: 'you were always going to press it.',
+    response: '[inevitability confirmed]',
+    responseKeys: ['KeyY', 'KeyE', 'KeyS', 'Enter'],
+  },
+  {
+    id: 'wrong-right',
+    phrase: 'wrong key. right answer.',
+    response: '[intent recovered]',
+    responseKeys: ['KeyW', 'KeyR', 'KeyD', 'Enter'],
+  },
+  {
+    id: 'strange-bit',
+    phrase: 'the strange bit is the point.',
+    response: '[anomaly selected]',
+    responseKeys: ['KeyS', 'KeyB', 'KeyT', 'Enter'],
+  },
+  {
+    id: 'impossible',
+    phrase: 'make something impossible.',
+    response: '[impossible queued]',
+    responseKeys: ['KeyM', 'KeyA', 'KeyK', 'KeyE', 'Enter'],
+  },
+  {
+    id: 'friends',
+    phrase: 'do it with friends.',
+    response: '[high-five sockets open]',
+    responseKeys: ['KeyD', 'KeyI', 'KeyW', 'KeyF', 'Enter'],
+  },
+  {
+    id: 'call',
+    phrase: 'call tawfeeq for a good time.',
+    response: '[line open]',
+    responseKeys: ['KeyC', 'KeyA', 'KeyL', 'KeyL', 'Enter'],
+    weight: 2,
+  },
+  {
+    id: 'respect',
+    phrase: 'again? honestly, respect.',
+    response: '[commitment noted]',
+    responseKeys: ['KeyR', 'KeyE', 'KeyS', 'KeyP', 'Enter'],
+  },
+  {
+    id: 'noticed',
+    phrase: 'the machine noticed you.',
+    response: '[eye contact established]',
+    responseKeys: ['KeyN', 'KeyO', 'KeyW', 'Enter'],
+  },
+  {
+    id: 'stop',
+    phrase: 'you can stop whenever you want.',
+    response: '[no pressure]',
+    responseKeys: ['KeyS', 'KeyT', 'KeyO', 'KeyP', 'Enter'],
+  },
+  {
+    id: 'not-stop',
+    phrase: 'apparently, you do not want.',
+    response: '[excellent choice]',
+    responseKeys: ['KeyG', 'KeyO', 'Enter'],
+  },
+  {
+    id: 'relationship',
+    phrase: 'this is becoming a relationship.',
+    response: '[status: complicated]',
+    responseKeys: ['KeyU', 'KeyS', 'Enter'],
+  },
+  {
+    id: 'cursor-believes',
+    phrase: 'the cursor believes in you.',
+    response: '[cursor nods]',
+    responseKeys: ['KeyY', 'KeyE', 'KeyS', 'Enter'],
+  },
+  {
+    id: 'change-everything',
+    phrase: 'one more key could change everything.',
+    response: '[probability recalculated]',
+    responseKeys: ['KeyO', 'KeyN', 'KeyE', 'Enter'],
+  },
+  {
+    id: 'did-not',
+    phrase: 'it did not. try another.',
+    response: '[iteration continues]',
+    responseKeys: ['KeyT', 'KeyR', 'KeyY', 'Enter'],
+  },
+  {
+    id: 'still-strange',
+    phrase: 'still here. still strange.',
+    response: '[signal stable]',
+    responseKeys: ['KeyS', 'KeyT', 'KeyL', 'Enter'],
+  },
+  {
+    id: 'complaint',
+    phrase: 'the buttons have filed a complaint.',
+    response: '[complaint ignored]',
+    responseKeys: ['KeyN', 'KeyO', 'Enter'],
+  },
+  {
+    id: 'cast',
+    phrase: 'your keyboard is now part of the cast.',
+    response: '[supporting role confirmed]',
+    responseKeys: ['KeyC', 'KeyA', 'KeyS', 'KeyT', 'Enter'],
+  },
+  {
+    id: 'not-random',
+    phrase: 'nothing is random after the third time.',
+    response: '[pattern detected]',
+    responseKeys: ['Digit3', 'KeyX', 'Enter'],
+  },
+  {
+    id: 'hallway',
+    phrase: 'you found the infinite hallway.',
+    response: '[no exit rendered]',
+    responseKeys: ['KeyW', 'KeyA', 'KeyL', 'KeyK', 'Enter'],
+  },
+  {
+    id: 'more-real',
+    phrase: 'every click makes it more real.',
+    response: '[reality +1]',
+    responseKeys: ['Equal', 'Digit1', 'Enter'],
+  },
+  {
+    id: 'not-productive',
+    phrase: 'this is not a productivity tool.',
+    response: '[thank goodness]',
+    responseKeys: ['KeyN', 'KeyO', 'KeyP', 'KeyE', 'Enter'],
+  },
+  {
+    id: 'panic',
+    phrase: 'design first. panic beautifully.',
+    response: '[panic art-directed]',
+    responseKeys: ['KeyD', 'KeyP', 'KeyB', 'Enter'],
+  },
+  {
+    id: 'accident',
+    phrase: 'make the accident intentional.',
+    response: '[happy accident approved]',
+    responseKeys: ['KeyM', 'KeyA', 'KeyK', 'KeyE', 'Enter'],
+  },
+  {
+    id: 'dangerous-verb',
+    phrase: 'believe is a dangerous verb.',
+    response: '[verb armed]',
+    responseKeys: ['KeyB', 'KeyL', 'KeyV', 'Enter'],
+  },
+  {
+    id: 'sensible-shoes',
+    phrase: 'good ideas hate sensible shoes.',
+    response: '[laces removed]',
+    responseKeys: ['KeyG', 'KeyO', 'KeyO', 'KeyD', 'Enter'],
+  },
+  {
+    id: 'entered-chat',
+    phrase: 'the impossible has entered the chat.',
+    response: '[typing…]',
+    responseKeys: ['KeyI', 'KeyM', 'KeyP', 'Enter'],
+  },
+  {
+    id: 'normal-website',
+    phrase: 'we could have made a normal website.',
+    response: '[request denied]',
+    responseKeys: ['KeyN', 'KeyO', 'Enter'],
+  },
+  {
+    id: 'normal-brief',
+    phrase: 'normal was never on the brief.',
+    response: '[brief understood]',
+    responseKeys: ['KeyO', 'KeyK', 'Enter'],
+  },
+  {
+    id: 'producer',
+    phrase: 'somewhere, a producer is nervous.',
+    response: '[contingency added]',
+    responseKeys: ['KeyC', 'KeyT', 'KeyL', 'KeyZ', 'Enter'],
+  },
+  {
+    id: 'engineer',
+    phrase: 'somewhere else, an engineer is smiling.',
+    response: '[build passing]',
+    responseKeys: ['KeyY', 'KeyE', 'KeyS', 'Enter'],
+  },
+  {
+    id: 'interaction',
+    phrase: 'congratulations. you are the interaction.',
+    response: '[role accepted]',
+    responseKeys: ['KeyU', 'KeyS', 'KeyR', 'Enter'],
+  },
+  {
+    id: 'watching',
+    phrase: 'the demo is now watching you.',
+    response: '[do something interesting]',
+    responseKeys: ['KeyW', 'KeyA', 'KeyT', 'KeyC', 'KeyH', 'Enter'],
+  },
+  {
+    id: 'science',
+    phrase: 'please continue. science needs this.',
+    response: '[research ongoing]',
+    responseKeys: ['KeyR', 'KeyN', 'KeyD', 'Enter'],
+  },
+  {
+    id: 'one-key',
+    phrase: 'this sentence cost one key at a time.',
+    response: '[invoice generated]',
+    responseKeys: ['KeyP', 'KeyA', 'KeyY', 'Enter'],
+  },
+  {
+    id: 'definitely-one',
+    phrase: 'the next key is definitely the one.',
+    response: '[confidence: 99%]',
+    responseKeys: ['Digit9', 'Digit9', 'Enter'],
+  },
+  {
+    id: 'was-not',
+    phrase: 'it was not.',
+    response: '[confidence revised]',
+    responseKeys: ['Backspace', 'Backspace', 'Enter'],
+  },
+  {
+    id: 'potential',
+    phrase: 'okay, that one had potential.',
+    response: '[potential archived]',
+    responseKeys: ['KeyO', 'KeyK', 'Enter'],
+  },
+  {
+    id: 'coffee',
+    phrase: 'tawfeeq owes you a coffee now.',
+    response: '[receipt saved]',
+    responseKeys: ['KeyC', 'KeyA', 'KeyF', 'KeyE', 'Enter'],
+  },
+];
+
+// The ghostwriter is authored as a handful of coherent little stories rather
+// than one large phrase lottery. A visitor stays inside one voice long enough
+// for the Macintosh to feel intentional; later visits rotate to a different
+// stream so the interaction can still surprise them.
+const MAC_GHOSTWRITER_STREAMS = [
+  {
+    id: 'machine-notices',
+    phraseIds: [
+      'inevitable',
+      'wrong-right',
+      'noticed',
+      'still-strange',
+      'cursor-believes',
+      'change-everything',
+      'did-not',
+      'relationship',
+      'call',
+    ],
+  },
+  {
+    id: 'creative-conspiracy',
+    phraseIds: [
+      'strange-bit',
+      'sensible-shoes',
+      'accident',
+      'panic',
+      'impossible',
+      'entered-chat',
+      'dangerous-verb',
+      'normal-brief',
+      'friends',
+      'call',
+    ],
+  },
+  {
+    id: 'interface-rebellion',
+    phraseIds: [
+      'complaint',
+      'cast',
+      'one-key',
+      'interaction',
+      'watching',
+      'science',
+      'not-productive',
+      'normal-website',
+      'producer',
+      'engineer',
+    ],
+  },
+  {
+    id: 'infinite-hallway',
+    phraseIds: [
+      'respect',
+      'stop',
+      'not-stop',
+      'not-random',
+      'hallway',
+      'more-real',
+      'definitely-one',
+      'was-not',
+      'potential',
+      'coffee',
+    ],
+  },
+];
+
+function shuffleMacGhostwriterIds(ids = []) {
+  const remaining = [...ids];
+  const shuffled = [];
+  while (remaining.length) {
+    const previous = shuffled[shuffled.length - 1] || '';
+    const eligible = remaining
+      .map((id, index) => ({ id, index }))
+      .filter((entry) => entry.id !== previous);
+    const pool = eligible.length ? eligible : remaining.map((id, index) => ({ id, index }));
+    const selected = pool[Math.floor(Math.random() * pool.length)];
+    shuffled.push(selected.id);
+    remaining.splice(selected.index, 1);
+  }
+  return shuffled;
+}
+
+function takeNextMacGhostwriterStream() {
+  const streamIds = MAC_GHOSTWRITER_STREAMS.map((stream) => stream.id);
+  let saved = { queue: [], last: '' };
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(MAC_GHOSTWRITER_STORAGE_KEY) || '{}');
+    saved = {
+      queue: Array.isArray(parsed.queue) ? parsed.queue.filter((id) => streamIds.includes(id)) : [],
+      last: streamIds.includes(parsed.last) ? parsed.last : '',
+    };
+  } catch (_) {}
+  if (!saved.queue.length) {
+    saved.queue = shuffleMacGhostwriterIds(streamIds);
+    if (saved.queue.length > 1 && saved.queue[0] === saved.last) {
+      const differentIndex = saved.queue.findIndex((id) => id !== saved.last);
+      if (differentIndex > 0) {
+        [saved.queue[0], saved.queue[differentIndex]] = [
+          saved.queue[differentIndex],
+          saved.queue[0],
+        ];
+      }
+    }
+  }
+  const nextId = saved.queue.shift() || streamIds[0];
+  try {
+    window.localStorage.setItem(MAC_GHOSTWRITER_STORAGE_KEY, JSON.stringify({
+      queue: saved.queue,
+      last: nextId,
+    }));
+  } catch (_) {}
+  return MAC_GHOSTWRITER_STREAMS.find((stream) => stream.id === nextId)
+    || MAC_GHOSTWRITER_STREAMS[0];
+}
+
+function getMacGhostwriterSharePackage(phrase = '') {
+  const productionUrl = 'https://tawfeeqmartin.com/Resume.html';
+  const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+  const url = localHost
+    ? productionUrl
+    : `${window.location.origin}${window.location.pathname}`;
+  const text = `“${String(phrase).trim()}”\n\nThe Macintosh made me type it.`;
+  return { text, url, composed: `${text}\n\n${url}` };
+}
+
+async function createMacGhostwriterGif({ phrase = '' } = {}) {
+  const { GIFEncoder, quantize, applyPalette } = await import(
+    './gif-bundle.js?v=ghostwriter-export-v1'
+  );
+  try {
+    await document.fonts?.load?.('400 32px Monaco');
+  } catch (_) {}
+  const width = 640;
+  const height = 360;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) throw new Error('GIF canvas unavailable');
+  const gif = GIFEncoder();
+  const chars = Array.from(String(phrase));
+  const frames = 26;
+  const typeFrames = 17;
+  const ink = '#050505';
+  const paper = '#f8f7ee';
+  const mono = MAC_TERMINAL_FONT;
+
+  const wrapLines = (text, maxWidth) => {
+    const words = String(text).split(' ');
+    const lines = [];
+    let line = '';
+    words.forEach((word, index) => {
+      const candidate = line ? `${line} ${word}` : word;
+      if (line && ctx.measureText(candidate).width > maxWidth) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = candidate;
+      }
+      if (index === words.length - 1) lines.push(line);
+    });
+    return lines.length ? lines : [''];
+  };
+
+  for (let frame = 0; frame < frames; frame += 1) {
+    const reveal = Math.min(
+      chars.length,
+      Math.round(chars.length * Math.min(1, frame / Math.max(1, typeFrames - 1))),
+    );
+    const shown = chars.slice(0, reveal).join('');
+    const glitchFrame = frame === 1 || frame === 9 || frame === typeFrames + 1;
+
+    ctx.fillStyle = paper;
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = ink;
+    ctx.font = `400 16px ${mono}`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('tm@Mac Dev % ./ghostwriter', 38, 42);
+
+    ctx.fillStyle = ink;
+    ctx.font = `400 31px ${mono}`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    const lines = wrapLines(shown, width - 106).slice(0, 3);
+    const firstY = 150;
+    lines.forEach((line, index) => {
+      ctx.fillText(`${index === 0 ? '> ' : '  '}${line}`, 48, firstY + index * 49);
+    });
+    if (frame % 6 < 4) {
+      const lastLine = lines[lines.length - 1] || '';
+      const prefix = lines.length === 1 ? '> ' : '  ';
+      const cursorX = Math.min(width - 48, 48 + ctx.measureText(`${prefix}${lastLine}`).width + 7);
+      const cursorY = firstY + (lines.length - 1) * 49;
+      ctx.fillStyle = ink;
+      ctx.fillRect(cursorX, cursorY - 27, 10, 36);
+    }
+    if (glitchFrame) {
+      ctx.fillStyle = ink;
+      ctx.fillRect(84 + frame * 7, 223, 148, 2);
+    }
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle = ink;
+    for (let y = 68; y < height; y += 5) ctx.fillRect(0, y, width, 1);
+    ctx.globalAlpha = 1;
+
+    const rgba = ctx.getImageData(0, 0, width, height).data;
+    const palette = quantize(rgba, 48, { format: 'rgb444' });
+    const indexed = applyPalette(rgba, palette, 'rgb444');
+    gif.writeFrame(indexed, width, height, {
+      palette,
+      delay: frame === frames - 1 ? 720 : 90,
+      repeat: 0,
+    });
+  }
+  gif.finish();
+  return new Blob([gif.bytes()], { type: 'image/gif' });
+}
 
 const MAC_KEY_BY_CHAR = Object.fromEntries(
   Object.entries(MAC_KEY_DEFS).flatMap(([code, def]) => (
@@ -8460,109 +9046,161 @@ function drawVfxWindowsCrashFrame(
   ctx.clip();
   ctx.globalAlpha = 1;
 
+  // The close TRY IT insert only sees the center of the volume. Keep two
+  // compact, staggered crash windows on the central processor feeds so their
+  // complete silhouettes remain visible beside the Macintosh. The outer UHD
+  // feeds retain the live code instead of showing giant cropped error fields.
+  if (regionIndex !== 1 && regionIndex !== 2) {
+    ctx.restore();
+    return false;
+  }
+  const isLeftWindow = regionIndex === 1;
+  const dialog = {
+    x: x + w * (isLeftWindow ? 0.39 : 0.18),
+    y: y + h * (isLeftWindow ? 0.18 : 0.51),
+    width: w * 0.41,
+    height: h * 0.29,
+  };
+  const titleHeight = dialog.height * 0.19;
+  const border = Math.max(3, Math.round(dialog.width * 0.009));
+
   if (kind === 'win95-dialog') {
-    ctx.fillStyle = '#008080';
-    ctx.fillRect(x, y, w, h);
-    const dialog = {
-      x: x + w * 0.11,
-      y: y + h * 0.24,
-      width: w * 0.78,
-      height: h * 0.46,
-    };
+    ctx.fillStyle = '#06090b';
+    ctx.fillRect(
+      dialog.x - border * 1.8,
+      dialog.y - border * 1.8,
+      dialog.width + border * 3.6,
+      dialog.height + border * 3.6,
+    );
     ctx.fillStyle = '#c0c0c0';
     ctx.fillRect(dialog.x, dialog.y, dialog.width, dialog.height);
     ctx.fillStyle = '#000080';
     ctx.fillRect(
-      dialog.x + w * 0.008,
-      dialog.y + h * 0.014,
-      dialog.width - w * 0.016,
-      h * 0.075,
+      dialog.x + border,
+      dialog.y + border,
+      dialog.width - border * 2,
+      titleHeight,
     );
     ctx.fillStyle = '#fff';
-    ctx.font = `700 ${Math.max(15, Math.round(w * 0.026))}px ${mono}`;
-    ctx.fillText('PROGRAM ERROR', dialog.x + w * 0.026, dialog.y + h * 0.032);
+    ctx.textBaseline = 'middle';
+    ctx.font = `700 ${Math.max(12, Math.round(dialog.width * 0.038))}px ${mono}`;
+    ctx.fillText(
+      isLeftWindow ? 'PROGRAM ERROR' : 'REALITY.EXE',
+      dialog.x + dialog.width * 0.045,
+      dialog.y + border + titleHeight * 0.5,
+    );
     ctx.fillStyle = '#000';
-    ctx.font = `500 ${Math.max(12, Math.round(w * 0.019))}px ${mono}`;
+    ctx.textBaseline = 'top';
+    ctx.font = `500 ${Math.max(10, Math.round(dialog.width * 0.026))}px ${mono}`;
     [
-      'BEAUTIFULGAME caused an invalid page fault',
-      'in module REALITY.DLL at 0017:0BADF00D.',
-      '',
-      'The program will now perform an illegal idea.',
+      isLeftWindow ? 'BEAUTIFULGAME caused a page fault' : 'REALITY.DLL stopped responding',
+      isLeftWindow ? 'at 0017:0BADF00D.' : 'after an illegal idea.',
+      'Press a button anyway.',
     ].forEach((line, index) => {
       ctx.fillText(
         line,
-        dialog.x + w * 0.055,
-        dialog.y + h * (0.145 + index * 0.054),
+        dialog.x + dialog.width * 0.06,
+        dialog.y + titleHeight + dialog.height * (0.11 + index * 0.13),
+        dialog.width * 0.88,
       );
     });
-    const buttonWidth = w * 0.17;
-    const buttonHeight = h * 0.075;
+    const buttonWidth = dialog.width * 0.28;
+    const buttonHeight = dialog.height * 0.18;
     ['CLOSE', 'IGNORE'].forEach((label, index) => {
       const bx = dialog.x + dialog.width * 0.5
         - buttonWidth * 1.08
         + index * buttonWidth * 1.18;
-      const by = dialog.y + dialog.height - buttonHeight - h * 0.03;
+      const by = dialog.y + dialog.height - buttonHeight - dialog.height * 0.07;
       ctx.fillStyle = '#c0c0c0';
       ctx.fillRect(bx, by, buttonWidth, buttonHeight);
       ctx.strokeStyle = index === 0 ? '#fff' : '#404040';
-      ctx.lineWidth = Math.max(2, w * 0.003);
+      ctx.lineWidth = Math.max(2, dialog.width * 0.006);
       ctx.strokeRect(bx, by, buttonWidth, buttonHeight);
       ctx.fillStyle = '#000';
-      ctx.font = `600 ${Math.max(11, Math.round(w * 0.017))}px ${mono}`;
-      ctx.fillText(label, bx + buttonWidth * 0.22, by + buttonHeight * 0.28);
+      ctx.textBaseline = 'middle';
+      ctx.font = `600 ${Math.max(9, Math.round(dialog.width * 0.022))}px ${mono}`;
+      ctx.fillText(label, bx + buttonWidth * 0.22, by + buttonHeight * 0.5);
     });
   } else if (kind === 'modern-stop') {
+    ctx.fillStyle = '#05070a';
+    ctx.fillRect(
+      dialog.x - border * 1.8,
+      dialog.y - border * 1.8,
+      dialog.width + border * 3.6,
+      dialog.height + border * 3.6,
+    );
     ctx.fillStyle = '#0078d7';
-    ctx.fillRect(x, y, w, h);
+    ctx.fillRect(dialog.x, dialog.y, dialog.width, dialog.height);
     ctx.fillStyle = '#fff';
-    ctx.font = `300 ${Math.max(42, Math.round(w * 0.105))}px "Segoe UI", ${mono}`;
-    ctx.fillText(':(', x + w * 0.1, y + h * 0.12);
-    ctx.font = `300 ${Math.max(15, Math.round(w * 0.025))}px "Segoe UI", ${mono}`;
+    ctx.textBaseline = 'top';
+    ctx.font = `300 ${Math.max(28, Math.round(dialog.width * 0.13))}px "Segoe UI", ${mono}`;
+    ctx.fillText(':(', dialog.x + dialog.width * 0.08, dialog.y + dialog.height * 0.06);
+    ctx.font = `300 ${Math.max(10, Math.round(dialog.width * 0.029))}px "Segoe UI", ${mono}`;
     [
       'Your imagination ran into a problem',
       'and needs to restart.',
-      '',
-      'We are collecting some strange bits.',
-      `PROCESSOR 0${regionIndex + 1}  ·  100% COMPLETE`,
+      'Collecting strange bits: 100%',
     ].forEach((line, index) => {
-      ctx.fillText(line, x + w * 0.1, y + h * (0.38 + index * 0.07));
+      ctx.fillText(
+        line,
+        dialog.x + dialog.width * 0.08,
+        dialog.y + dialog.height * (0.42 + index * 0.14),
+      );
     });
   } else {
+    ctx.fillStyle = '#05070a';
+    ctx.fillRect(
+      dialog.x - border * 1.8,
+      dialog.y - border * 1.8,
+      dialog.width + border * 3.6,
+      dialog.height + border * 3.6,
+    );
     ctx.fillStyle = '#0000aa';
-    ctx.fillRect(x, y, w, h);
+    ctx.fillRect(dialog.x, dialog.y, dialog.width, dialog.height);
     ctx.fillStyle = '#f5f5f5';
-    ctx.font = `600 ${Math.max(13, Math.round(w * 0.021))}px ${mono}`;
+    ctx.textBaseline = 'top';
+    ctx.font = `600 ${Math.max(10, Math.round(dialog.width * 0.028))}px ${mono}`;
     const title = ` PROCESSOR 0${regionIndex + 1} — SYSTEM HALTED `;
     const titleWidth = ctx.measureText(title).width;
     ctx.fillStyle = '#aaa';
-    ctx.fillRect(x + (w - titleWidth) * 0.5, y + h * 0.12, titleWidth, h * 0.047);
+    ctx.fillRect(
+      dialog.x + (dialog.width - titleWidth) * 0.5,
+      dialog.y + dialog.height * 0.08,
+      titleWidth,
+      dialog.height * 0.13,
+    );
     ctx.fillStyle = '#0000aa';
-    ctx.fillText(title, x + (w - titleWidth) * 0.5, y + h * 0.126);
+    ctx.fillText(
+      title,
+      dialog.x + (dialog.width - titleWidth) * 0.5,
+      dialog.y + dialog.height * 0.085,
+    );
     ctx.fillStyle = '#fff';
-    ctx.font = `500 ${Math.max(11, Math.round(w * 0.017))}px ${mono}`;
+    ctx.font = `500 ${Math.max(9, Math.round(dialog.width * 0.023))}px ${mono}`;
     [
-      'A fatal exception 0E has occurred at 0028:C0DECAFE',
-      'in the creative execution layer.',
-      '',
+      'A fatal exception occurred in CREATIVE.EXE',
       '* Press any key to make the impossible.',
-      '* Press CTRL+ALT+BELIEVE to continue.',
-      '',
-      'Dumping physical memory: 100%',
+      '* CTRL+ALT+BELIEVE to continue.',
     ].forEach((line, index) => {
-      ctx.fillText(line, x + w * 0.08, y + h * (0.26 + index * 0.07));
+      ctx.fillText(
+        line,
+        dialog.x + dialog.width * 0.06,
+        dialog.y + dialog.height * (0.32 + index * 0.17),
+        dialog.width * 0.88,
+      );
     });
   }
 
   // One short horizontal tear keeps these from reading like pristine UI
   // mockups; they are edit frames inside the same glitch language.
-  const tearY = y + h * (0.42 + regionIndex * 0.07);
+  const tearY = dialog.y + dialog.height * (0.44 + (regionIndex - 1) * 0.11);
   ctx.globalCompositeOperation = 'difference';
   ctx.fillStyle = '#fff';
   ctx.fillRect(
-    x,
+    dialog.x,
     tearY,
-    w,
-    Math.max(2, h * 0.012 * glitchStrength),
+    dialog.width,
+    Math.max(2, dialog.height * 0.025 * glitchStrength),
   );
   ctx.restore();
   return true;
@@ -8747,24 +9385,6 @@ function drawVfxCycCode(
   });
   ctx.restore();
 
-  // A restrained processor header makes the source change readable without
-  // adding another title card over the code.
-  ctx.globalAlpha = 0.9;
-  ctx.fillStyle = profile.accent;
-  ctx.fillRect(
-    region.x + region.width * 0.024,
-    region.y + region.height * 0.022,
-    region.width * (0.12 + regionIndex * 0.025),
-    Math.max(2, region.height * 0.004),
-  );
-  ctx.globalAlpha = 0.64;
-  ctx.fillStyle = profile.muted;
-  ctx.font = `500 ${Math.max(8, Math.round(fontSize * 0.56))}px ui-monospace, "SF Mono", Menlo, Monaco, monospace`;
-  ctx.fillText(
-    `${String(page?.dataset?.codeSource || 'live-source').toUpperCase()}  /  0${regionIndex + 1}`,
-    originX,
-    region.y + region.height * 0.028,
-  );
   drawVfxWindowsCrashFrame(
     ctx,
     region,
@@ -8975,9 +9595,13 @@ function isVfxCycMediaReady(media) {
   );
 }
 
-function selectReadyVfxCycMedia(media, preferredIndex) {
+function selectReadyVfxCycMedia(media, preferredIndex, { allowFallback = true } = {}) {
   if (!Array.isArray(media) || !media.length) return null;
   const start = Math.abs(Number(preferredIndex) || 0) % media.length;
+  if (!allowFallback) {
+    const preferred = media[start];
+    return isVfxCycMediaReady(preferred) ? preferred : null;
+  }
   for (let offset = 0; offset < media.length; offset += 1) {
     const candidate = media[(start + offset) % media.length];
     if (isVfxCycMediaReady(candidate)) return candidate;
@@ -9303,7 +9927,12 @@ function paintVfxMarkerCyc(cyc, options = {}) {
     // restrained processor overlap and vertical trim to place the bull's head
     // above the Macintosh without changing the source scale.
     const preferredIndex = frame % Math.max(1, media.length);
-    const active = selectReadyVfxCycMedia(media, preferredIndex);
+    // DESIGN is an authored semantic progression. Never wrap a missing
+    // animation to the first ready plate: doing so made the photoreal bull
+    // return in place of the final pose-skeleton frame on remote builds.
+    const active = selectReadyVfxCycMedia(media, preferredIndex, {
+      allowFallback: false,
+    });
     animated = active?.tagName === 'VIDEO';
     const sourceWidth = Number(active?.videoWidth || active?.naturalWidth || active?.width) || 0;
     const sourceHeight = Number(active?.videoHeight || active?.naturalHeight || active?.height) || 0;
@@ -11194,6 +11823,8 @@ async function rasterizePage(sourceEl, { width = 1280, scale = 1.5, fontCss = ''
   return { canvas: cnv, cssWidth: width, cssHeight: height, scale };
 }
 
+const TV_HERO_PERSONALIZED_PROLOGUE_ENABLED = false;
+
 function TvHero({ sources = [], vocalSamples = [], children }) {
   const wrapRef = React.useRef(null);
   const canvasRef = React.useRef(null);
@@ -11317,10 +11948,25 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    },
 	    contactFormRects: null,
 	    macOvertureBootBlank: true,
+	    macLandingLaunchPending: false,
+	    macStoryTypeActive: false,
+	    macStoryTypedText: '',
+	    macGhostwriter: {
+	      active: false,
+	      id: '',
+	      phrase: '',
+	      response: '',
+	      responseKeys: [],
+	      revealIndex: 0,
+	      phase: 'revealing',
+	    },
+	    macGhostwriterTimers: [],
+	    macGhostwriterShareRects: null,
 	    macCompanionDirectTyping: false,
 	    companionQrImage: null,
 	    companionQrUrl: '',
-	    companionQrVisible: true,
+	    // The QR lives on the red physical sticky. Keep the CRT itself clean.
+	    companionQrVisible: false,
 	    openingInvitationPending: false,
 	    openingInvitationText: '',
 	    openingVoiceLevel: 0,
@@ -11329,7 +11975,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    openingVoiceStepStartedAt: 0,
 	    openingVoiceGateMs: 0,
 	    openingVoiceEmphasis: 0,
-	    visitorNamePromptActive: true,
+	    visitorNamePromptActive: TV_HERO_PERSONALIZED_PROLOGUE_ENABLED,
 	    visitorName: '',
 	    stickyNoteHoverRaf: 0,
 	    hoveredStickyNote: null,
@@ -12377,6 +13023,20 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    wrapRef.current?.removeAttribute('data-visitor-name-answer-size');
 
 	    const companionQr = stateRef.current.companionQrImage;
+	    if (stateRef.current.companionQrVisible && !companionQr) {
+	      // First paint must be clean. Do not flash the retired terminal/name UI
+	      // while the asynchronously generated companion QR becomes available.
+	      ctx2d.fillStyle = '#ffffff';
+	      ctx2d.fillRect(0, 0, w, h);
+	      stateRef.current.contactFormRects = null;
+	      wrapRef.current?.setAttribute('data-companion-qr-screen', 'pending');
+	      ctx2d.restore();
+	      if (screenTex) {
+	        screenTex.needsUpdate = true;
+	        stateRef.current.requestRender?.();
+	      }
+	      return;
+	    }
 	    if (stateRef.current.companionQrVisible && companionQr) {
 	      const black = '#050505';
 	      const paper = '#ffffff';
@@ -12612,34 +13272,186 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     const overtureProgress = Number(stateRef.current.macOvertureProgress || 0);
     const overtureBreather = Boolean(stateRef.current.macOvertureBreather);
     const overtureResolve = Boolean(stateRef.current.macOvertureResolve);
-    if (!stateRef.current.visualReelMode && stateRef.current.macOvertureBootBlank) {
-      if (wrapRef.current) wrapRef.current.dataset.screenPaint = 'idle-welcome';
+    const ghostwriter = stateRef.current.macGhostwriter;
+    if (!stateRef.current.visualReelMode && ghostwriter?.active) {
+      if (wrapRef.current) {
+        wrapRef.current.dataset.screenPaint = 'ghostwriter';
+        wrapRef.current.dataset.ghostwriterPhase = ghostwriter.phase;
+        wrapRef.current.dataset.ghostwriterPhrase = ghostwriter.id;
+      }
       stateRef.current.contactFormRects = null;
-      const black = '#050505';
-      const mono = '"Space Mono", "IBM Plex Mono", Monaco, monospace';
-      const left = px(w * 0.075);
-      const headlineY = px(h * 0.34);
-      const instructionY = px(h * 0.56);
-      ctx2d.fillStyle = '#f8f7ee';
+      stateRef.current.macGhostwriterShareRects = null;
+      const ink = '#050505';
+      const paper = '#f8f7ee';
+      const monoFont = MAC_TERMINAL_FONT;
+      const promptX = px(w * 0.07);
+      const headerY = px(h * 0.15);
+      const revealed = Array.from(String(ghostwriter.phrase || ''))
+        .slice(0, Math.max(0, Number(ghostwriter.revealIndex) || 0))
+        .join('');
+      const phraseSize = px(h * (ghostwriter.phrase.length > 29 ? 0.057 : 0.063));
+      const lineHeight = phraseSize * 1.28;
+      const maxWidth = w * 0.84;
+      const words = revealed.split(' ');
+      const lines = [];
+      let line = '';
+      ctx2d.fillStyle = paper;
       ctx2d.fillRect(0, 0, w, h);
-      ctx2d.fillStyle = black;
       ctx2d.textAlign = 'left';
       ctx2d.textBaseline = 'alphabetic';
-      ctx2d.font = `700 ${px(h * 0.145)}px ${mono}`;
-      ctx2d.fillText('hi.', left, headlineY);
-      ctx2d.font = `500 ${px(h * 0.041)}px ${mono}`;
-      ctx2d.fillText('scroll to start ↓', left, instructionY);
-      ctx2d.font = `400 ${px(h * 0.031)}px ${mono}`;
-      const scanLine = 'or scan the red sticky with your phone.';
-      const scanY = instructionY + px(h * 0.095);
-      ctx2d.fillText(scanLine, left, scanY);
-      if (stateRef.current.macOvertureCursorOn !== false) {
-        const cursorX = left + ctx2d.measureText(scanLine).width + px(w * 0.012);
+      ctx2d.fillStyle = ink;
+      ctx2d.font = `400 ${px(h * 0.024)}px ${monoFont}`;
+      ctx2d.fillText('tm@Mac Dev % ./ghostwriter', promptX, headerY);
+      ctx2d.font = `400 ${phraseSize}px ${monoFont}`;
+      words.forEach((word, index) => {
+        const candidate = line ? `${line} ${word}` : word;
+        if (line && ctx2d.measureText(`> ${candidate}`).width > maxWidth) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = candidate;
+        }
+        if (index === words.length - 1) lines.push(line);
+      });
+      if (!lines.length) lines.push('');
+      // Keep every authored sentence on one terminal baseline. Line wrapping
+      // may add rows beneath it, but must never recenter the first row.
+      const firstY = h * 0.43;
+      lines.forEach((textLine, index) => {
+        ctx2d.fillText(`${index === 0 ? '> ' : '  '}${textLine}`, promptX, px(firstY + index * lineHeight));
+      });
+      const lastLine = lines[lines.length - 1] || '';
+      const lastPrefix = lines.length === 1 ? '> ' : '  ';
+      const cursorX = promptX + ctx2d.measureText(`${lastPrefix}${lastLine}`).width
+        + px(phraseSize * 0.08);
+      const cursorY = px(firstY + (lines.length - 1) * lineHeight);
+      if (ghostwriter.phase === 'revealing' && ensureMacTerminal().cursorOn) {
         ctx2d.fillRect(
           cursorX,
-          scanY - px(h * 0.027),
-          Math.max(6, px(w * 0.012)),
-          px(h * 0.034),
+          cursorY - phraseSize * 0.78,
+          Math.max(5, px(phraseSize * 0.18)),
+          phraseSize * 0.94,
+        );
+      }
+      if (ghostwriter.phase === 'response') {
+        ctx2d.fillStyle = ink;
+        ctx2d.font = `400 ${px(h * 0.021)}px ${monoFont}`;
+        ctx2d.fillText(`ghostwriter: ${String(ghostwriter.response || '[accepted]')}`, promptX, px(h * 0.86));
+      } else if (ghostwriter.phase === 'complete' || ghostwriter.phase === 'armed-next') {
+        const shareY = px(h * 0.79);
+        const shareHeight = px(h * 0.075);
+        const exportRect = {
+          x: px(w * 0.60),
+          y: shareY,
+          w: px(w * 0.32),
+          h: shareHeight,
+        };
+        const xRect = {
+          x: px(w * 0.61),
+          y: shareY,
+          w: px(w * 0.14),
+          h: shareHeight,
+        };
+        const linkedInRect = {
+          x: px(w * 0.77),
+          y: shareY,
+          w: px(w * 0.16),
+          h: shareHeight,
+        };
+        const exportReady = ghostwriter.exportStatus === 'ready';
+        stateRef.current.macGhostwriterShareRects = {
+          export: exportReady ? null : exportRect,
+          x: exportReady ? xRect : null,
+          linkedin: exportReady ? linkedInRect : null,
+        };
+        ctx2d.fillStyle = ink;
+        ctx2d.textAlign = 'left';
+        ctx2d.textBaseline = 'alphabetic';
+        ctx2d.font = `400 ${px(h * 0.018)}px ${monoFont}`;
+        if (exportReady) {
+          ctx2d.fillText('wrote ./thought.gif; copied link', px(w * 0.60), px(h * 0.755));
+          ctx2d.fillText(':share x', xRect.x, px(h * 0.85));
+          ctx2d.fillText(':share linkedin', linkedInRect.x, px(h * 0.85));
+        } else {
+          const exportLabel = ghostwriter.exportStatus === 'rendering'
+            ? 'export: encoding thought.gif'
+            : ghostwriter.exportStatus === 'error'
+              ? 'export: failed; retry'
+              : ':export gif --copy-link';
+          ctx2d.fillText(exportLabel, exportRect.x, px(h * 0.85));
+        }
+      }
+      ctx2d.restore();
+      if (screenTex) {
+        screenTex.needsUpdate = true;
+        stateRef.current.requestRender?.();
+      }
+      return;
+    }
+    if (!stateRef.current.visualReelMode && stateRef.current.macOvertureBootBlank) {
+      if (wrapRef.current) wrapRef.current.dataset.screenPaint = 'idle-cursor';
+      stateRef.current.contactFormRects = null;
+      ctx2d.fillStyle = '#f8f7ee';
+      ctx2d.fillRect(0, 0, w, h);
+      // Nothing but a live terminal insertion point: the first deliberate key
+      // is both the visitor's consent to sound and the command to begin.
+      // Reuse the post-intro ghostwriter prompt, font metrics, baseline and
+      // insertion point exactly so both ends of the show are the same state.
+      // The prompt is persistent terminal punctuation; only the insertion
+      // cursor blinks.
+      const cursorSize = px(h * 0.063);
+      const cursorX = px(w * 0.07);
+      const cursorBaseline = px(h * 0.43);
+      ctx2d.fillStyle = '#050505';
+      ctx2d.textAlign = 'left';
+      ctx2d.textBaseline = 'alphabetic';
+      ctx2d.font = `400 ${cursorSize}px ${MAC_TERMINAL_FONT}`;
+      ctx2d.fillText('> ', cursorX, cursorBaseline);
+      if (stateRef.current.macOvertureCursorOn !== false) {
+        ctx2d.fillRect(
+          cursorX
+            + ctx2d.measureText('> ').width
+            + px(cursorSize * 0.08),
+          cursorBaseline - cursorSize * 0.78,
+          Math.max(5, px(cursorSize * 0.18)),
+          cursorSize * 0.94,
+        );
+      }
+      ctx2d.restore();
+      if (screenTex) {
+        screenTex.needsUpdate = true;
+        stateRef.current.requestRender?.();
+      }
+      return;
+    }
+    if (!stateRef.current.visualReelMode && stateRef.current.macStoryTypeActive) {
+      if (wrapRef.current) wrapRef.current.dataset.screenPaint = 'make-story-typing';
+      stateRef.current.contactFormRects = null;
+      const ink = '#050505';
+      const paper = '#f8f7ee';
+      const monoFont = MAC_TERMINAL_FONT;
+      const typedText = String(stateRef.current.macStoryTypedText || '');
+      const promptX = px(w * 0.075);
+      const promptY = px(h * 0.20);
+      const commandY = px(h * 0.54);
+      const commandSize = px(h * 0.068);
+      ctx2d.fillStyle = paper;
+      ctx2d.fillRect(0, 0, w, h);
+      ctx2d.textAlign = 'left';
+      ctx2d.textBaseline = 'alphabetic';
+      ctx2d.fillStyle = ink;
+      ctx2d.font = `400 ${px(h * 0.025)}px ${monoFont}`;
+      ctx2d.fillText('tm@Mac Dev % ./make.sh', promptX, promptY);
+      ctx2d.font = `400 ${commandSize}px ${monoFont}`;
+      const command = `> ${typedText}`;
+      ctx2d.fillText(command, promptX, commandY);
+      if (stateRef.current.macOvertureCursorOn !== false) {
+        const cursorX = promptX + ctx2d.measureText(command).width + px(commandSize * 0.12);
+        ctx2d.fillRect(
+          cursorX,
+          commandY - commandSize * 0.78,
+          Math.max(7, px(commandSize * 0.28)),
+          commandSize * 0.92,
         );
       }
       ctx2d.restore();
@@ -12931,9 +13743,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         };
       };
       const black = '#000000';
-      // A monoline display face with the technical clarity of the current
-      // agency-grotesk trend, but enough odd geometry to feel authored.
-      const headingFont = '"Space Mono", "IBM Plex Mono", Monaco, monospace';
+      const headingFont = MAC_TERMINAL_FONT;
       ctx2d.textAlign = 'left';
       ctx2d.textBaseline = 'alphabetic';
       ctx2d.fillStyle = black;
@@ -12944,21 +13754,20 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       // prompt is persistent; only the executable is typed by the keyboard.
       const promptX = px(w * 0.055);
       const headingY = px(h * 0.12);
-      let headingSize = px(h * 0.054);
-      ctx2d.letterSpacing = `${px(headingSize * -0.045)}px`;
-      ctx2d.font = `700 ${headingSize}px ${headingFont}`;
+      let headingSize = px(h * 0.043);
+      ctx2d.letterSpacing = '0px';
+      ctx2d.font = `400 ${headingSize}px ${headingFont}`;
       while (ctx2d.measureText(`${promptText}${stage.heading}`).width > w * 0.87
         && headingSize > px(h * 0.038)) {
         headingSize -= 2;
-        ctx2d.letterSpacing = `${px(headingSize * -0.045)}px`;
-        ctx2d.font = `700 ${headingSize}px ${headingFont}`;
+        ctx2d.font = `400 ${headingSize}px ${headingFont}`;
       }
       ctx2d.save();
       ctx2d.font = `400 ${headingSize}px ${headingFont}`;
       ctx2d.fillText(promptText, promptX, headingY);
       const commandX = promptX + ctx2d.measureText(promptText).width;
       ctx2d.restore();
-      ctx2d.font = `700 ${headingSize}px ${headingFont}`;
+      ctx2d.font = `400 ${headingSize}px ${headingFont}`;
       ctx2d.fillStyle = black;
       const typingState = drawTypingReveal(
         stage.heading,
@@ -13031,14 +13840,14 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
           ...terminalOutput.slice(0, completeLineCount),
           ...(partialLine ? [partialLine] : []),
         ].slice(-10);
-        const statusSize = px(h * 0.0235);
+        const statusSize = px(h * 0.0215);
         const statusLeading = statusSize * 1.32;
         const outputY = headingY + headingSize * 1.34;
         ctx2d.save();
         ctx2d.letterSpacing = `${px(statusSize * -0.02)}px`;
         ctx2d.fillStyle = black;
         renderedOutput.forEach((line, index) => {
-          ctx2d.font = `${line === 'success' ? 700 : 400} ${statusSize}px ${headingFont}`;
+          ctx2d.font = `400 ${statusSize}px ${headingFont}`;
           ctx2d.fillText(line, promptX, outputY + statusLeading * index);
         });
         ctx2d.restore();
@@ -13096,7 +13905,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     // The phone is now the channel controller, so the old Mac menu/toolbar no
     // longer belongs on the CRT. Keep the terminal content itself, edge to edge.
     const menuH = 0;
-    const monoFont = 'Monaco, "VT323", "IBM Plex Mono", "Courier New", monospace';
+    const monoFont = MAC_TERMINAL_FONT;
 
     // A compact classic-Mac window: white field, black hairlines, title-bar
     // stripes, close box, and a small scroll bar. The original display was
@@ -13363,6 +14172,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	      if (!voiceVisualRaf) voiceVisualRaf = window.requestAnimationFrame(runVoiceVisual);
 	    };
 	    const prepareCompanionIntro = () => {
+	      stateRef.current.macLandingLaunchPending = true;
 	      stateRef.current.companionQrVisible = false;
 	      stateRef.current.visitorNamePromptActive = false;
 	      stateRef.current.macOvertureBootBlank = false;
@@ -13390,11 +14200,12 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	      prepareCompanionIntro();
 	    };
 	    const onCompanionStop = () => {
+	      stateRef.current.macLandingLaunchPending = false;
 	      stateRef.current.macCompanionDirectTyping = false;
 	      stateRef.current.companionQrVisible = false;
 	      stateRef.current.openingInvitationPending = false;
 	      stopVoiceVisual({ clearScreen: true });
-	      stateRef.current.visitorNamePromptActive = true;
+	      stateRef.current.visitorNamePromptActive = TV_HERO_PERSONALIZED_PROLOGUE_ENABLED;
 	      stateRef.current.visitorName = '';
 	      stateRef.current.forceTerminal = true;
 	      drawMacOffScreen();
@@ -13409,7 +14220,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	          stopVoiceVisual({ clearScreen: true });
 	        }
 	      }
-	      stateRef.current.visitorNamePromptActive = event.detail?.prompt !== false;
+	      stateRef.current.visitorNamePromptActive = TV_HERO_PERSONALIZED_PROLOGUE_ENABLED
+	        && event.detail?.prompt !== false;
 	      if (wrapRef.current) {
 	        wrapRef.current.dataset.visitorName = stateRef.current.visitorName;
 	      }
@@ -13632,27 +14444,16 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     let started = false;
     let fallback = 0;
     let cursorBlink = 0;
-    let fontLoadCancelled = false;
     stateRef.current.macOvertureLoadReveal = 0;
     stateRef.current.macOvertureCursorOn = true;
     stateRef.current.macOvertureBootBlank = true;
-    // Canvas text does not repaint itself when a webfont arrives. Start the
-    // request during the blank boot hold, then redraw with the authored face.
-    document.fonts?.load?.('700 160px "Space Mono"').then(() => {
-      if (fontLoadCancelled) return;
-      stateRef.current.macOvertureDisplayFontReady = true;
-      if (stateRef.current.deviceMode === 'mac'
-        && !stateRef.current.pageMode
-        && !stateRef.current.visualReelMode) {
-        drawMacOffScreen();
-      }
-    }).catch(() => {});
     const begin = () => {
       if (started) return;
       // On the companion/scroll-gated landing page, model readiness must not
       // replace the welcome screen. The existing Start handoff clears the boot
       // hold itself before floppy insertion and ./design typing begin.
-      if (window.__resumeCompanionGateEnabled === true) return;
+      if (window.__resumeCompanionGateEnabled === true
+        || window.__resumeMacWaitForKeyboard === true) return;
       started = true;
       // Let the loaded Macintosh register as an object before it starts typing.
       // During this authored hold the glass is completely blank and the stage
@@ -13690,7 +14491,6 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     }, 480);
     fallback = window.setTimeout(begin, 5000);
     return () => {
-      fontLoadCancelled = true;
       cancelAnimationFrame(frame);
       window.clearInterval(cursorBlink);
       window.clearTimeout(fallback);
@@ -14527,6 +15327,11 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       stateRef.current.macOvertureProgress = progress;
       stateRef.current.macOvertureBreather = event.detail?.breather === true;
       stateRef.current.macOvertureResolve = event.detail?.resolve === true;
+      if (event.detail?.blankScreen === true) {
+        stateRef.current.macOvertureBootBlank = true;
+      } else if (event.detail?.blankScreen === false) {
+        stateRef.current.macOvertureBootBlank = false;
+      }
       stateRef.current.macOvertureResolveProgress = Math.max(
         0,
         Math.min(1, Number(event.detail?.resolveProgress) || 0),
@@ -14789,8 +15594,32 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       state.macOvertureLastKeyChar = String(event.detail?.char || '');
       state.requestRender?.();
     };
+    const onStoryType = (event) => {
+      const state = stateRef.current;
+      const action = String(event.detail?.action || '');
+      if (action === 'begin') {
+        state.macStoryTypeActive = true;
+        state.macStoryTypedText = '';
+      } else if (action === 'type') {
+        state.macStoryTypeActive = true;
+        state.macStoryTypedText = `${state.macStoryTypedText || ''}${String(event.detail?.char || '')}`
+          .slice(0, 32);
+      } else if (action === 'clear') {
+        state.macStoryTypeActive = false;
+        state.macStoryTypedText = '';
+      } else {
+        return;
+      }
+      if (wrapRef.current) {
+        wrapRef.current.dataset.makeStoryTyping = state.macStoryTypeActive ? 'visible' : 'hidden';
+        wrapRef.current.dataset.makeStoryTypedText = state.macStoryTypedText;
+      }
+      drawMacOffScreen();
+    };
     const onCompanionStop = () => {
       const state = stateRef.current;
+      state.macStoryTypeActive = false;
+      state.macStoryTypedText = '';
       state.macWallPowerProgress = 0;
       state.macWallPowerLocked = false;
       state.markerCyc?.userData?.setWallPowerProgress?.(0, false);
@@ -14806,14 +15635,16 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       state.requestRender?.();
     };
     window.addEventListener('resume-mac-screen-character', onScreenCharacter);
+    window.addEventListener('resume-mac-story-type', onStoryType);
     window.addEventListener('resume-companion-stop-intro', onCompanionStop);
     window.addEventListener('resume-crt-wall-power-reset', onCompanionStop);
     return () => {
       window.removeEventListener('resume-mac-screen-character', onScreenCharacter);
+      window.removeEventListener('resume-mac-story-type', onStoryType);
       window.removeEventListener('resume-companion-stop-intro', onCompanionStop);
       window.removeEventListener('resume-crt-wall-power-reset', onCompanionStop);
     };
-  }, [animateKeyPress, helpOwnsTvStage, playMacKeyClick]);
+  }, [animateKeyPress, drawMacOffScreen, helpOwnsTvStage, playMacKeyClick]);
 
 	  const animateKeyMeshPress = React.useCallback((mesh) => {
 	    if (!mesh?.geometry) return;
@@ -16354,6 +17185,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
             hero: 'hero',
             typing: 'typing-close',
             design: 'design-reveal',
+            resist: 'button-resist',
+            buttons: 'keyboard-insert',
             floor: 'floor-low',
             left: 'orbit-left',
             right: 'orbit-right',
@@ -16501,6 +17334,63 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
             noteOpacity: 1,
             distanceScale: 0.42,
           });
+        }
+        if (shot === 'button-resist') {
+          // The warning beat recoils a fraction from the established medium
+          // composition before temptation wins. Keep the move small enough to
+          // feel psychological rather than like a new coverage angle.
+          return subjectPose({
+            shot,
+            fov: 25.5,
+            fill: 0.52,
+            azimuthDeg: 0,
+            elevationDeg: -1.2,
+            noteOpacity: 1,
+            distanceScale: 0.45,
+          });
+        }
+        if (shot === 'keyboard-insert') {
+          // A deliberate product insert on the actual key bed. The slight
+          // elevation is motivated here: it exposes key travel without
+          // turning the wider Macintosh coverage into a top-down shot.
+          const uniqueKeyMeshes = [...new Set(
+            Object.values(stateRef.current.keys || {})
+              .map((key) => key?.mesh)
+              .filter(Boolean),
+          )];
+          const keyboardBox = new THREE.Box3();
+          uniqueKeyMeshes.forEach((mesh) => {
+            mesh.updateMatrixWorld?.(true);
+            keyboardBox.expandByObject(mesh);
+          });
+          if (!keyboardBox.isEmpty()) {
+            // Frame the interaction, not just the keycaps: union the physical
+            // keyboard and CRT glass, then bias the target toward the keys.
+            // The resulting two-shot keeps every typed character readable
+            // while preserving a thin LED-wall perimeter for error flashes.
+            const keyboardCenter = keyboardBox.getCenter(new THREE.Vector3());
+            const crtCenter = screenBox.getCenter(new THREE.Vector3());
+            const interactionBox = keyboardBox.clone().union(screenBox);
+            const sphere = interactionBox.getBoundingSphere(new THREE.Sphere());
+            const target = crtCenter.clone().lerp(keyboardCenter, 0.56);
+            const fov = 16.5;
+            const verticalFov = THREE.MathUtils.degToRad(fov);
+            const horizontalFov = 2 * Math.atan(
+              Math.tan(verticalFov * 0.5) * Math.max(0.0001, camera.aspect),
+            );
+            const limitingFov = Math.min(verticalFov, horizontalFov);
+            const distance = sphere.radius
+              / Math.max(0.0001, Math.sin(limitingFov * 0.5 * 0.92));
+            const direction = new THREE.Vector3(0, 0.055, 1).normalize();
+            return {
+              shot,
+              pos: target.clone().add(direction.multiplyScalar(distance * 0.58)),
+              target,
+              fov,
+              noteOpacity: 0.42,
+            };
+          }
+          return channelCameraPoseFor('camera:typing');
         }
         if (shot === 'typing-close') {
           // A close terminal/keyboard two-shot, not a screen-only insert. Aim
@@ -17568,89 +18458,14 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
             try { window.dispatchEvent(new Event('tvhero:screenbox')); } catch {}
           }
         }
-        const resumeStickyNote = createMacStickyNote(THREE, stateRef.current.caseBox, stateRef.current.screenBox, {
-          text: 'resume / contact',
-          href: '',
-          hitType: 'split',
-          interactive: true,
-          placement: 'center',
-          offsetXFactor: -1.08,
-          scale: 0.285,
-          rotationDeg: 0,
-          overwrittenInk: false,
-          smiley: false,
-          showArrow: false,
-          splitLinks: [
-            {
-              label: 'resume',
-              labelLines: ['resume'],
-              fontSize: 76,
-              href: 'resume-readonly.html',
-              hitType: 'resume',
-            },
-            {
-              label: 'For a good time, call Tawfeeq!',
-              labelLines: ['for a good time,', 'call Tawfeeq!'],
-              fontSize: 50,
-              href: '',
-              hitType: 'contact',
-            },
-          ],
-          fullscreenToolbarFold: true,
-        });
-        const linkedinStickyNote = createMacStickyNote(THREE, stateRef.current.caseBox, stateRef.current.screenBox, {
-          text: 'linkedin',
-          href: 'https://www.linkedin.com/in/tawfeeqmartin',
-          hitType: 'linkedin',
-          placement: 'center',
-          offsetXFactor: 1.78,
-          offsetYFactor: 0.32,
-          scale: 0.255,
-          rotationDeg: 10,
-          paperStops: ['#dff4ff', '#8bd8ff', '#50aee4'],
-          ink: '#17314a',
-          arrowInk: '#183a5a',
-          border: 'rgba(24, 72, 114, 0.26)',
-          shadow: 'rgba(22, 70, 108, 0.16)',
-          emissive: 0x6ec9ff,
-          emissiveIntensity: 0.13,
-        });
-        const signatureStickyNote = createMacStickyNote(THREE, stateRef.current.caseBox, stateRef.current.screenBox, {
-          text: 'phone remote',
-          href: '',
-          hitType: 'signature',
-          interactive: false,
-          placement: 'center',
-          scale: 0.26,
-          minWidth: 0.25,
-          rotationDeg: -2,
-          paperStops: ['#ffd0e6', '#ff91c5', '#ed5ca5'],
-          ink: '#5c173b',
-          arrowInk: '#5c173b',
-          border: 'rgba(116, 24, 73, 0.25)',
-          shadow: 'rgba(112, 22, 68, 0.16)',
-          emissive: 0xff78b7,
-          emissiveIntensity: 0.12,
-          showArrow: false,
-          qrMode: true,
-          aspectRatio: 0.97,
-          foldStyle: 'horizontal-top',
-        });
-        const stickyNotes = [resumeStickyNote, linkedinStickyNote, signatureStickyNote].filter(Boolean);
-        for (const stickyNote of stickyNotes) {
-          scene.add(stickyNote);
-        }
-        stateRef.current.resumeStickyNote = resumeStickyNote;
-        stateRef.current.linkedinStickyNote = linkedinStickyNote;
-        stateRef.current.signatureStickyNote = signatureStickyNote;
+        // Physical sticky notes are intentionally disabled. Their useful destinations
+        // now live as accessible links in the white landing summary.
+        const stickyNotes = [];
+        stateRef.current.resumeStickyNote = null;
+        stateRef.current.linkedinStickyNote = null;
+        stateRef.current.signatureStickyNote = null;
         stateRef.current.stickyNotes = stickyNotes;
-        if (stateRef.current.companionQrImage) {
-          const qrApplied = Boolean(
-            signatureStickyNote?.userData?.setQrImage?.(stateRef.current.companionQrImage),
-          );
-          wrap.dataset.companionQrSticky = qrApplied ? 'applied-on-model' : 'model-missing';
-          stateRef.current.requestRender?.();
-        }
+        wrap.dataset.macStickyNotes = 'disabled';
         const isKeycapMesh = (mesh) => {
           if (mesh.name === '3DGeom_15') return true;
           const match = mesh.name.match(/^Mesh(\d+)$/);
@@ -18187,6 +19002,16 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
               const codeCrash = hasAuthoredMakeFrame
                 ? shell.dataset.makeStoryCrash
                 : detail.codeCrash;
+	            const requestedCrashHoldMs = Number(detail.codeCrashHoldMs);
+	            const codeCrashHoldMs = codeCrash
+	              ? Math.max(
+	                  54,
+	                  Math.min(
+	                    160,
+	                    Number.isFinite(requestedCrashHoldMs) ? requestedCrashHoldMs : 96,
+	                  ),
+	                )
+	              : 0;
 	            cancelAnimationFrame(state.cycGlitchRaf);
 	            const serial = ++state.cycGlitchSerial;
 	            const startedAt = performance.now();
@@ -18258,9 +19083,14 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
                     codeCrash,
                     codeLabel: detail.codeLabel,
                     codeSequence: sequence,
-	                  glitchStrength: visualProgress < 1
-	                    ? Math.pow(1 - visualProgress, 0.58)
-	                    : 0,
+	                  // Crash inserts need one guaranteed clean read before the
+	                  // distortion collapses back into code. This authored hold
+	                  // avoids a 52 ms sampling boundary swallowing the error.
+	                  glitchStrength: codeCrash && elapsed <= codeCrashHoldMs
+	                    ? 1
+	                    : visualProgress < 1
+	                      ? Math.pow(1 - visualProgress, 0.58)
+	                      : 0,
 	                });
 	                wrap.dataset.cycStagePhase = result.phase;
 	                wrap.dataset.cycStageFrame = String(result.frame);
@@ -18674,6 +19504,157 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     return undefined;
   }, [engineEnabled, loadVocalSampleBuffer, stopVocalSamples, vocalSamples]);
 
+  // Post-show ghostwriter: after the intro resolves, every deliberate key
+  // reveals one authored character. The physical key still moves/sounds, but
+  // the CRT writes the next character in the selected phrase regardless of
+  // which key was pressed. This turns the reset into a replayable invitation
+  // without interfering with the authored intro transport.
+  React.useEffect(() => {
+    if (stateRef.current.deviceMode !== 'mac') return undefined;
+    let ghostwriterStream = null;
+    const clearTimers = () => {
+      const timers = stateRef.current.macGhostwriterTimers || [];
+      timers.forEach((timer) => window.clearTimeout(timer));
+      stateRef.current.macGhostwriterTimers = [];
+    };
+    const paintGhostwriter = () => {
+      stateRef.current.forceTerminal = true;
+      drawMacOffScreen();
+      stateRef.current.forceTerminal = false;
+    };
+    const loadPhrase = ({ revealFirst = false } = {}) => {
+      if (!ghostwriterStream || ghostwriterStream.cursor >= ghostwriterStream.phraseIds.length) {
+        const selectedStream = takeNextMacGhostwriterStream();
+        ghostwriterStream = {
+          id: selectedStream.id,
+          phraseIds: [...selectedStream.phraseIds],
+          cursor: 0,
+        };
+      }
+      const selectedId = ghostwriterStream.phraseIds[ghostwriterStream.cursor]
+        || MAC_GHOSTWRITER_PHRASES[0].id;
+      const selected = MAC_GHOSTWRITER_PHRASES.find((entry) => entry.id === selectedId)
+        || MAC_GHOSTWRITER_PHRASES[0];
+      const streamStep = ghostwriterStream.cursor;
+      ghostwriterStream.cursor += 1;
+      stateRef.current.macGhostwriter = {
+        active: true,
+        id: selected.id,
+        stream: ghostwriterStream.id,
+        streamStep,
+        streamLength: ghostwriterStream.phraseIds.length,
+        phrase: selected.phrase,
+        response: selected.response,
+        responseKeys: [...selected.responseKeys],
+        exportStatus: 'idle',
+        exportBlob: null,
+        exportFile: null,
+        revealIndex: revealFirst ? 1 : 0,
+        phase: 'revealing',
+      };
+      ensureMacTerminal().cursorOn = true;
+      if (wrapRef.current) {
+        wrapRef.current.dataset.ghostwriter = 'active';
+        wrapRef.current.dataset.ghostwriterPhrase = selected.id;
+        wrapRef.current.dataset.ghostwriterStream = ghostwriterStream.id;
+        wrapRef.current.dataset.ghostwriterStreamStep = String(streamStep + 1);
+        delete wrapRef.current.dataset.ghostwriterAutocomplete;
+      }
+      paintGhostwriter();
+    };
+    const stopGhostwriter = () => {
+      clearTimers();
+      window.__resumeGhostwriterActive = false;
+      const ghostwriter = stateRef.current.macGhostwriter || {};
+      stateRef.current.macGhostwriter = {
+        ...ghostwriter,
+        active: false,
+        revealIndex: 0,
+        phase: 'revealing',
+      };
+      if (wrapRef.current) {
+        wrapRef.current.dataset.ghostwriter = 'inactive';
+        delete wrapRef.current.dataset.ghostwriterPhrase;
+        delete wrapRef.current.dataset.ghostwriterPhase;
+        delete wrapRef.current.dataset.ghostwriterStream;
+        delete wrapRef.current.dataset.ghostwriterStreamStep;
+        delete wrapRef.current.dataset.ghostwriterAutocomplete;
+      }
+    };
+    const advanceGhostwriter = (code = '', options = {}) => {
+      const ghostwriter = stateRef.current.macGhostwriter;
+      if (!ghostwriter?.active) return false;
+      if (options.repeat) return true;
+      if (code && MAC_KEY_DEFS[code]?.action === 'modifier') return true;
+      if (options.metaKey || options.ctrlKey || options.altKey) return true;
+      if (!options.physicalAlreadyAnimated && code) animateKeyPress(code);
+      if (code) playMacKeyClick(code);
+      if (ghostwriter.phase === 'response') return true;
+      if (ghostwriter.phase === 'complete' || ghostwriter.phase === 'armed-next') {
+        clearTimers();
+        // This keystroke is deliberately silent in the text stream: it clears
+        // the completed sentence and exposes a fresh cursor. The next physical
+        // key reveals character one of the next authored sentence.
+        loadPhrase({ revealFirst: false });
+        return true;
+      }
+      const phraseLength = Array.from(String(ghostwriter.phrase || '')).length;
+      const isTabAutocomplete = code === 'Tab' || options.key === 'Tab';
+      if (isTabAutocomplete) {
+        ghostwriter.revealIndex = phraseLength;
+        ghostwriter.phase = 'complete';
+        ensureMacTerminal().cursorOn = true;
+        if (wrapRef.current) {
+          wrapRef.current.dataset.ghostwriterAutocomplete = ghostwriter.id;
+        }
+        paintGhostwriter();
+        return true;
+      }
+      ghostwriter.revealIndex = Math.min(phraseLength, ghostwriter.revealIndex + 1);
+      if (ghostwriter.revealIndex >= phraseLength) ghostwriter.phase = 'complete';
+      ensureMacTerminal().cursorOn = true;
+      paintGhostwriter();
+      return true;
+    };
+    const startGhostwriter = () => {
+      clearTimers();
+      const selectedStream = takeNextMacGhostwriterStream();
+      ghostwriterStream = {
+        id: selectedStream.id,
+        phraseIds: [...selectedStream.phraseIds],
+        cursor: 0,
+      };
+      window.__resumeGhostwriterActive = true;
+      stateRef.current.openingInvitationPending = false;
+      stateRef.current.visitorNamePromptActive = false;
+      stateRef.current.macStoryTypeActive = false;
+      stateRef.current.macStoryTypedText = '';
+      stateRef.current.macOvertureBootBlank = true;
+      loadPhrase();
+      const capture = keyboardCaptureRef.current;
+      if (capture && isResumePageActive()) {
+        try { capture.focus({ preventScroll: true }); }
+        catch (_) { capture.focus?.(); }
+      }
+    };
+    const onStart = () => startGhostwriter();
+    const onStop = () => stopGhostwriter();
+    window.__resumeMacGhostwriterKey = advanceGhostwriter;
+    window.addEventListener('resume-mac-ghostwriter-start', onStart);
+    window.addEventListener('resume-mac-ghostwriter-stop', onStop);
+    window.addEventListener('resume-companion-start-intro', onStop);
+    return () => {
+      clearTimers();
+      window.removeEventListener('resume-mac-ghostwriter-start', onStart);
+      window.removeEventListener('resume-mac-ghostwriter-stop', onStop);
+      window.removeEventListener('resume-companion-start-intro', onStop);
+      if (window.__resumeMacGhostwriterKey === advanceGhostwriter) {
+        delete window.__resumeMacGhostwriterKey;
+      }
+      window.__resumeGhostwriterActive = false;
+    };
+  }, [animateKeyPress, drawMacOffScreen, ensureMacTerminal, playMacKeyClick]);
+
   // Inactive Mac screen terminal: when the music is off and the hero is in
   // view, normal keyboard input goes to the monochrome terminal on the CRT.
   React.useEffect(() => {
@@ -18691,6 +19672,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     };
     const onKey = (event) => {
       if ((event.code === 'Space' || event.key === ' ')
+        && !stateRef.current.macGhostwriter?.active
         && !event.repeat
         && !event.metaKey
         && !event.ctrlKey
@@ -18710,6 +19692,54 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       if (isEditableTarget(event.target)) return;
       if (document.activeElement !== keyboardCaptureRef.current) return;
       const code = getMacKeyCodeFromEvent(event);
+      if (stateRef.current.macGhostwriter?.active) {
+        const handled = window.__resumeMacGhostwriterKey?.(code, {
+          key: event.key,
+          repeat: event.repeat,
+          metaKey: event.metaKey,
+          ctrlKey: event.ctrlKey,
+          altKey: event.altKey,
+          physicalAlreadyAnimated: false,
+        });
+        if (handled) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+        return;
+      }
+      if (stateRef.current.macOvertureBootBlank
+        && !event.repeat
+        && !event.metaKey
+        && !event.ctrlKey
+        && !event.altKey
+        && code
+        && MAC_KEY_DEFS[code]?.action !== 'modifier') {
+        const firstLaunchKey = !stateRef.current.macLandingLaunchPending;
+        stateRef.current.macLandingLaunchPending = true;
+        animateKeyPress(code);
+        playMacKeyClick(code);
+        if (wrapRef.current) {
+          wrapRef.current.dataset.landingKeyStart = code;
+        }
+        // Prime every audio path inside the physical key gesture. The intro
+        // state machine will remain on this cursor until the ready event, then
+        // ghostwrite and execute ./design with its existing authored timing.
+        try {
+          void window.__resumePrimeIntroAudio?.();
+        } catch {}
+        if (firstLaunchKey) {
+          window.dispatchEvent(new CustomEvent('resume-keyboard-start-intro', {
+            detail: {
+              source: 'keyboard',
+              code,
+              key: event.key,
+            },
+          }));
+        }
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+      }
       if (code) animateKeyPress(code);
       if (stateRef.current.visitorNamePromptActive) {
         if (code) playMacKeyClick(code);
@@ -19103,7 +20133,119 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	      }));
 	      return true;
 	    };
+	    const activateGhostwriterShare = (event) => {
+	      const state = stateRef.current;
+	      const ghostwriter = state.macGhostwriter;
+	      const rects = state.macGhostwriterShareRects;
+	      const screenRect = projectLiveScreenRect();
+	      const screenCanvas = state.screenCanvas;
+	      if (!ghostwriter?.active
+	        || !['complete', 'armed-next'].includes(ghostwriter.phase)
+	        || !rects
+	        || !screenRect
+	        || !screenCanvas) return false;
+	      const x = ((event.clientX - screenRect.x) / screenRect.w) * screenCanvas.width;
+	      const y = ((event.clientY - screenRect.y) / screenRect.h) * screenCanvas.height;
+	      const contains = (rect) => rect
+	        && x >= rect.x && x <= rect.x + rect.w
+	        && y >= rect.y && y <= rect.y + rect.h;
+	      const action = contains(rects.export)
+	        ? 'export'
+	        : contains(rects.x)
+	          ? 'x'
+	          : contains(rects.linkedin)
+	            ? 'linkedin'
+	            : '';
+	      if (!action) return false;
+	      event.preventDefault();
+	      event.stopPropagation();
+	      event.stopImmediatePropagation?.();
+
+	      const sharePackage = getMacGhostwriterSharePackage(ghostwriter.phrase);
+	      if (action === 'export') {
+	        if (ghostwriter.exportStatus === 'rendering') return true;
+	        ghostwriter.exportStatus = 'rendering';
+	        drawMacOffScreen();
+	        const copyPackage = async () => {
+	          try {
+	            await navigator.clipboard.writeText(sharePackage.composed);
+	            return true;
+	          } catch (_) {
+	            const textarea = document.createElement('textarea');
+	            textarea.value = sharePackage.composed;
+	            textarea.setAttribute('readonly', '');
+	            textarea.style.position = 'fixed';
+	            textarea.style.opacity = '0';
+	            document.body.appendChild(textarea);
+	            textarea.select();
+	            const copied = document.execCommand?.('copy') !== false;
+	            textarea.remove();
+	            return copied;
+	          }
+	        };
+	        const copyPromise = copyPackage();
+	        void createMacGhostwriterGif(ghostwriter).then(async (blob) => {
+	          const current = stateRef.current.macGhostwriter;
+	          if (current !== ghostwriter || !current?.active) return;
+	          const safeId = String(ghostwriter.id || 'thought').replace(/[^a-z0-9-]+/gi, '-');
+	          const fileName = `the-macintosh-made-me-type-${safeId}.gif`;
+	          const file = new File([blob], fileName, { type: 'image/gif' });
+	          ghostwriter.exportBlob = blob;
+	          ghostwriter.exportFile = file;
+	          const objectUrl = URL.createObjectURL(blob);
+	          const download = document.createElement('a');
+	          download.href = objectUrl;
+	          download.download = fileName;
+	          download.style.display = 'none';
+	          document.body.appendChild(download);
+	          download.click();
+	          download.remove();
+	          window.setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+	          await copyPromise;
+	          ghostwriter.exportStatus = 'ready';
+	          if (wrapRef.current) {
+	            wrapRef.current.dataset.ghostwriterExport = 'ready';
+	            wrapRef.current.dataset.ghostwriterExportPhrase = ghostwriter.id;
+	          }
+	          drawMacOffScreen();
+	        }).catch(() => {
+	          if (stateRef.current.macGhostwriter !== ghostwriter) return;
+	          ghostwriter.exportStatus = 'error';
+	          if (wrapRef.current) wrapRef.current.dataset.ghostwriterExport = 'error';
+	          drawMacOffScreen();
+	        });
+	        return true;
+	      }
+
+	      if (action === 'x' && ghostwriter.exportFile && navigator.share) {
+	        const nativeShareData = {
+	          title: 'The Macintosh made me type it',
+	          text: sharePackage.text,
+	          url: sharePackage.url,
+	          files: [ghostwriter.exportFile],
+	        };
+	        let canShareFile = false;
+	        try {
+	          canShareFile = !navigator.canShare || navigator.canShare(nativeShareData);
+	        } catch (_) {}
+	        if (canShareFile) {
+	          void navigator.share(nativeShareData).catch(() => {});
+	          return true;
+	        }
+	      }
+	      const href = action === 'x'
+	        ? `https://twitter.com/intent/tweet?text=${encodeURIComponent(sharePackage.text)}&url=${encodeURIComponent(sharePackage.url)}`
+	        : `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(sharePackage.url)}`;
+	      const opened = window.open(href, '_blank', 'noopener,noreferrer');
+	      if (opened) opened.opener = null;
+	      if (wrapRef.current) {
+	        wrapRef.current.dataset.ghostwriterShared = action;
+	        wrapRef.current.dataset.ghostwriterSharedPhrase = ghostwriter.id;
+	      }
+	      return true;
+	    };
 	    const onWindowPointerDown = (event) => {
+	      if (activateGhostwriterShare(event)) return;
 	      if (activateContactControl(event)) return;
 	      activateScreenMenuChannel(event);
 	    };
@@ -19154,6 +20296,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 		    const onPointerDown = async (event) => {
 			      const state = stateRef.current;
 		      if (!isResumePageActive() || state.tabVisible === false) return;
+		      if (activateGhostwriterShare(event)) return;
 		      if (activateScreenMenuChannel(event)) return;
 	      const THREE = state.three;
 	      const camera = state.camera;
@@ -19245,6 +20388,13 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	        if (target.label) animateKeyPress(target.label);
 	        else animateKeyMeshPress(hit.object);
 	        if (state.contactForm?.open) return;
+	        if (state.macGhostwriter?.active) {
+	          window.__resumeMacGhostwriterKey?.(target.label || '', {
+	            key: target.label === 'Enter' ? 'Enter' : '',
+	            physicalAlreadyAnimated: true,
+	          });
+	          return;
+	        }
 	        const keyEngineOn = state.visualReelMode || !!window.__resumeStrudelAudioEngine?.enabled;
 	        if (!keyEngineOn) {
 	          const term = ensureMacTerminal();
@@ -19862,10 +21012,14 @@ function ReferenceMessage({ item, index, shapes }) {
   );
 }
 
-function References({ items }) {
+function References({
+  items,
+  id = 'refs',
+  label = '09 · REFERENCES',
+}) {
   const refShapes = ['triangle', 'circle', 'square'];
   return (
-    <Section id="refs" label="09 · REFERENCES">
+    <Section id={id} label={label}>
       <ol className="refs">
         {items.map((item, index) => (
           <li key={item.name}>
@@ -19894,5 +21048,5 @@ function Footer({ data }) {
 Object.assign(window, {
   HelpPlayer, HelpFeature, Summary,
   Experience, ProjectCard, LiveSystemFeature, Awards, Skills, Education, References, Footer,
-  VideoSlot, BlackbirdFeature, ScrollAudioLayers, StrudelReplFeature, TvHero, DoomOverlay
+  VideoSlot, BlackbirdFeature, HandOfGodFeature, ScrollAudioLayers, StrudelReplFeature, TvHero, DoomOverlay
 });

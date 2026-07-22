@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Tawfeeq Martin — Principal Product Engineer and Creative Technologist.">
+  <title>Tawfeeq Martin — Principal Product Engineer / Creative Technologist</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cascadia+Code:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper: #f7f5ef;
+      --ink: #171717;
+      --soft: #686b70;
+      --rule: #d3cfc4;
+      --blue: #194ed8;
+      --red: #df342f;
+      --gold: #e9b51e;
+      --white: #fff;
+      --serif: ui-serif, "New York", "Newsreader", Georgia, serif;
+      --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+      --mono: ui-monospace, "SF Mono", Menlo, Monaco, "IBM Plex Mono", monospace;
+      --gutter: clamp(1.2rem, 4vw, 4.5rem);
+      --max: 1240px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.42;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    a { color: inherit; text-decoration-color: rgba(23, 23, 23, .35); text-underline-offset: .18em; }
+    a:hover, a:focus-visible { color: var(--blue); text-decoration-color: currentColor; }
+    p { margin: 0 0 .72rem; }
+    ul { margin: .5rem 0 0; padding: 0; list-style: none; }
+    li { position: relative; padding-left: 1.15rem; margin: 0 0 .42rem; }
+    li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: .58em;
+      width: .42rem;
+      height: .42rem;
+      background: var(--gold);
+    }
+
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      padding: .75rem var(--gutter);
+      border-bottom: 1px solid rgba(211, 207, 196, .82);
+      background: rgba(247, 245, 239, .94);
+      backdrop-filter: blur(14px);
+    }
+    .site-nav a {
+      font: 600 .68rem/1 var(--mono);
+      letter-spacing: .13em;
+      text-transform: uppercase;
+      text-decoration: none;
+    }
+    .site-nav__right { display: flex; gap: 1.2rem; }
+
+    .page {
+      width: min(100%, var(--max));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: clamp(3rem, 7vw, 6rem) var(--gutter);
+      border-bottom: 1px solid var(--rule);
+    }
+    .page:last-child { border-bottom: 0; }
+    .color-key {
+      display: flex;
+      gap: 5px;
+      width: max-content;
+      margin-bottom: 1.15rem;
+    }
+    .color-key i { display: block; width: 34px; height: 6px; }
+    .color-key i:nth-child(1) { background: var(--blue); }
+    .color-key i:nth-child(2) { width: 22px; background: var(--red); }
+    .color-key i:nth-child(3) { width: 22px; background: var(--gold); }
+    .color-key i:nth-child(4) { width: 22px; background: var(--ink); }
+
+    .hero h1,
+    .page-title {
+      margin: 0;
+      font-family: var(--sans);
+      font-size: clamp(3.6rem, 8vw, 6.8rem);
+      font-weight: 700;
+      line-height: .88;
+      letter-spacing: -.055em;
+    }
+    .hero h1 span,
+    .page-title span { color: var(--red); }
+    .hero__role {
+      margin: 1.1rem 0 .3rem;
+      font-size: clamp(1rem, 1.8vw, 1.35rem);
+      font-weight: 800;
+      letter-spacing: -.02em;
+    }
+    .hero__role i { color: var(--blue); font-style: normal; }
+    .hero__strap {
+      color: var(--blue);
+      font: 600 .7rem/1.45 var(--mono);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .contact {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .3rem .8rem;
+      margin-top: 1rem;
+      color: var(--soft);
+      font-size: .75rem;
+    }
+    .contact span::after { content: "·"; margin-left: .8rem; color: var(--red); }
+    .contact span:last-child::after { content: ""; margin: 0; }
+
+    .rule { height: 1px; margin: 1.6rem 0; background: var(--rule); }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(260px, .9fr);
+      gap: clamp(2rem, 5vw, 4.8rem);
+      align-items: start;
+    }
+    .sidebar {
+      padding-left: clamp(1.2rem, 3vw, 2.8rem);
+      border-left: 1px solid var(--rule);
+    }
+    .section { margin-top: 1.4rem; }
+    .section:first-child { margin-top: 0; }
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 0 0 1rem;
+      color: var(--blue);
+      font: 600 .68rem/1 var(--mono);
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+    .section-label::after { content: ""; height: 1px; flex: 1; background: var(--rule); }
+    .section-label--red { color: var(--red); }
+    .summary {
+      max-width: 49rem;
+      font-family: var(--serif);
+      font-size: clamp(1rem, 1.65vw, 1.28rem);
+      line-height: 1.5;
+      letter-spacing: -.012em;
+    }
+    .summary strong { font-weight: 800; }
+    .body-copy { color: #44474d; }
+
+    .role { margin: 0 0 1.5rem; }
+    .role__head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: baseline;
+      gap: 1rem;
+    }
+    .role h3 {
+      margin: 0;
+      font-size: clamp(1rem, 1.65vw, 1.25rem);
+      line-height: 1.15;
+      letter-spacing: -.025em;
+    }
+    .role time {
+      color: var(--blue);
+      font: 600 .68rem/1.2 var(--mono);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .role__org {
+      display: inline-block;
+      margin: .38rem 0 .62rem;
+      color: #70747a;
+      font: 600 .72rem/1.2 var(--mono);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      text-decoration-color: #a9b8df;
+      text-decoration-thickness: 2px;
+    }
+    .role__org::before { content: "↗ "; color: var(--red); }
+    .role p, .role li { color: #55585e; font-size: .88rem; }
+    .role li strong, .role p strong { color: var(--ink); }
+    .credits {
+      margin-top: .7rem;
+      color: #64676c;
+      font-size: .69rem;
+      line-height: 1.4;
+    }
+    .credits strong { color: var(--ink); }
+
+    .sidebar h3 {
+      margin: 0 0 .35rem;
+      font-size: .9rem;
+      letter-spacing: -.015em;
+    }
+    .sidebar p, .sidebar li {
+      color: #60636a;
+      font-size: .88rem;
+      line-height: 1.53;
+    }
+    .sidebar .section { margin-top: 1.8rem; }
+    .sidebar li::before { background: var(--gold); }
+    .practice li::before { background: var(--red); }
+    .practice li strong { color: var(--ink); }
+    .recognition {
+      margin-top: 4rem;
+      padding-top: 1.6rem;
+      border-top: 1px solid var(--rule);
+      font-size: .82rem;
+      font-weight: 700;
+    }
+    .recognition b { color: var(--red); padding: 0 .4rem; }
+
+    .continued-head,
+    .works-head {
+      display: grid;
+      grid-template-columns: 1fr 1.35fr;
+      align-items: end;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+    .continued-head p,
+    .works-head p {
+      max-width: 36rem;
+      margin: 0 0 .4rem auto;
+      color: #777a80;
+      font-size: .9rem;
+    }
+    .mill-lede {
+      margin: .75rem 0 .9rem;
+      color: #44474d;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+    .scope { color: #55585e; font-size: .82rem; }
+
+    .works {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.2rem;
+    }
+    .work {
+      position: relative;
+      display: block;
+      overflow: hidden;
+      border: 1px solid var(--rule);
+      background: rgba(255, 255, 255, .5);
+      text-decoration: none;
+      transition: transform .18s ease, border-color .18s ease;
+    }
+    .work:hover, .work:focus-visible { transform: translateY(-3px); border-color: var(--blue); color: inherit; }
+    .work__image {
+      width: 100%;
+      aspect-ratio: 16 / 5;
+      object-fit: cover;
+      display: block;
+      background: #ddd;
+      filter: saturate(.92) contrast(1.02);
+    }
+    .work__body { min-height: 8.4rem; padding: 1.05rem 1.2rem 1.2rem; }
+    .work__meta {
+      display: flex;
+      gap: .65rem;
+      margin-bottom: .6rem;
+      color: #777a80;
+      font: 600 .62rem/1 var(--mono);
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    .work__meta b { color: var(--blue); }
+    .work:nth-child(2n) .work__meta b { color: var(--red); }
+    .work:nth-child(3n) .work__meta b { color: var(--gold); }
+    .work h3 { margin: 0 0 .35rem; font-size: 1.14rem; letter-spacing: -.03em; }
+    .work p { margin: 0; color: #5d6066; font-size: .84rem; }
+    .work__arrow { position: absolute; right: 1rem; bottom: .8rem; color: var(--red); font-weight: 800; }
+    .folio {
+      margin-top: 4rem;
+      color: #99948a;
+      font: 600 .6rem/1 var(--mono);
+      letter-spacing: .18em;
+      text-align: right;
+      text-transform: uppercase;
+    }
+
+    .endorsements { max-width: 1110px; }
+    blockquote {
+      margin: 2.4rem 0;
+      padding: 0 0 0 clamp(1.3rem, 3vw, 2.8rem);
+      border-left: 6px solid var(--blue);
+    }
+    blockquote:nth-of-type(2) { border-color: var(--red); }
+    blockquote:nth-of-type(3) { border-color: var(--gold); }
+    blockquote p {
+      margin: 0 0 1.35rem;
+      font: 500 clamp(1.2rem, 2.25vw, 1.85rem)/1.45 var(--serif);
+      letter-spacing: -.015em;
+    }
+    blockquote footer { font-size: .9rem; font-weight: 800; }
+    blockquote footer span {
+      display: block;
+      margin-top: .3rem;
+      color: #777a80;
+      font: 600 .65rem/1.55 var(--mono);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .cta {
+      margin-top: 4.5rem;
+      padding-top: 1.8rem;
+      border-top: 1px solid var(--rule);
+    }
+    .cta h2 { margin: 0 0 .8rem; font: 700 clamp(2.2rem, 5vw, 4rem)/.95 var(--serif); letter-spacing: -.035em; }
+    .cta h2 span { color: var(--red); }
+
+    @media (max-width: 820px) {
+      body { font-size: 14px; }
+      .site-nav__right a:first-child { display: none; }
+      .page { min-height: auto; padding-top: 3rem; padding-bottom: 4rem; }
+      .grid, .continued-head, .works-head { grid-template-columns: 1fr; }
+      .continued-head p, .works-head p { margin-left: 0; }
+      .sidebar { padding: 2rem 0 0; border: 0; border-top: 1px solid var(--rule); }
+      .works { grid-template-columns: 1fr; }
+      .role__head { grid-template-columns: 1fr; gap: .35rem; }
+      .role time { white-space: normal; }
+      .contact { line-height: 1.6; }
+      .work__image { aspect-ratio: 16 / 6; }
+      .work__body { min-height: 0; }
+    }
+
+    @media print {
+      @page { size: Letter; margin: .45in; }
+      body { background: #fff; font-size: 9px; }
+      .site-nav { display: none; }
+      .page { width: 100%; min-height: auto; padding: 0; border: 0; break-after: page; }
+      .hero h1, .page-title { font-size: 40px; }
+      .grid { grid-template-columns: 2fr .9fr; gap: 24px; }
+      .works { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .work, blockquote, .role { break-inside: avoid; }
+      .work__body { min-height: 84px; }
+      .work__image { aspect-ratio: 16 / 5; }
+      a { text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="site-nav" aria-label="Resume navigation">
+    <a href="Resume.html">← Portfolio</a>
+    <div class="site-nav__right">
+      <a href="#experience">Experience</a>
+      <a href="#works">Selected works</a>
+      <a href="#endorsements">Endorsements</a>
+    </div>
+  </nav>
+
+  <main>
+    <section class="page hero" id="profile">
+      <div class="color-key" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <h1>Tawfeeq Martin<span>.</span></h1>
+      <p class="hero__role">Principal Product Engineer <i>/</i> Creative Technologist</p>
+      <p class="hero__strap">Forward-deployed innovation · 0-to-1 product delivery · AI and real-time systems</p>
+      <div class="contact" aria-label="Contact">
+        <span>Los Angeles, CA</span>
+        <span><a href="tel:+13104039849">+1 310 403 9849</a></span>
+        <span><a href="mailto:tawfeeqmartin@gmail.com">tawfeeqmartin@gmail.com</a></span>
+        <span><a href="https://tawfeeqmartin.com/">tawfeeqmartin.com</a></span>
+        <span><a href="https://www.linkedin.com/in/tawfeeqmartin/">linkedin.com/in/tawfeeqmartin</a></span>
+      </div>
+      <div class="rule"></div>
+
+      <div class="grid">
+        <div>
+          <section class="section">
+            <h2 class="section-label">Profile</h2>
+            <p class="summary"><strong>Principal-level product engineer and creative technologist with 20+ years embedding with creative, technical, and business teams to turn ambiguous problems into working products, tools, and production systems.</strong> Combines user discovery, product strategy, feasibility, rapid prototyping, hands-on engineering, stakeholder alignment, launch, and adoption. Works comfortably from executive brief to code, on-set integration, and live deployment; current R&amp;D spans LLM tooling, multi-agent orchestration, local inference, generative systems, custom nodes, model training, and automation.</p>
+          </section>
+
+          <section class="section" id="experience">
+            <h2 class="section-label">Experience</h2>
+            <article class="role">
+              <div class="role__head">
+                <h3>Stagecraft Creative Engineering</h3>
+                <time>AUG 2020 – PRESENT</time>
+              </div>
+              <a class="role__org" href="https://www.ilm.com/">Industrial Light &amp; Magic · Full-time</a>
+              <p>R&amp;D and creative engineering for ILM StageCraft and Disney Infinity Stage, supporting real-time virtual production across major feature, episodic, music-video, and live experiential work.</p>
+              <ul>
+                <li>Creative engineer on interactive, performance-driven LED-volume shows, synchronizing real-time visuals through TouchDesigner, MIDI, OSC, DMX lighting, external encoders, and practical FX.</li>
+                <li>Built real-time digital-human systems, including ILM's KISS digital-avatar show with Pophouse Entertainment, bringing the band to life as performance-captured virtual characters.</li>
+                <li>Architects, deploys, and maintains real-time rendering, motion capture, in-camera VFX, and core stage infrastructure; translates ambiguous requests into durable capabilities under running-stage constraints.</li>
+                <li>Partners directly with directors, cinematographers, VFX supervisors, operators, engineers, and business stakeholders to surface user needs, explain tradeoffs, and drive live decisions.</li>
+                <li>Researches AI-augmented workflows including LLM tools, multi-agent orchestration, local inference, generative systems, and automation prototypes for future production use.</li>
+                <li>Contributed to a platform recognized by SIGGRAPH, the Television Academy Engineering Emmy, and the NATAS Technology &amp; Engineering Emmy.</li>
+              </ul>
+              <p class="credits"><strong>SELECTED ILM CREDITS</strong> · Obi-Wan Kenobi; The Mandalorian S3; Wicked; Skeleton Crew; The Santa Clauses S2; A Big Bold Beautiful Journey; Andor S2; The Creator; The Mandalorian &amp; Grogu; KISS Digital Avatars.</p>
+            </article>
+
+            <article class="role">
+              <div class="role__head">
+                <h3>Creative Engineer | Technical Product Manager</h3>
+                <time>JUN – AUG 2020</time>
+              </div>
+              <a class="role__org" href="https://www.sphereentertainmentco.com/">Sphere Entertainment Co. · Contract</a>
+              <p>Owned a bespoke on-set product for early MSG Sphere content-pipeline development, from ambiguous customer brief through shipped operator workflow.</p>
+              <ul>
+                <li>Scoped, designed, and built software for motion-controlled, nodal single-camera passes that aligned into seamless 360-degree compositions.</li>
+                <li>Integrated camera motion, live preview, acquisition review, take selection, and editorial handoff so teams could evaluate material earlier.</li>
+                <li>Translated complex capture needs into a simple tool for creative, production, and technical users under live production constraints.</li>
+                <li>Reduced acquisition ambiguity by helping operators inspect layered passes, validate capture intent, and move selected material downstream.</li>
+              </ul>
+            </article>
+          </section>
+        </div>
+
+        <aside class="sidebar">
+          <section class="section">
+            <h2 class="section-label">Forward-deployed strengths</h2>
+            <ul>
+              <li>Embeds with clients, operators, and technical teams to uncover the real constraints.</li>
+              <li>Converts ambiguous briefs into product goals, requirements, architecture, and delivery plans.</li>
+              <li>Builds rapid prototypes that expose feasibility, UX, model, workflow, and cost tradeoffs.</li>
+              <li>Leads Product, Design, Engineering, production, vendors, and executives through delivery.</li>
+              <li>Moves working prototypes into production-ready tools, rollout, adoption, and support.</li>
+              <li>Communicates complex technology clearly across creative, business, and technical audiences.</li>
+            </ul>
+          </section>
+          <section class="section">
+            <h2 class="section-label">AI / Generative systems</h2>
+            <p>LLM tooling; prompt and model testing; multi-agent orchestration; local inference; ComfyUI workflows; custom nodes; LoRA training; diffusion and video workflows; automation prototypes.</p>
+          </section>
+          <section class="section">
+            <h2 class="section-label">Build</h2>
+            <h3>Signature products</h3>
+            <p>Mill Stitch; The Mill BLACKBIRD; HELP pipeline tooling; MSG Sphere on-set preview and selects.</p>
+            <h3>Frontend / visualization</h3>
+            <p>JavaScript; React familiarity; Node; WebGL / GLSL; Three.js; Web Audio; Python; C++; bash.</p>
+          </section>
+          <section class="section">
+            <h2 class="section-label">Operating range</h2>
+            <p>Product strategy; user experience; technical architecture; hands-on implementation; stakeholder communication; production rollout. Combines product taste with the technical depth required to ship under real constraints.</p>
+          </section>
+        </aside>
+      </div>
+    </section>
+
+    <section class="page">
+      <header class="continued-head">
+        <div>
+          <div class="color-key" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+          <h2 class="page-title">Experience,<br>continued<span>.</span></h2>
+        </div>
+        <p>A career built around embedding with users, finding the real problem, proving what is possible, and carrying the right solution into production.</p>
+      </header>
+
+      <div class="grid">
+        <div>
+          <article class="role">
+            <div class="role__head">
+              <h3>Head of Creative Engineering, Mill Experience</h3>
+              <time>OCT 2010 – JUN 2020</time>
+            </div>
+            <a class="role__org" href="https://www.themill.com/">The Mill</a>
+            <p class="scope"><strong>Product management and forward-deployed scope</strong> · 0-to-1 strategy; client and user discovery; product goals and roadmaps; requirements; technical feasibility; rapid prototyping and experimentation; cross-functional delivery; GTM; launch; adoption; success measures; lifecycle decisions.</p>
+            <p class="mill-lede">Founding technical and product leader of Mill Experience, partnering with the LA Creative Director and Executive Producer to build a creative technology practice at the intersection of emerging technology, business strategy, engineering, and cinematic storytelling.</p>
+            <ul>
+              <li>Helped define the practice, technical capability, production approach, and client-facing innovation model behind award-winning immersive, real-time, and experiential work.</li>
+              <li>Led R&amp;D and product delivery from concept through prototype, production, launch, and reusable workflow adoption.</li>
+              <li>Built and led cross-functional teams of engineers, artists, producers, vendors, and client stakeholders through ambiguous 0-to-1 innovation work.</li>
+              <li>Co-inventor of <strong>Mill Stitch</strong>: identified the 360 live-action production pain point, proved feasibility, built the prototype and pipeline, and shipped it into live production; recognized with Cannes Gold and SXSW Gold.</li>
+              <li>Co-inventor of <strong>The Mill BLACKBIRD</strong>: helped lead multi-year R&amp;D across hardware, software, capture, and post workflows for an adjustable motion-capture car rig; recognized with Cannes Gold and HPA Gold.</li>
+              <li>Technical Innovations Manager on <strong>HELP</strong>, directed by Justin Lin with Google ATAP, Spotlight Stories, and Bullitt Branded; supported a first-of-its-kind Hollywood-scale 360 film.</li>
+              <li>Converted one-off innovation projects into reusable products, workflows, pipeline patterns, and stakeholder playbooks.</li>
+              <li>Technical Innovations Manager on Cashmere Cat's <strong>For Your Eyes Only</strong> and <strong>Emotions</strong>, directed by Jake Schreier and choreographed and performed by Margaret Qualley; supported a first-of-its-kind real-time Unreal Engine music-video series.</li>
+              <li>Creative Engineer on <strong>REEPS ONE: Does Not Exist</strong>, an early 360 immersive music video.</li>
+              <li>Technical Innovations Manager on the <strong>Louis Vuitton Women's Spring-Summer 2020 Show</strong> video <strong>It's Okay To Cry</strong>, directed by SOPHIE and Nicholas Harwood, with Es Devlin's monumental LED set at the Louvre.</li>
+              <li>Technicolor Fellowship and Experience Center Committee.</li>
+            </ul>
+          </article>
+
+          <article class="role">
+            <div class="role__head">
+              <h3>Head of Engineering</h3>
+              <time>JAN 2002 – SEP 2010</time>
+            </div>
+            <a class="role__org" href="https://za.linkedin.com/company/waterfront-film-studios">Waterfront Film Studios</a>
+            <p>Managed technology and systems services across multiple offices serving local and international entertainment markets; led engineering operations, infrastructure, pipeline development, software and hardware prototyping, client and vendor relationships, and cross-functional technical teams.</p>
+          </article>
+
+          <article class="role">
+            <div class="role__head">
+              <h3>Head of Engineering</h3>
+              <time>2008 – 2009</time>
+            </div>
+            <a class="role__org" href="https://www.linkedin.com/company/condor-digital">Condor Digital</a>
+            <p>Led engineering operations for a full-service post-production and content studio in Cape Town while continuing the broader Waterfront Film Studios remit.</p>
+          </article>
+        </div>
+
+        <aside class="sidebar">
+          <section class="section practice">
+            <h2 class="section-label section-label--red">Forward-deployed practice</h2>
+            <ul>
+              <li><strong>Discover</strong> · work alongside clients and users, isolate the real problem, and translate it into a technical product goal.</li>
+              <li><strong>Prototype</strong> · make the riskiest assumption tangible early through working software, hardware, or workflow tests.</li>
+              <li><strong>Decide</strong> · weigh user value, technical limits, quality, cost, and operational reality; continue, reshape, or stop.</li>
+              <li><strong>Build</strong> · align Product, Design, Engineering, production, vendors, clients, and executives around tradeoffs and ownership.</li>
+              <li><strong>Deploy</strong> · move from prototype to production-ready workflow, rollout, enablement, adoption, and reusable capability.</li>
+              <li><strong>Learn</strong> · use reliability, operator efficiency, adoption, and client or audience impact to guide iteration.</li>
+            </ul>
+          </section>
+          <section class="section">
+            <h2 class="section-label">Delivery</h2>
+            <h3>Product / Engineering</h3>
+            <p>0-to-1 scope; requirements; roadmap and feature triage; architecture; hands-on prototyping; stakeholder translation; launch and adoption.</p>
+            <h3>Production systems</h3>
+            <p>ILM StageCraft; ICVFX; LED-volume stages; Unreal Engine; real-time rendering; motion capture; 360-degree capture and review.</p>
+          </section>
+          <section class="section">
+            <h2 class="section-label">Network</h2>
+            <p>Long-standing relationships across Google ATAP, Disney and ILM, Amazon AGI and AWS, Sphere, Technicolor, studios, brands, artists, founders, builders, and frontier-technology leaders.</p>
+          </section>
+          <section class="section">
+            <h2 class="section-label">Education</h2>
+            <p>B.S. Electrical &amp; Computer Systems Engineering<br>Business Administration / Management</p>
+          </section>
+        </aside>
+      </div>
+
+      <p class="recognition"><span class="hero__strap">Recognition</span><br><br>Engineering Emmy · ILM StageCraft <b>•</b> NATAS Technology &amp; Engineering Emmy <b>•</b> Cannes Lions Gold <b>•</b> SXSW Gold <b>•</b> HPA Judges Award <b>•</b> One Show Gold Pencil <b>•</b> Webby / SIGGRAPH</p>
+    </section>
+
+    <section class="page" id="works">
+      <header class="works-head">
+        <h2 class="page-title">Selected<br>Works<span>.</span></h2>
+        <p>Public references across immersive film, production tooling, live spectacle, franchise storytelling, and avatar performance.</p>
+      </header>
+      <div class="works">
+        <a class="work" href="https://www.fxguide.com/fxfeatured/the-mills-incredible-blackbird-at-gdc-the-future-of-virtual-production/">
+          <img class="work__image" src="media/believe-blackbird-selected.jpg" alt="The Mill BLACKBIRD production rig" loading="lazy">
+          <div class="work__body"><div class="work__meta"><b>01</b><span>Production tool</span></div><h3>The Mill BLACKBIRD</h3><p>Adjustable car rig and production system for photoreal CG automotive work. Co-inventor.</p></div><span class="work__arrow">↗</span>
+        </a>
+        <a class="work" href="https://www.commarts.com/project/23889/google-spotlight-stories-help">
+          <img class="work__image" src="media/demo/help-bts-2.webp" alt="Mill Stitch on-set production" loading="lazy">
+          <div class="work__body"><div class="work__meta"><b>02</b><span>On-set software</span></div><h3>Mill Stitch</h3><p>Real-time 360-degree stitching and on-set review toolset built for Google ATAP's HELP. Inventor.</p></div><span class="work__arrow">↗</span>
+        </a>
+        <a class="work" href="https://www.youtube.com/watch?v=G-XZhKqQAHU">
+          <img class="work__image" src="media/demo/help-bts.webp" alt="HELP Google Spotlight Stories production" loading="lazy">
+          <div class="work__body"><div class="work__meta"><b>03</b><span>Immersive film</span></div><h3>HELP — Google Spotlight Stories</h3><p>Hollywood-scale mobile VR film pipeline with Justin Lin, Google ATAP, and The Mill.</p></div><span class="work__arrow">↗</span>
+        </a>
+        <a class="work" href="https://www.youtube.com/watch?v=nBQPPWR7-S8">
+          <img class="work__image" src="media/resume/mill-experience.jpg" alt="Mill Experience reel" loading="lazy">
+          <div class="work__body"><div class="work__meta"><b>04</b><span>Experience practice</span></div><h3>Mill Experience Reel</h3><p>Experiential, immersive, real-time, and product-facing creative technology work.</p></div><span class="work__arrow">↗</span>
+        </a>
+        <a class="work" href="https://www.youtube.com/watch?v=XQlh2e8cD6M">
+          <img class="work__image" src="media/louis-vuitton-ss20-poster.jpg" alt="Louis Vuitton Women's Spring-Summer 2020 Show" loading="lazy">
+          <div class="work__body"><div class="work__meta"><b>05</b><span>Live spectacle</span></div><h3>Louis Vuitton Women's SS 2020 Show</h3><p>Fashion, spectacle, media systems, and live production at luxury scale.</p></div><span class="work__arrow">↗</span>
+        </a>
+        <a class="work" href="https://www.youtube.com/watch?v=649PF2aV_zM">
+          <img class="work__image" src="media/stagecraft-hero.png" alt="Industrial Light & Magic StageCraft production" loading="lazy">
+          <div class="work__body"><div class="work__meta"><b>06</b><span>Studio innovation</span></div><h3>Industrial Light &amp; Magic: 50 Years</h3><p>ILM innovation context across StageCraft, virtual production, visual effects, and frontier storytelling.</p></div><span class="work__arrow">↗</span>
+        </a>
+        <a class="work" href="https://www.starwars.com/video/the-mandalorian-and-grogu-official-trailer">
+          <img class="work__image" src="media/stagecraft-hero.png" alt="Virtual production environment" loading="lazy">
+          <div class="work__body"><div class="work__meta"><b>07</b><span>Franchise storytelling</span></div><h3>The Mandalorian and Grogu</h3><p>Franchise-scale virtual production and cinematic innovation context — ILM StageCraft.</p></div><span class="work__arrow">↗</span>
+        </a>
+        <a class="work" href="https://www.ilm.com/legendary-rock-band-kiss-becomes-immortal-with-a-little-help-from-ilm/">
+          <img class="work__image" src="media/resume/kiss-new-era.jpg" alt="KISS digital avatar performance" loading="lazy">
+          <div class="work__body"><div class="work__meta"><b>08</b><span>Avatar performance</span></div><h3>KISS — A New Era Begins</h3><p>ILM avatars and future-facing performance/IP experience work with KISS and Pophouse.</p></div><span class="work__arrow">↗</span>
+        </a>
+      </div>
+      <p class="folio">Tawfeeq Martin · Selected Works · 03</p>
+    </section>
+
+    <section class="page endorsements" id="endorsements">
+      <h2 class="section-label">Endorsements</h2>
+      <blockquote>
+        <p>“Tawfeeq is very technology savvy and one of the smartest guys I have worked with. He is very well spoken and trust worthy. It is always a treat to discuss the latest tech with him and I learn a thing or two around his subject matter during our meetings.”</p>
+        <footer>Usman Shakeel<span>Director of Engineering, Amazon AGI Infrastructure<br>Former Worldwide Technology Leader, M&amp;E, AWS</span></footer>
+      </blockquote>
+      <blockquote>
+        <p>“Tawfeeq is an exceptional architect of new technologies for storytelling. I met Tawfeeq when he worked as a representative of the Mill alongside the team at Google ATAP and Justin Lin to help create the first cinematic, immersive film made uniquely for mobile. Tawfeeq led the technology team responsible for building the only Hollywood-scale film pipeline and custom tool set including Mill Stitch. These award-winning tools enabled director Justin Lin to view the 360-degree action of ‘HELP’ as it was shot, in real-time, as the images fed through a series of cameras suspended over the LA river basin. ‘HELP’ went on to be recognized for awards that included: Cannes Gold Lion for Innovative use of technology, Cannes Gold Lion for best in virtual reality, the WEBBY award for technical achievement in VR, and the SXSW AR/VR breakthrough innovation award.”</p>
+        <footer>Regina Dugan<span>CEO, Wellcome Leap<br>Former VP Building 8, Facebook (Meta); VP Engineering, Google ATAP; Director, DARPA</span></footer>
+      </blockquote>
+      <blockquote>
+        <p>“Tawfeeq is a pleasure to work alongside, and brings a real depth of technical and creative knowledge to a broad range of content, film-making and experiential production processes. We have worked together to deliver a really expansive set of client and internal R&amp;D projects, ranging from virtual production to real-time character executions and augmented reality applications, through to VFX and CG pipeline plug-ins. Tawfeeq always brought rigour alongside a real problem-solving approach, with vast technical knowhow. An asset to any team.”</p>
+        <footer><a href="https://www.linkedin.com/in/daniell-phillips-6ba20832/">Daniell Phillips</a><span>Director, Brand Partnerships, Residence<br>Former Colleague, The Mill</span></footer>
+      </blockquote>
+
+      <footer class="cta">
+        <h2>Let's build what's next<span>.</span></h2>
+        <div class="contact">
+          <span><a href="tel:+13104039849">+1 310 403 9849</a></span>
+          <span><a href="mailto:tawfeeqmartin@gmail.com">tawfeeqmartin@gmail.com</a></span>
+          <span><a href="https://tawfeeqmartin.com/">tawfeeqmartin.com</a></span>
+          <span><a href="https://www.linkedin.com/in/tawfeeqmartin/">linkedin.com/in/tawfeeqmartin</a></span>
+        </div>
+      </footer>
+    </section>
+  </main>
+</body>
+</html>

@@ -809,6 +809,7 @@ class SpotlightRenderer {
     this.dragging = false;
     this._clearPlaybackWatchdog();
     if (!next) {
+      this.pauseAndMute();
       if (this.tickRaf) cancelAnimationFrame(this.tickRaf);
       this.tickRaf = 0;
       return;
@@ -957,6 +958,25 @@ class SpotlightRenderer {
   _onKeyDown(e) {
     const target = e.target;
     if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
+    if (!this.powerActive) return;
+    const slot = this.host.closest?.('.help-player');
+    const section = slot?.closest?.('#help');
+    const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement;
+    const fullscreenActive = Boolean(fullscreenElement && (
+      fullscreenElement === slot || fullscreenElement.contains?.(slot)
+    ));
+    const immersive = Boolean(
+      fullscreenActive
+      || slot?.classList?.contains('is-pseudo-fullscreen')
+      || section?.classList?.contains('is-help-pinned')
+    );
+    const rect = section?.getBoundingClientRect?.();
+    const viewportH = window.innerHeight || document.documentElement.clientHeight || 0;
+    const readingLine = viewportH * 0.5;
+    const activeViewport = Boolean(
+      rect && rect.top <= readingLine && rect.bottom >= readingLine
+    );
+    if (!immersive && !activeViewport && !slot?.contains?.(document.activeElement)) return;
     const key = e.key.toLowerCase();
     if (key === 'shift') {
       this.keys.add('shift');
