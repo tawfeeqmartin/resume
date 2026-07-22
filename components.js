@@ -3988,7 +3988,7 @@ function KissNewEraFeature({
 }) {
   return (
     <Section id="kiss-new-era" label={label}>
-      <div className="help-hero">
+      <div className="help-hero kiss-new-era__layout">
         <div className="help-hero__intro">
           <h3 className="serif">The final bow became a new beginning.</h3>
           <p>

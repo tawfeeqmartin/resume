@@ -788,6 +788,40 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 #human-race .section__rule,
 #kiss-new-era .section__rule { display: none; }
 
+#kiss-new-era .kiss-new-era__layout {
+  width: min(100%, 1180px);
+  margin-inline: auto;
+  grid-template-columns: minmax(0, 1.15fr) minmax(21rem, 0.72fr);
+  grid-template-areas: "intro player";
+  gap: clamp(2.5rem, 6vw, 6.5rem);
+  align-items: center;
+}
+#kiss-new-era .help-hero__intro {
+  max-width: 58ch;
+  margin: 0;
+  text-align: left;
+}
+#kiss-new-era .help-hero__player {
+  width: 100%;
+  max-width: 34rem;
+  justify-self: end;
+}
+@media (max-width: 900px) {
+  #kiss-new-era .kiss-new-era__layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "intro"
+      "player";
+    gap: 1.6rem;
+  }
+  #kiss-new-era .help-hero__intro,
+  #kiss-new-era .help-hero__player {
+    width: 100%;
+    max-width: none;
+    justify-self: stretch;
+  }
+}
+
 .help-feature {
   display: grid;
   grid-template-columns: minmax(0,1.5fr) minmax(0,1fr);
