@@ -1197,21 +1197,21 @@ const LANDING_VARIANT_CSS = `
 .landing-profile__instrument-link line,
 .landing-profile__instrument-link path {
   fill: none;
-  stroke: rgba(255,255,255,0.94);
+  stroke: rgba(10,12,16,0.78);
   stroke-width: 1;
   stroke-dashoffset: 0;
   stroke-linecap: square;
   vector-effect: non-scaling-stroke;
-  mix-blend-mode: screen;
+  mix-blend-mode: multiply;
 }
 .landing-profile__instrument-link .landing-profile__connector-line {
-  stroke: rgba(255,255,255,0.9);
+  stroke: rgba(10,12,16,0.82);
   stroke-dasharray: 6 7;
   animation: landing-profile-connector-flow 920ms linear infinite;
 }
 .landing-profile__instrument-link circle {
-  fill: rgba(255,255,255,0.95);
-  mix-blend-mode: screen;
+  fill: rgba(10,12,16,0.86);
+  mix-blend-mode: multiply;
 }
 .landing-profile__instrument-link circle:last-child {
   transform-box: fill-box;
@@ -1221,13 +1221,13 @@ const LANDING_VARIANT_CSS = `
 .landing-profile__instrument-link .landing-profile__wheel-mark {
   stroke-width: 1.15;
   stroke-dasharray: 8 9;
-  opacity: 0.92;
+  opacity: 0.88;
   animation: landing-profile-wheel-mark-flow 1280ms linear infinite;
 }
 .landing-profile__instrument-link .landing-profile__signal-arc {
   stroke-width: 1;
   stroke-dasharray: 7 8;
-  opacity: 0.82;
+  opacity: 0.74;
   animation: landing-profile-signal-arc-flow 920ms linear infinite;
 }
 .landing-profile__instrument-link .landing-profile__signal-arc:nth-of-type(4) {
