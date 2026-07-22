@@ -2784,7 +2784,7 @@ function installVideoFullscreenEscapeHandler() {
 
 installVideoFullscreenEscapeHandler();
 
-function HelpPlayer({ src }) {
+function HelpPlayer({ src, startOffset = 0 }) {
   const hostRef = useRef(null);
   const [status, setStatus] = useState('loading'); // loading | ready | missing | error
   const [projection, setProjection] = useState(null);
@@ -2802,6 +2802,42 @@ function HelpPlayer({ src }) {
   const keyboardStartPendingRef = useRef(false);
   const resizeTimerRef = useRef(null);
   const offscreenPauseTimerRef = useRef(null);
+  const startOffsetCleanupRef = useRef(null);
+  const startOffsetSeconds = Math.max(0, Number(startOffset) || 0);
+
+  const seekToStartOffset = React.useCallback((renderer = rendererRef.current, { force = false } = {}) => {
+    if (!startOffsetSeconds || !renderer) return;
+    const video = renderer.current?.loaded?.video;
+    if (!video) return;
+    const duration = Number(video.duration);
+    const maxSafeTime = Number.isFinite(duration) && duration > 0
+      ? Math.max(0, duration - 0.15)
+      : startOffsetSeconds;
+    const target = Math.min(startOffsetSeconds, maxSafeTime);
+    if (!Number.isFinite(target) || target <= 0) return;
+    if (!force && Number.isFinite(video.currentTime) && video.currentTime >= target - 0.15) return;
+    try {
+      if (typeof video.fastSeek === 'function') video.fastSeek(target);
+      else video.currentTime = target;
+    } catch (_) {}
+  }, [startOffsetSeconds]);
+
+  const armStartOffsetCue = React.useCallback((renderer = rendererRef.current) => {
+    startOffsetCleanupRef.current?.();
+    startOffsetCleanupRef.current = null;
+    if (!startOffsetSeconds || !renderer) return;
+    const video = renderer.current?.loaded?.video;
+    if (!video) return;
+    const cue = () => seekToStartOffset(renderer, { force: true });
+    const events = ['loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough'];
+    events.forEach((eventName) => video.addEventListener(eventName, cue));
+    const timers = [0, 120, 420, 900].map((delay) => window.setTimeout(cue, delay));
+    startOffsetCleanupRef.current = () => {
+      events.forEach((eventName) => video.removeEventListener(eventName, cue));
+      timers.forEach((timer) => window.clearTimeout(timer));
+    };
+    cue();
+  }, [seekToStartOffset, startOffsetSeconds]);
 
 	  const forceRendererResize = React.useCallback(() => {
 	    const renderer = rendererRef.current;
@@ -2897,6 +2933,7 @@ function HelpPlayer({ src }) {
             const result = await mod.mountSpotlight(hostRef.current, candidate);
             if (cancelled) { result.renderer.dispose(); return; }
             rendererRef.current = result.renderer;
+            armStartOffsetCue(result.renderer);
             result.renderer.setStateCallback((state) => {
               mutedRef.current = state.muted;
               pausedRef.current = state.paused;
@@ -2945,13 +2982,15 @@ function HelpPlayer({ src }) {
       }));
       emitHelpImmersiveState(false, 'unmount');
       if (rendererRef.current) { rendererRef.current.dispose(); rendererRef.current = null; }
+      startOffsetCleanupRef.current?.();
+      startOffsetCleanupRef.current = null;
       clearOffscreenPauseTimer();
       if (resizeTimerRef.current) {
         window.clearTimeout(resizeTimerRef.current);
         resizeTimerRef.current = null;
       }
     };
-	  }, [src, shouldLoad, forceRendererResize, canPlaySource, getVideoUrl, clearOffscreenPauseTimer, emitHelpImmersiveState]);
+	  }, [src, shouldLoad, forceRendererResize, canPlaySource, getVideoUrl, clearOffscreenPauseTimer, emitHelpImmersiveState, armStartOffsetCue]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -3160,6 +3199,7 @@ function HelpPlayer({ src }) {
     window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
       detail: { id: 'help-player', active: true },
     }));
+    seekToStartOffset(renderer, { force: true });
     const playPromise = renderer.playWithSound
       ? renderer.playWithSound({ restart: false })
       : (() => {
@@ -3175,7 +3215,7 @@ function HelpPlayer({ src }) {
       });
     }
     return playPromise;
-  }, [clearOffscreenPauseTimer]);
+  }, [clearOffscreenPauseTimer, seekToStartOffset]);
 
   const togglePlayback = () => {
     const renderer = rendererRef.current;
@@ -3197,7 +3237,8 @@ function HelpPlayer({ src }) {
     window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
       detail: { id: 'help-player', active: true },
     }));
-    rendererRef.current?.replayWithSound();
+    if (startOffsetSeconds) playHelpWithSound();
+    else rendererRef.current?.replayWithSound();
   };
   const startFromKeyboard = React.useCallback(() => {
     setShowHint(false);
@@ -12067,6 +12108,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    contactFormRects: null,
 	    macOvertureBootBlank: true,
 	    macLandingLaunchPending: false,
+	    macTryItPromptVisible: false,
 	    macStoryTypeActive: false,
 	    macStoryTypedText: '',
 	    macGhostwriter: {
@@ -13425,6 +13467,10 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       ctx2d.fillStyle = ink;
       ctx2d.font = `400 ${px(h * 0.024)}px ${monoFont}`;
       ctx2d.fillText('tm@Mac Dev % ./ghostwriter', promptX, headerY);
+      if (stateRef.current.macTryItPromptVisible) {
+        ctx2d.font = `400 ${phraseSize}px ${monoFont}`;
+        ctx2d.fillText('try it', promptX + ctx2d.measureText('> ').width, px(h * 0.35));
+      }
       ctx2d.font = `400 ${phraseSize}px ${monoFont}`;
       words.forEach((word, index) => {
         const candidate = line ? `${line} ${word}` : word;
@@ -13523,6 +13569,10 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       ctx2d.textAlign = 'left';
       ctx2d.textBaseline = 'alphabetic';
       ctx2d.font = `400 ${cursorSize}px ${MAC_TERMINAL_FONT}`;
+      if (stateRef.current.macTryItPromptVisible) {
+        ctx2d.fillText('try it', cursorX + ctx2d.measureText('> ').width, px(h * 0.35));
+        ctx2d.font = `400 ${cursorSize}px ${MAC_TERMINAL_FONT}`;
+      }
       ctx2d.fillText('> ', cursorX, cursorBaseline);
       if (stateRef.current.macOvertureCursorOn !== false) {
         drawMacUiCursor(
@@ -14234,6 +14284,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    };
 	    const prepareCompanionIntro = () => {
 	      stateRef.current.macLandingLaunchPending = true;
+	      stateRef.current.macTryItPromptVisible = false;
 	      stateRef.current.companionQrVisible = false;
 	      stateRef.current.visitorNamePromptActive = false;
 	      stateRef.current.macOvertureBootBlank = false;
@@ -14262,6 +14313,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    };
 	    const onCompanionStop = () => {
 	      stateRef.current.macLandingLaunchPending = false;
+	      stateRef.current.macTryItPromptVisible = false;
 	      stateRef.current.macCompanionDirectTyping = false;
 	      stateRef.current.companionQrVisible = false;
 	      stateRef.current.openingInvitationPending = false;
@@ -19664,8 +19716,11 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         return true;
       }
       const phraseLength = Array.from(String(ghostwriter.phrase || '')).length;
-      const isTabAutocomplete = code === 'Tab' || options.key === 'Tab';
-      if (isTabAutocomplete) {
+      const isAutocompleteKey = code === 'Tab'
+        || options.key === 'Tab'
+        || code === 'Enter'
+        || options.key === 'Enter';
+      if (isAutocompleteKey) {
         ghostwriter.revealIndex = phraseLength;
         ghostwriter.phase = 'complete';
         ensureMacTerminal().cursorOn = true;
@@ -19695,6 +19750,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       stateRef.current.macStoryTypeActive = false;
       stateRef.current.macStoryTypedText = '';
       stateRef.current.macOvertureBootBlank = true;
+      stateRef.current.macTryItPromptVisible = true;
       loadPhrase();
       const capture = keyboardCaptureRef.current;
       if (capture && isResumePageActive()) {
@@ -19703,15 +19759,24 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       }
     };
     const onStart = () => startGhostwriter();
-    const onStop = () => stopGhostwriter();
+    const onStop = () => {
+      stateRef.current.macTryItPromptVisible = false;
+      stopGhostwriter();
+    };
+    const onTryItPrompt = (event) => {
+      stateRef.current.macTryItPromptVisible = event.detail?.visible !== false;
+      paintGhostwriter();
+    };
     window.__resumeMacGhostwriterKey = advanceGhostwriter;
     window.addEventListener('resume-mac-ghostwriter-start', onStart);
     window.addEventListener('resume-mac-ghostwriter-stop', onStop);
+    window.addEventListener('resume-mac-try-it-prompt', onTryItPrompt);
     window.addEventListener('resume-companion-start-intro', onStop);
     return () => {
       clearTimers();
       window.removeEventListener('resume-mac-ghostwriter-start', onStart);
       window.removeEventListener('resume-mac-ghostwriter-stop', onStop);
+      window.removeEventListener('resume-mac-try-it-prompt', onTryItPrompt);
       window.removeEventListener('resume-companion-start-intro', onStop);
       if (window.__resumeMacGhostwriterKey === advanceGhostwriter) {
         delete window.__resumeMacGhostwriterKey;
@@ -19755,7 +19820,12 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       // never intercept/stopPropagation those keys away from HELP.
       if (getActiveHelpPlayerForKeyboard()) return;
       if (isEditableTarget(event.target)) return;
-      if (document.activeElement !== keyboardCaptureRef.current) return;
+      const capture = keyboardCaptureRef.current;
+      if (capture && document.activeElement !== capture) {
+        try { capture.focus({ preventScroll: true }); }
+        catch (_) { capture.focus?.(); }
+      }
+      if (document.activeElement !== capture) return;
       const code = getMacKeyCodeFromEvent(event);
       if (stateRef.current.macGhostwriter?.active) {
         const handled = window.__resumeMacGhostwriterKey?.(code, {
@@ -20358,6 +20428,35 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	      drawMacOffScreen();
 	      return true;
 	    };
+	    const launchIntroFromMacPointer = (label = 'mouse') => {
+	      const state = stateRef.current;
+	      const isLandingMacState = state.macOvertureBootBlank
+	        || state.companionQrVisible
+	        || state.visitorNamePromptActive
+	        || state.openingInvitationPending;
+	      if (!isLandingMacState
+	        || state.macLandingLaunchPending
+	        || state.macGhostwriter?.active
+	        || state.macCompanionDirectTyping
+	        || state.visualReelMode) return false;
+	      state.macLandingLaunchPending = true;
+	      if (wrapRef.current) {
+	        wrapRef.current.dataset.landingPointerStart = String(label || 'mouse');
+	      }
+	      try {
+	        void window.__resumePrimeIntroAudio?.();
+	      } catch {}
+	      window.dispatchEvent(new CustomEvent('resume-glitch-audio-unlock'));
+	      window.dispatchEvent(new CustomEvent('resume-keyboard-start-intro', {
+	        detail: {
+	          source: 'mac-pointer',
+	          code: String(label || 'mouse'),
+	          key: String(label || 'mouse'),
+	          audioUnlocked: true,
+	        },
+	      }));
+	      return true;
+	    };
 		    const onPointerDown = async (event) => {
 			      const state = stateRef.current;
 		      if (!isResumePageActive() || state.tabVisible === false) return;
@@ -20383,11 +20482,23 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	        : state.frameModel?.isObject3D && state.frameModel.layers
 	          ? raycaster.intersectObjects([state.frameModel], true)
 	          : [];
-	      if (!macHits.length) return;
+	      if (!macHits.length) {
+	        if (launchIntroFromMacPointer('section')) {
+	          event.preventDefault();
+	          event.stopPropagation();
+	          event.stopImmediatePropagation?.();
+	          captureMacKeyboard();
+	        }
+	        return;
+	      }
 	      event.preventDefault();
 	      if (!hits.length) {
 	        captureMacKeyboard();
 	        window.dispatchEvent(new CustomEvent('resume-glitch-audio-unlock'));
+	        if (launchIntroFromMacPointer('frame')) {
+	          event.stopPropagation();
+	          event.stopImmediatePropagation?.();
+	        }
 	        return;
 	      }
 	      if (state.powerToggleInFlight) return;
@@ -20437,6 +20548,11 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	          activateContactControl(event);
 	          return;
 	        }
+	        if (launchIntroFromMacPointer('screen')) {
+	          event.stopPropagation();
+	          event.stopImmediatePropagation?.();
+	          return;
+	        }
 	        if (!window.__resumeStrudelAudioEngine?.enabled) {
 	          const term = ensureMacTerminal();
 	          term.focused = true;
@@ -20447,12 +20563,21 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	      }
 	      if (target.type === 'mouse') {
 	        animateMouseButton();
+	        if (launchIntroFromMacPointer('mouse')) {
+	          event.stopPropagation();
+	          event.stopImmediatePropagation?.();
+	        }
 	        return;
 	      }
 	      if (target.type === 'key') {
 	        if (target.label) animateKeyPress(target.label);
 	        else animateKeyMeshPress(hit.object);
 	        if (state.contactForm?.open) return;
+	        if (launchIntroFromMacPointer(target.label || 'key')) {
+	          event.stopPropagation();
+	          event.stopImmediatePropagation?.();
+	          return;
+	        }
 	        if (state.macGhostwriter?.active) {
 	          window.__resumeMacGhostwriterKey?.(target.label || '', {
 	            key: target.label === 'Enter' ? 'Enter' : '',
@@ -20678,7 +20803,7 @@ function HelpFeature({ src, label = "03 · SELECTED WORK · MILL STITCH™ / HEL
         </div>
         ) : null}
         <div className="help-hero__player">
-          <HelpPlayer src={src} />
+          <HelpPlayer src={src} startOffset={2} />
         </div>
       </div>
     </Section>

@@ -2880,7 +2880,7 @@ function HelpIntroStage({ src }) {
           </div>
         </div>
         <div className="his-panel his-panel--c">
-          <HelpPlayer src={src} />
+          <HelpPlayer src={src} startOffset={2} />
         </div>
         <div className="help-intro-stage__label">
           <span className="help-intro-stage__label-num">01</span>
@@ -8143,6 +8143,12 @@ function CrtZoom() {
           intermissionCommit: companionIntermissionCommit,
         },
       }));
+      window.dispatchEvent(new CustomEvent('resume-mac-try-it-prompt', {
+        detail: {
+          visible: true,
+          source: 'calibration-tone-complete',
+        },
+      }));
     };
     const onBelieveSingingComplete = () => {
       if (!pageActive
@@ -8566,7 +8572,7 @@ function CrtZoom() {
     const onCompanionStart = async (event) => {
       if (!pageActive || !isResumeForeground()) return;
       const requestedSource = String(event?.detail?.source || '');
-      const trustedKeyboardStart = requestedSource === 'keyboard';
+      const trustedKeyboardStart = requestedSource === 'keyboard' || requestedSource === 'mac-pointer';
       const audioIsReady = ['ready', 'playing', 'idle-playing', 'text-playing']
         .includes(String(shell.dataset.glitchAudio || ''));
       if (!IS_LOCAL_PREVIEW
@@ -8583,13 +8589,16 @@ function CrtZoom() {
       window.dispatchEvent(new CustomEvent('resume-mac-ghostwriter-stop', {
         detail: { source: event?.detail?.source || 'companion-start' },
       }));
+      window.dispatchEvent(new CustomEvent('resume-mac-try-it-prompt', {
+        detail: { visible: false, source: event?.detail?.source || 'companion-start' },
+      }));
       window.clearTimeout(preludeRecoveryTimer);
       preludeRecoveryTimer = 0;
       preludeRecoveryPending = false;
       preludeRecoveryName = '';
       delete shell.dataset.introPreludeRecovery;
       const requestedIntroSource = requestedSource;
-      const introTrigger = requestedIntroSource === 'scroll' || requestedIntroSource === 'keyboard'
+      const introTrigger = ['scroll', 'keyboard', 'mac-pointer'].includes(requestedIntroSource)
         ? requestedIntroSource
         : 'companion';
       const suppliedName = CRT_PERSONALIZED_PROLOGUE_ENABLED

@@ -60,11 +60,33 @@ async function verifyOnce() {
 
   const { response: htmlResponse, text: html } = await fetchText(`${base}/?${cacheBust}`);
   if (!htmlResponse.ok) throw new Error(`root HTML ${htmlResponse.status}`);
+  if (!html.includes("RESUME_APP_VARIANT = 'landing-v1'")) {
+    throw new Error('root HTML is not the interactive landing page');
+  }
+  if (html.includes('Principal Product Engineer / Creative Technologist')) {
+    throw new Error('root HTML appears to be the flat resume page');
+  }
   for (const asset of expectedAssets) {
     if (!html.includes(asset)) throw new Error(`root HTML missing ${asset}`);
   }
   for (const pattern of forbiddenHtmlPatterns) {
     if (pattern.test(html)) throw new Error(`root HTML includes forbidden HELP fallback: ${pattern}`);
+  }
+
+  const { response: resumeResponse, text: resumeHtml } = await fetchText(`${base}/Resume.html?${cacheBust}`);
+  if (!resumeResponse.ok) throw new Error(`canonical resume HTML ${resumeResponse.status}`);
+  if (!resumeHtml.includes('Principal Product Engineer / Creative Technologist')) {
+    throw new Error('/Resume.html is not the flat resume page');
+  }
+  if (resumeHtml.includes("RESUME_APP_VARIANT = 'landing-v1'")) {
+    throw new Error('/Resume.html is incorrectly serving the interactive landing page');
+  }
+
+  const demoResponse = await fetch(`${base}/demo/Resume.html?${cacheBust}`, {
+    headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+  });
+  if (demoResponse.status !== 404) {
+    throw new Error(`/demo/Resume.html should be gone; got ${demoResponse.status}`);
   }
 
   const appResponse = await fetch(`${base}/dist/app.js?v=${assetVersion}`, {
