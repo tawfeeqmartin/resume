@@ -685,8 +685,8 @@ ${h}</style>`,A.appendChild(b);let a="url('data:image/gif;base64,R0lGODlhAQABAIA
 }
 .landing-profile__instrument-link line {
   stroke: #111;
-  stroke-width: 2;
-  stroke-dasharray: 8 9;
+  stroke-width: 1;
+  stroke-dasharray: 6 7;
   stroke-linecap: square;
   vector-effect: non-scaling-stroke;
   mix-blend-mode: multiply;
