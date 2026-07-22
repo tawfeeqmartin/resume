@@ -75,9 +75,7 @@ const PREFERS_REDUCED_VIDEO_BANDWIDTH = Boolean(
   CONNECTION_HINT?.saveData || /(^|-)2g$|3g/.test(String(CONNECTION_HINT?.effectiveType || ''))
 );
 const LOUIS_VUITTON_SS20_VIDEO_URL = mediaUrl(
-  PREFERS_REDUCED_VIDEO_BANDWIDTH
-    ? "media/louis-vuitton-ss20-720.mp4"
-    : "media/louis-vuitton-ss20-1080.mp4"
+  "media/louis-vuitton-ss20-720.mp4"
 );
 const LOUIS_VUITTON_SS20_POSTER_URL = mediaUrl("media/louis-vuitton-ss20-poster.jpg");
 
