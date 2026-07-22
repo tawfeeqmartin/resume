@@ -20493,12 +20493,17 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	          };
 	        }
 	      }
-	      // The floppy is now a scripted prop only. Pointer input must not arm
-	      // audio, insert/eject the disk, start a demo, or mutate intro state.
+	      // The floppy is now a start control only. Keep it on the same intro
+	      // path as trusted keyboard/mouse gestures; do not revive the old
+	      // insert/eject reel-toggle behavior here.
 	      if (target.type === 'floppy') {
-	        event.stopPropagation();
-	        event.stopImmediatePropagation?.();
-	        if (wrapRef.current) wrapRef.current.dataset.floppyPointer = 'disabled';
+	        captureMacKeyboard();
+	        window.dispatchEvent(new CustomEvent('resume-glitch-audio-unlock'));
+	        if (launchIntroFromMacPointer('floppy')) {
+	          event.stopPropagation();
+	          event.stopImmediatePropagation?.();
+	        }
+	        if (wrapRef.current) wrapRef.current.dataset.floppyPointer = 'intro-start';
 	        return;
 	      }
 	      captureMacKeyboard();
