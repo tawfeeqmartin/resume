@@ -2822,6 +2822,11 @@ function HelpPlayer({ src, startOffset = 0 }) {
   const [paused, setPaused] = useState(true);
   const [showHint, setShowHint] = useState(true);
   const [activeChordKey, setActiveChordKey] = useState('');
+  const [motionStatus, setMotionStatus] = useState(() => (
+    typeof window !== 'undefined' && 'DeviceOrientationEvent' in window
+      ? 'idle'
+      : 'unsupported'
+  ));
   const shouldLoad = true;
   const rendererRef = useRef(null);
   const audibleRef = useRef(false);
@@ -2830,6 +2835,7 @@ function HelpPlayer({ src, startOffset = 0 }) {
   const userPausedRef = useRef(false);
   const wasPlayingBeforeHiddenRef = useRef(false);
   const keyboardStartPendingRef = useRef(false);
+  const motionEnabledRef = useRef(false);
   const resizeTimerRef = useRef(null);
   const offscreenPauseTimerRef = useRef(null);
   const startOffsetSeconds = Math.max(0, Number(startOffset) || 0);
@@ -3280,6 +3286,103 @@ function HelpPlayer({ src, startOffset = 0 }) {
     startFromKeyboard();
   }, [status, startFromKeyboard]);
 
+  const enableMotionLook = React.useCallback(async () => {
+    if (motionStatus === 'requesting' || motionStatus === 'active') return;
+    setShowHint(false);
+    setMotionStatus('requesting');
+    try {
+      const orientationEvent = window.DeviceOrientationEvent;
+      const motionEvent = window.DeviceMotionEvent;
+      const permissionSource = typeof orientationEvent?.requestPermission === 'function'
+        ? orientationEvent
+        : motionEvent;
+      const permission = typeof permissionSource?.requestPermission === 'function'
+        ? await permissionSource.requestPermission()
+        : 'granted';
+      if (permission !== 'granted') {
+        motionEnabledRef.current = false;
+        setMotionStatus('denied');
+        return;
+      }
+      motionEnabledRef.current = true;
+      rendererRef.current?.resetDeviceOrientation?.();
+      setMotionStatus('active');
+    } catch (_) {
+      motionEnabledRef.current = false;
+      setMotionStatus('denied');
+    }
+  }, [motionStatus]);
+
+  useEffect(() => {
+    if (status !== 'ready' || motionStatus !== 'active') return undefined;
+    let wasTracking = false;
+    const slot = hostRef.current?.closest('.help-player');
+    const section = slot?.closest('#help');
+    if (!slot || !section) return undefined;
+
+    const resetTracking = () => {
+      rendererRef.current?.resetDeviceOrientation?.();
+      wasTracking = false;
+      if (hostRef.current) hostRef.current.dataset.helpMotion = 'paused';
+    };
+    const isMotionViewportActive = () => {
+      if (!motionEnabledRef.current || document.hidden || !isResumePageActive()) return false;
+      const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement;
+      const fullscreenActive = Boolean(fullscreenElement && (
+        fullscreenElement === slot || fullscreenElement.contains?.(slot)
+      ));
+      const immersive = Boolean(
+        fullscreenActive ||
+        slot.classList.contains('is-pseudo-fullscreen') ||
+        section.classList.contains('is-help-pinned')
+      );
+      const rect = section.getBoundingClientRect();
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+      const readingLine = viewportHeight * 0.5;
+      return immersive || (rect.top <= readingLine && rect.bottom >= readingLine);
+    };
+    const syncMotionGuard = () => {
+      if (!isMotionViewportActive() && wasTracking) resetTracking();
+    };
+    const onOrientation = (event) => {
+      if (!isMotionViewportActive()) {
+        if (wasTracking) resetTracking();
+        return;
+      }
+      const screenAngle = window.screen?.orientation?.angle ?? window.orientation ?? 0;
+      const accepted = rendererRef.current?.setDeviceOrientation?.(
+        event.alpha,
+        event.beta,
+        event.gamma,
+        screenAngle
+      );
+      if (accepted) {
+        wasTracking = true;
+        if (hostRef.current) hostRef.current.dataset.helpMotion = 'active';
+      }
+    };
+
+    window.addEventListener('deviceorientation', onOrientation, true);
+    window.addEventListener('scroll', syncMotionGuard, { passive: true });
+    window.addEventListener('resize', syncMotionGuard);
+    window.addEventListener('orientationchange', resetTracking);
+    window.addEventListener('resume-help-pin-change', syncMotionGuard);
+    window.addEventListener('resume-page-activity-change', syncMotionGuard);
+    document.addEventListener('visibilitychange', syncMotionGuard);
+    document.addEventListener('fullscreenchange', syncMotionGuard);
+    return () => {
+      window.removeEventListener('deviceorientation', onOrientation, true);
+      window.removeEventListener('scroll', syncMotionGuard);
+      window.removeEventListener('resize', syncMotionGuard);
+      window.removeEventListener('orientationchange', resetTracking);
+      window.removeEventListener('resume-help-pin-change', syncMotionGuard);
+      window.removeEventListener('resume-page-activity-change', syncMotionGuard);
+      document.removeEventListener('visibilitychange', syncMotionGuard);
+      document.removeEventListener('fullscreenchange', syncMotionGuard);
+      resetTracking();
+    };
+  }, [status, motionStatus]);
+
   const toggleFullscreen = () => {
     hideHint();
     const slot = hostRef.current?.closest('.help-player');
@@ -3297,6 +3400,10 @@ function HelpPlayer({ src, startOffset = 0 }) {
     emitHelpImmersiveState(true, 'fullscreen');
     playHelpWithSound();
     if (isMobileFullscreenTarget()) {
+      if (motionEnabledRef.current) {
+        enterPseudoFullscreen(slot, forceRendererResize);
+        return;
+      }
       if (rendererRef.current?.enterNativeVideoFullscreen?.()) return;
       enterPseudoFullscreen(slot, forceRendererResize);
       return;
@@ -3348,7 +3455,9 @@ function HelpPlayer({ src, startOffset = 0 }) {
             <div className="hud-pill mono">
               <span className="hud-dot" /> projection · {projection || 'mesh'}
             </div>
-            <div className="hud-pill mono dim">drag / swipe / wasd</div>
+            <div className="hud-pill mono dim">
+              drag / swipe / wasd{motionStatus === 'active' ? ' / gyro' : ''}
+            </div>
           </div>
           <div className="wasd-hint" aria-hidden="true">
             <div className="wasd-hint__grid mono">
@@ -3370,6 +3479,22 @@ function HelpPlayer({ src, startOffset = 0 }) {
             <button className="video-control mono" onClick={replayWithSound} aria-label="Replay from beginning with sound">
               <span className="video-control__icon video-control__icon--replay" aria-hidden="true" />
             </button>
+            {motionStatus !== 'unsupported' && (
+              <button
+                className={`video-control video-control--motion mono ${motionStatus === 'active' ? 'is-active' : ''}`}
+                onClick={enableMotionLook}
+                aria-label={motionStatus === 'active' ? 'Gyroscope camera control enabled' : 'Enable gyroscope camera control'}
+                disabled={motionStatus === 'requesting' || motionStatus === 'active'}
+              >
+                {motionStatus === 'active'
+                  ? 'GYRO ON'
+                  : motionStatus === 'denied'
+                    ? 'GYRO BLOCKED'
+                    : motionStatus === 'requesting'
+                      ? 'GYRO…'
+                      : 'ENABLE GYRO'}
+              </button>
+            )}
           </div>
           <button className="video-fullscreen-corner" onClick={toggleFullscreen} aria-label="Enter fullscreen" />
         </>
@@ -20820,6 +20945,9 @@ function HelpFeature({ src, label = "03 · SELECTED WORK · MILL STITCH™ / HEL
           </p>
           <p>
             To try it, press <span className="mono">W / A / S / D</span> to look around the film.
+          </p>
+          <p className="help-hero__motion-note">
+            On iPad, tap <span className="mono">ENABLE GYRO</span>, then move the device to look around.
           </p>
         </div>
         ) : null}

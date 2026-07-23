@@ -3463,6 +3463,23 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
 .video-controls--help {
   max-width: none;
 }
+.video-control--motion {
+  width: auto;
+  min-width: 7.2rem;
+  padding: 0 0.65rem;
+  border-left: 1px solid rgba(244, 240, 230, 0.24);
+  color: #f4f0e6;
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+.video-control--motion.is-active {
+  color: var(--accent-yellow);
+}
+.video-control--motion:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
 .video-slot:hover .video-controls,
 .video-slot:focus-within .video-controls {
   opacity: 1;
@@ -4076,7 +4093,7 @@ window.__loadStrudelModule = () => {
   return window.__resumeStrudelReady;
 };
 window.__loadSpotlightBundle = () => {
-  window.__spotlightBundlePromise ||= import('./spotlight-bundle.js?v=three-185-htmltexture-v268');
+  window.__spotlightBundlePromise ||= import('./spotlight-bundle.js?v=three-185-htmltexture-v269-gyro');
   return window.__spotlightBundlePromise;
 };
 window.__loadThreeBundle = () => {
@@ -4095,6 +4112,6 @@ if (window.location.protocol === 'file:') {
 window.RESUME_APP_VARIANT = 'landing-v1';
 </script>
   <script src="dist/qrcode-bundle.js?v=cloud-companion-v1"></script>
-  <script type="module" src="dist/app.js?v=mac-input-help-ghostwriter-v331-20260722"></script>
+  <script type="module" src="dist/app.js?v=mac-input-help-gyro-v332-20260723"></script>
 </body>
 </html>

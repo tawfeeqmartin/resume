@@ -641,6 +641,25 @@ class SpotlightRenderer {
     this.playbackWatchdog = 0;
     this.powerActive = true;
     this.tickRaf = 0;
+    this.gyroEnabled = false;
+    this.gyroCalibrated = false;
+    this.gyroYaw = 0;
+    this.gyroPitch = 0;
+    this.gyroTargetYaw = 0;
+    this.gyroTargetPitch = 0;
+    this.gyroReferenceYaw = 0;
+    this.gyroReferencePitch = 0;
+    this._gyroEuler = new THREE.Euler();
+    this._gyroQuaternion = new THREE.Quaternion();
+    this._gyroScreenQuaternion = new THREE.Quaternion();
+    this._gyroForward = new THREE.Vector3();
+    this._gyroZAxis = new THREE.Vector3(0, 0, 1);
+    this._gyroCameraFix = new THREE.Quaternion(
+      -Math.sqrt(0.5),
+      0,
+      0,
+      Math.sqrt(0.5)
+    );
 
     this._onResize = this._onResize.bind(this);
     this._onDown = this._onDown.bind(this);
@@ -803,6 +822,58 @@ class SpotlightRenderer {
   resize() {
     this._onResize();
   }
+  setDeviceOrientation(alpha, beta, gamma, screenOrientation = 0) {
+    if (![alpha, beta, gamma].some(Number.isFinite)) return false;
+    const a = THREE.MathUtils.degToRad(Number.isFinite(alpha) ? alpha : 0);
+    const b = THREE.MathUtils.degToRad(Number.isFinite(beta) ? beta : 0);
+    const g = THREE.MathUtils.degToRad(Number.isFinite(gamma) ? gamma : 0);
+    const orient = THREE.MathUtils.degToRad(Number(screenOrientation) || 0);
+
+    // Match the device coordinate system to the camera, including the
+    // iPad's current portrait/landscape screen rotation.
+    this._gyroEuler.set(b, a, -g, 'YXZ');
+    this._gyroQuaternion.setFromEuler(this._gyroEuler);
+    this._gyroQuaternion.multiply(this._gyroCameraFix);
+    this._gyroScreenQuaternion.setFromAxisAngle(this._gyroZAxis, -orient);
+    this._gyroQuaternion.multiply(this._gyroScreenQuaternion);
+    this._gyroForward
+      .set(0, 0, -1)
+      .applyQuaternion(this._gyroQuaternion)
+      .normalize();
+
+    const absoluteYaw = Math.atan2(this._gyroForward.x, this._gyroForward.z);
+    const absolutePitch = Math.asin(
+      THREE.MathUtils.clamp(this._gyroForward.y, -1, 1)
+    );
+    if (!this.gyroCalibrated) {
+      this.gyroCalibrated = true;
+      this.gyroReferenceYaw = absoluteYaw;
+      this.gyroReferencePitch = absolutePitch;
+      this.gyroYaw = 0;
+      this.gyroPitch = 0;
+    }
+
+    this.gyroTargetYaw = Math.atan2(
+      Math.sin(absoluteYaw - this.gyroReferenceYaw),
+      Math.cos(absoluteYaw - this.gyroReferenceYaw)
+    );
+    const limit = Math.PI / 2 - 0.01;
+    this.gyroTargetPitch = Math.max(
+      -limit,
+      Math.min(limit, absolutePitch - this.gyroReferencePitch)
+    );
+    this.gyroEnabled = true;
+    this.autoSpin = false;
+    return true;
+  }
+  resetDeviceOrientation() {
+    this.gyroEnabled = false;
+    this.gyroCalibrated = false;
+    this.gyroYaw = 0;
+    this.gyroPitch = 0;
+    this.gyroTargetYaw = 0;
+    this.gyroTargetPitch = 0;
+  }
   setPowerActive(active) {
     const next = Boolean(active);
     if (this.powerActive === next) return;
@@ -811,6 +882,7 @@ class SpotlightRenderer {
     this.dragging = false;
     this._clearPlaybackWatchdog();
     if (!next) {
+      this.resetDeviceOrientation();
       this.pauseAndMute();
       if (this.tickRaf) cancelAnimationFrame(this.tickRaf);
       this.tickRaf = 0;
@@ -902,15 +974,28 @@ class SpotlightRenderer {
       this.pitch = Math.max(-limit, Math.min(limit, this.pitch));
       this.autoSpin = false;
     }
-    if (this.autoSpin && !this.dragging) {
+    if (this.autoSpin && !this.dragging && !this.gyroEnabled) {
       this.yaw += dt * 0.06;
     }
+    if (this.gyroEnabled) {
+      const blend = 1 - Math.exp(-Math.max(0, dt) * 8);
+      const yawDelta = Math.atan2(
+        Math.sin(this.gyroTargetYaw - this.gyroYaw),
+        Math.cos(this.gyroTargetYaw - this.gyroYaw)
+      );
+      this.gyroYaw += yawDelta * blend;
+      this.gyroPitch += (this.gyroTargetPitch - this.gyroPitch) * blend;
+    }
     const limit = Math.PI / 2 - 0.01;
-    const renderPitch = Math.max(-limit, Math.min(limit, this.pitch));
+    const renderYaw = this.yaw + (this.gyroEnabled ? this.gyroYaw : 0);
+    const renderPitch = Math.max(
+      -limit,
+      Math.min(limit, this.pitch + (this.gyroEnabled ? this.gyroPitch : 0))
+    );
     const dir = new THREE.Vector3(
-      Math.sin(this.yaw) * Math.cos(renderPitch),
+      Math.sin(renderYaw) * Math.cos(renderPitch),
       Math.sin(renderPitch),
-      Math.cos(this.yaw) * Math.cos(renderPitch)
+      Math.cos(renderYaw) * Math.cos(renderPitch)
     );
     this.camera.lookAt(dir);
     if (this.current) {
@@ -1017,6 +1102,7 @@ class SpotlightRenderer {
 
   dispose() {
     this.disposed = true;
+    this.resetDeviceOrientation();
     this._clearPlaybackWatchdog();
     if (this.tickRaf) cancelAnimationFrame(this.tickRaf);
     this.tickRaf = 0;
