@@ -4081,12 +4081,12 @@ function LouisVuittonFeature({
             gathering storm into the architecture of the runway.
           </p>
           <p>
-            The job came together on a ferocious deadline. Our team effectively stopped
-            sleeping for a week: filming SOPHIE against an LED wall with early Unreal
-            Engine environments, working with an Epic developer on set, triggering
-            practical weather effects in sync, then remastering the result for an even
-            larger and far less forgiving canvas in Paris. Es Devlin really does build
-            the best playgrounds.
+            The job came together on a ferocious deadline that would not have been possible
+            without my suggestion to film SOPHIE against an LED wall. Our experiential team
+            developed all the environments in Unreal Engine, allowing us to trigger audio,
+            MIDI, DMX lighting, and practical weather effects, all synchronized to timecode.
+            Once filmed, we remastered the work for an even larger and far less forgiving
+            canvas in Paris. Es Devlin really does build the best playgrounds.
           </p>
           <p className="mono" style={{ marginTop: '1rem', fontSize: '0.68rem', lineHeight: 1.75 }}>
             THE MILL SPRINT TEAM · {collaborators.map(([name, href], index) => <React.Fragment key={name}>{index ? ' · ' : ''}<a href={href} target="_blank" rel="noreferrer">{name}</a></React.Fragment>)} · TAWFEEQ MARTIN
