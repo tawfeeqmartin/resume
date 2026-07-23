@@ -2620,6 +2620,18 @@ const LANDING_VARIANT_CSS = `
 .landing-cta__inner {
   max-width: 62rem;
 }
+.landing-cta__headline-link {
+  display: inline-block;
+  color: inherit;
+  text-decoration: none;
+}
+.landing-cta__headline-link:hover .landing-cta__title,
+.landing-cta__headline-link:focus-visible .landing-cta__title {
+  color: var(--lv-on-dark);
+  text-decoration: underline;
+  text-decoration-thickness: 0.055em;
+  text-underline-offset: 0.11em;
+}
 .landing-cta__eyebrow {
   margin: 0 0 1.2rem;
   display: inline-flex;
@@ -3212,8 +3224,10 @@ function LandingClosingCta({ linkedInOnly = false } = {}) {
   return (
     <section className="landing-cta" aria-label="Contact Tawfeeq Martin">
       <div className="landing-cta__inner">
-        <p className="landing-cta__eyebrow mono">Say hello</p>
-        <h2 className="landing-cta__title">Let&rsquo;s make something strange.</h2>
+        <a className="landing-cta__headline-link" href="mailto:tawfeeqmartin@gmail.com">
+          <p className="landing-cta__eyebrow mono">Say hello</p>
+          <h2 className="landing-cta__title">Let&rsquo;s make something strange.</h2>
+        </a>
         <p className="landing-cta__text">
           Have a hard problem, an impossible brief, or a half-formed idea? I&rsquo;d like to hear it.
         </p>
@@ -3229,7 +3243,6 @@ function LandingClosingCta({ linkedInOnly = false } = {}) {
           >
             linkedin
           </a>
-          {!linkedInOnly && <a className="landing-v1__action" href="/Resume.html">resume</a>}
         </div>
       </div>
     </section>
@@ -10041,7 +10054,7 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
             </p>
             {!summaryOnly && (
               <nav className="landing-profile__links" aria-label="Profile links">
-                <a href="/Resume.html">Resume</a>
+                <a href={`mailto:${RESUME.email}`}>Email</a>
                 <a href={RESUME.linkedin} target="_blank" rel="noreferrer">LinkedIn</a>
               </nav>
             )}
