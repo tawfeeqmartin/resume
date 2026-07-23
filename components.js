@@ -195,7 +195,20 @@ function createResumePageActivityCoordinator() {
   const instanceId = `resume-page-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
   let ownerId = instanceId;
   let ownerAt = 0;
-  const canOwnForeground = () => !document.hidden && document.hasFocus();
+  // iPad Safari and embedded iOS browsers can report hasFocus() as false even
+  // while a visible page is receiving a trusted touch. Once this page receives
+  // that gesture, visibility + the existing cross-tab ownership protocol are
+  // the reliable foreground signals until blur/pagehide/hidden releases it.
+  let trustedVisibleOwner = false;
+  const documentHasFocus = () => {
+    try {
+      return typeof document.hasFocus !== 'function' || document.hasFocus();
+    } catch (_) {
+      return true;
+    }
+  };
+  const canOwnForeground = () => !document.hidden
+    && (documentHasFocus() || trustedVisibleOwner);
   let active = canOwnForeground();
   let channel = null;
   try {
@@ -249,6 +262,7 @@ function createResumePageActivityCoordinator() {
       const claimWins = messageAt > ownerAt
         || (messageAt === ownerAt && String(message.id) > String(ownerId));
       if (claimWins) {
+        trustedVisibleOwner = false;
         ownerId = message.id;
         ownerAt = messageAt;
         setActive(false, 'claimed-by-another-tab');
@@ -270,13 +284,28 @@ function createResumePageActivityCoordinator() {
     try { handleMessage(JSON.parse(event.newValue)); } catch {}
   };
   const onVisibility = () => {
-    if (document.hidden) release('hidden');
-    else if (document.hasFocus()) claim('visible-focused');
+    if (document.hidden) {
+      trustedVisibleOwner = false;
+      release('hidden');
+    }
+    else if (documentHasFocus()) claim('visible-focused');
+    else if (trustedVisibleOwner) claim('visible-trusted');
     else setActive(false, 'visible-unfocused');
   };
   const onFocus = () => claim('focus');
-  const onBlur = () => release('blur');
-  const onPageHide = () => release('pagehide');
+  const onBlur = () => {
+    trustedVisibleOwner = false;
+    release('blur');
+  };
+  const onPageHide = () => {
+    trustedVisibleOwner = false;
+    release('pagehide');
+  };
+  const claimFromTrustedGesture = (reason) => {
+    if (document.hidden) return;
+    trustedVisibleOwner = true;
+    claim(reason);
+  };
 
   if (channel?.addEventListener) {
     channel.addEventListener('message', (event) => handleMessage(event.data));
@@ -290,11 +319,12 @@ function createResumePageActivityCoordinator() {
   window.addEventListener('focus', onFocus);
   window.addEventListener('blur', onBlur);
   window.addEventListener('pageshow', () => {
-    if (document.hasFocus()) claim('pageshow-focused');
+    if (documentHasFocus()) claim('pageshow-focused');
     else setActive(false, 'pageshow-unfocused');
   });
-  window.addEventListener('pointerdown', () => claim('pointer'), true);
-  window.addEventListener('keydown', () => claim('keyboard'), true);
+  window.addEventListener('pointerdown', () => claimFromTrustedGesture('pointer'), true);
+  window.addEventListener('touchstart', () => claimFromTrustedGesture('touch'), true);
+  window.addEventListener('keydown', () => claimFromTrustedGesture('keyboard'), true);
   document.documentElement.dataset.resumePageActive = active ? 'true' : 'false';
   document.documentElement.dataset.resumePageActivityReason = active ? 'init-focused' : 'init-background';
   window.setTimeout(() => {
@@ -20449,8 +20479,35 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	      }));
 	      return true;
 	    };
+	    let lastLandingTouchAt = 0;
+	    const onLandingTouchStart = (event) => {
+	      const state = stateRef.current;
+	      if (document.hidden || state.tabVisible === false) return;
+	      const touch = event.changedTouches?.[0] || event.touches?.[0];
+	      if (!touch) return;
+	      const rect = canvas.getBoundingClientRect();
+	      if (touch.clientX < rect.left || touch.clientX > rect.right
+	        || touch.clientY < rect.top || touch.clientY > rect.bottom) return;
+	      const shell = wrapRef.current?.closest?.('.landing-v1-shell');
+	      if (shell?.classList.contains('is-crt')
+	        && !shell.classList.contains('is-mac-section-active')) return;
+	      if (!launchIntroFromMacPointer('touch')) return;
+	      lastLandingTouchAt = performance.now();
+	      event.preventDefault();
+	      event.stopPropagation();
+	      captureMacKeyboard();
+	    };
 		    const onPointerDown = async (event) => {
 			      const state = stateRef.current;
+	      // Some iOS versions synthesize a pointer event after touchstart. The
+	      // touch already launched the intro, so swallow that duplicate instead
+	      // of typing the tapped key into the terminal as a second interaction.
+	      if (event.pointerType === 'touch'
+	        && performance.now() - lastLandingTouchAt < 900) {
+	        event.preventDefault();
+	        event.stopPropagation();
+	        return;
+	      }
 		      if (!isResumePageActive() || state.tabVisible === false) return;
 		      if (activateGhostwriterShare(event)) return;
 		      if (activateScreenMenuChannel(event)) return;
@@ -20603,6 +20660,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    window.addEventListener('pointermove', onPointerMove, { passive: true, capture: true });
 	    window.addEventListener('pointerout', onWindowPointerOut, true);
 	    window.addEventListener('pointerdown', onWindowPointerDown, true);
+	    window.addEventListener('touchstart', onLandingTouchStart, { capture: true, passive: false });
 	    canvas.addEventListener('pointerleave', onPointerLeave);
 	    canvas.addEventListener('pointercancel', onPointerLeave);
 	    canvas.addEventListener('pointerdown', onPointerDown);
@@ -20611,6 +20669,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	      window.removeEventListener('pointermove', onPointerMove, true);
 	      window.removeEventListener('pointerout', onWindowPointerOut, true);
 	      window.removeEventListener('pointerdown', onWindowPointerDown, true);
+	      window.removeEventListener('touchstart', onLandingTouchStart, true);
 	      canvas.removeEventListener('pointerleave', onPointerLeave);
       canvas.removeEventListener('pointercancel', onPointerLeave);
       canvas.removeEventListener('pointerdown', onPointerDown);
