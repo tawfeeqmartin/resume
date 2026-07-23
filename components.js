@@ -13556,7 +13556,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       ctx2d.font = `400 ${cursorSize}px ${MAC_TERMINAL_FONT}`;
       const idlePrompt = stateRef.current.macTryItPromptVisible
         ? '> try it '
-        : '> turn audio on before interaction ';
+        : '> turn on audio before touching any buttons ';
       const idlePromptMaxWidth = px(w * 0.79);
       const idlePromptWidth = ctx2d.measureText(idlePrompt).width;
       const idlePromptSize = idlePromptWidth > idlePromptMaxWidth
