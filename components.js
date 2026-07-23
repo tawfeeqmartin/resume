@@ -2827,6 +2827,7 @@ function HelpPlayer({ src, startOffset = 0 }) {
       ? 'idle'
       : 'unsupported'
   ));
+  const [motionHasSignal, setMotionHasSignal] = useState(false);
   const shouldLoad = true;
   const rendererRef = useRef(null);
   const audibleRef = useRef(false);
@@ -2836,6 +2837,7 @@ function HelpPlayer({ src, startOffset = 0 }) {
   const wasPlayingBeforeHiddenRef = useRef(false);
   const keyboardStartPendingRef = useRef(false);
   const motionEnabledRef = useRef(false);
+  const motionHasSignalRef = useRef(false);
   const resizeTimerRef = useRef(null);
   const offscreenPauseTimerRef = useRef(null);
   const startOffsetSeconds = Math.max(0, Number(startOffset) || 0);
@@ -3290,16 +3292,22 @@ function HelpPlayer({ src, startOffset = 0 }) {
     if (motionStatus === 'requesting' || motionStatus === 'active') return;
     setShowHint(false);
     setMotionStatus('requesting');
+    motionHasSignalRef.current = false;
+    setMotionHasSignal(false);
     try {
       const orientationEvent = window.DeviceOrientationEvent;
       const motionEvent = window.DeviceMotionEvent;
-      const permissionSource = typeof orientationEvent?.requestPermission === 'function'
-        ? orientationEvent
-        : motionEvent;
-      const permission = typeof permissionSource?.requestPermission === 'function'
-        ? await permissionSource.requestPermission()
-        : 'granted';
-      if (permission !== 'granted') {
+      const permissionRequests = [];
+      if (typeof orientationEvent?.requestPermission === 'function') {
+        permissionRequests.push(orientationEvent.requestPermission());
+      }
+      if (typeof motionEvent?.requestPermission === 'function') {
+        permissionRequests.push(motionEvent.requestPermission());
+      }
+      const permissions = permissionRequests.length
+        ? await Promise.all(permissionRequests)
+        : ['granted'];
+      if (permissions.some((permission) => permission !== 'granted')) {
         motionEnabledRef.current = false;
         setMotionStatus('denied');
         return;
@@ -3309,6 +3317,8 @@ function HelpPlayer({ src, startOffset = 0 }) {
       setMotionStatus('active');
     } catch (_) {
       motionEnabledRef.current = false;
+      motionHasSignalRef.current = false;
+      setMotionHasSignal(false);
       setMotionStatus('denied');
     }
   }, [motionStatus]);
@@ -3323,6 +3333,10 @@ function HelpPlayer({ src, startOffset = 0 }) {
     const resetTracking = () => {
       rendererRef.current?.resetDeviceOrientation?.();
       wasTracking = false;
+      if (motionHasSignalRef.current) {
+        motionHasSignalRef.current = false;
+        setMotionHasSignal(false);
+      }
       if (hostRef.current) hostRef.current.dataset.helpMotion = 'paused';
     };
     const isMotionViewportActive = () => {
@@ -3358,6 +3372,10 @@ function HelpPlayer({ src, startOffset = 0 }) {
       );
       if (accepted) {
         wasTracking = true;
+        if (!motionHasSignalRef.current) {
+          motionHasSignalRef.current = true;
+          setMotionHasSignal(true);
+        }
         if (hostRef.current) hostRef.current.dataset.helpMotion = 'active';
       }
     };
@@ -3487,7 +3505,7 @@ function HelpPlayer({ src, startOffset = 0 }) {
                 disabled={motionStatus === 'requesting' || motionStatus === 'active'}
               >
                 {motionStatus === 'active'
-                  ? 'GYRO ON'
+                  ? motionHasSignal ? 'GYRO ON' : 'MOVE IPAD'
                   : motionStatus === 'denied'
                     ? 'GYRO BLOCKED'
                     : motionStatus === 'requesting'
@@ -20947,7 +20965,8 @@ function HelpFeature({ src, label = "03 · SELECTED WORK · MILL STITCH™ / HEL
             To try it, press <span className="mono">W / A / S / D</span> to look around the film.
           </p>
           <p className="help-hero__motion-note">
-            On iPad, tap <span className="mono">ENABLE GYRO</span>, then move the device to look around.
+            On iPad, tap <span className="mono">ENABLE GYRO</span>, allow Motion &amp; Orientation,
+            then move the device to look around.
           </p>
         </div>
         ) : null}
