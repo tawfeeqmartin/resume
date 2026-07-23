@@ -1289,7 +1289,7 @@ const LANDING_VARIANT_CSS = `
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
   scroll-snap-align: start;
-  scroll-snap-stop: always;
+  scroll-snap-stop: normal;
 }
 .crt-enter__sticky {
   position: relative;
@@ -6604,8 +6604,6 @@ function CrtZoom() {
     let loopResolveStartedAt = 0;
     let loopResolveUntil = 0;
     let wheelSync = 0;
-    let macSectionSnapTimer = 0;
-    let macSectionSnapHoldUntil = 0;
     let pendingTrustedAudioStart = null;
     let locked = false;
     let projecting = false;
@@ -8949,32 +8947,6 @@ function CrtZoom() {
     const toggleIntroTransport = () => (
       setIntroTransportPaused(!introTransportPaused)
     );
-    const onMacSectionWheel = (event) => {
-      if (event.ctrlKey || event.deltaY <= 0) return;
-      const heroTop = heroScrollTop();
-      const scrollOffset = window.scrollY || root.scrollTop || document.body.scrollTop || 0;
-      const now = performance.now();
-      // Absorb only the inertial tail that follows the authored snap. A fresh
-      // gesture after the hold continues normally into the next section.
-      if (now < macSectionSnapHoldUntil && Math.abs(scrollOffset - heroTop) <= 3) {
-        event.preventDefault();
-        return;
-      }
-      if (scrollOffset >= heroTop - 2) return;
-      const triggerDistance = Math.min((window.innerHeight || 1) * 0.28, 280);
-      const projectedOffset = scrollOffset + Math.max(0, Number(event.deltaY) || 0);
-      if (projectedOffset < heroTop - triggerDistance) return;
-
-      event.preventDefault();
-      window.clearTimeout(macSectionSnapTimer);
-      macSectionSnapHoldUntil = now + 760;
-      shell.dataset.sectionSnap = 'mac';
-      window.scrollTo({ top: heroTop, behavior: 'smooth' });
-      macSectionSnapTimer = window.setTimeout(() => {
-        macSectionSnapTimer = 0;
-        delete shell.dataset.sectionSnap;
-      }, 760);
-    };
     const onWheel = (event) => {
       if (!CRT_SCROLL_INTERACTION_ENABLED) return;
       if (introTransportPaused) {
@@ -9649,7 +9621,6 @@ function CrtZoom() {
     update();
     syncMacSectionOwnership();
     autoplayRaf = requestAnimationFrame(tickAutoplay);
-    window.addEventListener('wheel', onMacSectionWheel, { passive: false, capture: true });
     window.addEventListener('scroll', syncMacSectionOwnership, { passive: true });
     if (CRT_SCROLL_INTERACTION_ENABLED) {
       window.addEventListener('scroll', onScroll, { passive: true });
@@ -9678,7 +9649,6 @@ function CrtZoom() {
     window.addEventListener('resume-page-activity-change', onPageActivity);
     window.addEventListener('keydown', onLifecycleTestKey);
     return () => {
-      window.removeEventListener('wheel', onMacSectionWheel, true);
       window.removeEventListener('scroll', syncMacSectionOwnership);
       if (CRT_SCROLL_INTERACTION_ENABLED) {
         window.removeEventListener('scroll', onScroll);
@@ -9709,7 +9679,6 @@ function CrtZoom() {
       clearTimeout(reproj);
       clearTimeout(projectRetry);
       clearTimeout(wheelSync);
-      clearTimeout(macSectionSnapTimer);
       clearTimeout(programLaunchTimer);
       clearTimeout(parkedGlitchTimer);
       clearTimeout(channelGlitchTimer);
