@@ -4600,7 +4600,11 @@ function CrtForeshadowSync() {
     if (!shell) return undefined;
     const forceDesktopTest = new URLSearchParams(window.location.search)
       .get('desktopTest') === '1';
-    const enabled = (forceDesktopTest || window.matchMedia('(min-width: 900px)').matches)
+    const touchTablet = navigator.maxTouchPoints > 0
+      && window.matchMedia('(min-width: 761px)').matches;
+    const enabled = (forceDesktopTest
+      || window.matchMedia('(min-width: 900px)').matches
+      || touchTablet)
       && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!enabled) return undefined;
     const clamp01 = (value) => Math.max(0, Math.min(1, value));
@@ -6649,8 +6653,12 @@ function CrtZoom() {
     // Only engage where it can be smooth — otherwise leave the flat flowing page.
     const forceDesktopTest = new URLSearchParams(window.location.search)
       .get('desktopTest') === '1';
-    const enabled = (forceDesktopTest || window.matchMedia('(min-width: 900px)').matches)
-      && window.matchMedia('(pointer: fine)').matches
+    const touchTablet = navigator.maxTouchPoints > 0
+      && window.matchMedia('(min-width: 761px)').matches;
+    const enabled = (forceDesktopTest
+      || (window.matchMedia('(min-width: 900px)').matches
+        && window.matchMedia('(pointer: fine)').matches)
+      || touchTablet)
       && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!enabled) return undefined;
 
@@ -6667,6 +6675,7 @@ function CrtZoom() {
       detail: { progress: 0, floppyProgress: 0, zoomProgress: 0 },
     }));
     shell.classList.add('is-crt');
+    shell.dataset.crtInputTarget = touchTablet ? 'touch-tablet' : 'fine-pointer';
     shell.dataset.poolRest = '0';
     const root = document.documentElement;
     const previousRootSnapType = root.style.scrollSnapType;
@@ -9840,6 +9849,7 @@ function CrtZoom() {
       shell.classList.remove('is-crt', 'is-crt-locked', 'is-reel-playing');
       shell.classList.remove('has-entered-mac');
       shell.classList.remove('is-mac-section-active');
+      delete shell.dataset.crtInputTarget;
       root.style.scrollSnapType = previousRootSnapType;
       enter.style.height = '';
     };
