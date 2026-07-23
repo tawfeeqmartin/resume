@@ -13564,14 +13564,20 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       ctx2d.font = `400 ${cursorSize}px ${MAC_TERMINAL_FONT}`;
       const idlePrompt = stateRef.current.macTryItPromptVisible
         ? '> try it '
-        : '> better with audio ';
+        : '> turn audio on before interaction ';
+      const idlePromptMaxWidth = px(w * 0.79);
+      const idlePromptWidth = ctx2d.measureText(idlePrompt).width;
+      const idlePromptSize = idlePromptWidth > idlePromptMaxWidth
+        ? cursorSize * (idlePromptMaxWidth / idlePromptWidth)
+        : cursorSize;
+      ctx2d.font = `400 ${idlePromptSize}px ${MAC_TERMINAL_FONT}`;
       ctx2d.fillText(idlePrompt, cursorX, cursorBaseline);
       if (stateRef.current.macOvertureCursorOn !== false) {
         drawMacUiCursor(
           ctx2d,
-          cursorX + ctx2d.measureText(idlePrompt).width + px(cursorSize * 0.08),
+          cursorX + ctx2d.measureText(idlePrompt).width + px(idlePromptSize * 0.08),
           cursorBaseline,
-          cursorSize,
+          idlePromptSize,
         );
       }
       ctx2d.restore();
