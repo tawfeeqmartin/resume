@@ -1388,6 +1388,17 @@ const LANDING_VARIANT_CSS = `
   visibility: hidden;
   pointer-events: none;
 }
+.landing-v1-shell.is-crt[data-companion-gate="loading-machine"] .landing-v1__demo,
+.landing-v1-shell.is-crt[data-companion-gate="recovering-machine"] .landing-v1__demo {
+  visibility: visible;
+  pointer-events: none;
+}
+.landing-v1-shell.is-crt[data-companion-gate="loading-machine"] .landing-v1__hero,
+.landing-v1-shell.is-crt[data-companion-gate="recovering-machine"] .landing-v1__hero,
+.landing-v1-shell.is-crt[data-companion-gate="loading-machine"] ~ #blackbird,
+.landing-v1-shell.is-crt[data-companion-gate="recovering-machine"] ~ #blackbird {
+  background: #030305 !important;
+}
 /* Pages on the glass: .crt-content is NOT shown in the viewport. It is laid out
    offscreen at the projection width and rasterized into the screen texture, so
    the real sections appear ON the curved tube through the CRT shader (not as a
@@ -2110,7 +2121,7 @@ const LANDING_VARIANT_CSS = `
   content: "LOADING THE MACHINE…";
   position: fixed;
   inset: 0;
-  z-index: 3;
+  z-index: 2147483000;
   display: grid;
   place-items: center;
   pointer-events: none;
