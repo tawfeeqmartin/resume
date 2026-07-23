@@ -4606,11 +4606,12 @@ function CrtForeshadowSync() {
       .get('desktopTest') === '1';
     const touchTablet = navigator.maxTouchPoints > 0
       && window.matchMedia('(min-width: 761px)').matches;
-    const enabled = (forceDesktopTest
-      || window.matchMedia('(min-width: 900px)').matches
-      || touchTablet)
-      && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const enabled = forceDesktopTest
+      || touchTablet
+      || (window.matchMedia('(min-width: 900px)').matches && !reducedMotion);
     if (!enabled) return undefined;
+    shell.dataset.crtReducedMotion = reducedMotion ? 'true' : 'false';
     const clamp01 = (value) => Math.max(0, Math.min(1, value));
     const audioPlayers = CRT_GLITCH_AUDIO_SOURCES.map((src) => {
       const player = new Audio(src);
@@ -6659,11 +6660,12 @@ function CrtZoom() {
       .get('desktopTest') === '1';
     const touchTablet = navigator.maxTouchPoints > 0
       && window.matchMedia('(min-width: 761px)').matches;
-    const enabled = (forceDesktopTest
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const enabled = forceDesktopTest
+      || touchTablet
       || (window.matchMedia('(min-width: 900px)').matches
-        && window.matchMedia('(pointer: fine)').matches)
-      || touchTablet)
-      && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        && window.matchMedia('(pointer: fine)').matches
+        && !reducedMotion);
     if (!enabled) return undefined;
 
     // Every load begins from the authored first frame. Browsers commonly
@@ -6680,6 +6682,7 @@ function CrtZoom() {
     }));
     shell.classList.add('is-crt');
     shell.dataset.crtInputTarget = touchTablet ? 'touch-tablet' : 'fine-pointer';
+    shell.dataset.crtReducedMotion = reducedMotion ? 'true' : 'false';
     shell.dataset.poolRest = '0';
     const root = document.documentElement;
     const previousRootSnapType = root.style.scrollSnapType;
@@ -8862,9 +8865,21 @@ function CrtZoom() {
       if (companionInsertComplete) beginAutoplay();
     };
     const onCompanionStart = async (event) => {
-      if (!pageActive || !isResumeForeground()) return;
       const requestedSource = String(event?.detail?.source || '');
       const trustedKeyboardStart = requestedSource === 'keyboard' || requestedSource === 'mac-pointer';
+      const trustedVisibleStart = trustedKeyboardStart && !document.hidden;
+      if (trustedVisibleStart) {
+        try {
+          window.__resumeClaimPageActivity?.(`intro-${requestedSource}`);
+        } catch {}
+        pageActive = true;
+        pagePausedAt = 0;
+      }
+      if (!trustedVisibleStart && (!pageActive || !isResumeForeground())) return;
+      if (trustedKeyboardStart) {
+        shell.dataset.macStartAccepted = 'true';
+        shell.dataset.pageActivity = 'foreground-trusted-mac';
+      }
       const audioIsReady = ['ready', 'playing', 'idle-playing', 'text-playing']
         .includes(String(shell.dataset.glitchAudio || ''));
       if (!IS_LOCAL_PREVIEW

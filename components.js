@@ -338,6 +338,7 @@ function createResumePageActivityCoordinator() {
       return Boolean(active && canOwnForeground() && ownerId === instanceId);
     },
     claim,
+    claimFromTrustedGesture,
     release,
   };
 }
@@ -355,6 +356,11 @@ function isResumePageActive() {
 }
 
 window.__resumeIsPageActive = isResumePageActive;
+window.__resumeClaimPageActivity = (reason = 'trusted-interaction') => {
+  const coordinator = getResumePageActivity();
+  coordinator.claimFromTrustedGesture(reason);
+  return coordinator.active;
+};
 
 function getResumeStrudelAudioEngine() {
   if (window.__resumeStrudelAudioEngine) return window.__resumeStrudelAudioEngine;
@@ -12263,6 +12269,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    contactFormRects: null,
 	    macOvertureBootBlank: true,
 	    macLandingLaunchPending: false,
+	    macLandingLaunchAt: 0,
 	    macTryItPromptVisible: false,
 	    macStoryTypeActive: false,
 	    macStoryTypedText: '',
@@ -14476,6 +14483,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    };
 	    const onCompanionStop = () => {
 	      stateRef.current.macLandingLaunchPending = false;
+	      stateRef.current.macLandingLaunchAt = 0;
 	      stateRef.current.macTryItPromptVisible = false;
 	      stateRef.current.macCompanionDirectTyping = false;
 	      stateRef.current.companionQrVisible = false;
@@ -14486,6 +14494,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	      stateRef.current.forceTerminal = true;
 	      drawMacOffScreen();
 	      stateRef.current.forceTerminal = false;
+	      const shell = wrapRef.current?.closest?.('.landing-v1-shell');
+	      if (shell) delete shell.dataset.macStartAccepted;
 	    };
 	    const onVisitorNameChange = (event) => {
 	      stateRef.current.visitorName = String(event.detail?.name || '').slice(0, 24);
@@ -20643,18 +20653,32 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    };
 	    const launchIntroFromMacPointer = (label = 'mouse') => {
 	      const state = stateRef.current;
+	      const shell = wrapRef.current?.closest?.('.landing-v1-shell');
+	      const now = performance.now();
 	      const isLandingMacState = state.macOvertureBootBlank
 	        || state.companionQrVisible
 	        || state.visitorNamePromptActive
 	        || state.openingInvitationPending;
-	      if (!isLandingMacState
-	        || state.macLandingLaunchPending
+	      const launchWasAccepted = shell?.dataset.macStartAccepted === 'true';
+	      const pendingLaunchIsFresh = state.macLandingLaunchPending
+	        && now - Number(state.macLandingLaunchAt || 0) < 1200;
+	      const retryingUnacceptedLaunch = state.macLandingLaunchPending
+	        && !launchWasAccepted
+	        && !pendingLaunchIsFresh;
+	      if ((!isLandingMacState && !retryingUnacceptedLaunch)
+	        || launchWasAccepted
+	        || pendingLaunchIsFresh
 	        || state.macGhostwriter?.active
-	        || state.macCompanionDirectTyping
+	        || (state.macCompanionDirectTyping && !retryingUnacceptedLaunch)
 	        || state.visualReelMode) return false;
+	      try {
+	        window.__resumeClaimPageActivity?.(`mac-${String(label || 'pointer')}`);
+	      } catch {}
 	      state.macLandingLaunchPending = true;
+	      state.macLandingLaunchAt = now;
 	      if (wrapRef.current) {
 	        wrapRef.current.dataset.landingPointerStart = String(label || 'mouse');
+	        wrapRef.current.dataset.macStartDispatched = String(Math.round(now));
 	      }
 	      try {
 	        void window.__resumePrimeIntroAudio?.();
@@ -20673,7 +20697,10 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    let lastLandingTouchAt = 0;
 	    const onLandingTouchStart = (event) => {
 	      const state = stateRef.current;
-	      if (document.hidden || state.tabVisible === false) return;
+	      if (document.hidden) return;
+	      try {
+	        window.__resumeClaimPageActivity?.('mac-touchstart');
+	      } catch {}
 	      const touch = event.changedTouches?.[0] || event.touches?.[0];
 	      if (!touch) return;
 	      const rect = canvas.getBoundingClientRect();
@@ -20688,8 +20715,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	      event.stopPropagation();
 	      captureMacKeyboard();
 	    };
-		    const onPointerDown = async (event) => {
-			      const state = stateRef.current;
+	    const onPointerDown = async (event) => {
+	      const state = stateRef.current;
 	      // Some iOS versions synthesize a pointer event after touchstart. The
 	      // touch already launched the intro, so swallow that duplicate instead
 	      // of typing the tapped key into the terminal as a second interaction.
@@ -20699,9 +20726,14 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	        event.stopPropagation();
 	        return;
 	      }
-		      if (!isResumePageActive() || state.tabVisible === false) return;
-		      if (activateGhostwriterShare(event)) return;
-		      if (activateScreenMenuChannel(event)) return;
+	      if (event.isTrusted !== false && !document.hidden) {
+	        try {
+	          window.__resumeClaimPageActivity?.('mac-pointerdown');
+	        } catch {}
+	      }
+	      if (!isResumePageActive() || state.tabVisible === false) return;
+	      if (activateGhostwriterShare(event)) return;
+	      if (activateScreenMenuChannel(event)) return;
 	      const THREE = state.three;
 	      const camera = state.camera;
 	      const hitMeshes = state.macHitMeshes || state.mouseHitMeshes;
