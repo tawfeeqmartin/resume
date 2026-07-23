@@ -4040,7 +4040,7 @@ function KissNewEraFeature({
             and artist IP.
           </p>
           <p className="mono" style={{ marginTop: '1rem', fontSize: '0.68rem', lineHeight: 1.75 }}>
-            INDUSTRIAL LIGHT &amp; MAGIC · POPHOUSE ENTERTAINMENT · PERFORMANCE CAPTURE · REAL-TIME DIGITAL HUMANS
+            INDUSTRIAL LIGHT &amp; MAGIC · POPHOUSE ENTERTAINMENT
           </p>
         </div>
         <div className="help-hero__player">
@@ -4051,10 +4051,6 @@ function KissNewEraFeature({
             fallbackPath="resume/media/kiss-a-new-era-720.mp4"
             label="avatar reveal · kiss / a new era begins"
           />
-          <p className="mono" style={{ margin: '0.75rem 0 0', fontSize: '0.72rem', textAlign: 'center' }}>
-            KISS · A New Era Begins · 2023
-            {' · '}<a href="https://www.youtube.com/watch?v=Yl5PGoy5X6g" target="_blank" rel="noreferrer">Original film</a>
-          </p>
         </div>
       </div>
     </Section>
@@ -4102,11 +4098,6 @@ function LouisVuittonFeature({
   const media = (
     <div className="help-hero__player louis-vuitton-feature__media">
           <VideoSlot hero startTime={628} src={src} poster={poster} fallbackPath="resume/media/louis-vuitton-ss20-1080.mp4" label="women’s spring–summer 2020 show · louis vuitton" />
-          <p className="mono" style={{ margin: '0.75rem 0 0', fontSize: '0.72rem', textAlign: 'center' }}>
-            Full runway film · Louis Vuitton · Louvre Cour Carrée · 01 October 2019
-            {' · '}<a href="https://www.youtube.com/watch?v=XQlh2e8cD6M" target="_blank" rel="noreferrer">Original film</a>
-            {' · '}<a href="https://lisaryansmith.com/portfolio/louis-vuitton-ss20" target="_blank" rel="noreferrer">Production credit</a>
-          </p>
     </div>
   );
   return (
