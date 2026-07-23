@@ -1011,7 +1011,9 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   min-height: 0;
 }
 #help {
-  min-height: calc(175svh + 2rem);
+  min-height: 0;
+  scroll-snap-align: none;
+  scroll-snap-stop: normal;
 }
 #help + #blackbird {
   margin-top: 0.35rem;

@@ -20737,47 +20737,6 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 }
 
 function HelpFeature({ src, label = "03 · SELECTED WORK · MILL STITCH™ / HELP", showIntro = true }) {
-  useEffect(() => {
-    const section = document.getElementById('help');
-    if (!section) return undefined;
-    let frame = 0;
-    let pinned = false;
-
-    const update = () => {
-      frame = 0;
-      const rect = section.getBoundingClientRect();
-      const viewportH = window.innerHeight || document.documentElement.clientHeight || 0;
-      const shouldPin = rect.top <= 1 && rect.bottom > viewportH + 1;
-      section.classList.toggle('is-help-pinned', shouldPin);
-      if (shouldPin !== pinned) {
-        pinned = shouldPin;
-        window.dispatchEvent(new CustomEvent('resume-help-pin-change', {
-          detail: { pinned, section },
-        }));
-      }
-    };
-
-    const queueUpdate = () => {
-      if (frame) return;
-      frame = requestAnimationFrame(update);
-    };
-
-    update();
-    window.addEventListener('scroll', queueUpdate, { passive: true });
-    window.addEventListener('resize', queueUpdate);
-    return () => {
-      if (frame) cancelAnimationFrame(frame);
-      section.classList.remove('is-help-pinned');
-      if (pinned) {
-        window.dispatchEvent(new CustomEvent('resume-help-pin-change', {
-          detail: { pinned: false, section },
-        }));
-      }
-      window.removeEventListener('scroll', queueUpdate);
-      window.removeEventListener('resize', queueUpdate);
-    };
-  }, []);
-
   return (
     <Section id="help" label={label}>
       <div className="help-hero">
