@@ -2177,6 +2177,10 @@ const LANDING_VARIANT_CSS = `
   transition: opacity 90ms linear;
   background: #030305;
 }
+.landing-v1__demo[data-machine-load-error="true"]::before {
+  content: "MACHINE LOAD FAILED · RELOAD";
+  color: #ffb4a8;
+}
 .landing-v1__demo:has(.tv-hero.is-model-ready)::before,
 .landing-v1__demo.is-machine-ready::before {
   opacity: 0;

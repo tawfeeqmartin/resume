@@ -6031,7 +6031,7 @@ function Experience({ items }) {
 //  drawn into a CanvasTexture mapped onto the model's screen mesh.
 // ────────────────────────────────────────────────────────────────────
 
-const TV_MODEL_URL = 'media/3d/apple_macintosh.glb';
+const TV_MODEL_URL = 'media/3d/apple_macintosh.glb?v=ipad-loader-v2';
 const MAC_MODEL_GRAYSCALE_PREVIEW = (() => {
   try {
     const params = new URLSearchParams(window.location.search);
@@ -17222,6 +17222,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     let revealTimer = 0;
     let pixelRatioTimer = 0;
     let warmupTimer = 0;
+    let modelLoadTimer = 0;
     let releaseRendererForNavigation;
     (async () => {
       const threeLoader = window.__loadThreeBundle || (() => window.__threePromise);
@@ -17235,22 +17236,30 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       wrap.dataset.htmlTextureClass = typeof THREE.HTMLTexture === 'function'
         ? 'available'
         : 'missing';
+      const touchTabletRenderer = navigator.maxTouchPoints > 0
+        && window.matchMedia('(min-width: 761px)').matches;
+      wrap.dataset.threeProfile = touchTabletRenderer ? 'touch-tablet-low-memory' : 'full';
 
       const renderer = new THREE.WebGLRenderer({
         canvas,
-        antialias: true,
+        antialias: !touchTabletRenderer,
         alpha: true,
+        powerPreference: 'high-performance',
         // This hero renders on demand. Preserve the last complete framebuffer
         // so reloads, screenshots, and rapid keyboard input never expose a
-        // cleared/partially redrawn WebGL canvas between frames.
-        preserveDrawingBuffer: true,
+        // cleared/partially-redrawn frame. On iPad, avoiding the retained
+        // full-screen framebuffer cuts boot memory enough to prevent Safari
+        // from stalling before the GLB becomes interactive.
+        preserveDrawingBuffer: !touchTabletRenderer,
       });
       // Keep the Mac shell and terminal crisp. The expensive part was the
       // dynamic screen texture mipmap rebuild, not this on-demand render DPR.
-      const finalPixelRatio = Math.min(2, window.devicePixelRatio || 1);
+      const finalPixelRatio = touchTabletRenderer
+        ? 1
+        : Math.min(2, window.devicePixelRatio || 1);
       // A fast first frame matters more than rendering invisible UHD pixels
       // during boot. Sharpen to the final DPR once the machine is on screen.
-      renderer.setPixelRatio(Math.min(1.25, finalPixelRatio));
+      renderer.setPixelRatio(touchTabletRenderer ? 1 : Math.min(1.25, finalPixelRatio));
       // Use the canvas's CSS dimensions (which include the negative-top
       // overflow). Renderer setSize is called inside the tick loop too,
       // so the seed value here doesn't matter much.
@@ -17266,6 +17275,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         window.clearTimeout(revealTimer);
         window.clearTimeout(pixelRatioTimer);
         window.clearTimeout(warmupTimer);
+        window.clearTimeout(modelLoadTimer);
         if (rendererReleased) return;
         rendererReleased = true;
         try { renderer.dispose(); } catch {}
@@ -18584,8 +18594,23 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       // Load model
       const loader = new GLTFLoader();
       console.info('[TvHero] loading', TV_MODEL_URL);
+      modelLoadTimer = window.setTimeout(() => {
+        if (cancelled || wrap.classList.contains('is-model-ready')) return;
+        wrap.dataset.modelLoadError = 'timeout';
+        const machineDemo = wrap.closest?.('.landing-v1__demo');
+        if (machineDemo) machineDemo.dataset.machineLoadError = 'true';
+      }, 20000);
       loader.load(TV_MODEL_URL, (gltf) => {
         if (cancelled) return;
+        window.clearTimeout(modelLoadTimer);
+        modelLoadTimer = 0;
+        delete wrap.dataset.modelLoadError;
+        delete wrap.dataset.modelLoadProgress;
+        const machineDemo = wrap.closest?.('.landing-v1__demo');
+        if (machineDemo) {
+          delete machineDemo.dataset.machineLoadError;
+          delete machineDemo.dataset.machineLoadProgress;
+        }
         console.info('[TvHero] model loaded');
         const model = gltf.scene;
         scene.add(model);
@@ -19620,8 +19645,22 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         };
         revealTimer = window.setTimeout(revealCompiledModel, 0);
       }, (progress) => {
-        if (progress.total) console.info(`[TvHero] loading ${(progress.loaded / progress.total * 100).toFixed(0)}%`);
+        if (progress.total) {
+          const percent = Math.max(
+            0,
+            Math.min(100, Math.round((progress.loaded / progress.total) * 100)),
+          );
+          wrap.dataset.modelLoadProgress = String(percent);
+          const machineDemo = wrap.closest?.('.landing-v1__demo');
+          if (machineDemo) machineDemo.dataset.machineLoadProgress = String(percent);
+          console.info(`[TvHero] loading ${percent}%`);
+        }
       }, (err) => {
+        window.clearTimeout(modelLoadTimer);
+        modelLoadTimer = 0;
+        wrap.dataset.modelLoadError = 'gltf';
+        const machineDemo = wrap.closest?.('.landing-v1__demo');
+        if (machineDemo) machineDemo.dataset.machineLoadError = 'true';
         console.warn('[TvHero] GLTF load failed', err);
       });
 
@@ -19651,7 +19690,15 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       onResize = () => stateRef.current.requestRender?.();
       window.addEventListener('resize', onResize);
       stateRef.current.requestRender();
-    })().catch((err) => console.warn('TvHero init failed', err));
+    })().catch((err) => {
+      const wrap = wrapRef.current;
+      if (wrap) {
+        wrap.dataset.modelLoadError = 'renderer';
+        const machineDemo = wrap.closest?.('.landing-v1__demo');
+        if (machineDemo) machineDemo.dataset.machineLoadError = 'true';
+      }
+      console.warn('TvHero init failed', err);
+    });
 
     return () => {
       cancelled = true;
@@ -19685,6 +19732,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       window.clearTimeout(revealTimer);
       window.clearTimeout(pixelRatioTimer);
       window.clearTimeout(warmupTimer);
+      window.clearTimeout(modelLoadTimer);
       if (onResize) window.removeEventListener('resize', onResize);
       if (releaseRendererForNavigation) {
         window.removeEventListener('pagehide', releaseRendererForNavigation);
