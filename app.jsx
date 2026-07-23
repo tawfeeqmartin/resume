@@ -44,7 +44,7 @@ const RESUME_APP_VARIANT = (() => {
 try {
   document.documentElement.dataset.resumeVariant = RESUME_APP_VARIANT;
 } catch (_) {}
-const IS_MOBILE_MEDIA_TARGET = window.matchMedia('(max-width: 900px), (pointer: coarse)').matches;
+const IS_MOBILE_MEDIA_TARGET = window.matchMedia('(max-width: 760px)').matches;
 const helpMeshSource = (path) => ({
   videoUrl: sameOriginMediaUrl(path),
   projectionUrl: sameOriginMediaUrl(path),
@@ -593,7 +593,7 @@ window.RESUME_TV_CLIP_POOLS = {
   visual: CLEARED_TRAILER_SOURCES,
   vocal: ACTIVE_VOCAL_SAMPLE_SOURCES,
 };
-const MOBILE_RESUME_QUERY = '(max-width: 760px), (pointer: coarse)';
+const MOBILE_RESUME_QUERY = '(max-width: 760px)';
 
 function useMobileResumeMode() {
   const getMatch = () => window.matchMedia(MOBILE_RESUME_QUERY).matches;
@@ -1239,6 +1239,50 @@ const LANDING_VARIANT_CSS = `
   .landing-profile__instrument-link path,
   .landing-profile__instrument-link circle:last-child {
     animation: none;
+  }
+}
+@media (min-width: 761px) and (max-width: 1180px) {
+  .landing-v1-shell {
+    overflow-x: clip;
+  }
+  .landing-profile {
+    min-height: auto;
+    padding-top: clamp(4.5rem, 9svh, 7rem);
+    padding-bottom: clamp(4rem, 8svh, 6.5rem);
+  }
+  .landing-profile__name-row {
+    grid-template-columns: 1fr;
+    gap: clamp(1.5rem, 4vw, 2.75rem);
+  }
+  .landing-profile__name {
+    max-width: 11ch;
+    font-size: clamp(4.2rem, 11vw, 7rem);
+    line-height: 0.9;
+  }
+  .landing-profile__name span {
+    display: block;
+  }
+  .landing-profile__name span + span {
+    margin-left: 0;
+  }
+  .landing-profile__instrument--chips {
+    justify-self: start;
+    width: min(42vw, 19rem);
+    height: clamp(5.75rem, 12vw, 8.5rem);
+  }
+  .landing-profile__story {
+    grid-template-columns: 1fr;
+    gap: clamp(2.25rem, 5vw, 4rem);
+    margin-top: clamp(2.5rem, 5svh, 4rem);
+  }
+  .landing-profile__bio {
+    max-width: 58ch;
+    font-size: clamp(1.18rem, 2.2vw, 1.46rem);
+  }
+  .landing-profile__instrument--wheel {
+    justify-self: start;
+    width: min(72vw, 34rem);
+    height: clamp(20rem, 48vw, 31rem);
   }
 }
 @media (max-width: 760px) {
@@ -2754,6 +2798,93 @@ const LANDING_VARIANT_CSS = `
   }
   .hand-of-god-feature {
     min-height: 36rem;
+  }
+}
+@media (min-width: 761px) and (max-width: 1180px) {
+  .crt-enter {
+    scroll-snap-align: none;
+  }
+  .landing-v1__hero {
+    display: block;
+    min-height: auto;
+    height: auto;
+    padding: 0;
+  }
+  .landing-v1__demo {
+    height: clamp(38rem, 82svh, 54rem);
+    min-height: 0;
+    margin: 0 calc(50% - 50vw);
+  }
+  .landing-v1__demo .tv-hero,
+  .landing-v1__demo .tv-hero__canvas {
+    width: 100vw;
+    height: 100%;
+    min-height: 0;
+  }
+  .landing-v1__demo .tv-hero__canvas {
+    top: 0;
+    transform: none;
+  }
+  .landing-v1__featured-demos,
+  .landing-v1-shell .section {
+    margin-top: clamp(3rem, 7vw, 5.5rem);
+  }
+  .landing-v1-shell .section__label {
+    gap: 0.85rem;
+  }
+  .landing-v1-shell .section__label-title {
+    max-width: 46ch;
+    line-height: 1.35;
+  }
+  .help-feature {
+    grid-template-columns: 1fr;
+    gap: clamp(1.4rem, 4vw, 2.4rem);
+  }
+  .help-feature__player-col,
+  .help-feature__notes--match-stack {
+    min-height: 0;
+  }
+  .help-feature__notes--match-stack {
+    max-width: 66ch;
+  }
+  #blackbird {
+    min-height: auto;
+  }
+  #hand-of-god.section {
+    min-height: auto;
+    scroll-snap-stop: normal;
+  }
+  .hand-of-god-feature {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(34rem, 64svh) auto;
+    height: auto;
+    min-height: 0;
+  }
+  .hand-of-god-feature__note {
+    border-left: 0;
+    border-top: 1px solid rgba(245, 245, 242, 0.16);
+  }
+  .hand-of-god-feature__note p {
+    max-width: 66ch;
+  }
+  #louis-vuitton-ss20-after-kiss .louis-vuitton-feature,
+  #kiss-new-era .kiss-new-era__layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "intro"
+      "player";
+  }
+  #louis-vuitton-ss20-after-kiss .help-hero__intro,
+  #kiss-new-era .help-hero__intro,
+  .help-hero__intro {
+    max-width: 68ch;
+    margin-inline: 0;
+    text-align: left;
+  }
+  .landing-proof,
+  .landing-awards,
+  .landing-v1__references .refs {
+    grid-template-columns: 1fr;
   }
 }
 `;
