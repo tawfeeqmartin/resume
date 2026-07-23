@@ -4091,13 +4091,11 @@ function BlackbirdFeature({
 }
 
 function HandOfGodFeature({
-  src = "media/interactive/hand-of-god.html",
+  videoSrc = "media/hand-of-god-demo-720.mp4",
+  poster = "media/hand-of-god-demo-poster.jpg",
+  interactiveSrc = "media/interactive/hand-of-god.html",
   label = "05 · PERSONAL ART · THE BEAUTIFUL GAME / HAND OF GOD",
 }) {
-  const featureRef = useRef(null);
-  const frameRef = useRef(null);
-  const activeRef = useRef(false);
-
   useEffect(() => {
     if (window.location.hash !== '#hand-of-god') return undefined;
     const frame = window.requestAnimationFrame(() => {
@@ -4106,92 +4104,32 @@ function HandOfGodFeature({
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
-  useEffect(() => {
-    const feature = featureRef.current;
-    const iframe = frameRef.current;
-    if (!feature || !iframe) return undefined;
-
-    let commandedState = null;
-    const syncPlayback = ({ restart = false } = {}) => {
-      const playing = Boolean(activeRef.current);
-      if (!restart && commandedState === playing) return;
-      commandedState = playing;
-      feature.dataset.playbackRequested = playing ? 'play' : 'pause';
-      iframe.contentWindow?.postMessage({
-        type: 'beautifulgame:set-playback',
-        playing,
-        loop: true,
-        restart: Boolean(restart && playing),
-      }, window.location.origin);
-    };
-    const onDemoStatus = (event) => {
-      if (event.origin !== window.location.origin || event.source !== iframe.contentWindow) return;
-      if (event.data?.type !== 'beautifulgame:playback-status') return;
-      feature.dataset.demoPlaying = event.data.playing ? 'true' : 'false';
-      feature.dataset.demoReady = 'true';
-    };
-    const onFrameLoad = () => {
-      commandedState = null;
-      syncPlayback({ restart: activeRef.current });
-    };
-    const updatePlaybackActivity = () => {
-      const rect = feature.getBoundingClientRect();
-      const viewportHeight = window.innerHeight || 1;
-      const visibleHeight = Math.max(
-        0,
-        Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0)
-      );
-      const visibleRatio = visibleHeight / Math.max(1, Math.min(rect.height, viewportHeight));
-      const wasActive = activeRef.current;
-      activeRef.current = visibleRatio >= 0.35;
-      feature.dataset.playbackActive = activeRef.current ? 'true' : 'false';
-      syncPlayback({ restart: activeRef.current && !wasActive });
-    };
-    const schedulePlaybackActivity = () => updatePlaybackActivity();
-    const sectionObserver = new IntersectionObserver(schedulePlaybackActivity, {
-      threshold: [0, 0.35, 0.6, 1],
-    });
-
-    iframe.addEventListener('load', onFrameLoad);
-    window.addEventListener('message', onDemoStatus);
-    window.addEventListener('scroll', schedulePlaybackActivity, { passive: true });
-    window.addEventListener('resize', schedulePlaybackActivity, { passive: true });
-    window.addEventListener('pageshow', schedulePlaybackActivity);
-    sectionObserver.observe(feature);
-    schedulePlaybackActivity();
-    return () => {
-      activeRef.current = false;
-      syncPlayback();
-      iframe.removeEventListener('load', onFrameLoad);
-      window.removeEventListener('message', onDemoStatus);
-      window.removeEventListener('scroll', schedulePlaybackActivity);
-      window.removeEventListener('resize', schedulePlaybackActivity);
-      window.removeEventListener('pageshow', schedulePlaybackActivity);
-      sectionObserver.disconnect();
-    };
-  }, []);
-
   return (
     <Section id="hand-of-god" label={label}>
-      <div className="hand-of-god-feature" ref={featureRef}>
-        <iframe
-          ref={frameRef}
-          className="hand-of-god-feature__frame"
-          src={src}
-          title="Beautiful Game — Hand of God match sculpture"
-          loading="eager"
-          allow="autoplay; fullscreen"
-          allowFullScreen
-        />
+      <div className="hand-of-god-feature">
+        <div className="hand-of-god-feature__media">
+          <VideoSlot
+            hero
+            src={videoSrc}
+            poster={poster}
+            fallbackPath="resume/media/hand-of-god-demo-720.mp4"
+            label="beautiful game · rendered hand of god flythrough"
+          />
+        </div>
         <aside className="hand-of-god-feature__note">
-          <p>
-            Beautiful Game turns football match data into interactive point-cloud sculptures that
-            show how each goal unfolded. An AI-assisted pipeline combines the match feed with video
-            analysis, commentary, match reports, and news coverage. Video analysis recovers missing
-            movement and timing while commentary and reporting add the story the raw data leaves
-            out. Each match can be explored from the field, as a fly-through following the ball,
-            exported as video, or rendered as lightweight token-ready art.
-          </p>
+          <div>
+            <p>
+              Beautiful Game turns football match data into interactive point-cloud sculptures that
+              show how each goal unfolded. An AI-assisted pipeline combines the match feed with video
+              analysis, commentary, match reports, and news coverage. Video analysis recovers missing
+              movement and timing while commentary and reporting add the story the raw data leaves
+              out. Each match can be explored from the field, as a fly-through following the ball,
+              exported as video, or rendered as lightweight token-ready art.
+            </p>
+            <a className="hand-of-god-feature__link mono" href={interactiveSrc} target="_blank" rel="noreferrer">
+              Open interactive prototype
+            </a>
+          </div>
         </aside>
       </div>
     </Section>
@@ -4317,6 +4255,50 @@ function HumanRaceFeature({ src, poster, label = "05 · SELECTED WORK · CHEVROL
           <p className="mono" style={{ margin: '0.75rem 0 0', fontSize: '0.72rem', textAlign: 'center' }}>
             Chevrolet “The Human Race” · Blackbird virtual production case study · 2017
           </p>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function TouchDesignerSketchesFeature({
+  sketches = [],
+  label = "08 · PERSONAL WORK · TOUCHDESIGNER SKETCHES",
+}) {
+  if (!sketches.length) return null;
+  return (
+    <Section id="touchdesigner-sketches" label={label}>
+      <div className="touchdesigner-feature">
+        <div className="touchdesigner-feature__intro">
+          <h3 className="serif">Realtime sketches: small systems, fast instincts.</h3>
+          <p>
+            A set of personal TouchDesigner studies exploring procedural motion,
+            signal-driven interfaces, ASCII/image translation, and live graphic
+            material. They sit here as lightweight sketches rather than polished
+            case studies: quick tests for ideas that could become installation,
+            stage, interface, or screen language.
+          </p>
+          <p className="mono">
+            TOUCHDESIGNER · REALTIME GRAPHICS · PROCEDURAL SYSTEMS · SIGNAL DESIGN
+          </p>
+        </div>
+        <div className="touchdesigner-grid">
+          {sketches.map((sketch, index) => (
+            <article className="touchdesigner-card" key={sketch.id || sketch.src}>
+              <VideoSlot
+                src={sketch.src}
+                fallbackPath={sketch.fallbackPath || sketch.src}
+                label={`touchdesigner sketch ${String(index + 1).padStart(2, '0')}`}
+              />
+              <div className="touchdesigner-card__caption">
+                <span className="mono">{String(index + 1).padStart(2, '0')}</span>
+                <div>
+                  <h4>{sketch.title}</h4>
+                  <p>{sketch.note}</p>
+                </div>
+              </div>
+            </article>
+          ))}
         </div>
       </div>
     </Section>

@@ -66,6 +66,8 @@ const HELP_VIDEO_URLS = IS_MOBILE_MEDIA_TARGET
 const BLACKBIRD_INNOVATION_VIDEO_URL = mediaUrl("media/blackbird-innovation.mp4");
 const BLACKBIRD_VIDEO_URL = mediaUrl("media/blackbird.mp4");
 const HAND_OF_GOD_DEMO_URL = sameOriginMediaUrl("media/interactive/hand-of-god.html");
+const HAND_OF_GOD_VIDEO_URL = mediaUrl("media/hand-of-god-demo-720.mp4");
+const HAND_OF_GOD_POSTER_URL = mediaUrl("media/hand-of-god-demo-poster.jpg");
 const KISS_NEW_ERA_VIDEO_URL = sameOriginMediaUrl("media/kiss-a-new-era-720.mp4");
 const KISS_NEW_ERA_POSTER_URL = sameOriginMediaUrl("media/kiss-a-new-era-poster.jpg");
 const HUMAN_RACE_VIDEO_URL = mediaUrl("media/blackbird-original-16x9.mp4");
@@ -78,6 +80,36 @@ const LOUIS_VUITTON_SS20_VIDEO_URL = mediaUrl(
   "media/louis-vuitton-ss20-720.mp4"
 );
 const LOUIS_VUITTON_SS20_POSTER_URL = mediaUrl("media/louis-vuitton-ss20-poster.jpg");
+const TOUCHDESIGNER_SKETCHES = [
+  {
+    id: 'glitch-ui',
+    title: 'Glitch interface study',
+    note: 'A realtime graphics sketch exploring signal breakup, interface rhythm, and tactile control language.',
+    src: mediaUrl('media/touchdesigner/web/touchdesigner-sketch-01-glitch-ui-720.mp4'),
+    fallbackPath: 'resume/media/touchdesigner/web/touchdesigner-sketch-01-glitch-ui-720.mp4',
+  },
+  {
+    id: 'pearl-ascii',
+    title: 'Pearl ASCII / image field',
+    note: 'A procedural texture study turning image information into graphic structure and living display material.',
+    src: mediaUrl('media/touchdesigner/web/touchdesigner-sketch-02-pearl-ascii-720.mp4'),
+    fallbackPath: 'resume/media/touchdesigner/web/touchdesigner-sketch-02-pearl-ascii-720.mp4',
+  },
+  {
+    id: 'realtime-signal',
+    title: 'Realtime signal object',
+    note: 'A compact TouchDesigner sketch for generative motion, signal response, and screen-based object behavior.',
+    src: mediaUrl('media/touchdesigner/web/touchdesigner-sketch-03-realtime-signal-720.mp4'),
+    fallbackPath: 'resume/media/touchdesigner/web/touchdesigner-sketch-03-realtime-signal-720.mp4',
+  },
+  {
+    id: 'procedural-system',
+    title: 'Procedural system pass',
+    note: 'A small system sketch testing procedural composition, timing, and material treatment in motion.',
+    src: mediaUrl('media/touchdesigner/web/touchdesigner-sketch-04-procedural-system-720.mp4'),
+    fallbackPath: 'resume/media/touchdesigner/web/touchdesigner-sketch-04-procedural-system-720.mp4',
+  },
+];
 
 const CLEARED_TRAILER_GROUPS = [
   {
@@ -2269,6 +2301,97 @@ const LANDING_VARIANT_CSS = `
 .landing-v1-shell #landing-awards .section__label-num { color: var(--lv-accent-2); }
 .landing-v1-shell #landing-refs .section__label-num { color: var(--ink); }
 
+#touchdesigner-sketches {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(0, 96, 255, 0.12), transparent 30rem),
+    radial-gradient(circle at 82% 18%, rgba(255, 210, 0, 0.09), transparent 24rem),
+    var(--paper);
+}
+.landing-v1-shell #touchdesigner-sketches .section__label-num {
+  color: var(--lv-accent-3);
+}
+.touchdesigner-feature {
+  display: grid;
+  grid-template-columns: minmax(18rem, 0.72fr) minmax(0, 1.28fr);
+  gap: clamp(2rem, 4vw, 4rem);
+  align-items: start;
+}
+.touchdesigner-feature__intro {
+  position: sticky;
+  top: clamp(5rem, 10vh, 7rem);
+}
+.touchdesigner-feature__intro h3 {
+  margin: 0 0 1rem;
+  font-size: clamp(2.2rem, 4.6vw, 4.7rem);
+  line-height: 0.9;
+  letter-spacing: -0.055em;
+}
+.touchdesigner-feature__intro p {
+  margin: 0 0 1rem;
+  max-width: 34rem;
+  font-size: clamp(1rem, 1.35vw, 1.22rem);
+  line-height: 1.55;
+}
+.touchdesigner-feature__intro .mono {
+  max-width: 30rem;
+  font-size: 0.68rem;
+  line-height: 1.75;
+  letter-spacing: 0.08em;
+  color: rgba(16, 18, 20, 0.58);
+}
+.touchdesigner-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1rem, 2vw, 1.55rem);
+}
+.touchdesigner-card {
+  margin: 0;
+  display: grid;
+  gap: 0.85rem;
+}
+.touchdesigner-card .video-slot {
+  min-height: 0;
+  aspect-ratio: 1.12 / 1;
+  border-radius: 0;
+  background: #050506;
+  box-shadow: none;
+}
+.touchdesigner-card .video-slot__video {
+  object-fit: cover;
+}
+.touchdesigner-card .help-player__hud {
+  top: auto;
+  right: auto;
+  bottom: 0.65rem;
+  left: 0.65rem;
+}
+.touchdesigner-card__caption {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+.touchdesigner-card__caption > .mono {
+  padding-top: 0.1rem;
+  font-size: 0.68rem;
+  color: var(--lv-accent);
+}
+.touchdesigner-card__caption h4 {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: clamp(0.78rem, 1.1vw, 0.95rem);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-transform: lowercase;
+}
+.touchdesigner-card__caption p {
+  margin: 0.35rem 0 0;
+  max-width: 28rem;
+  font-size: clamp(0.86rem, 1vw, 0.98rem);
+  line-height: 1.45;
+  color: rgba(16, 18, 20, 0.62);
+}
+
 /* The final Beautiful Game chapter mounts the original standalone export
    whole so its renderer, controls, and embedded assets stay unchanged. */
 #hand-of-god.section {
@@ -2308,12 +2431,20 @@ const LANDING_VARIANT_CSS = `
   overflow: hidden;
   background: #020306;
 }
-.hand-of-god-feature__frame {
-  display: block;
+.hand-of-god-feature__media {
+  min-width: 0;
+  min-height: 0;
+  align-self: stretch;
+}
+.hand-of-god-feature__media .video-slot {
   width: 100%;
   height: 100%;
+  min-height: 100%;
   border: 0;
   background: #020306;
+}
+.hand-of-god-feature__media .video-slot__video {
+  object-fit: cover;
 }
 .hand-of-god-feature__note {
   display: flex;
@@ -2330,6 +2461,20 @@ const LANDING_VARIANT_CSS = `
   font-size: clamp(1rem, 1.25vw, 1.22rem);
   line-height: 1.58;
   text-wrap: pretty;
+}
+.hand-of-god-feature__link {
+  display: inline-flex;
+  margin-top: 1.25rem;
+  color: #f5f5f2;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(245, 245, 242, 0.58);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.hand-of-god-feature__link:hover,
+.hand-of-god-feature__link:focus-visible {
+  color: #8fb7ff;
+  border-bottom-color: currentColor;
 }
 @media (max-width: 900px) {
   .hand-of-god-feature {
@@ -2889,6 +3034,25 @@ const LANDING_VARIANT_CSS = `
   .landing-awards,
   .landing-v1__references .refs {
     grid-template-columns: 1fr;
+  }
+  .touchdesigner-feature {
+    grid-template-columns: 1fr;
+  }
+  .touchdesigner-feature__intro {
+    position: static;
+  }
+  .touchdesigner-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .touchdesigner-feature,
+  .touchdesigner-grid {
+    grid-template-columns: 1fr;
+  }
+  .touchdesigner-card .video-slot {
+    aspect-ratio: 4 / 3;
   }
 }
 `;
@@ -10284,7 +10448,11 @@ function LandingPageV1({ mobile = false }) {
         innovationSrc={BLACKBIRD_INNOVATION_VIDEO_URL}
         behindScenesSrc={BLACKBIRD_VIDEO_URL}
       />
-      <HandOfGodFeature src={HAND_OF_GOD_DEMO_URL} />
+      <HandOfGodFeature
+        videoSrc={HAND_OF_GOD_VIDEO_URL}
+        poster={HAND_OF_GOD_POSTER_URL}
+        interactiveSrc={HAND_OF_GOD_DEMO_URL}
+      />
       <KissNewEraFeature src={KISS_NEW_ERA_VIDEO_URL} poster={KISS_NEW_ERA_POSTER_URL} />
       <LouisVuittonFeature
         id="louis-vuitton-ss20-after-kiss"
@@ -10293,6 +10461,7 @@ function LandingPageV1({ mobile = false }) {
         label="07 · SELECTED WORK · LOUIS VUITTON SS20"
         mediaFirst
       />
+      <TouchDesignerSketchesFeature sketches={TOUCHDESIGNER_SKETCHES} />
       <LandingEndProof awards={RESUME.awards} references={RESUME.references} />
     </>
   );
@@ -10350,7 +10519,8 @@ function LandingPageV2() {
                     <BlackbirdFeature innovationSrc={BLACKBIRD_INNOVATION_VIDEO_URL} behindScenesSrc={BLACKBIRD_VIDEO_URL} label="03 · SELECTED WORK · THE MILL BLACKBIRD" />
                     <HumanRaceFeature src={HUMAN_RACE_VIDEO_URL} poster={HUMAN_RACE_POSTER_URL} label="04 · SELECTED WORK · CHEVROLET THE HUMAN RACE" />
                     <LouisVuittonFeature src={LOUIS_VUITTON_SS20_VIDEO_URL} poster={LOUIS_VUITTON_SS20_POSTER_URL} label="05 · SELECTED WORK · LOUIS VUITTON SS20" />
-                    <StrudelReplFeature label="06 · LIVE SYSTEM · POETRY IN PROOF" />
+                    <TouchDesignerSketchesFeature sketches={TOUCHDESIGNER_SKETCHES} label="06 · PERSONAL WORK · TOUCHDESIGNER SKETCHES" />
+                    <StrudelReplFeature label="07 · LIVE SYSTEM · POETRY IN PROOF" />
                   </div>
                   <ProjectCard data={RESUME.project} />
                   <Awards items={RESUME.awards} />
@@ -10443,6 +10613,7 @@ function App() {
         <BlackbirdFeature innovationSrc={BLACKBIRD_INNOVATION_VIDEO_URL} behindScenesSrc={BLACKBIRD_VIDEO_URL} />
         <HumanRaceFeature src={HUMAN_RACE_VIDEO_URL} poster={HUMAN_RACE_POSTER_URL} />
         <LouisVuittonFeature src={LOUIS_VUITTON_SS20_VIDEO_URL} poster={LOUIS_VUITTON_SS20_POSTER_URL} />
+        <TouchDesignerSketchesFeature sketches={TOUCHDESIGNER_SKETCHES} />
         <StrudelReplFeature />
         <ProjectCard data={RESUME.project} />
         <Awards items={RESUME.awards} />
