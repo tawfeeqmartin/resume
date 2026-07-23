@@ -4006,13 +4006,11 @@ function HandOfGodFeature({
         />
         <aside className="hand-of-god-feature__note">
           <p>
-            Beautiful Game turns football match data into cinematic, interactive point-cloud
-            sculptures that trace the buildup to each goal. It combines structured match events
-            with AI-assisted video analysis, commentary, match reports, and news coverage to
-            reconstruct passes, carries, touches, possession, player tracking, and the narrative
-            around each goal. Each match becomes a living digital artwork across field,
-            flythrough, and reveal views, available as an interactive web experience, video
-            export, or lightweight token-ready renderer.
+            Beautiful Game turns football match data into interactive point-cloud sculptures that
+            show how each goal unfolded. Match events and AI-assisted video analysis reconstruct
+            the play, while commentary and reporting add the story around it. You can explore
+            each match from the field, fly through it in 3D, export it as video, or render it as
+            lightweight token-ready art.
           </p>
         </aside>
       </div>
