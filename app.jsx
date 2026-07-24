@@ -65,7 +65,7 @@ const HELP_VIDEO_URLS = IS_MOBILE_MEDIA_TARGET
   : HELP_DESKTOP_SOURCES;
 const BLACKBIRD_INNOVATION_VIDEO_URL = mediaUrl("media/blackbird-innovation.mp4");
 const BLACKBIRD_VIDEO_URL = mediaUrl("media/blackbird.mp4");
-const HAND_OF_GOD_DEMO_URL = sameOriginMediaUrl("media/interactive/hand-of-god.html");
+const HAND_OF_GOD_DEMO_URL = sameOriginMediaUrl("/hand-of-god");
 const HAND_OF_GOD_VIDEO_URL = mediaUrl("media/hand-of-god-demo-portrait-1080.mp4");
 const HAND_OF_GOD_POSTER_URL = mediaUrl("media/hand-of-god-demo-portrait-poster.jpg");
 const KISS_NEW_ERA_VIDEO_URL = sameOriginMediaUrl("media/kiss-a-new-era-720.mp4");
