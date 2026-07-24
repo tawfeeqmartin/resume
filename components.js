@@ -3531,7 +3531,7 @@ function HelpPlayer({ src, startOffset = 0 }) {
 //  VideoSlot — flat-video placeholder w/ auto-fill when asset present
 // ────────────────────────────────────────────────────────────────────
 
-function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime = 0, playbackRate = 1 }) {
+function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime = 0, playbackRate = 1, className = '' }) {
   const slotRef = useRef(null);
   const videoRef = useRef(null);
   const slotIdRef = useRef(`video-slot-${Math.random().toString(36).slice(2)}`);
@@ -3780,7 +3780,7 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
   return (
     <div
       ref={slotRef}
-      className={`video-slot ${muted ? 'is-muted' : ''} ${paused ? 'is-paused' : ''}`}
+      className={`video-slot ${className} ${muted ? 'is-muted' : ''} ${paused ? 'is-paused' : ''}`}
       style={hero ? { aspectRatio: '1.85 / 1', height: 'auto', minHeight: 0 } : undefined}
       onMouseEnter={() => activateSlot()}
       onFocus={() => activateSlot()}
@@ -4115,6 +4115,7 @@ function HandOfGodFeature({
             fallbackPath="resume/media/hand-of-god-demo-portrait-1080.mp4"
             label="beautiful game · rendered hand of god flythrough"
             playbackRate={0.5}
+            className="video-slot--bare hand-of-god-video-slot"
           />
         </div>
         <aside className="hand-of-god-feature__note">

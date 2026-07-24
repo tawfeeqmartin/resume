@@ -2449,11 +2449,23 @@ const LANDING_VARIANT_CSS = `
   box-shadow: none;
   background: #020306;
 }
+.hand-of-god-feature__media .video-slot--bare,
+.hand-of-god-feature__media .hand-of-god-video-slot {
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
 .hand-of-god-feature__media .video-slot::before,
 .hand-of-god-feature__media .video-slot::after {
-  display: none;
+  display: none !important;
 }
 .hand-of-god-feature__media .video-slot__video {
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
   object-fit: cover;
   transform: scale(1.035);
 }
