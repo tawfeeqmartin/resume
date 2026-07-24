@@ -1890,22 +1890,29 @@ ${f}</style>`,E.appendChild(b);let a="url('data:image/gif;base64,R0lGODlhAQABAIA
   min-width: 0;
   min-height: 0;
   align-self: stretch;
-  padding: clamp(1.25rem, 3svh, 2.5rem) 0;
+  padding: clamp(0.45rem, 1.1svh, 1rem) 0;
   background: #020306;
 }
 .hand-of-god-feature__media .video-slot {
-  width: min(100%, calc((100svh - 8rem) * 0.46));
-  max-width: min(36rem, 100%);
-  height: min(100%, calc(100svh - 8rem));
+  width: min(100%, calc((100svh - 5.5rem) * 0.505));
+  max-width: min(42rem, 100%);
+  height: min(100%, calc(100svh - 5.5rem));
   min-height: 0;
-  aspect-ratio: 0.46 / 1;
+  aspect-ratio: 0.505 / 1;
   border: 0;
+  border-radius: 0;
+  outline: 0;
   overflow: hidden;
+  box-shadow: none;
   background: #020306;
+}
+.hand-of-god-feature__media .video-slot::before,
+.hand-of-god-feature__media .video-slot::after {
+  display: none;
 }
 .hand-of-god-feature__media .video-slot__video {
   object-fit: cover;
-  transform: scale(1.08);
+  transform: scale(1.035);
 }
 .hand-of-god-feature__note {
   display: flex;
@@ -1945,9 +1952,9 @@ ${f}</style>`,E.appendChild(b);let a="url('data:image/gif;base64,R0lGODlhAQABAIA
     min-height: 0;
   }
   .hand-of-god-feature__media .video-slot {
-    width: min(100%, calc(64svh * 0.46));
+    width: min(100%, calc(68svh * 0.505));
     max-width: 100%;
-    height: min(100%, 64svh);
+    height: min(100%, 68svh);
     min-height: 0;
   }
   .hand-of-god-feature__note {
