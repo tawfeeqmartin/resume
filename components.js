@@ -3550,66 +3550,15 @@ function hasResumeSectionVideoSoundIntent() {
 
 function setResumeVideoRouteAudible(video, audible) {
   if (!video || typeof window === 'undefined') return Promise.resolve(false);
-  if (!audible) {
-    const route = window.__resumeVideoAudioRoutes?.get?.(video);
-    if (route?.gain) {
-      try {
-        route.gain.gain.setTargetAtTime(0, route.context.currentTime, 0.012);
-      } catch (_) {
-        route.gain.gain.value = 0;
-      }
-    }
-    return Promise.resolve(true);
-  }
-  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContextCtor) return Promise.resolve(false);
-  let context = null;
-  try {
-    context = window.__ensureResumeMacKeyAudioContext?.() || null;
-  } catch (_) {}
-  if (!context || context.state === 'closed') {
-    context = window.__resumeMacKeyAudioContext;
-  }
-  if (!context || context.state === 'closed') {
-    try {
-      context = new AudioContextCtor();
-      window.__resumeMacKeyAudioContext = context;
-      window.dispatchEvent(new CustomEvent('resume-mac-audio-ready'));
-    } catch (_) {
-      return Promise.resolve(false);
-    }
-  }
-  if (!window.__resumeVideoAudioRoutes) window.__resumeVideoAudioRoutes = new WeakMap();
-  let route = window.__resumeVideoAudioRoutes.get(video);
-  if (!route || route.context !== context) {
-    try {
-      const source = context.createMediaElementSource(video);
-      const gain = context.createGain();
-      gain.gain.value = 0;
-      source.connect(gain);
-      gain.connect(context.destination);
-      route = { context, source, gain };
-      window.__resumeVideoAudioRoutes.set(video, route);
-    } catch (_) {
-      route = window.__resumeVideoAudioRoutes.get(video);
-      if (!route?.gain) return Promise.resolve(false);
-    }
-  }
-  const resume = context.state === 'suspended'
-    ? Promise.resolve(context.resume?.()).catch(() => false)
-    : Promise.resolve(true);
-  return resume.then(() => {
-    try {
-      route.gain.gain.cancelScheduledValues(context.currentTime);
-      route.gain.gain.setTargetAtTime(1, context.currentTime, 0.008);
-    } catch (_) {
-      route.gain.gain.value = 1;
-    }
-    video.muted = false;
-    video.defaultMuted = false;
-    video.volume = 1;
-    return true;
-  });
+  // Do not route selected-work videos through Web Audio. Most of these files
+  // are served from the media subdomain, and MediaElementAudioSourceNode can
+  // become silent for cross-origin media even while the <video> reports
+  // muted=false. Native element audio is the reliable path after a user
+  // gesture, while Web Audio remains reserved for the bespoke CRT/glitch beds.
+  video.defaultMuted = !audible;
+  video.muted = !audible;
+  video.volume = audible ? 1 : 0;
+  return Promise.resolve(true);
 }
 
 function isElementMeaningfullyVisible(element, threshold = 0.42) {
