@@ -3531,7 +3531,7 @@ function HelpPlayer({ src, startOffset = 0 }) {
 //  VideoSlot — flat-video placeholder w/ auto-fill when asset present
 // ────────────────────────────────────────────────────────────────────
 
-function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime = 0 }) {
+function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime = 0, playbackRate = 1 }) {
   const slotRef = useRef(null);
   const videoRef = useRef(null);
   const slotIdRef = useRef(`video-slot-${Math.random().toString(36).slice(2)}`);
@@ -3589,6 +3589,7 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
   useEffect(() => {
     const video = videoRef.current;
     if (!video || status !== 'ready') return undefined;
+    video.playbackRate = Math.max(0.25, Math.min(2, Number(playbackRate) || 1));
     const syncAudio = () => {
       setMuted(video.muted);
       emitVideoAudioState();
@@ -3622,7 +3623,7 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
       }));
       window.removeEventListener('resume-video-slot-active', pauseOtherSlots);
     };
-  }, [status]);
+  }, [status, playbackRate]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -4109,11 +4110,11 @@ function HandOfGodFeature({
       <div className="hand-of-god-feature">
         <div className="hand-of-god-feature__media">
           <VideoSlot
-            hero
             src={videoSrc}
             poster={poster}
             fallbackPath="resume/media/hand-of-god-demo-portrait-1080.mp4"
             label="beautiful game · rendered hand of god flythrough"
+            playbackRate={0.5}
           />
         </div>
         <aside className="hand-of-god-feature__note">
