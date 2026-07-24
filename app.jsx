@@ -102,6 +102,27 @@ const TOUCHDESIGNER_SKETCHES = [
     src: mediaUrl('media/touchdesigner/web/touchdesigner-sketch-03-realtime-signal-720.mp4'),
     fallbackPath: 'resume/media/touchdesigner/web/touchdesigner-sketch-03-realtime-signal-720.mp4',
   },
+  {
+    id: 'ascii-fracture',
+    title: 'ASCII fracture / image field',
+    note: 'A monochrome image study that breaks a photographic frame into shifting ASCII texture and fractured geometry.',
+    src: mediaUrl('media/touchdesigner/web/touchdesigner-sketch-05-ascii-study-720.mp4'),
+    fallbackPath: 'resume/media/touchdesigner/web/touchdesigner-sketch-05-ascii-study-720.mp4',
+  },
+  {
+    id: 'scope-study',
+    title: 'Oscilloscope signal study',
+    note: 'An audio-reactive scope experiment turning live signal movement into a spare, luminous spatial drawing.',
+    src: mediaUrl('media/touchdesigner/web/touchdesigner-sketch-06-scope-study-720.mp4'),
+    fallbackPath: 'resume/media/touchdesigner/web/touchdesigner-sketch-06-scope-study-720.mp4',
+  },
+  {
+    id: 'pearl-color-ascii',
+    title: 'Pearl color ASCII',
+    note: 'A color ASCII portrait test using symbol density, palette shifts, and negative space as a live image treatment.',
+    src: mediaUrl('media/touchdesigner/web/touchdesigner-sketch-07-pearl-ascii-study-720.mp4'),
+    fallbackPath: 'resume/media/touchdesigner/web/touchdesigner-sketch-07-pearl-ascii-study-720.mp4',
+  },
 ];
 
 const CLEARED_TRAILER_GROUPS = [
