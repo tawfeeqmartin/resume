@@ -4284,7 +4284,7 @@ function TouchDesignerSketchesFeature({
         <div className="touchdesigner-feature__intro">
           <h3 className="serif">Realtime sketches: small systems, fast instincts.</h3>
           <p>
-            A set of personal TouchDesigner studies exploring procedural motion,
+            A set of personal studies exploring procedural motion,
             Ableton audio and midi signal-driven interfaces, ASCII/image translation,
             and live graphic material. They sit here as lightweight sketches rather
             than polished case studies: quick tests for ideas that could become
