@@ -6129,6 +6129,9 @@ function CrtForeshadowSync() {
         const sharedReady = macContext?.state === 'running';
         if (!sharedReady && !htmlReady) return false;
         audioUnlocked = true;
+        window.__resumeSectionVideoSoundUnlocked = true;
+        document.documentElement.dataset.resumeSectionVideoSound = 'unlocked';
+        document.documentElement.dataset.resumeSectionVideoSoundSource = source || 'intro-audio-ready';
         pendingAudioProgress = null;
         lastAudioKey = '';
         shell.dataset.glitchContext = macContext?.state || source || 'html-audio';

@@ -3531,6 +3531,105 @@ function HelpPlayer({ src, startOffset = 0 }) {
 //  VideoSlot — flat-video placeholder w/ auto-fill when asset present
 // ────────────────────────────────────────────────────────────────────
 
+function markResumeSectionVideoSoundIntent(source = 'gesture') {
+  if (typeof window === 'undefined') return false;
+  window.__resumeSectionVideoSoundUnlocked = true;
+  document.documentElement.dataset.resumeSectionVideoSound = 'unlocked';
+  document.documentElement.dataset.resumeSectionVideoSoundSource = source;
+  return true;
+}
+
+function hasResumeSectionVideoSoundIntent() {
+  if (typeof window === 'undefined') return false;
+  return Boolean(
+    window.__resumeSectionVideoSoundUnlocked
+    || window.__resumeStrudelAudioEngine?.enabled
+    || document.documentElement.dataset.resumeSectionVideoSound === 'unlocked'
+  );
+}
+
+function setResumeVideoRouteAudible(video, audible) {
+  if (!video || typeof window === 'undefined') return Promise.resolve(false);
+  if (!audible) {
+    const route = window.__resumeVideoAudioRoutes?.get?.(video);
+    if (route?.gain) {
+      try {
+        route.gain.gain.setTargetAtTime(0, route.context.currentTime, 0.012);
+      } catch (_) {
+        route.gain.gain.value = 0;
+      }
+    }
+    return Promise.resolve(true);
+  }
+  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextCtor) return Promise.resolve(false);
+  let context = null;
+  try {
+    context = window.__ensureResumeMacKeyAudioContext?.() || null;
+  } catch (_) {}
+  if (!context || context.state === 'closed') {
+    context = window.__resumeMacKeyAudioContext;
+  }
+  if (!context || context.state === 'closed') {
+    try {
+      context = new AudioContextCtor();
+      window.__resumeMacKeyAudioContext = context;
+      window.dispatchEvent(new CustomEvent('resume-mac-audio-ready'));
+    } catch (_) {
+      return Promise.resolve(false);
+    }
+  }
+  if (!window.__resumeVideoAudioRoutes) window.__resumeVideoAudioRoutes = new WeakMap();
+  let route = window.__resumeVideoAudioRoutes.get(video);
+  if (!route || route.context !== context) {
+    try {
+      const source = context.createMediaElementSource(video);
+      const gain = context.createGain();
+      gain.gain.value = 0;
+      source.connect(gain);
+      gain.connect(context.destination);
+      route = { context, source, gain };
+      window.__resumeVideoAudioRoutes.set(video, route);
+    } catch (_) {
+      route = window.__resumeVideoAudioRoutes.get(video);
+      if (!route?.gain) return Promise.resolve(false);
+    }
+  }
+  const resume = context.state === 'suspended'
+    ? Promise.resolve(context.resume?.()).catch(() => false)
+    : Promise.resolve(true);
+  return resume.then(() => {
+    try {
+      route.gain.gain.cancelScheduledValues(context.currentTime);
+      route.gain.gain.setTargetAtTime(1, context.currentTime, 0.008);
+    } catch (_) {
+      route.gain.gain.value = 1;
+    }
+    video.muted = false;
+    video.defaultMuted = false;
+    video.volume = 1;
+    return true;
+  });
+}
+
+function isElementMeaningfullyVisible(element, threshold = 0.42) {
+  if (!element || typeof window === 'undefined') return false;
+  const rect = element.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return false;
+  const visibleWidth = Math.max(0, Math.min(rect.right, window.innerWidth) - Math.max(rect.left, 0));
+  const visibleHeight = Math.max(0, Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0));
+  return (visibleWidth * visibleHeight) / (rect.width * rect.height) >= threshold;
+}
+
+function isElementNearViewportCenter(element, band = 0.28) {
+  if (!element || typeof window === 'undefined') return false;
+  const rect = element.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return false;
+  const centerY = rect.top + rect.height * 0.5;
+  const viewportCenterY = window.innerHeight * 0.5;
+  return Math.abs(centerY - viewportCenterY) <= window.innerHeight * band;
+}
+
 function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime = 0, playbackRate = 1, className = '', chrome = true }) {
   const slotRef = useRef(null);
   const videoRef = useRef(null);
@@ -3570,6 +3669,42 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
   }, []);
 
   useEffect(() => {
+    const markFromGesture = (event) => {
+      markResumeSectionVideoSoundIntent(event.type || 'gesture');
+      const slot = slotRef.current;
+      const video = videoRef.current;
+      if (
+        status === 'ready'
+        && slot
+        && video
+        && isElementMeaningfullyVisible(slot, 0.34)
+        && (slot.contains(event.target) || isElementNearViewportCenter(slot))
+      ) {
+        activateSlot({ withSound: true, userInitiated: true });
+      }
+    };
+    const markFromAudioReady = () => {
+      markResumeSectionVideoSoundIntent('intro-audio-ready');
+    };
+    window.addEventListener('pointerdown', markFromGesture, true);
+    window.addEventListener('click', markFromGesture, true);
+    window.addEventListener('keydown', markFromGesture, true);
+    window.addEventListener('touchstart', markFromGesture, true);
+    window.addEventListener('wheel', markFromGesture, { passive: true, capture: true });
+    window.addEventListener('resume-glitch-audio-ready', markFromAudioReady);
+    window.addEventListener('resume-mac-audio-ready', markFromAudioReady);
+    return () => {
+      window.removeEventListener('pointerdown', markFromGesture, true);
+      window.removeEventListener('click', markFromGesture, true);
+      window.removeEventListener('keydown', markFromGesture, true);
+      window.removeEventListener('touchstart', markFromGesture, true);
+      window.removeEventListener('wheel', markFromGesture, true);
+      window.removeEventListener('resume-glitch-audio-ready', markFromAudioReady);
+      window.removeEventListener('resume-mac-audio-ready', markFromAudioReady);
+    };
+  }, [status]);
+
+  useEffect(() => {
     if (!shouldLoad) return undefined;
     let cancelled = false;
     async function probe() {
@@ -3604,6 +3739,8 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
       userHeldPlaybackRef.current = false;
       if (window.__resumeHeldVideoSlot === slotIdRef.current) window.__resumeHeldVideoSlot = null;
       video.muted = true;
+      setMuted(true);
+      setResumeVideoRouteAudible(video, false);
       video.pause();
     };
     video.addEventListener('volumechange', syncAudio);
@@ -3631,10 +3768,14 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && entry.intersectionRatio >= 0.62 && video.paused) {
-          activateSlot();
+          activateSlot({
+            withSound: hasResumeSectionVideoSoundIntent() && isElementNearViewportCenter(video.closest('.video-slot')),
+          });
         } else if (!entry.isIntersecting || entry.intersectionRatio < 0.2) {
           if (!userHeldPlaybackRef.current) {
             video.muted = true;
+            setMuted(true);
+            setResumeVideoRouteAudible(video, false);
             video.pause();
           }
         }
@@ -3654,6 +3795,8 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
       userHeldPlaybackRef.current = false;
       if (window.__resumeHeldVideoSlot === slotIdRef.current) window.__resumeHeldVideoSlot = null;
       video.muted = true;
+      setMuted(true);
+      setResumeVideoRouteAudible(video, false);
       if (!video.paused) video.pause();
       emitVideoAudioState();
     };
@@ -3671,6 +3814,8 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
     if (window.__resumeHeldVideoSlot === slotIdRef.current) window.__resumeHeldVideoSlot = null;
     if (video) {
       video.muted = true;
+      setMuted(true);
+      setResumeVideoRouteAudible(video, false);
       if (!video.paused) video.pause();
     }
     window.dispatchEvent(new CustomEvent('resume-video-audio-state', {
@@ -3721,7 +3866,12 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
       detail: { id: slotIdRef.current, userInitiated }
     }));
     if (restart) video.currentTime = startTime;
+    if (userInitiated) markResumeSectionVideoSoundIntent('video-user');
+    video.defaultMuted = !withSound;
     video.muted = !withSound;
+    video.volume = withSound ? 1 : 0;
+    setResumeVideoRouteAudible(video, withSound);
+    setMuted(video.muted);
     if (userInitiated && !video.muted) {
       userHeldPlaybackRef.current = true;
       window.__resumeHeldVideoSlot = slotIdRef.current;
@@ -3729,7 +3879,18 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
         detail: { id: slotIdRef.current, active: true },
       }));
     }
-    video.play().catch(() => {});
+    const playPromise = video.play();
+    if (playPromise?.catch) {
+      playPromise.catch(() => {
+        if (!withSound) return;
+        video.defaultMuted = true;
+        video.muted = true;
+        video.volume = 0;
+        setResumeVideoRouteAudible(video, false);
+        setMuted(true);
+        video.play?.().catch?.(() => {});
+      });
+    }
   }
 
   const togglePlayback = () => {
@@ -3782,15 +3943,19 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
       ref={slotRef}
       className={`video-slot ${className} ${muted ? 'is-muted' : ''} ${paused ? 'is-paused' : ''}`}
       style={hero ? { aspectRatio: '1.85 / 1', height: 'auto', minHeight: 0 } : undefined}
-      onMouseEnter={() => activateSlot()}
-      onFocus={() => activateSlot()}
+      onMouseEnter={() => activateSlot({ withSound: hasResumeSectionVideoSoundIntent() })}
+      onFocus={() => activateSlot({ withSound: hasResumeSectionVideoSoundIntent() })}
+      onClick={(event) => {
+        if (event.target?.closest?.('.video-controls, .video-fullscreen-corner')) return;
+        activateSlot({ withSound: true, userInitiated: true });
+      }}
     >
       {status === 'ready' && (
         <video
           ref={videoRef}
           src={src}
           poster={poster}
-          muted
+          muted={muted}
           loop={!startTime}
           playsInline
           preload="none"
@@ -12138,12 +12303,30 @@ async function rasterizePage(sourceEl, { width = 1280, scale = 1.5, fontCss = ''
 }
 
 const TV_HERO_PERSONALIZED_PROLOGUE_ENABLED = false;
+const TV_HERO_MAC_HYBRID_DEFAULT_VIDEO = 'media/mac-intro-hybrid-prerender.mp4';
+
+function getTvHeroMacHybridConfig() {
+  if (typeof window === 'undefined') return { enabled: false, src: '' };
+  const params = new URLSearchParams(window.location.search || '');
+  const enabled = params.get('macHybrid') === '1';
+  const requestedSrc = String(params.get('macHybridVideo') || '').trim();
+  return {
+    enabled,
+    // This is intentionally query-swappable so new Hermes-rendered passes can
+    // be tested without touching code again.
+    src: requestedSrc || TV_HERO_MAC_HYBRID_DEFAULT_VIDEO,
+  };
+}
 
 function TvHero({ sources = [], vocalSamples = [], children }) {
   const wrapRef = React.useRef(null);
   const canvasRef = React.useRef(null);
   const keyboardCaptureRef = React.useRef(null);
   const handOfGodFrameRef = React.useRef(null);
+  const hybridVideoRef = React.useRef(null);
+  const macHybridConfig = React.useMemo(getTvHeroMacHybridConfig, []);
+  const hybridStageRef = React.useRef(macHybridConfig.enabled ? 'armed' : 'off');
+  const [hybridStage, setHybridStage] = React.useState(hybridStageRef.current);
   const macStageDragEnabled = React.useMemo(isMacStageDragEnabled, []);
   const [macStageDragBucket, setMacStageDragBucket] = React.useState(() => getMacStageDragBucket());
   const [macStageDragX, setMacStageDragX] = React.useState(() => readMacStageDragX());
@@ -12313,6 +12496,101 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
   }, []);
 
   React.useEffect(() => { phaseRef.current = phase; }, [phase]);
+
+  React.useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return undefined;
+    if (!macHybridConfig.enabled) {
+      wrap.dataset.hybridStage = 'off';
+      return undefined;
+    }
+    const video = hybridVideoRef.current;
+    const setStage = (stage) => {
+      hybridStageRef.current = stage;
+      wrap.dataset.hybridStage = stage;
+      setHybridStage(stage);
+      window.dispatchEvent(new CustomEvent('resume-mac-hybrid-state', {
+        detail: { stage, src: macHybridConfig.src },
+      }));
+    };
+    let canPlay = false;
+    let started = false;
+    const onCanPlay = () => {
+      canPlay = true;
+      if (hybridStageRef.current === 'loading') setStage('armed');
+    };
+    const onError = () => {
+      canPlay = false;
+      setStage('missing');
+    };
+    const onEnded = () => setStage('complete');
+    const stopHybridVideo = (stage = 'complete') => {
+      if (video) {
+        try { video.pause(); } catch (_) {}
+      }
+      started = false;
+      setStage(stage);
+    };
+    const startHybridVideo = async (detail = {}) => {
+      if (!video || !canPlay) {
+        setStage(video ? 'loading' : 'missing');
+        return;
+      }
+      const elapsedSec = Math.max(0, Number(detail.elapsedMs || 0) / 1000);
+      if (Number.isFinite(elapsedSec) && video.duration > 0) {
+        const targetTime = Math.min(Math.max(0, video.duration - 0.05), elapsedSec);
+        if (!started || Math.abs((video.currentTime || 0) - targetTime) > 0.18) {
+          try { video.currentTime = targetTime; } catch (_) {}
+        }
+      }
+      if (started && hybridStageRef.current === 'playing') return;
+      started = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.dataset.hybridBeat = String(detail.beat || '');
+      video.dataset.hybridElapsed = String(Math.round(Number(detail.elapsedMs || 0)));
+      setStage('playing');
+      try {
+        await video.play();
+      } catch (_) {
+        setStage('blocked');
+      }
+    };
+    const onOvertureProgress = (event) => {
+      const detail = event.detail || {};
+      const progress = Math.max(0, Math.min(1, Number(detail.progress) || 0));
+      const beat = String(detail.beat || '');
+      const shouldUsePrerender = (
+        progress >= 0.31
+        && progress < 0.965
+        && beat !== 'intermission'
+        && detail.resolve !== true
+      );
+      if (shouldUsePrerender) {
+        startHybridVideo({ beat, progress, elapsedMs: detail.elapsedMs });
+        return;
+      }
+      if (hybridStageRef.current === 'playing') {
+        stopHybridVideo(progress >= 0.965 || beat === 'intermission' ? 'complete' : 'armed');
+      }
+    };
+    const onReset = () => stopHybridVideo('armed');
+    setStage('loading');
+    video?.addEventListener('canplay', onCanPlay);
+    video?.addEventListener('error', onError);
+    video?.addEventListener('ended', onEnded);
+    if (video?.readyState >= 2) onCanPlay();
+    window.addEventListener('resume-crt-overture-progress', onOvertureProgress);
+    window.addEventListener('resume-companion-stop-intro', onReset);
+    return () => {
+      video?.removeEventListener('canplay', onCanPlay);
+      video?.removeEventListener('error', onError);
+      video?.removeEventListener('ended', onEnded);
+      window.removeEventListener('resume-crt-overture-progress', onOvertureProgress);
+      window.removeEventListener('resume-companion-stop-intro', onReset);
+      stopHybridVideo('off');
+    };
+  }, [macHybridConfig.enabled, macHybridConfig.src]);
 
   React.useEffect(() => {
     setAvailableSources(sources);
@@ -14517,6 +14795,21 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    window.addEventListener('resume-visitor-name-change', onVisitorNameChange);
 	    window.__tvHeroCompanionIntroReady = companionIntroReady;
 	    window.__tvHeroPrepareCompanionIntro = prepareCompanionIntro;
+	    window.__tvHeroForceTerminalFrame = () => {
+	      const state = stateRef.current;
+	      state.forceTerminal = true;
+	      drawMacOffScreen();
+	      state.forceTerminal = false;
+	      if (state.screenTex) state.screenTex.needsUpdate = true;
+	      state.requestRender?.();
+	      return {
+	        ok: Boolean(state.screenCanvas && state.ctx2d && state.screenTex),
+	        screenPaint: wrapRef.current?.dataset?.screenPaint || '',
+	        typingAction: wrapRef.current?.dataset?.typingAction || '',
+	        typingText: wrapRef.current?.dataset?.typingText || '',
+	        ghostwriter: wrapRef.current?.dataset?.ghostwriter || '',
+	      };
+	    };
 	    window.__resumeMacOvertureReady = companionIntroReady();
 	    if (window.__resumeMacOvertureReady) {
 	      window.dispatchEvent(new CustomEvent('resume-mac-overture-ready', {
@@ -14539,6 +14832,9 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	      if (window.__tvHeroCompanionIntroReady === companionIntroReady) {
 	        delete window.__tvHeroCompanionIntroReady;
 	        window.__resumeMacOvertureReady = false;
+	      }
+	      if (window.__tvHeroForceTerminalFrame) {
+	        delete window.__tvHeroForceTerminalFrame;
 	      }
 	    };
 	  }, [drawMacOffScreen]);
@@ -21001,6 +21297,23 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         tabIndex={-1}
       />
       <canvas ref={canvasRef} className="tv-hero__canvas" />
+      {macHybridConfig.enabled ? (
+        <>
+          <video
+            ref={hybridVideoRef}
+            className="tv-hero__hybrid-video"
+            src={macHybridConfig.src}
+            muted
+            playsInline
+            loop
+            preload="auto"
+            aria-hidden="true"
+          />
+          <div className="tv-hero__hybrid-badge">
+            HYBRID TEST · {hybridStage === 'playing' ? 'PRERENDER' : hybridStage}
+          </div>
+        </>
+      ) : null}
       {children ? (
         <div className="tv-hero__controls">
           {children}
