@@ -2406,7 +2406,7 @@ const LANDING_VARIANT_CSS = `
   margin: 0;
   padding: 1rem var(--pad);
   justify-content: center;
-  border-bottom: 1px solid rgba(245, 245, 242, 0.14);
+  border-bottom: 0;
   background: #020306;
 }
 #hand-of-god .section__label,
@@ -2420,7 +2420,7 @@ const LANDING_VARIANT_CSS = `
 }
 .hand-of-god-feature {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(19rem, 25vw, 25rem);
+  grid-template-columns: minmax(0, 1fr) clamp(22rem, 30vw, 34rem);
   height: calc(100svh - 4rem);
   min-height: 42rem;
   overflow: hidden;
@@ -2472,18 +2472,38 @@ const LANDING_VARIANT_CSS = `
 .hand-of-god-feature__note {
   display: flex;
   align-items: center;
-  padding: clamp(2rem, 4vw, 4rem);
-  border-left: 1px solid rgba(245, 245, 242, 0.16);
+  padding: clamp(2rem, 4vw, 4.5rem) clamp(2rem, 4.8vw, 5.25rem) clamp(2rem, 4vw, 4.5rem) clamp(1.5rem, 3vw, 3rem);
+  border-left: 0;
   background: #020306;
 }
+.hand-of-god-feature__note h3 {
+  max-width: 13ch;
+  margin: 0 0 1.25rem;
+  color: #f5f5f2;
+  font-size: clamp(2.1rem, 4.2vw, 4.4rem);
+  line-height: 0.92;
+  letter-spacing: -0.055em;
+  text-wrap: balance;
+}
 .hand-of-god-feature__note p {
-  max-width: 34ch;
+  max-width: 42ch;
   margin: 0;
   color: rgba(245, 245, 242, 0.86);
   font-family: var(--serif);
-  font-size: clamp(1rem, 1.25vw, 1.22rem);
-  line-height: 1.58;
+  font-size: clamp(0.98rem, 1.08vw, 1.12rem);
+  line-height: 1.54;
   text-wrap: pretty;
+}
+.hand-of-god-feature__note p + p {
+  margin-top: 0.9rem;
+}
+.hand-of-god-feature__note .hand-of-god-feature__meta {
+  margin-top: 1.15rem;
+  color: rgba(245, 245, 242, 0.52);
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  line-height: 1.75;
+  letter-spacing: 0.08em;
 }
 .hand-of-god-feature__link {
   display: inline-flex;
@@ -2514,8 +2534,12 @@ const LANDING_VARIANT_CSS = `
   }
   .hand-of-god-feature__note {
     padding: 1.25rem var(--pad) 1.5rem;
-    border-top: 1px solid rgba(245, 245, 242, 0.16);
+    border-top: 0;
     border-left: 0;
+  }
+  .hand-of-god-feature__note h3 {
+    max-width: 14ch;
+    font-size: clamp(2rem, 11vw, 3.4rem);
   }
   .hand-of-god-feature__note p {
     max-width: 66ch;

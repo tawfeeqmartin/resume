@@ -3531,7 +3531,7 @@ function HelpPlayer({ src, startOffset = 0 }) {
 //  VideoSlot — flat-video placeholder w/ auto-fill when asset present
 // ────────────────────────────────────────────────────────────────────
 
-function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime = 0, playbackRate = 1, className = '' }) {
+function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime = 0, playbackRate = 1, className = '', chrome = true }) {
   const slotRef = useRef(null);
   const videoRef = useRef(null);
   const slotIdRef = useRef(`video-slot-${Math.random().toString(36).slice(2)}`);
@@ -3827,14 +3827,14 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
           </div>
         </div>
       )}
-      {label && (
+      {chrome && label && (
         <div className="help-player__hud">
           <div className="hud-pill mono">
             <span className="hud-dot" /> {label}
           </div>
         </div>
       )}
-      {status === 'ready' && (
+      {chrome && status === 'ready' && (
         <div className="video-controls" aria-label="Video controls">
           <button className="video-control video-control--primary mono" onClick={togglePlayback} aria-label={paused ? 'Play video' : 'Pause video'}>
             <span className={`video-control__icon ${paused ? 'video-control__icon--play' : 'video-control__icon--stop'}`} aria-hidden="true" />
@@ -3844,7 +3844,7 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
           </button>
         </div>
       )}
-      {status === 'ready' && (
+      {chrome && status === 'ready' && (
         <button className="video-fullscreen-corner" onClick={toggleFullscreen} aria-label="Enter fullscreen" />
       )}
     </div>
@@ -4116,17 +4116,27 @@ function HandOfGodFeature({
             label="beautiful game · rendered hand of god flythrough"
             playbackRate={0.5}
             className="video-slot--bare hand-of-god-video-slot"
+            chrome={false}
           />
         </div>
         <aside className="hand-of-god-feature__note">
           <div>
+            <h3 className="serif">Match data as a cinematic sculpture.</h3>
             <p>
-              Beautiful Game turns football match data into interactive point-cloud sculptures that
-              show how each goal unfolded. An AI-assisted pipeline combines the match feed with video
-              analysis, commentary, match reports, and news coverage. Video analysis recovers missing
-              movement and timing while commentary and reporting add the story the raw data leaves
-              out. Each match can be explored from the field, as a fly-through following the ball,
-              exported as video, or rendered as lightweight token-ready art.
+              Beautiful Game turns football match data into cinematic point-cloud sculptures that
+              trace the buildup to each goal.
+            </p>
+            <p>
+              An AI-assisted pipeline combines match events, video analysis, commentary, match
+              reports, and news coverage. Video recovers missing movement and timing; the surrounding
+              context adds the story raw coordinates leave out.
+            </p>
+            <p>
+              Each match can become an interactive field view, a fly-through following the ball,
+              a video export, or lightweight token-ready artwork.
+            </p>
+            <p className="mono hand-of-god-feature__meta">
+              BEAUTIFUL GAME · MATCH DATA · AI VIDEO ANALYSIS · CINEMATIC EXPORTS
             </p>
             <a className="hand-of-god-feature__link mono" href={interactiveSrc} target="_blank" rel="noreferrer">
               Open interactive prototype
