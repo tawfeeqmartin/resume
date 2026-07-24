@@ -3581,6 +3581,11 @@ function isElementNearViewportCenter(element, band = 0.28) {
   return Math.abs(centerY - viewportCenterY) <= window.innerHeight * band;
 }
 
+function isVideoSlotInAudioFocus(element) {
+  return isElementMeaningfullyVisible(element, 0.44)
+    && isElementNearViewportCenter(element, 0.48);
+}
+
 function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime = 0, playbackRate = 1, className = '', chrome = true }) {
   const slotRef = useRef(null);
   const videoRef = useRef(null);
@@ -3715,12 +3720,42 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
 
   useEffect(() => {
     const video = videoRef.current;
+    const slot = slotRef.current;
+    if (!video || !slot || status !== 'ready') return undefined;
+    let frame = 0;
+    const muteIfOutOfFocus = () => {
+      frame = 0;
+      if (video.muted || video.paused) return;
+      if (isVideoSlotInAudioFocus(slot)) return;
+      userHeldPlaybackRef.current = false;
+      if (window.__resumeHeldVideoSlot === slotIdRef.current) window.__resumeHeldVideoSlot = null;
+      setResumeVideoRouteAudible(video, false);
+      setMuted(true);
+      emitVideoAudioState();
+    };
+    const scheduleCheck = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(muteIfOutOfFocus);
+    };
+    window.addEventListener('scroll', scheduleCheck, { passive: true });
+    window.addEventListener('resize', scheduleCheck);
+    window.addEventListener('orientationchange', scheduleCheck);
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', scheduleCheck);
+      window.removeEventListener('resize', scheduleCheck);
+      window.removeEventListener('orientationchange', scheduleCheck);
+    };
+  }, [status]);
+
+  useEffect(() => {
+    const video = videoRef.current;
     if (!video || status !== 'ready' || typeof IntersectionObserver === 'undefined') return undefined;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && entry.intersectionRatio >= 0.62 && video.paused) {
           activateSlot({
-            withSound: hasResumeSectionVideoSoundIntent() && isElementNearViewportCenter(video.closest('.video-slot')),
+            withSound: hasResumeSectionVideoSoundIntent() && isVideoSlotInAudioFocus(video.closest('.video-slot')),
           });
         } else if (!entry.isIntersecting || entry.intersectionRatio < 0.2) {
           if (!userHeldPlaybackRef.current) {
