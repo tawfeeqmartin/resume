@@ -114,6 +114,7 @@ rsync -a \
   --exclude 'tweaks-panel.jsx' \
   --exclude 'cloudflare' \
   --exclude 'review' \
+  --exclude '.review' \
   --exclude 'archive' \
   --exclude 'models' \
   --exclude 'fonts' \
