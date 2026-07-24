@@ -4273,10 +4273,10 @@ function TouchDesignerSketchesFeature({
           <h3 className="serif">Realtime sketches: small systems, fast instincts.</h3>
           <p>
             A set of personal TouchDesigner studies exploring procedural motion,
-            signal-driven interfaces, ASCII/image translation, and live graphic
-            material. They sit here as lightweight sketches rather than polished
-            case studies: quick tests for ideas that could become installation,
-            stage, interface, or screen language.
+            Ableton audio and midi signal-driven interfaces, ASCII/image translation,
+            and live graphic material. They sit here as lightweight sketches rather
+            than polished case studies: quick tests for ideas that could become
+            installation, stage, interface, or screen language.
           </p>
           <p className="mono">
             TOUCHDESIGNER · REALTIME GRAPHICS · PROCEDURAL SYSTEMS · SIGNAL DESIGN
