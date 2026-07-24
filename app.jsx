@@ -3578,12 +3578,12 @@ function LandingEndProof({ awards, references }) {
         <Awards
           items={awards}
           id="landing-end-awards"
-          label="07 · AWARDS & RECOGNITION"
+          label="09 · AWARDS & RECOGNITION"
         />
         <References
           items={references}
           id="landing-end-endorsements"
-          label="08 · ENDORSEMENTS"
+          label="10 · ENDORSEMENTS"
         />
       </div>
       <LandingClosingCta />
@@ -10460,20 +10460,28 @@ function LandingPageV1({ mobile = false }) {
         innovationSrc={BLACKBIRD_INNOVATION_VIDEO_URL}
         behindScenesSrc={BLACKBIRD_VIDEO_URL}
       />
-      <HandOfGodFeature
-        videoSrc={HAND_OF_GOD_VIDEO_URL}
-        poster={HAND_OF_GOD_POSTER_URL}
-        interactiveSrc={HAND_OF_GOD_DEMO_URL}
+      <KissNewEraFeature
+        src={KISS_NEW_ERA_VIDEO_URL}
+        poster={KISS_NEW_ERA_POSTER_URL}
+        label="05 · REAL-TIME DIGITAL HUMANS · KISS / A NEW ERA BEGINS"
       />
-      <KissNewEraFeature src={KISS_NEW_ERA_VIDEO_URL} poster={KISS_NEW_ERA_POSTER_URL} />
       <LouisVuittonFeature
         id="louis-vuitton-ss20-after-kiss"
         src={LOUIS_VUITTON_SS20_VIDEO_URL}
         poster={LOUIS_VUITTON_SS20_POSTER_URL}
-        label="07 · SELECTED WORK · LOUIS VUITTON SS20"
+        label="06 · SELECTED WORK · LOUIS VUITTON SS20"
         mediaFirst
       />
-      <TouchDesignerSketchesFeature sketches={TOUCHDESIGNER_SKETCHES} />
+      <TouchDesignerSketchesFeature
+        sketches={TOUCHDESIGNER_SKETCHES}
+        label="07 · PERSONAL SKETCHES · GLITCH INTERACTIVE"
+      />
+      <HandOfGodFeature
+        videoSrc={HAND_OF_GOD_VIDEO_URL}
+        poster={HAND_OF_GOD_POSTER_URL}
+        interactiveSrc={HAND_OF_GOD_DEMO_URL}
+        label="08 · PERSONAL SKETCHES · THE BEAUTIFUL GAME / HAND OF GOD"
+      />
       <LandingEndProof awards={RESUME.awards} references={RESUME.references} />
     </>
   );

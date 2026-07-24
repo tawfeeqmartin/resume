@@ -4095,7 +4095,7 @@ function HandOfGodFeature({
   videoSrc = "media/hand-of-god-demo-720.mp4",
   poster = "media/hand-of-god-demo-poster.jpg",
   interactiveSrc = "media/interactive/hand-of-god.html",
-  label = "05 · PERSONAL ART · THE BEAUTIFUL GAME / HAND OF GOD",
+  label = "08 · PERSONAL SKETCHES · THE BEAUTIFUL GAME / HAND OF GOD",
 }) {
   useEffect(() => {
     if (window.location.hash !== '#hand-of-god') return undefined;
@@ -4264,7 +4264,7 @@ function HumanRaceFeature({ src, poster, label = "05 · SELECTED WORK · CHEVROL
 
 function TouchDesignerSketchesFeature({
   sketches = [],
-  label = "08 · PERSONAL WORK · TOUCHDESIGNER SKETCHES",
+  label = "07 · PERSONAL SKETCHES · GLITCH INTERACTIVE",
 }) {
   if (!sketches.length) return null;
   return (
