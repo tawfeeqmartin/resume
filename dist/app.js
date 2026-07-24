@@ -1752,35 +1752,37 @@ ${f}</style>`,E.appendChild(b);let a="url('data:image/gif;base64,R0lGODlhAQABAIA
 .landing-v1-shell #landing-refs .section__label-num { color: var(--ink); }
 
 #touchdesigner-sketches {
-  background:
-    radial-gradient(circle at 18% 12%, rgba(0, 96, 255, 0.12), transparent 30rem),
-    radial-gradient(circle at 82% 18%, rgba(255, 210, 0, 0.09), transparent 24rem),
-    var(--paper);
+  background: var(--paper);
+}
+#root > #touchdesigner-sketches {
+  padding-inline: var(--section-gutter);
 }
 .landing-v1-shell #touchdesigner-sketches .section__label-num {
   color: var(--lv-accent-3);
 }
 .touchdesigner-feature {
   display: grid;
-  grid-template-columns: minmax(18rem, 0.72fr) minmax(0, 1.28fr);
-  gap: clamp(2rem, 4vw, 4rem);
+  grid-template-columns: minmax(18rem, 1fr) minmax(0, 1.5fr);
+  gap: clamp(1.5rem, 3vw, 3rem);
   align-items: start;
 }
 .touchdesigner-feature__intro {
-  position: sticky;
-  top: clamp(5rem, 10vh, 7rem);
+  position: static;
 }
 .touchdesigner-feature__intro h3 {
-  margin: 0 0 1rem;
-  font-size: clamp(2.2rem, 4.6vw, 4.7rem);
-  line-height: 0.9;
-  letter-spacing: -0.055em;
+  margin: 0 0 0.75rem;
+  font-size: var(--type-help-head);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: 0;
 }
 .touchdesigner-feature__intro p {
   margin: 0 0 1rem;
   max-width: 34rem;
   font-size: clamp(1rem, 1.35vw, 1.22rem);
   line-height: 1.55;
+  color: var(--ink-2);
+  text-wrap: pretty;
 }
 .touchdesigner-feature__intro .mono {
   max-width: 30rem;
