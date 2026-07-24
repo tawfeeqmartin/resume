@@ -1894,11 +1894,11 @@ ${f}</style>`,C.appendChild(b);let a="url('data:image/gif;base64,R0lGODlhAQABAIA
   background: #020306;
 }
 .hand-of-god-feature__media .video-slot {
-  width: min(100%, calc((100svh - 5.5rem) * 0.505));
+  width: min(100%, calc((100svh - 5.5rem) * 0.5625));
   max-width: min(42rem, 100%);
   height: min(100%, calc(100svh - 5.5rem));
   min-height: 0;
-  aspect-ratio: 0.505 / 1;
+  aspect-ratio: 9 / 16;
   border: 0;
   border-radius: 0;
   outline: 0;
@@ -1924,7 +1924,7 @@ ${f}</style>`,C.appendChild(b);let a="url('data:image/gif;base64,R0lGODlhAQABAIA
   outline: 0 !important;
   box-shadow: none !important;
   object-fit: cover;
-  transform: scale(1.035);
+  transform: scale(1.012);
 }
 .hand-of-god-feature__note {
   display: flex;
@@ -1964,7 +1964,7 @@ ${f}</style>`,C.appendChild(b);let a="url('data:image/gif;base64,R0lGODlhAQABAIA
     min-height: 0;
   }
   .hand-of-god-feature__media .video-slot {
-    width: min(100%, calc(68svh * 0.505));
+    width: min(100%, calc(68svh * 0.5625));
     max-width: 100%;
     height: min(100%, 68svh);
     min-height: 0;
