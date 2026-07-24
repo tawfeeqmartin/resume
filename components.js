@@ -3558,6 +3558,8 @@ function setResumeVideoRouteAudible(video, audible) {
   video.defaultMuted = !audible;
   video.muted = !audible;
   video.volume = audible ? 1 : 0;
+  if (audible) video.removeAttribute('muted');
+  else video.setAttribute('muted', '');
   return Promise.resolve(true);
 }
 
