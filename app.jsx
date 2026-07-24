@@ -66,8 +66,8 @@ const HELP_VIDEO_URLS = IS_MOBILE_MEDIA_TARGET
 const BLACKBIRD_INNOVATION_VIDEO_URL = mediaUrl("media/blackbird-innovation.mp4");
 const BLACKBIRD_VIDEO_URL = mediaUrl("media/blackbird.mp4");
 const HAND_OF_GOD_DEMO_URL = sameOriginMediaUrl("media/interactive/hand-of-god.html");
-const HAND_OF_GOD_VIDEO_URL = mediaUrl("media/hand-of-god-demo-720.mp4");
-const HAND_OF_GOD_POSTER_URL = mediaUrl("media/hand-of-god-demo-poster.jpg");
+const HAND_OF_GOD_VIDEO_URL = mediaUrl("media/hand-of-god-demo-portrait-1080.mp4");
+const HAND_OF_GOD_POSTER_URL = mediaUrl("media/hand-of-god-demo-portrait-poster.jpg");
 const KISS_NEW_ERA_VIDEO_URL = sameOriginMediaUrl("media/kiss-a-new-era-720.mp4");
 const KISS_NEW_ERA_POSTER_URL = sameOriginMediaUrl("media/kiss-a-new-era-poster.jpg");
 const HUMAN_RACE_VIDEO_URL = mediaUrl("media/blackbird-original-16x9.mp4");
@@ -101,13 +101,6 @@ const TOUCHDESIGNER_SKETCHES = [
     note: 'A compact TouchDesigner sketch for generative motion, signal response, and screen-based object behavior.',
     src: mediaUrl('media/touchdesigner/web/touchdesigner-sketch-03-realtime-signal-720.mp4'),
     fallbackPath: 'resume/media/touchdesigner/web/touchdesigner-sketch-03-realtime-signal-720.mp4',
-  },
-  {
-    id: 'procedural-system',
-    title: 'Procedural system pass',
-    note: 'A small system sketch testing procedural composition, timing, and material treatment in motion.',
-    src: mediaUrl('media/touchdesigner/web/touchdesigner-sketch-04-procedural-system-720.mp4'),
-    fallbackPath: 'resume/media/touchdesigner/web/touchdesigner-sketch-04-procedural-system-720.mp4',
   },
 ];
 
@@ -2432,19 +2425,26 @@ const LANDING_VARIANT_CSS = `
   background: #020306;
 }
 .hand-of-god-feature__media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-width: 0;
   min-height: 0;
   align-self: stretch;
+  padding: clamp(1rem, 2.4vw, 2.5rem);
+  background: #020306;
 }
 .hand-of-god-feature__media .video-slot {
-  width: 100%;
-  height: 100%;
-  min-height: 100%;
+  width: min(100%, calc((100svh - 9rem) * 9 / 16));
+  max-width: min(44rem, 100%);
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 9 / 16;
   border: 0;
   background: #020306;
 }
 .hand-of-god-feature__media .video-slot__video {
-  object-fit: cover;
+  object-fit: contain;
 }
 .hand-of-god-feature__note {
   display: flex;
@@ -2479,7 +2479,13 @@ const LANDING_VARIANT_CSS = `
 @media (max-width: 900px) {
   .hand-of-god-feature {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-rows: minmax(26rem, 70svh) auto;
+    height: auto;
+    min-height: 0;
+  }
+  .hand-of-god-feature__media .video-slot {
+    width: min(100%, calc(70svh * 9 / 16));
+    max-width: 100%;
   }
   .hand-of-god-feature__note {
     padding: 1.25rem var(--pad) 1.5rem;

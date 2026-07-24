@@ -4112,7 +4112,7 @@ function HandOfGodFeature({
             hero
             src={videoSrc}
             poster={poster}
-            fallbackPath="resume/media/hand-of-god-demo-720.mp4"
+            fallbackPath="resume/media/hand-of-god-demo-portrait-1080.mp4"
             label="beautiful game · rendered hand of god flythrough"
           />
         </div>

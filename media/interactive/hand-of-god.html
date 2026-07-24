@@ -2818,11 +2818,11 @@ async function importStandaloneRenderer() {
 
 document.documentElement.dataset.tokenExport = "true";
 try {
-  const routeQuery = "art=match-sculpture&mode=portrait&theme=auto&texture=none&goalFx=on&telemetry=on&goal=oneofone-hand-of-god-maradona-1986&list=ones&gender=men&play=0&t=0.000&speed=1&end=next&flow=fluid&flowSpeed=0.2&exportResolution=uhd&exportFps=24&exportQuality=gallery&clock=23%3A55&token=realtime&build=standalone-realtime-html&camOrbit=45&camLift=30&camZoom=0.94&camRoll=-20&cine=on";
+  const routeQuery = "art=match-sculpture&mode=portrait&theme=auto&texture=none&goalFx=on&telemetry=on&goal=oneofone-hand-of-god-maradona-1986&list=ones&gender=men&play=1&t=0.000&speed=1&end=loop&flow=fluid&flowSpeed=0.2&exportResolution=uhd&exportFps=24&exportQuality=gallery&clock=23%3A55&token=realtime&build=standalone-realtime-html&camOrbit=45&camLift=30&camZoom=0.94&camRoll=-20&cine=on";
   if (routeQuery) window.history.replaceState(null, "", window.location.pathname + "?" + routeQuery);
 } catch {}
 try {
-  const settings = {"creativeRendererRevision":"match-flythrough-power-hud-crisp-center-1","aspectMode":"portrait","compositionMode":"match-sculpture","themeMode":"auto","posterTexture":"none","goalFx":true,"telemetry":true,"matchCamera":{"orbit":45,"lift":30,"zoom":0.94,"roll":-20},"matchCameraCinematic":true,"time":0,"playing":false,"playbackSpeed":1,"playbackEndMode":"next","exportResolutionKey":"uhd","exportFps":24,"exportQualityKey":"gallery"};
+  const settings = {"creativeRendererRevision":"match-flythrough-power-hud-crisp-center-1","aspectMode":"portrait","compositionMode":"match-sculpture","themeMode":"auto","posterTexture":"none","goalFx":true,"telemetry":true,"matchCamera":{"orbit":45,"lift":30,"zoom":0.94,"roll":-20},"matchCameraCinematic":true,"time":0,"playing":true,"playbackSpeed":1,"playbackEndMode":"loop","exportResolutionKey":"uhd","exportFps":24,"exportQualityKey":"gallery"};
   if (settings.matchCamera) localStorage.setItem("beautifulgame.matchCamera.v1", JSON.stringify(settings.matchCamera));
   if (settings.matchCameraCinematic != null) localStorage.setItem("beautifulgame.matchCameraCinematic.v1", settings.matchCameraCinematic ? "on" : "manual");
   if (settings.playbackSpeed != null) localStorage.setItem("beautifulgame.playbackSpeed.v1", String(settings.playbackSpeed));
@@ -2841,6 +2841,21 @@ await importStandaloneRenderer();
       type: "beautifulgame:playback-status",
       playing: document.documentElement.dataset.playing === "true",
     }, window.location.origin);
+  };
+  const ensureLoopingPlayback = () => {
+    const playControl = document.querySelector("#focusPlayButton");
+    const endControl = document.querySelector("#playbackEndModeButton");
+    if (!playControl) return;
+    if (/next/i.test(endControl?.textContent || "")) {
+      endControl.click();
+    }
+    const action = String(playControl.getAttribute("aria-label") || playControl.textContent || "")
+      .trim()
+      .toLowerCase();
+    if (action === "play") {
+      playControl.click();
+    }
+    window.setTimeout(reportPlayback, 180);
   };
   window.addEventListener("message", (event) => {
     if (event.origin !== window.location.origin || event.source !== window.parent) return;
@@ -2866,7 +2881,10 @@ await importStandaloneRenderer();
 
     window.setTimeout(reportPlayback, 180);
   });
-  window.addEventListener("load", reportPlayback, { once: true });
+  window.addEventListener("load", () => {
+    window.setTimeout(ensureLoopingPlayback, 240);
+    window.setTimeout(ensureLoopingPlayback, 900);
+  }, { once: true });
 })();
 </script>
 </body>
