@@ -2431,20 +2431,20 @@ const LANDING_VARIANT_CSS = `
   min-width: 0;
   min-height: 0;
   align-self: stretch;
-  padding: clamp(1rem, 2.4vw, 2.5rem);
+  padding: 0;
   background: #020306;
 }
 .hand-of-god-feature__media .video-slot {
-  width: min(100%, calc((100svh - 9rem) * 9 / 16));
-  max-width: min(44rem, 100%);
-  height: auto;
-  min-height: 0;
-  aspect-ratio: 9 / 16;
+  width: min(100%, calc((100svh - 4rem) * 0.5));
+  max-width: min(40rem, 100%);
+  height: 100%;
+  min-height: 100%;
+  aspect-ratio: 1 / 2;
   border: 0;
   background: #020306;
 }
 .hand-of-god-feature__media .video-slot__video {
-  object-fit: contain;
+  object-fit: cover;
 }
 .hand-of-god-feature__note {
   display: flex;
@@ -2484,8 +2484,10 @@ const LANDING_VARIANT_CSS = `
     min-height: 0;
   }
   .hand-of-god-feature__media .video-slot {
-    width: min(100%, calc(70svh * 9 / 16));
+    width: min(100%, calc(70svh * 0.5));
     max-width: 100%;
+    height: 100%;
+    min-height: 100%;
   }
   .hand-of-god-feature__note {
     padding: 1.25rem var(--pad) 1.5rem;
