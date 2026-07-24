@@ -10458,7 +10458,36 @@ function LandingPageV1({ mobile = false }) {
           <div className="page landing-v1__page">
             <main>
               <LandingProfileSection summaryOnly />
-              <LandingClosingCta linkedInOnly />
+              <HelpFeature src={HELP_VIDEO_URLS} />
+              <BlackbirdFeature
+                innovationSrc={BLACKBIRD_INNOVATION_VIDEO_URL}
+                behindScenesSrc={BLACKBIRD_VIDEO_URL}
+              />
+              <HumanRaceFeature
+                src={HUMAN_RACE_VIDEO_URL}
+                poster={HUMAN_RACE_POSTER_URL}
+              />
+              <KissNewEraFeature
+                src={KISS_NEW_ERA_VIDEO_URL}
+                poster={KISS_NEW_ERA_POSTER_URL}
+                label="05 · REAL-TIME DIGITAL HUMANS · KISS / A NEW ERA BEGINS"
+              />
+              <LouisVuittonFeature
+                id="louis-vuitton-ss20-mobile"
+                src={LOUIS_VUITTON_SS20_VIDEO_URL}
+                poster={LOUIS_VUITTON_SS20_POSTER_URL}
+                label="06 · SELECTED WORK · LOUIS VUITTON SS20"
+                mediaFirst
+              />
+              <TouchDesignerSketchesFeature
+                sketches={TOUCHDESIGNER_SKETCHES}
+                label="07 · PERSONAL SKETCHES · GLITCH INTERACTIVE"
+              />
+              <StrudelReplFeature label="08 · INTERACTIVE LAB · POETRY IN PROOF" />
+              <LandingAwards items={RESUME.awards} />
+              <LandingReferences items={RESUME.references} />
+              <LandingClosingCta />
+              <Footer data={RESUME} />
             </main>
           </div>
         </div>
