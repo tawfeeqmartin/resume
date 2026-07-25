@@ -1192,21 +1192,28 @@ const LANDING_VARIANT_CSS = `
   max-width: none;
   color: var(--ink);
   font-family: var(--serif);
-  font-size: clamp(1.12rem, 1.7vw, 1.55rem);
-  line-height: 1.55;
+  font-size: clamp(1rem, 1.18vw, 1.18rem);
+  line-height: 1.58;
+}
+.landing-profile__bio--hook {
+  max-width: 42ch;
+  font-size: clamp(1.34rem, 2.18vw, 1.96rem);
+  line-height: 1.18;
+  letter-spacing: -0.018em;
 }
 .landing-profile__bio + .landing-profile__bio {
-  margin-top: clamp(1.15rem, 2.7vh, 1.8rem);
+  margin-top: clamp(1.35rem, 3.2vh, 2.1rem);
 }
 .landing-profile__bio--details {
   color: var(--ink);
-  font-size: clamp(0.96rem, 1.28vw, 1.2rem);
-  line-height: 1.62;
+  max-width: 64ch;
+  font-size: clamp(0.94rem, 1.08vw, 1.06rem);
+  line-height: 1.64;
 }
 .landing-profile__bio--details strong {
   color: var(--ink);
-  font-size: 1.045em;
-  font-weight: 720;
+  font-size: 1.055em;
+  font-weight: 760;
 }
 .landing-profile__links {
   display: flex;
@@ -1336,10 +1343,15 @@ const LANDING_VARIANT_CSS = `
   }
   .landing-profile__bio {
     max-width: 58ch;
-    font-size: clamp(1.18rem, 2.2vw, 1.46rem);
+    font-size: clamp(1rem, 1.7vw, 1.16rem);
+  }
+  .landing-profile__bio--hook {
+    max-width: 40ch;
+    font-size: clamp(1.4rem, 3vw, 1.88rem);
   }
   .landing-profile__bio--details {
-    font-size: clamp(1rem, 1.72vw, 1.18rem);
+    max-width: 60ch;
+    font-size: clamp(0.98rem, 1.52vw, 1.1rem);
   }
   .landing-profile__instrument--wheel {
     justify-self: start;
@@ -10440,12 +10452,12 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
         </div>
         <div className="landing-profile__story">
           <div className="landing-profile__copy">
-            <p className="landing-profile__bio">
+            <p className="landing-profile__bio landing-profile__bio--hook">
               I’ve somehow turned “what happens if I press this button?” into a 20-year career
               of curious design and make-believe.
             </p>
             <p className="landing-profile__bio landing-profile__bio--details">
-              Research and Development, StageCraft team at
+              <strong>Research and Development</strong>, StageCraft team at
               Industrial Light &amp; Magic. Previously Head of <strong>Creative Engineering</strong> and <strong>Creative
               Technology Director</strong> at The Mill, where I led 0-to-1 product
               development on landmark projects including Google Spotlight Stories ‘HELP’ (dir.
