@@ -1190,7 +1190,7 @@ const LANDING_VARIANT_CSS = `
 .landing-profile__bio {
   margin: 0;
   max-width: none;
-  color: var(--ink-2);
+  color: var(--ink);
   font-family: var(--serif);
   font-size: clamp(1.12rem, 1.7vw, 1.55rem);
   line-height: 1.55;
@@ -1199,7 +1199,7 @@ const LANDING_VARIANT_CSS = `
   margin-top: clamp(1.15rem, 2.7vh, 1.8rem);
 }
 .landing-profile__bio--details {
-  color: color-mix(in srgb, var(--ink-2) 82%, var(--paper) 18%);
+  color: var(--ink);
   font-size: clamp(0.96rem, 1.28vw, 1.2rem);
   line-height: 1.62;
 }

@@ -626,7 +626,7 @@ ${m}</style>`,A.appendChild(b);let M="url('data:image/gif;base64,R0lGODlhAQABAIA
 .landing-profile__bio {
   margin: 0;
   max-width: none;
-  color: var(--ink-2);
+  color: var(--ink);
   font-family: var(--serif);
   font-size: clamp(1.12rem, 1.7vw, 1.55rem);
   line-height: 1.55;
@@ -635,7 +635,7 @@ ${m}</style>`,A.appendChild(b);let M="url('data:image/gif;base64,R0lGODlhAQABAIA
   margin-top: clamp(1.15rem, 2.7vh, 1.8rem);
 }
 .landing-profile__bio--details {
-  color: color-mix(in srgb, var(--ink-2) 82%, var(--paper) 18%);
+  color: var(--ink);
   font-size: clamp(0.96rem, 1.28vw, 1.2rem);
   line-height: 1.62;
 }
