@@ -10445,12 +10445,12 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
               of curious design and make-believe.
             </p>
             <p className="landing-profile__bio landing-profile__bio--details">
-              Research and Development, <strong>StageCraft</strong> team at
-              <strong>Industrial Light &amp; Magic</strong>. Previously Head of <strong>Creative Engineering</strong> and <strong>Creative
-              Technology Director</strong> at <strong>The Mill</strong>, where I led 0-to-1 product
-              development on landmark projects including Google Spotlight Stories <strong>‘HELP’</strong> (dir.
+              Research and Development, StageCraft team at
+              Industrial Light &amp; Magic. Previously Head of <strong>Creative Engineering</strong> and <strong>Creative
+              Technology Director</strong> at The Mill, where I led 0-to-1 product
+              development on landmark projects including Google Spotlight Stories ‘HELP’ (dir.
               Justin Lin) — a double Gold Cannes Lion–winning immersive 360° film — and was one
-              of the inventors of <strong>Mill Stitch™</strong> and the <strong>Mill Blackbird</strong> car rig. Independent
+              of the inventors of Mill Stitch™ and the Mill Blackbird car rig. Independent
               developer of AI tools and generative creative systems.
             </p>
             {!summaryOnly && (
