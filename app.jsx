@@ -1291,6 +1291,89 @@ const LANDING_VARIANT_CSS = `
   transform-origin: center;
   animation: landing-profile-connector-arrive 920ms linear infinite;
 }
+.landing-profile-awards {
+  --award-color-fallback: #245cff;
+  width: 100vw;
+  margin: clamp(4rem, 7.5vh, 6.25rem) calc(50% - 50vw) 0;
+  padding: clamp(1.6rem, 3.5vh, 2.6rem) max(var(--pad), calc((100vw - var(--maxw)) / 2));
+  color: #f5f3ee;
+  background: #050505;
+}
+.landing-profile-awards__label {
+  margin: 0 0 clamp(1.4rem, 2.8vh, 2rem);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 560;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(245,243,238,0.46);
+}
+.landing-profile-awards__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: clamp(1.1rem, 2vw, 2.1rem) clamp(0.9rem, 2.2vw, 2rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.landing-profile-award {
+  --award-color: var(--award-color-fallback);
+  display: grid;
+  grid-template-rows: auto auto auto 1fr;
+  justify-items: center;
+  gap: 0.56rem;
+  min-width: 0;
+  color: #f5f3ee;
+  text-align: center;
+}
+.landing-profile-award__org {
+  min-height: 1em;
+  font-family: var(--mono);
+  font-size: clamp(0.52rem, 0.58vw, 0.68rem);
+  font-weight: 560;
+  letter-spacing: 0.24em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  color: rgba(245,243,238,0.56);
+}
+.landing-profile-award__icon {
+  width: clamp(2.8rem, 4.6vw, 4.15rem);
+  height: clamp(2.1rem, 3.5vw, 3rem);
+  overflow: visible;
+  color: var(--award-color);
+  filter: drop-shadow(0 0 0.55rem color-mix(in srgb, var(--award-color) 18%, transparent));
+}
+.landing-profile-award__icon * {
+  vector-effect: non-scaling-stroke;
+}
+.landing-profile-award__line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+}
+.landing-profile-award__fill {
+  fill: color-mix(in srgb, var(--award-color) 16%, transparent);
+  stroke: currentColor;
+  stroke-width: 1.45;
+}
+.landing-profile-award__chip {
+  width: 0.46rem;
+  height: 0.46rem;
+  background: var(--award-color);
+  box-shadow: 0 0 0.85rem color-mix(in srgb, var(--award-color) 42%, transparent);
+}
+.landing-profile-award__title {
+  max-width: 18ch;
+  font-family: var(--mono);
+  font-size: clamp(0.56rem, 0.68vw, 0.76rem);
+  font-weight: 520;
+  letter-spacing: 0.13em;
+  line-height: 1.36;
+  text-transform: uppercase;
+  color: rgba(245,243,238,0.86);
+}
 @keyframes landing-profile-connector-flow {
   from { stroke-dashoffset: 0; }
   to { stroke-dashoffset: -26; }
@@ -1358,6 +1441,12 @@ const LANDING_VARIANT_CSS = `
     width: min(72vw, 34rem);
     height: clamp(20rem, 48vw, 31rem);
   }
+  .landing-profile-awards {
+    margin-top: clamp(3rem, 6vh, 4.5rem);
+  }
+  .landing-profile-awards__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 @media (max-width: 760px) {
   .landing-profile {
@@ -1389,6 +1478,9 @@ const LANDING_VARIANT_CSS = `
     width: min(100%, 31rem);
     height: min(92vw, 27rem);
     justify-self: center;
+  }
+  .landing-profile-awards__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 /* ── CRT zoom: scroll "into" the real 3D Mac until the screen fills the
@@ -10431,6 +10523,181 @@ function BeautifulGameLoadingSummaryInstrument({ part }) {
   );
 }
 
+function parseCssRgbColor(value) {
+  const match = String(value || '').match(/rgba?\(([^)]+)\)/i);
+  if (!match) return [36, 92, 255];
+  const parts = match[1].split(',').map((part) => Number.parseFloat(part));
+  if (parts.length < 3 || parts.some((part) => !Number.isFinite(part))) {
+    return [36, 92, 255];
+  }
+  return parts.slice(0, 3).map((part) => Math.max(0, Math.min(255, part)));
+}
+
+function rgbToHsl([r, g, b]) {
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const lightness = (max + min) / 2;
+  if (max === min) return [0, 0, lightness];
+  const delta = max - min;
+  const saturation = lightness > 0.5
+    ? delta / (2 - max - min)
+    : delta / (max + min);
+  let hue = 0;
+  if (max === rn) hue = ((gn - bn) / delta + (gn < bn ? 6 : 0)) / 6;
+  if (max === gn) hue = ((bn - rn) / delta + 2) / 6;
+  if (max === bn) hue = ((rn - gn) / delta + 4) / 6;
+  return [hue * 360, saturation, lightness];
+}
+
+function hslToCssColor(hue, saturation, lightness) {
+  return `hsl(${Math.round(hue)}, ${(saturation * 100).toFixed(1)}%, ${(lightness * 100).toFixed(1)}%)`;
+}
+
+function LandingAwardIcon({ index }) {
+  const variant = index % 14;
+  return (
+    <svg className="landing-profile-award__icon" viewBox="0 0 80 54" aria-hidden="true">
+      {variant === 0 && (
+        <>
+          <circle className="landing-profile-award__line" cx="30" cy="27" r="17" />
+          <circle className="landing-profile-award__line" cx="50" cy="27" r="17" />
+        </>
+      )}
+      {variant === 1 && <circle className="landing-profile-award__line" cx="40" cy="27" r="19" />}
+      {variant === 2 && (
+        <>
+          <path className="landing-profile-award__line" d="M14 36H42V20H62" />
+          <rect className="landing-profile-award__fill" x="42" y="20" width="20" height="16" />
+        </>
+      )}
+      {variant === 3 && <path className="landing-profile-award__line" d="M14 42L40 14L66 42Z" />}
+      {variant === 4 && (
+        <>
+          <path className="landing-profile-award__line" d="M20 40H60M24 40V18M56 40V18M30 18H50" />
+          <circle className="landing-profile-award__fill" cx="40" cy="13" r="5" />
+        </>
+      )}
+      {variant === 5 && <path className="landing-profile-award__line" d="M22 17H58L66 27L58 37H22L14 27Z" />}
+      {variant === 6 && (
+        <>
+          <path className="landing-profile-award__line" d="M22 40L40 14L58 40" />
+          <path className="landing-profile-award__line" d="M29 31H51" />
+        </>
+      )}
+      {variant === 7 && (
+        <>
+          <rect className="landing-profile-award__fill" x="23" y="16" width="34" height="24" />
+          <path className="landing-profile-award__line" d="M23 40L16 33M57 16L64 23" />
+        </>
+      )}
+      {variant === 8 && (
+        <>
+          <path className="landing-profile-award__line" d="M17 34C27 14 53 14 63 34" />
+          <path className="landing-profile-award__line" d="M24 34C31 23 49 23 56 34" />
+          <path className="landing-profile-award__line" d="M31 34C35 30 45 30 49 34" />
+        </>
+      )}
+      {variant === 9 && (
+        <>
+          <path className="landing-profile-award__line" d="M18 36L30 18H62" />
+          <circle className="landing-profile-award__fill" cx="30" cy="18" r="4" />
+          <circle className="landing-profile-award__fill" cx="62" cy="18" r="4" />
+          <circle className="landing-profile-award__fill" cx="18" cy="36" r="4" />
+        </>
+      )}
+      {variant === 10 && (
+        <>
+          <path className="landing-profile-award__line" d="M20 40V18H60V40" />
+          <path className="landing-profile-award__line" d="M28 25H52M28 33H45" />
+        </>
+      )}
+      {variant === 11 && (
+        <>
+          <path className="landing-profile-award__line" d="M18 34L32 18L46 34L60 18" />
+          <path className="landing-profile-award__line" d="M18 42H62" />
+        </>
+      )}
+      {variant === 12 && (
+        <>
+          <path className="landing-profile-award__line" d="M20 18H60V38H20Z" />
+          <path className="landing-profile-award__line" d="M28 18V38M40 18V38M52 18V38" />
+        </>
+      )}
+      {variant === 13 && (
+        <>
+          <path className="landing-profile-award__line" d="M20 33L34 19L48 33L60 21" />
+          <circle className="landing-profile-award__fill" cx="20" cy="33" r="3" />
+          <circle className="landing-profile-award__fill" cx="34" cy="19" r="3" />
+          <circle className="landing-profile-award__fill" cx="48" cy="33" r="3" />
+          <circle className="landing-profile-award__fill" cx="60" cy="21" r="3" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+function landingAwardTitle(award) {
+  return String(award?.title || '')
+    .replace(/^(\d+)(st|nd|rd|th)\s+/i, '')
+    .replace(/^The\s+/i, '')
+    .replace(/\s+·\s+/g, ' · ');
+}
+
+function LandingProfileAwards({ items = [] }) {
+  const rootRef = useRef(null);
+  const awards = items;
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return undefined;
+    const samplerStore = window.__resumeProfileSamplerStore || {
+      listeners: new Set(),
+      last: null,
+    };
+    window.__resumeProfileSamplerStore = samplerStore;
+    let lastFrameKey = '';
+    const applySample = (sample) => {
+      const frameKey = sample?.frame == null ? 'initial' : String(sample.frame);
+      if (frameKey === lastFrameKey) return;
+      lastFrameKey = frameKey;
+      const [baseHue, baseSaturation, baseLightness] = rgbToHsl(parseCssRgbColor(sample?.color));
+      const frame = Number(sample?.frame) || 0;
+      root.querySelectorAll('.landing-profile-award').forEach((node, index) => {
+        const hue = (baseHue + index * 31 + frame * 0.72) % 360;
+        const saturation = Math.max(0.46, Math.min(0.88, baseSaturation * 0.72 + 0.24));
+        const lightness = Math.max(0.42, Math.min(0.62, baseLightness * 0.72 + 0.18 + (index % 3) * 0.025));
+        node.style.setProperty('--award-color', hslToCssColor(hue, saturation, lightness));
+      });
+      if (sample?.frame != null) root.dataset.samplerFrame = String(sample.frame);
+    };
+    samplerStore.listeners.add(applySample);
+    applySample(samplerStore.last);
+    return () => {
+      samplerStore.listeners.delete(applySample);
+    };
+  }, []);
+
+  if (!awards.length) return null;
+  return (
+    <aside className="landing-profile-awards" aria-label="Awards and recognition" ref={rootRef}>
+      <p className="landing-profile-awards__label">Selected recognition</p>
+      <ul className="landing-profile-awards__grid">
+        {awards.map((award, index) => (
+          <li className="landing-profile-award" key={`${award.org}-${award.title}-${index}`}>
+            <span className="landing-profile-award__org">{award.org}</span>
+            <LandingAwardIcon index={index} />
+            <span className="landing-profile-award__chip" aria-hidden="true" />
+            <span className="landing-profile-award__title">{landingAwardTitle(award)}</span>
+          </li>
+        ))}
+      </ul>
+    </aside>
+  );
+}
+
 function LandingProfileSection({ summaryOnly = false } = {}) {
   return (
     <section
@@ -10474,6 +10741,7 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
           </div>
           {!summaryOnly && <BeautifulGameLoadingSummaryInstrument part="wheel" />}
         </div>
+        {!summaryOnly && <LandingProfileAwards items={RESUME.awards} />}
       </div>
     </section>
   );
