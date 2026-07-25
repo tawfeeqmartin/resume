@@ -1195,6 +1195,14 @@ const LANDING_VARIANT_CSS = `
   font-size: clamp(1.12rem, 1.7vw, 1.55rem);
   line-height: 1.55;
 }
+.landing-profile__bio + .landing-profile__bio {
+  margin-top: clamp(1.15rem, 2.7vh, 1.8rem);
+}
+.landing-profile__bio--details {
+  color: color-mix(in srgb, var(--ink-2) 82%, var(--paper) 18%);
+  font-size: clamp(0.96rem, 1.28vw, 1.2rem);
+  line-height: 1.62;
+}
 .landing-profile__links {
   display: flex;
   flex-wrap: wrap;
@@ -1324,6 +1332,9 @@ const LANDING_VARIANT_CSS = `
   .landing-profile__bio {
     max-width: 58ch;
     font-size: clamp(1.18rem, 2.2vw, 1.46rem);
+  }
+  .landing-profile__bio--details {
+    font-size: clamp(1rem, 1.72vw, 1.18rem);
   }
   .landing-profile__instrument--wheel {
     justify-self: start;
@@ -10428,7 +10439,7 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
               I’ve somehow turned “what happens if I press this button?” into a 20-year career
               of curious design and make-believe.
             </p>
-            <p className="landing-profile__bio">
+            <p className="landing-profile__bio landing-profile__bio--details">
               Research and Development, StageCraft team at
               Industrial Light &amp; Magic. Previously Head of Creative Engineering and Creative
               Technology Director at The Mill, where I led 0-to-1 product
