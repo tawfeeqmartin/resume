@@ -1356,6 +1356,13 @@ const LANDING_VARIANT_CSS = `
   fill: color-mix(in srgb, var(--award-color) 74%, white 26%);
   stroke: none;
 }
+.landing-profile-award__fill--alt {
+  fill: var(--award-color-alt, color-mix(in srgb, var(--award-color) 82%, black 18%));
+}
+.landing-profile-award__fill--additive {
+  fill: color-mix(in srgb, var(--award-color) 44%, white 56%);
+  opacity: 0.94;
+}
 .landing-profile-award__solid {
   fill: color-mix(in srgb, var(--award-color) 92%, black 8%);
   stroke: none;
@@ -10574,8 +10581,11 @@ function LandingAwardIcon({ award }) {
       {family === 'cannes' && (
         <>
           <circle className="landing-profile-award__fill" cx="29" cy="27" r="15" />
-          <circle className="landing-profile-award__solid" cx="51" cy="27" r="15" />
-          <circle className="landing-profile-award__fill" cx="40" cy="27" r="9" />
+          <circle className="landing-profile-award__fill landing-profile-award__fill--alt" cx="51" cy="27" r="15" />
+          <path
+            className="landing-profile-award__fill landing-profile-award__fill--additive"
+            d="M40 16.8A15 15 0 0 1 40 37.2A15 15 0 0 1 40 16.8Z"
+          />
         </>
       )}
       {family === 'emmy' && (
@@ -10657,9 +10667,11 @@ function LandingProfileAwards({ items = [] }) {
       const frame = Number(sample?.frame) || 0;
       root.querySelectorAll('.landing-profile-award').forEach((node, index) => {
         const hue = (baseHue + index * 31 + frame * 0.72) % 360;
+        const altHue = (hue + 42) % 360;
         const saturation = Math.max(0.46, Math.min(0.88, baseSaturation * 0.72 + 0.24));
         const lightness = Math.max(0.42, Math.min(0.62, baseLightness * 0.72 + 0.18 + (index % 3) * 0.025));
         node.style.setProperty('--award-color', hslToCssColor(hue, saturation, lightness));
+        node.style.setProperty('--award-color-alt', hslToCssColor(altHue, saturation, Math.min(0.66, lightness + 0.06)));
       });
       if (sample?.frame != null) root.dataset.samplerFrame = String(sample.frame);
     };
