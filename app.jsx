@@ -1353,12 +1353,13 @@ const LANDING_VARIANT_CSS = `
   display: none;
 }
 .landing-profile-award__fill {
-  fill: color-mix(in srgb, var(--award-color) 70%, white 30%);
+  fill: color-mix(in srgb, var(--award-color) 74%, white 26%);
   stroke: none;
 }
 .landing-profile-award__solid {
-  fill: currentColor;
-  opacity: 0.78;
+  fill: color-mix(in srgb, var(--award-color) 92%, black 8%);
+  stroke: none;
+  opacity: 1;
 }
 .landing-profile-award__title {
   max-width: 16ch;
@@ -10592,22 +10593,13 @@ function LandingAwardIcon({ award }) {
         </>
       )}
       {family === 'webby' && (
-        <>
-          <path className="landing-profile-award__fill" d="M40 13L65 43H15Z" />
-          <path className="landing-profile-award__solid" d="M40 24L55 42H25Z" />
-        </>
+        <path className="landing-profile-award__fill" d="M40 13L65 43H15Z" />
       )}
       {family === 'hpa' && (
-        <>
-          <path className="landing-profile-award__solid" d="M40 9L68 27L40 45L12 27Z" />
-          <path className="landing-profile-award__fill" d="M40 17L56 27L40 37L24 27Z" />
-        </>
+        <path className="landing-profile-award__fill" d="M40 9L68 27L40 45L12 27Z" />
       )}
       {family === 'one-show' && (
-        <>
-          <path className="landing-profile-award__solid" d="M19 42L54 15L63 25L28 51Z" />
-          <path className="landing-profile-award__fill" d="M26 38L54 17L60 23L32 44Z" />
-        </>
+        <path className="landing-profile-award__fill" d="M19 42L54 15L63 25L28 51Z" />
       )}
       {family === 'technicolor' && (
         <>
@@ -10623,10 +10615,7 @@ function LandingAwardIcon({ award }) {
         </>
       )}
       {family === 'aicp' && (
-        <>
-          <rect className="landing-profile-award__solid" x="22" y="18" width="36" height="24" />
-          <rect className="landing-profile-award__fill" x="29" y="25" width="22" height="10" />
-        </>
+        <rect className="landing-profile-award__fill" x="22" y="18" width="36" height="24" />
       )}
       {family === 'recognition' && (
         <>
