@@ -10426,7 +10426,10 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
           <div className="landing-profile__copy">
             <p className="landing-profile__bio">
               I’ve somehow turned “what happens if I press this button?” into a 20-year career
-              of curious design and make-believe. Research and Development, StageCraft team at
+              of curious design and make-believe.
+            </p>
+            <p className="landing-profile__bio">
+              Research and Development, StageCraft team at
               Industrial Light &amp; Magic. Previously Head of Creative Engineering and Creative
               Technology Director at The Mill, where I led 0-to-1 product
               development on landmark projects including Google Spotlight Stories ‘HELP’ (dir.
