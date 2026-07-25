@@ -10426,9 +10426,9 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
           <div className="landing-profile__copy">
             <p className="landing-profile__bio">
               I’ve somehow turned “what happens if I press this button?” into a 20-year career
-              of curiosity, design, make, believe. Research and Development / StageCraft at
-              Industrial Light &amp; Magic. Previously Head of Creative Engineering / Creative Technology
-              Director at The Mill, where I led 0-to-1 product
+              of curious design and make-believe. Research and Development, StageCraft team at
+              Industrial Light &amp; Magic. Previously Head of Creative Engineering and Creative
+              Technology Director at The Mill, where I led 0-to-1 product
               development on landmark projects including Google Spotlight Stories ‘HELP’ (dir.
               Justin Lin) — a double Gold Cannes Lion–winning immersive 360° film — and was one
               of the inventors of Mill Stitch™ and the Mill Blackbird car rig. Independent
