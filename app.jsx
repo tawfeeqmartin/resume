@@ -1203,6 +1203,11 @@ const LANDING_VARIANT_CSS = `
   font-size: clamp(0.96rem, 1.28vw, 1.2rem);
   line-height: 1.62;
 }
+.landing-profile__bio--details strong {
+  color: var(--ink);
+  font-size: 1.045em;
+  font-weight: 720;
+}
 .landing-profile__links {
   display: flex;
   flex-wrap: wrap;
@@ -10440,12 +10445,12 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
               of curious design and make-believe.
             </p>
             <p className="landing-profile__bio landing-profile__bio--details">
-              Research and Development, StageCraft team at
-              Industrial Light &amp; Magic. Previously Head of <strong>Creative Engineering</strong> and <strong>Creative
-              Technology Director</strong> at The Mill, where I led 0-to-1 product
-              development on landmark projects including Google Spotlight Stories ‘HELP’ (dir.
+              Research and Development, <strong>StageCraft</strong> team at
+              <strong>Industrial Light &amp; Magic</strong>. Previously Head of <strong>Creative Engineering</strong> and <strong>Creative
+              Technology Director</strong> at <strong>The Mill</strong>, where I led 0-to-1 product
+              development on landmark projects including Google Spotlight Stories <strong>‘HELP’</strong> (dir.
               Justin Lin) — a double Gold Cannes Lion–winning immersive 360° film — and was one
-              of the inventors of Mill Stitch™ and the Mill Blackbird car rig. Independent
+              of the inventors of <strong>Mill Stitch™</strong> and the <strong>Mill Blackbird</strong> car rig. Independent
               developer of AI tools and generative creative systems.
             </p>
             {!summaryOnly && (
