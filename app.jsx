@@ -1293,10 +1293,15 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile-awards {
   --award-color-fallback: #245cff;
-  margin: clamp(4rem, 7.5vh, 6rem) 0 0;
-  padding-top: clamp(1rem, 2vh, 1.45rem);
+  position: absolute;
+  left: max(var(--pad), calc((100vw - var(--maxw)) / 2));
+  right: max(var(--pad), calc((100vw - var(--maxw)) / 2));
+  bottom: clamp(1.1rem, 2.2vh, 1.85rem);
+  z-index: 3;
+  margin: 0;
+  padding: 0;
   color: var(--ink);
-  border-top: 1px solid rgba(10,12,16,0.14);
+  pointer-events: none;
 }
 .landing-profile-awards__label {
   position: absolute;
@@ -1309,7 +1314,7 @@ const LANDING_VARIANT_CSS = `
 .landing-profile-awards__grid {
   display: grid;
   grid-template-columns: repeat(14, minmax(0, 1fr));
-  gap: clamp(0.55rem, 1vw, 1.1rem);
+  gap: clamp(0.38rem, 0.76vw, 0.82rem);
   align-items: start;
   margin: 0;
   padding: 0;
@@ -1320,7 +1325,7 @@ const LANDING_VARIANT_CSS = `
   display: grid;
   grid-template-rows: auto auto 1fr;
   justify-items: center;
-  gap: 0.42rem;
+  gap: 0.25rem;
   min-width: 0;
   color: var(--ink);
   text-align: center;
@@ -1328,16 +1333,16 @@ const LANDING_VARIANT_CSS = `
 .landing-profile-award__org {
   min-height: 1em;
   font-family: var(--mono);
-  font-size: clamp(0.46rem, 0.48vw, 0.58rem);
+  font-size: clamp(0.4rem, 0.42vw, 0.52rem);
   font-weight: 560;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.18em;
   line-height: 1.1;
   text-transform: uppercase;
   color: rgba(10,12,16,0.62);
 }
 .landing-profile-award__icon {
-  width: clamp(2.35rem, 3.6vw, 3.5rem);
-  height: clamp(1.8rem, 2.7vw, 2.5rem);
+  width: clamp(1.85rem, 2.7vw, 2.75rem);
+  height: clamp(1.35rem, 2vw, 1.95rem);
   overflow: visible;
   color: var(--ink);
 }
@@ -1345,24 +1350,23 @@ const LANDING_VARIANT_CSS = `
   vector-effect: non-scaling-stroke;
 }
 .landing-profile-award__line {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.65;
-  stroke-linecap: square;
-  stroke-linejoin: miter;
+  display: none;
 }
 .landing-profile-award__fill {
-  fill: color-mix(in srgb, var(--award-color) 42%, transparent);
-  stroke: currentColor;
-  stroke-width: 1.25;
+  fill: color-mix(in srgb, var(--award-color) 70%, white 30%);
+  stroke: none;
+}
+.landing-profile-award__solid {
+  fill: currentColor;
+  opacity: 0.78;
 }
 .landing-profile-award__title {
-  max-width: 17ch;
+  max-width: 16ch;
   font-family: var(--mono);
-  font-size: clamp(0.44rem, 0.5vw, 0.62rem);
+  font-size: clamp(0.39rem, 0.43vw, 0.54rem);
   font-weight: 520;
-  letter-spacing: 0.12em;
-  line-height: 1.28;
+  letter-spacing: 0.09em;
+  line-height: 1.18;
   text-transform: uppercase;
   color: rgba(10,12,16,0.82);
 }
@@ -10568,69 +10572,68 @@ function LandingAwardIcon({ award }) {
     <svg className="landing-profile-award__icon" viewBox="0 0 80 54" aria-hidden="true">
       {family === 'cannes' && (
         <>
-          <circle className="landing-profile-award__fill" cx="30" cy="27" r="11" />
-          <circle className="landing-profile-award__line" cx="30" cy="27" r="17" />
-          <circle className="landing-profile-award__line" cx="50" cy="27" r="17" />
+          <circle className="landing-profile-award__fill" cx="29" cy="27" r="15" />
+          <circle className="landing-profile-award__solid" cx="51" cy="27" r="15" />
+          <circle className="landing-profile-award__fill" cx="40" cy="27" r="9" />
         </>
       )}
       {family === 'emmy' && (
         <>
-          <circle className="landing-profile-award__fill" cx="40" cy="18" r="8" />
-          <path className="landing-profile-award__line" d="M24 42H56M28 42L34 27H46L52 42M34 27L40 11L46 27" />
+          <rect className="landing-profile-award__solid" x="23" y="40" width="34" height="5" rx="1" />
+          <path className="landing-profile-award__solid" d="M31 40L36 25H44L49 40Z" />
+          <path className="landing-profile-award__fill" d="M40 9L47 27H33Z" />
+          <circle className="landing-profile-award__fill" cx="40" cy="17" r="7" />
         </>
       )}
       {family === 'sxsw' && (
         <>
-          <path className="landing-profile-award__line" d="M14 36H42V20H62" />
-          <rect className="landing-profile-award__fill" x="42" y="20" width="20" height="16" />
+          <rect className="landing-profile-award__solid" x="15" y="35" width="28" height="5" />
+          <rect className="landing-profile-award__fill" x="42" y="20" width="22" height="20" />
         </>
       )}
       {family === 'webby' && (
         <>
-          <path className="landing-profile-award__fill" d="M31 36L40 25L49 36Z" />
-          <path className="landing-profile-award__line" d="M14 42L40 14L66 42Z" />
+          <path className="landing-profile-award__fill" d="M40 13L65 43H15Z" />
+          <path className="landing-profile-award__solid" d="M40 24L55 42H25Z" />
         </>
       )}
       {family === 'hpa' && (
         <>
-          <path className="landing-profile-award__fill" d="M40 16L57 27L40 38L23 27Z" />
-          <path className="landing-profile-award__line" d="M40 10L66 27L40 44L14 27Z" />
-          <path className="landing-profile-award__line" d="M24 27H56" />
+          <path className="landing-profile-award__solid" d="M40 9L68 27L40 45L12 27Z" />
+          <path className="landing-profile-award__fill" d="M40 17L56 27L40 37L24 27Z" />
         </>
       )}
       {family === 'one-show' && (
         <>
-          <path className="landing-profile-award__fill" d="M26 36L54 16L60 22L32 42Z" />
-          <path className="landing-profile-award__line" d="M20 42L54 16L62 24L28 50Z" />
-          <path className="landing-profile-award__line" d="M48 20L58 30" />
+          <path className="landing-profile-award__solid" d="M19 42L54 15L63 25L28 51Z" />
+          <path className="landing-profile-award__fill" d="M26 38L54 17L60 23L32 44Z" />
         </>
       )}
       {family === 'technicolor' && (
         <>
-          <rect className="landing-profile-award__fill" x="25" y="19" width="10" height="20" />
-          <path className="landing-profile-award__line" d="M20 18H60V38H20Z" />
-          <path className="landing-profile-award__line" d="M30 18V38M40 18V38M50 18V38" />
+          <rect className="landing-profile-award__solid" x="19" y="17" width="42" height="22" />
+          <rect className="landing-profile-award__fill" x="27" y="17" width="11" height="22" />
+          <rect className="landing-profile-award__fill" x="46" y="17" width="11" height="22" />
         </>
       )}
       {family === 'siggraph' && (
         <>
-          <circle className="landing-profile-award__fill" cx="40" cy="27" r="9" />
-          <path className="landing-profile-award__line" d="M18 27C26 12 54 12 62 27C54 42 26 42 18 27Z" />
-          <path className="landing-profile-award__line" d="M40 12V42M25 27H55" />
+          <path className="landing-profile-award__solid" d="M16 27C25 12 55 12 64 27C55 42 25 42 16 27Z" />
+          <circle className="landing-profile-award__fill" cx="40" cy="27" r="10" />
         </>
       )}
       {family === 'aicp' && (
         <>
-          <path className="landing-profile-award__fill" d="M28 34H52V42H28Z" />
-          <path className="landing-profile-award__line" d="M20 42H60M24 42V18H56V42M30 25H50M30 33H46" />
+          <rect className="landing-profile-award__solid" x="22" y="18" width="36" height="24" />
+          <rect className="landing-profile-award__fill" x="29" y="25" width="22" height="10" />
         </>
       )}
       {family === 'recognition' && (
         <>
-          <path className="landing-profile-award__line" d="M18 36L30 18H62" />
-          <circle className="landing-profile-award__fill" cx="30" cy="18" r="4" />
-          <circle className="landing-profile-award__fill" cx="62" cy="18" r="4" />
-          <circle className="landing-profile-award__fill" cx="18" cy="36" r="4" />
+          <circle className="landing-profile-award__fill" cx="25" cy="36" r="5" />
+          <circle className="landing-profile-award__solid" cx="39" cy="18" r="5" />
+          <circle className="landing-profile-award__fill" cx="55" cy="26" r="5" />
+          <rect className="landing-profile-award__solid" x="29" y="25" width="21" height="4" transform="rotate(-38 39.5 27)" />
         </>
       )}
     </svg>
@@ -10738,8 +10741,8 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
           </div>
           {!summaryOnly && <BeautifulGameLoadingSummaryInstrument part="wheel" />}
         </div>
-        {!summaryOnly && <LandingProfileAwards items={RESUME.awards} />}
       </div>
+      {!summaryOnly && <LandingProfileAwards items={RESUME.awards} />}
     </section>
   );
 }
