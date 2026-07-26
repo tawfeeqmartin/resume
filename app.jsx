@@ -2413,6 +2413,7 @@ const LANDING_VARIANT_CSS = `
   margin-top: clamp(3rem, 6vw, 6rem);
 }
 .landing-v1-shell .section {
+  --section-scale-u: min(1vw, 1.7778svh);
   margin-top: clamp(4rem, 9vw, 8rem);
 }
 .landing-v1-shell .section__header {
@@ -2430,7 +2431,7 @@ const LANDING_VARIANT_CSS = `
 .landing-v1-shell .section__label-num {
   font-family: var(--lv-display);
   font-weight: 400;
-  font-size: clamp(2.6rem, 5.2vw, 4.6rem);
+  font-size: clamp(2rem, calc(var(--section-scale-u) * 5.2), 4.6rem);
   line-height: 0.78;
   letter-spacing: 0;
   color: var(--ink);
@@ -2440,7 +2441,7 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-v1-shell .section__label-title {
   align-self: center;
-  font-size: clamp(0.82rem, 1.3vw, 1.02rem);
+  font-size: clamp(0.62rem, calc(var(--section-scale-u) * 1.3), 1.02rem);
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -2463,6 +2464,7 @@ const LANDING_VARIANT_CSS = `
   color: var(--lv-accent-3);
 }
 .touchdesigner-feature {
+  --section-scale-u: min(1vw, 1.7778svh);
   display: grid;
   grid-template-columns: minmax(18rem, 1fr) minmax(0, 1.5fr);
   gap: clamp(1.5rem, 3vw, 3rem);
@@ -2481,14 +2483,14 @@ const LANDING_VARIANT_CSS = `
 .touchdesigner-feature__intro p {
   margin: 0 0 1rem;
   max-width: 34rem;
-  font-size: clamp(1rem, 1.35vw, 1.22rem);
+  font-size: clamp(0.82rem, calc(var(--section-scale-u) * 1.35), 1.22rem);
   line-height: 1.55;
   color: var(--ink-2);
   text-wrap: pretty;
 }
 .touchdesigner-feature__intro .mono {
   max-width: 30rem;
-  font-size: 0.68rem;
+  font-size: clamp(0.5rem, calc(var(--section-scale-u) * 0.72), 0.68rem);
   line-height: 1.75;
   letter-spacing: 0.08em;
   color: rgba(16, 18, 20, 0.58);
@@ -2527,13 +2529,13 @@ const LANDING_VARIANT_CSS = `
 }
 .touchdesigner-card__caption > .mono {
   padding-top: 0.1rem;
-  font-size: 0.68rem;
+  font-size: clamp(0.5rem, calc(var(--section-scale-u) * 0.72), 0.68rem);
   color: var(--lv-accent);
 }
 .touchdesigner-card__caption h4 {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: clamp(0.78rem, 1.1vw, 0.95rem);
+  font-size: clamp(0.62rem, calc(var(--section-scale-u) * 1.1), 0.95rem);
   line-height: 1.2;
   letter-spacing: -0.02em;
   text-transform: lowercase;
@@ -2541,7 +2543,7 @@ const LANDING_VARIANT_CSS = `
 .touchdesigner-card__caption p {
   margin: 0.35rem 0 0;
   max-width: 28rem;
-  font-size: clamp(0.86rem, 1vw, 0.98rem);
+  font-size: clamp(0.68rem, calc(var(--section-scale-u) * 1), 0.98rem);
   line-height: 1.45;
   color: rgba(16, 18, 20, 0.62);
 }
@@ -2549,6 +2551,7 @@ const LANDING_VARIANT_CSS = `
 /* The final Beautiful Game chapter mounts the original standalone export
    whole so its renderer, controls, and embedded assets stay unchanged. */
 #hand-of-god.section {
+  --section-scale-u: min(1vw, 1.7778svh);
   width: 100%;
   min-height: 100svh;
   margin-top: clamp(4rem, 8vw, 7rem);
@@ -2639,7 +2642,7 @@ const LANDING_VARIANT_CSS = `
   max-width: 13ch;
   margin: 0 0 1.25rem;
   color: #f5f5f2;
-  font-size: clamp(2.1rem, 4.2vw, 4.4rem);
+  font-size: clamp(1.7rem, calc(var(--section-scale-u) * 4.2), 4.4rem);
   line-height: 0.92;
   letter-spacing: -0.055em;
   text-wrap: balance;
@@ -2649,7 +2652,7 @@ const LANDING_VARIANT_CSS = `
   margin: 0;
   color: rgba(245, 245, 242, 0.86);
   font-family: var(--serif);
-  font-size: clamp(0.98rem, 1.08vw, 1.12rem);
+  font-size: clamp(0.76rem, calc(var(--section-scale-u) * 1.08), 1.12rem);
   line-height: 1.54;
   text-wrap: pretty;
 }
@@ -3022,6 +3025,7 @@ const LANDING_VARIANT_CSS = `
 
 /* ── closing dark CTA band ── */
 .landing-cta {
+  --section-scale-u: min(1vw, 1.7778svh);
   position: relative;
   width: 100vw;
   margin-left: calc(50% - 50vw);
@@ -3056,7 +3060,7 @@ const LANDING_VARIANT_CSS = `
   align-items: center;
   gap: 0.6rem;
   color: var(--lv-on-dark-dim);
-  font-size: 0.64rem;
+  font-size: clamp(0.5rem, calc(var(--section-scale-u) * 0.72), 0.64rem);
   letter-spacing: 0.24em;
   text-transform: uppercase;
 }
@@ -3071,7 +3075,7 @@ const LANDING_VARIANT_CSS = `
   max-width: 16ch;
   font-family: var(--lv-display);
   font-weight: 400;
-  font-size: clamp(2.7rem, 6.4vw, 6.4rem);
+  font-size: clamp(2.1rem, calc(var(--section-scale-u) * 6.4), 6.4rem);
   line-height: 0.88;
   letter-spacing: 0.01em;
   text-transform: uppercase;
@@ -3080,7 +3084,7 @@ const LANDING_VARIANT_CSS = `
   margin: clamp(1.1rem, 2vw, 1.6rem) 0 0;
   max-width: 48ch;
   font-family: var(--serif);
-  font-size: clamp(1.02rem, 1.4vw, 1.28rem);
+  font-size: clamp(0.82rem, calc(var(--section-scale-u) * 1.4), 1.28rem);
   line-height: 1.5;
   color: rgba(246, 245, 242, 0.82);
 }
