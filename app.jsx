@@ -1166,6 +1166,7 @@ const LANDING_VARIANT_CSS = `
   position: relative;
   width: min(100%, var(--maxw));
   margin: 0 auto;
+  z-index: 2;
 }
 .landing-profile__name-row {
   display: block;
@@ -1186,10 +1187,15 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile__story {
   display: grid;
-  grid-template-columns: minmax(0, 0.88fr) minmax(24rem, 1.12fr);
+  grid-template-columns: minmax(18rem, 0.78fr) minmax(28rem, 0.92fr) minmax(8rem, 0.78fr);
   align-items: start;
-  gap: clamp(3rem, 6.5vw, 8rem);
-  margin-top: clamp(2.4rem, 5vh, 4.25rem);
+  gap: clamp(1.75rem, 3.6vw, 4.5rem);
+  margin-top: clamp(2.15rem, 4.6vh, 3.7rem);
+}
+.landing-profile__copy {
+  grid-column: 1;
+  position: relative;
+  z-index: 3;
 }
 .landing-profile__bio {
   margin: 0;
@@ -1253,11 +1259,12 @@ const LANDING_VARIANT_CSS = `
   height: clamp(5.75rem, 9vw, 8.5rem);
 }
 .landing-profile__instrument--wheel {
-  justify-self: end;
+  grid-column: 2;
+  justify-self: center;
   align-self: start;
-  width: min(100%, clamp(29rem, 45vw, 45rem));
-  height: clamp(26rem, 43vw, 42rem);
-  transform: translateY(calc(var(--landing-wheel-lift) - clamp(0.75rem, 2.2vw, 2.4rem)));
+  width: min(100%, clamp(31rem, 42vw, 43rem));
+  height: clamp(28rem, 41vw, 40rem);
+  transform: translateY(calc(var(--landing-wheel-lift) - clamp(0.25rem, 1.1vw, 1.2rem)));
 }
 .landing-profile__instrument-canvas {
   display: block;
