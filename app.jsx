@@ -11065,23 +11065,10 @@ const LANDING_TESSERACT_EDGE_PAIRS = Array.from({ length: 16 }).flatMap((_, inde
     .filter(([from, to]) => from < to)
 ));
 
-function landingCurvePoint(index, total, t, sampler) {
-  const count = Math.max(2, total);
-  const u = index / count;
-  const theta = u * Math.PI * 2 + t;
-  return landingPatternClampPoint(sampler(theta, u, count));
-}
-
 function landingStarPairs(total = 0, step = 5) {
   const count = Math.max(0, total);
   if (count < 2) return [];
   return Array.from({ length: count }, (_, index) => [index, (index + step) % count]);
-}
-
-function landingCurvePairs(total = 0) {
-  const count = Math.max(0, total);
-  if (count < 2) return [];
-  return Array.from({ length: count }, (_, index) => [index, (index + 1) % count]);
 }
 
 const LANDING_CUBE_OCTAHEDRON_POINTS = [
@@ -11112,6 +11099,149 @@ const LANDING_CUBE_OCTAHEDRON_PAIRS = [
   [13, 10],
 ];
 
+const LANDING_OCTAHEDRON_POINTS = [
+  [0, 1.18, 0],
+  [1.18, 0, 0],
+  [0, -1.18, 0],
+  [-1.18, 0, 0],
+  [0, 0, 1.18],
+  [0, 0, -1.18],
+  [0.58, 0.58, 0],
+  [0.58, -0.58, 0],
+  [-0.58, -0.58, 0],
+  [-0.58, 0.58, 0],
+  [0.58, 0, 0.58],
+  [0, 0.58, 0.58],
+  [-0.58, 0, 0.58],
+  [0, -0.58, 0.58],
+  [0, 0.58, -0.58],
+  [0, -0.58, -0.58],
+];
+
+const LANDING_OCTAHEDRON_PAIRS = [
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [3, 0],
+  [0, 4],
+  [1, 4],
+  [2, 4],
+  [3, 4],
+  [0, 5],
+  [1, 5],
+  [2, 5],
+  [3, 5],
+  [6, 7],
+  [7, 8],
+  [8, 9],
+  [9, 6],
+];
+
+const LANDING_NESTED_SQUARE_PAIRS = [
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [3, 0],
+  [4, 5],
+  [5, 6],
+  [6, 7],
+  [7, 4],
+  [8, 9],
+  [9, 10],
+  [10, 11],
+  [11, 8],
+  [12, 13],
+  [13, 14],
+  [14, 15],
+  [15, 12],
+  [0, 4],
+  [1, 5],
+  [2, 6],
+  [3, 7],
+];
+
+const LANDING_PYRAMID_POINTS = [
+  [-1.12, -0.74, 0.58],
+  [1.12, -0.74, 0.58],
+  [1.12, 0.74, 0.58],
+  [-1.12, 0.74, 0.58],
+  [-0.48, -0.30, -0.38],
+  [0.48, -0.30, -0.38],
+  [0.48, 0.30, -0.38],
+  [-0.48, 0.30, -0.38],
+  [0, 0, -1.18],
+  [-0.82, -0.54, 0.26],
+  [0.82, -0.54, 0.26],
+  [0.82, 0.54, 0.26],
+  [-0.82, 0.54, 0.26],
+  [0, -0.74, 0.58],
+  [1.12, 0, 0.58],
+  [-1.12, 0, 0.58],
+];
+
+const LANDING_PYRAMID_PAIRS = [
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [3, 0],
+  [4, 5],
+  [5, 6],
+  [6, 7],
+  [7, 4],
+  [0, 4],
+  [1, 5],
+  [2, 6],
+  [3, 7],
+  [4, 8],
+  [5, 8],
+  [6, 8],
+  [7, 8],
+];
+
+const LANDING_HEXAGRAM_PAIRS = [
+  [0, 4],
+  [4, 8],
+  [8, 0],
+  [2, 6],
+  [6, 10],
+  [10, 2],
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [3, 4],
+  [4, 5],
+  [5, 6],
+  [6, 7],
+  [7, 8],
+  [8, 9],
+  [9, 10],
+  [10, 11],
+  [11, 0],
+  [12, 14],
+  [13, 15],
+];
+
+const LANDING_ISOMETRIC_GRID_PAIRS = [
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [4, 5],
+  [5, 6],
+  [6, 7],
+  [8, 9],
+  [9, 10],
+  [10, 11],
+  [12, 13],
+  [13, 14],
+  [14, 15],
+  [0, 4],
+  [4, 8],
+  [8, 12],
+  [3, 7],
+  [7, 11],
+  [11, 15],
+];
+
 const LANDING_AWARD_PATTERNS = [
   {
     id: 'hypercube-projection',
@@ -11133,80 +11263,73 @@ const LANDING_AWARD_PATTERNS = [
     },
   },
   {
-    id: 'torus-knot',
-    label: 'Torus knot',
-    formula: 'x=(R+r cos 3t)cos 2t',
-    edgePairs: landingCurvePairs(16),
+    id: 'octahedral-diamond',
+    label: 'Octahedral diamond',
+    formula: 'six poles + eight triangular faces',
+    edgePairs: LANDING_OCTAHEDRON_PAIRS,
     point(index, total, t) {
-      const count = Math.max(2, total);
-      const theta = (index / count) * Math.PI * 2 + t * 0.44;
-      const R = 0.78;
-      const r = 0.34;
-      const x = (R + r * Math.cos(3 * theta)) * Math.cos(2 * theta);
-      const y = (R + r * Math.cos(3 * theta)) * Math.sin(2 * theta);
-      const z = r * Math.sin(3 * theta);
-      return landingProject3DPoint([x, y, z], t * 0.72, 0.40);
+      const vertex = LANDING_OCTAHEDRON_POINTS[index % LANDING_OCTAHEDRON_POINTS.length];
+      return landingProject3DPoint(vertex, t, 0.39);
     },
   },
   {
-    id: 'lemniscate',
-    label: 'Lemniscate',
-    formula: '∞ · x=cos t / (1+sin²t)',
-    edgePairs: landingCurvePairs(16),
+    id: 'nested-squares',
+    label: 'Nested squares',
+    formula: 'four scaled squares · shared corner rays',
+    edgePairs: LANDING_NESTED_SQUARE_PAIRS,
     point(index, total, t) {
-      const count = Math.max(2, total);
-      const theta = (index / count) * Math.PI * 2 + t * 0.42;
-      const denom = 1 + Math.sin(theta) * Math.sin(theta);
+      const squareIndex = Math.floor(index / 4);
+      const cornerIndex = index % 4;
+      const sizes = [0.455, 0.345, 0.235, 0.125];
+      const base = [
+        [-1, -1],
+        [1, -1],
+        [1, 1],
+        [-1, 1],
+      ][cornerIndex];
+      const rotation = t * 0.18 + squareIndex * 0.18;
+      const cos = Math.cos(rotation);
+      const sin = Math.sin(rotation);
+      const x = base[0] * sizes[squareIndex];
+      const y = base[1] * sizes[squareIndex];
       return landingPatternClampPoint({
-        x: 0.5 + (Math.cos(theta) / denom) * 0.46,
-        y: 0.5 + (Math.sin(theta) * Math.cos(theta) / denom) * 0.46,
+        x: 0.5 + x * cos - y * sin,
+        y: 0.5 + x * sin + y * cos,
       });
     },
   },
   {
-    id: 'lissajous',
-    label: 'Lissajous',
-    formula: 'x = sin(3t + π/2) · y = sin(2t)',
-    edgePairs: landingCurvePairs(16),
+    id: 'pyramid-frustum',
+    label: 'Pyramid / frustum',
+    formula: 'apex + near plane + far plane',
+    edgePairs: LANDING_PYRAMID_PAIRS,
     point(index, total, t) {
-      return landingCurvePoint(index, total, t * 0.52, (theta) => ({
-        x: 0.5 + Math.sin(theta * 3 + Math.PI / 2) * 0.43,
-        y: 0.5 + Math.sin(theta * 2) * 0.43,
-      }));
+      const vertex = LANDING_PYRAMID_POINTS[index % LANDING_PYRAMID_POINTS.length];
+      return landingProject3DPoint(vertex, t, 0.37);
     },
   },
   {
-    id: 'rose-star',
-    label: 'Rose curve',
-    formula: 'r = cos(7θ) · sevenfold flower',
-    edgePairs: landingCurvePairs(16),
+    id: 'hexagram-compass',
+    label: 'Hexagram compass',
+    formula: 'two triangles + cardinal axes',
+    edgePairs: LANDING_HEXAGRAM_PAIRS,
     point(index, total, t) {
-      return landingCurvePoint(index, total, t * 0.36, (theta) => {
-        const radius = 0.18 + Math.abs(Math.cos(theta * 7)) * 0.29;
-        return {
-          x: 0.5 + Math.cos(theta) * radius,
-          y: 0.5 + Math.sin(theta) * radius,
-        };
-      });
-    },
-  },
-  {
-    id: 'hypotrochoid',
-    label: 'Hypotrochoid',
-    formula: 'R=7 · r=4 · d=3',
-    edgePairs: landingCurvePairs(16),
-    point(index, total, t) {
-      return landingCurvePoint(index, total, t * 0.40, (theta) => {
-        const R = 7;
-        const r = 4;
-        const d = 3;
-        const x = ((R - r) * Math.cos(theta) + d * Math.cos(((R - r) / r) * theta)) / 6;
-        const y = ((R - r) * Math.sin(theta) - d * Math.sin(((R - r) / r) * theta)) / 6;
-        return {
-          x: 0.5 + x * 0.44,
-          y: 0.5 + y * 0.44,
-        };
-      });
+      const rotation = t * 0.22 - Math.PI / 2;
+      if (index >= 12) {
+        const axes = [
+          [0, -0.455],
+          [0.455, 0],
+          [0, 0.455],
+          [-0.455, 0],
+        ][index - 12] || [0, 0];
+        return landingPatternClampPoint({
+          x: 0.5 + axes[0],
+          y: 0.5 + axes[1],
+        });
+      }
+      const angle = (index / 12) * Math.PI * 2 + rotation;
+      const radius = index % 2 === 0 ? 0.455 : 0.245;
+      return landingPatternPolarPoint(angle, radius);
     },
   },
   {
@@ -11221,16 +11344,20 @@ const LANDING_AWARD_PATTERNS = [
     },
   },
   {
-    id: 'golden-spiral',
-    label: 'Golden spiral',
-    formula: 'r = √n / √N · θ = nφ',
-    edgePairs: landingCurvePairs(16),
+    id: 'isometric-lattice',
+    label: 'Isometric lattice',
+    formula: '4×4 grid → 30° construction plane',
+    edgePairs: LANDING_ISOMETRIC_GRID_PAIRS,
     point(index, total, t) {
-      const count = Math.max(2, total);
-      const goldenAngle = Math.PI * (3 - Math.sqrt(5));
-      const theta = index * goldenAngle + t * 0.62;
-      const radius = Math.sqrt((index + 1) / count) * 0.455;
-      return landingPatternPolarPoint(theta, radius);
+      const col = index % 4;
+      const row = Math.floor(index / 4);
+      const x = (col - 1.5) * 0.23;
+      const y = (row - 1.5) * 0.23;
+      const wobble = Math.sin(t * 0.42) * 0.04;
+      return landingPatternClampPoint({
+        x: 0.5 + (x - y) * 0.86,
+        y: 0.5 + (x + y) * 0.50 + wobble,
+      });
     },
   },
 ];
