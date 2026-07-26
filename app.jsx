@@ -1422,12 +1422,12 @@ const LANDING_VARIANT_CSS = `
   pointer-events: none;
 }
 .landing-profile-award-connectors line {
-  stroke: var(--ink);
+  stroke: rgba(28, 28, 31, 0.46);
   stroke-width: 1;
   stroke-dasharray: 5 5;
   stroke-linecap: square;
   vector-effect: non-scaling-stroke;
-  opacity: 0.32;
+  opacity: 0.24;
 }
 .landing-profile-award-connectors .landing-profile-award-connectors__shape {
   stroke: var(--ink);
