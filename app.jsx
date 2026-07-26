@@ -1333,6 +1333,39 @@ const LANDING_VARIANT_CSS = `
   width: 100%;
   height: 100%;
 }
+.landing-profile__instrument-formula {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 5;
+  width: min(46%, 13rem);
+  transform: translate(-50%, -50%);
+  color: rgba(10,12,16,0.78);
+  font-family: var(--mono);
+  font-size: clamp(0.42rem, calc(var(--landing-scale-u) * 0.62), 0.64rem);
+  font-weight: 560;
+  letter-spacing: 0.075em;
+  line-height: 1.22;
+  text-align: center;
+  text-transform: uppercase;
+  text-wrap: balance;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+.landing-profile__instrument-formula strong {
+  display: block;
+  margin-bottom: 0.32em;
+  font-family: var(--mono);
+  font-size: 0.86em;
+  font-weight: 760;
+  letter-spacing: 0.16em;
+}
+.landing-profile__instrument-formula span {
+  display: block;
+  font-size: 0.92em;
+  opacity: 0.82;
+  text-transform: none;
+}
 .landing-profile__instrument-link {
   position: absolute;
   inset: 0;
@@ -1394,14 +1427,14 @@ const LANDING_VARIANT_CSS = `
   stroke-dasharray: 5 5;
   stroke-linecap: square;
   vector-effect: non-scaling-stroke;
-  opacity: 0.38;
+  opacity: 0.42;
 }
 .landing-profile-award-connectors rect {
   vector-effect: non-scaling-stroke;
 }
 .landing-profile-award-connectors .landing-profile-award-connectors__sample {
   fill: #fff;
-  opacity: 0.88;
+  opacity: 0.92;
 }
 .landing-profile-awards__label {
   position: absolute;
@@ -10399,7 +10432,10 @@ function mountProfileSamplerPart(host, THREE, part) {
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.domElement.className = 'landing-profile__instrument-canvas';
-  host.replaceChildren(renderer.domElement);
+  host
+    .querySelectorAll('.landing-profile__instrument-canvas')
+    .forEach((node) => node.remove());
+  host.prepend(renderer.domElement);
 
   const scene = new THREE.Scene();
   const root = new THREE.Group();
@@ -10515,6 +10551,7 @@ function mountProfileSamplerPart(host, THREE, part) {
   const render = (now) => {
     const time = (now - startedAt) / 1000;
     const samplerFrame = Math.floor(time * 24);
+    const patternState = landingAwardPatternState(time);
     fieldUnit.x = Math.max(0, Math.min(1, 0.5 + Math.cos(time * 1.08) * 0.34));
     fieldUnit.y = Math.max(0, Math.min(1, 0.5 + Math.sin(time * 0.82) * 0.32));
     const cell = `${Math.round(fieldUnit.x * 6) / 6}:${Math.round(fieldUnit.y * 5) / 5}`;
@@ -10528,6 +10565,8 @@ function mountProfileSamplerPart(host, THREE, part) {
       const awardSampleCount = 32;
       const awardSamples = Array.from({ length: awardSampleCount }, (_, index) => {
         const point = landingAwardSamplePoint(index, awardSampleCount, {
+          time,
+          patternState,
           fieldUnit: { x: fieldUnit.x, y: fieldUnit.y },
           frame: samplerFrame,
         });
@@ -10553,6 +10592,11 @@ function mountProfileSamplerPart(host, THREE, part) {
         color: centerColorStyle,
         fieldUnit: { x: fieldUnit.x, y: fieldUnit.y },
         frame: samplerFrame,
+        patternId: patternState.current.id,
+        patternLabel: patternState.label,
+        patternFormula: patternState.formula,
+        patternMorph: patternState.morph,
+        patternState,
         awardSamples,
         paletteKey: `${cell}:${shuffleTick}`,
         shuffleTick,
@@ -10592,7 +10636,7 @@ function mountProfileSamplerPart(host, THREE, part) {
     });
     chipTexture?.dispose?.();
     renderer.dispose();
-    host.replaceChildren();
+    renderer.domElement.remove();
   };
 }
 
@@ -10666,6 +10710,10 @@ function LandingProfileInstrumentLink() {
 
 function BeautifulGameLoadingSummaryInstrument({ part }) {
   const hostRef = useRef(null);
+  const [activePattern, setActivePattern] = useState(() => ({
+    label: LANDING_AWARD_PATTERNS[0].label,
+    formula: LANDING_AWARD_PATTERNS[0].formula,
+  }));
 
   useEffect(() => {
     let dispose = () => {};
@@ -10683,13 +10731,49 @@ function BeautifulGameLoadingSummaryInstrument({ part }) {
     };
   }, [part]);
 
+  useEffect(() => {
+    if (part !== 'wheel') return undefined;
+    const samplerStore = window.__resumeProfileSamplerStore || {
+      listeners: new Set(),
+      last: null,
+    };
+    window.__resumeProfileSamplerStore = samplerStore;
+    let frame = 0;
+    let lastKey = '';
+    const update = (sample = samplerStore.last) => {
+      const key = `${sample?.patternLabel || ''}:${sample?.patternFormula || ''}`;
+      if (!sample?.patternLabel || key === lastKey) return;
+      lastKey = key;
+      if (frame) window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        setActivePattern({
+          label: sample.patternLabel,
+          formula: sample.patternFormula,
+        });
+      });
+    };
+    samplerStore.listeners.add(update);
+    update(samplerStore.last);
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      samplerStore.listeners.delete(update);
+    };
+  }, [part]);
+
   return (
     <div
       className={`landing-profile__instrument landing-profile__instrument--${part}`}
       data-instrument-part={part}
       aria-hidden="true"
       ref={hostRef}
-    />
+    >
+      {part === 'wheel' && (
+        <div className="landing-profile__instrument-formula">
+          <strong>{activePattern.label}</strong>
+          <span>{activePattern.formula}</span>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -10842,24 +10926,125 @@ function landingAwardGroups(items = []) {
 
 const LANDING_AWARD_PHI = (1 + Math.sqrt(5)) / 2;
 const LANDING_AWARD_GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+const LANDING_AWARD_PATTERN_CYCLE_SECONDS = 5.8;
+const LANDING_AWARD_PATTERN_MORPH_SECONDS = 1.18;
+
+const landingPatternClampPoint = (point = {}) => ({
+  x: Math.max(0.055, Math.min(0.945, Number(point.x) || 0.5)),
+  y: Math.max(0.055, Math.min(0.945, Number(point.y) || 0.5)),
+});
+
+const landingPatternPolarPoint = (angle, radius) => landingPatternClampPoint({
+  x: 0.5 + Math.cos(angle) * radius,
+  y: 0.5 + Math.sin(angle) * radius,
+});
+
+const LANDING_AWARD_PATTERNS = [
+  {
+    id: 'phyllotaxis',
+    label: 'Phyllotaxis',
+    formula: 'θᵢ=i·137.5°+t · rᵢ=√(i/N)',
+    point(index, total, t) {
+      const safeTotal = Math.max(1, total - 1);
+      const radius = 0.055 + Math.sqrt((index + 0.5) / (safeTotal + 1)) * 0.405;
+      const angle = index * LANDING_AWARD_GOLDEN_ANGLE + t * 0.46;
+      return landingPatternPolarPoint(angle, radius);
+    },
+  },
+  {
+    id: 'lissajous',
+    label: 'Lissajous',
+    formula: 'x=sin(3u+π/2+t) · y=sin(4u)',
+    point(index, total, t) {
+      const u = (index / Math.max(1, total)) * Math.PI * 2;
+      return landingPatternClampPoint({
+        x: 0.5 + Math.sin(3 * u + Math.PI / 2 + t * 0.55) * 0.39,
+        y: 0.5 + Math.sin(4 * u + t * 0.38) * 0.39,
+      });
+    },
+  },
+  {
+    id: 'maurer-rose',
+    label: 'Maurer rose',
+    formula: 'θᵢ=i·71°+t · r=sin(6θ)',
+    point(index, total, t) {
+      const theta = index * 71 * Math.PI / 180 + t * 0.32;
+      const radius = Math.abs(Math.sin(6 * theta)) * 0.42;
+      return landingPatternPolarPoint(theta, 0.055 + radius);
+    },
+  },
+  {
+    id: 'superellipse',
+    label: 'Superellipse',
+    formula: '|x/a|ⁿ+|y/b|ⁿ=1 · n=4',
+    point(index, total, t) {
+      const theta = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.22;
+      const n = 4;
+      const cos = Math.cos(theta);
+      const sin = Math.sin(theta);
+      return landingPatternClampPoint({
+        x: 0.5 + Math.sign(cos) * Math.pow(Math.abs(cos), 2 / n) * 0.43,
+        y: 0.5 + Math.sign(sin) * Math.pow(Math.abs(sin), 2 / n) * 0.43,
+      });
+    },
+  },
+  {
+    id: 'hypotrochoid',
+    label: 'Hypotrochoid',
+    formula: 'x=(R-r)cos u+d cos((R-r)u/r)',
+    point(index, total, t) {
+      const u = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.42;
+      const R = 5;
+      const r = 3;
+      const d = 4.2;
+      const x = (R - r) * Math.cos(u) + d * Math.cos(((R - r) / r) * u);
+      const y = (R - r) * Math.sin(u) - d * Math.sin(((R - r) / r) * u);
+      return landingPatternClampPoint({
+        x: 0.5 + (x / 6.2) * 0.43,
+        y: 0.5 + (y / 6.2) * 0.43,
+      });
+    },
+  },
+];
+
+function landingSmooth01(value) {
+  const t = Math.max(0, Math.min(1, value));
+  return t * t * (3 - 2 * t);
+}
+
+function landingAwardPatternState(time = 0) {
+  const count = LANDING_AWARD_PATTERNS.length;
+  const cycle = Math.max(0, time) / LANDING_AWARD_PATTERN_CYCLE_SECONDS;
+  const patternIndex = Math.floor(cycle) % count;
+  const nextIndex = (patternIndex + 1) % count;
+  const phase = cycle - Math.floor(cycle);
+  const morphStart = 1 - (LANDING_AWARD_PATTERN_MORPH_SECONDS / LANDING_AWARD_PATTERN_CYCLE_SECONDS);
+  const morph = landingSmooth01((phase - morphStart) / Math.max(0.001, 1 - morphStart));
+  const current = LANDING_AWARD_PATTERNS[patternIndex];
+  const next = LANDING_AWARD_PATTERNS[nextIndex];
+  return {
+    current,
+    next,
+    morph,
+    label: morph > 0.5 ? next.label : current.label,
+    formula: morph > 0.5 ? next.formula : current.formula,
+    point(index, total) {
+      const a = current.point(index, total, time);
+      if (morph <= 0) return a;
+      const b = next.point(index, total, time);
+      return landingPatternClampPoint({
+        x: a.x + (b.x - a.x) * morph,
+        y: a.y + (b.y - a.y) * morph,
+      });
+    },
+  };
+}
 
 function landingAwardSamplePoint(index, total = 1, sample = {}) {
-  const frame = Number(sample?.frame) || 0;
-  const fieldX = Number(sample?.fieldUnit?.x);
-  const fieldY = Number(sample?.fieldUnit?.y);
-  const safeTotal = Math.max(1, total);
-  const basePhase = Number.isFinite(fieldX) ? fieldX * Math.PI * 2 : 0;
-  const orbit = frame * (0.012 + (index % 5) * 0.0017);
-  const outward = 1 - Math.pow(LANDING_AWARD_PHI, -(index + 1));
-  const outwardMax = 1 - Math.pow(LANDING_AWARD_PHI, -safeTotal);
-  const radiusUnit = outwardMax > 0 ? outward / outwardMax : 0;
-  const breathing = Number.isFinite(fieldY) ? (fieldY - 0.5) * 0.045 : 0;
-  const angle = basePhase + index * LANDING_AWARD_GOLDEN_ANGLE + orbit;
-  const radius = 0.055 + radiusUnit * 0.38 + breathing;
-  return {
-    x: 0.5 + Math.cos(angle) * radius,
-    y: 0.5 + Math.sin(angle) * radius,
-  };
+  const time = Number.isFinite(sample?.time)
+    ? sample.time
+    : (Number(sample?.frame) || 0) / 24;
+  return (sample?.patternState || landingAwardPatternState(time)).point(index, total);
 }
 
 function landingAwardSampleColor(sample = {}, index = 0) {
@@ -10914,26 +11099,38 @@ function LandingProfileAwardConnectors({ awards = [] }) {
         const wheelCenterX = wheelRect.left + wheelRect.width * 0.5 - profileRect.left;
         const wheelCenterY = wheelRect.top + wheelRect.height * 0.5 - profileRect.top;
         const targets = landingAwardRenderedParts(profile);
-        const next = targets.map(({ awardIndex, fillIndex, targetNode }, sampleIndex) => {
+        const sampleCount = Math.max(32, targets.length);
+        const wheelSamples = Array.from({ length: sampleCount }, (_, sampleIndex) => {
           const sampled = Array.isArray(sample?.awardSamples) ? sample.awardSamples[sampleIndex] : null;
-          const point = sampled?.point || landingAwardSamplePoint(sampleIndex, targets.length, sample);
-          const color = landingAwardSampleColor(sample, sampleIndex);
-          const targetRect = targetNode.getBoundingClientRect();
+          const point = sampled?.point || landingAwardSamplePoint(sampleIndex, sampleCount, sample);
+          const color = sampled?.color || landingAwardSampleColor(sample, sampleIndex);
           const x1 = wheelCenterX + (point.x - 0.5) * 2 * wheelRadius;
           const y1 = wheelCenterY + (point.y - 0.5) * 2 * wheelRadius;
-          const x2 = targetRect.left + targetRect.width * 0.5 - profileRect.left;
-          const y2 = targetRect.top + targetRect.height * 0.5 - profileRect.top;
-          targetNode.style.setProperty('--award-sampled-color', color);
-          if (targetNode.classList.contains('landing-profile-award__line')) {
-            targetNode.style.stroke = color;
-          } else {
-            targetNode.style.fill = color;
-          }
           return {
-            id: `${awardIndex}-${fillIndex}`,
+            id: `sample-${sampleIndex}`,
             color,
             x1,
             y1,
+          };
+        });
+        const next = wheelSamples.map((wheelSample, sampleIndex) => {
+          const target = targets[sampleIndex];
+          if (!target) return wheelSample;
+          const { awardIndex, fillIndex, targetNode } = target;
+          const targetRect = targetNode.getBoundingClientRect();
+          const x2 = targetRect.left + targetRect.width * 0.5 - profileRect.left;
+          const y2 = targetRect.top + targetRect.height * 0.5 - profileRect.top;
+          targetNode.style.setProperty('--award-sampled-color', wheelSample.color);
+          if (targetNode.classList.contains('landing-profile-award__line')) {
+            targetNode.style.stroke = wheelSample.color;
+          } else {
+            targetNode.style.fill = wheelSample.color;
+          }
+          return {
+            id: `${awardIndex}-${fillIndex}`,
+            color: wheelSample.color,
+            x1: wheelSample.x1,
+            y1: wheelSample.y1,
             x2,
             y2,
           };
@@ -10961,13 +11158,15 @@ function LandingProfileAwardConnectors({ awards = [] }) {
     <svg className="landing-profile-award-connectors" aria-hidden="true">
       {geometry.map((line) => (
         <React.Fragment key={line.id}>
-          <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
+          {Number.isFinite(line.x2) && Number.isFinite(line.y2) && (
+            <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
+          )}
           <rect
             className="landing-profile-award-connectors__sample"
-            x={line.x1 - 3}
-            y={line.y1 - 3}
-            width="6"
-            height="6"
+            x={line.x1 - 3.5}
+            y={line.y1 - 3.5}
+            width="7"
+            height="7"
           />
         </React.Fragment>
       ))}
