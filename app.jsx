@@ -1196,6 +1196,7 @@ const LANDING_VARIANT_CSS = `
   grid-column: 1;
   position: relative;
   z-index: 3;
+  max-width: clamp(20rem, 32vw, 31rem);
 }
 .landing-profile__bio {
   margin: 0;
@@ -1206,19 +1207,46 @@ const LANDING_VARIANT_CSS = `
   line-height: 1.58;
 }
 .landing-profile__bio--hook {
-  max-width: 42ch;
-  font-size: clamp(1.34rem, 2.18vw, 1.96rem);
-  line-height: 1.18;
-  letter-spacing: -0.018em;
+  max-width: 16ch;
+  font-size: clamp(1.72rem, 3.1vw, 2.92rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
 }
 .landing-profile__bio + .landing-profile__bio {
   margin-top: clamp(1.35rem, 3.2vh, 2.1rem);
 }
+.landing-profile__role-stack {
+  display: grid;
+  gap: 0.42rem;
+  margin: clamp(1.35rem, 3vh, 2rem) 0 clamp(1.1rem, 2.4vh, 1.75rem);
+  padding: 0;
+  list-style: none;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: clamp(0.56rem, 0.72vw, 0.76rem);
+  font-weight: 600;
+  letter-spacing: 0.105em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+.landing-profile__role-stack li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.58rem;
+}
+.landing-profile__role-stack li::before {
+  content: "";
+  flex: 0 0 clamp(1.15rem, 2.2vw, 2.1rem);
+  height: 1px;
+  background: currentColor;
+  transform: translateY(-0.08em);
+  opacity: 0.86;
+}
 .landing-profile__bio--details {
   color: var(--ink);
-  max-width: 64ch;
-  font-size: clamp(0.94rem, 1.08vw, 1.06rem);
-  line-height: 1.64;
+  max-width: 44ch;
+  font-size: clamp(0.88rem, 0.98vw, 0.98rem);
+  line-height: 1.54;
 }
 .landing-profile__bio--details strong {
   color: var(--ink);
@@ -1229,7 +1257,7 @@ const LANDING_VARIANT_CSS = `
   display: flex;
   flex-wrap: wrap;
   gap: 0.8rem 1.8rem;
-  margin-top: clamp(1.5rem, 3.5vh, 2.25rem);
+  margin-top: clamp(1.2rem, 2.7vh, 1.85rem);
   font-family: var(--mono);
   font-size: 0.78rem;
   font-weight: 500;
@@ -1471,11 +1499,11 @@ const LANDING_VARIANT_CSS = `
     font-size: clamp(1rem, 1.7vw, 1.16rem);
   }
   .landing-profile__bio--hook {
-    max-width: 40ch;
+    max-width: 17ch;
     font-size: clamp(1.4rem, 3vw, 1.88rem);
   }
   .landing-profile__bio--details {
-    max-width: 60ch;
+    max-width: 56ch;
     font-size: clamp(0.98rem, 1.52vw, 1.1rem);
   }
   .landing-profile__instrument--wheel {
@@ -10897,6 +10925,12 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
               I’ve somehow turned “what happens if I press this button?” into a 20-year career
               of curious design and make-believe.
             </p>
+            <ul className="landing-profile__role-stack" aria-label="Current and previous leadership roles">
+              <li>Research and Development</li>
+              <li>StageCraft</li>
+              <li>Creative Engineering</li>
+              <li>Creative Technology Director</li>
+            </ul>
             <p className="landing-profile__bio landing-profile__bio--details">
               <strong>Research and Development</strong>, StageCraft team at
               Industrial Light &amp; Magic. Previously Head of <strong>Creative Engineering</strong> and <strong>Creative
