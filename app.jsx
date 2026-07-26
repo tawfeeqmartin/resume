@@ -10267,6 +10267,86 @@ function CrtZoom() {
   return null;
 }
 
+function landingClamp01(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 0;
+  return Math.max(0, Math.min(1, number));
+}
+
+function landingHsvToRgb(hue, saturation, value) {
+  const h = ((Number(hue) % 1) + 1) % 1;
+  const s = landingClamp01(saturation);
+  const v = landingClamp01(value);
+  const sector = h * 6;
+  const chroma = v * s;
+  const x = chroma * (1 - Math.abs((sector % 2) - 1));
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  if (sector < 1) [r, g, b] = [chroma, x, 0];
+  else if (sector < 2) [r, g, b] = [x, chroma, 0];
+  else if (sector < 3) [r, g, b] = [0, chroma, x];
+  else if (sector < 4) [r, g, b] = [0, x, chroma];
+  else if (sector < 5) [r, g, b] = [x, 0, chroma];
+  else [r, g, b] = [chroma, 0, x];
+  const m = v - chroma;
+  return [
+    Math.round((r + m) * 255),
+    Math.round((g + m) * 255),
+    Math.round((b + m) * 255),
+  ];
+}
+
+function landingTraditionalColorForSamplePoint(point = {}) {
+  const dx = (Number(point.x) - 0.5) / 0.42;
+  const dy = (Number(point.y) - 0.5) / 0.42;
+  const radius = landingClamp01(Math.hypot(dx, dy));
+  const hue = (Math.atan2(dy, dx) / (Math.PI * 2) + 1) % 1;
+  const [r, g, b] = landingHsvToRgb(hue, radius, 1);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+function createLandingTraditionalColorWheelMaterial(THREE) {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      uOpacity: { value: 1 },
+      uCenterColor: { value: new THREE.Color(0xffffff) },
+      uFieldUnit: { value: new THREE.Vector2(0.5, 0.5) },
+    },
+    vertexShader: `
+      attribute vec2 aDiskUv;
+      varying vec2 vDiskUv;
+      void main() {
+        vDiskUv = aDiskUv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      precision highp float;
+      uniform float uOpacity;
+      varying vec2 vDiskUv;
+      vec3 hsv2rgb(vec3 c) {
+        vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+        vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+        return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+      }
+      void main() {
+        float radius = clamp(length(vDiskUv), 0.0, 1.0);
+        float hue = mod(atan(vDiskUv.y, vDiskUv.x) / 6.28318530718 + 1.0, 1.0);
+        vec3 rgb = hsv2rgb(vec3(hue, radius, 1.0));
+        gl_FragColor = vec4(rgb, uOpacity);
+      }
+    `,
+    transparent: true,
+    side: THREE.DoubleSide,
+    depthTest: false,
+    depthWrite: false,
+    fog: false,
+    toneMapped: false,
+    blending: THREE.NormalBlending,
+  });
+}
+
 function mountProfileSamplerPart(host, THREE, part) {
   if (!host || !THREE) return () => {};
   const source = createMatchSculptureInstrumentSource(THREE);
@@ -10315,6 +10395,10 @@ function mountProfileSamplerPart(host, THREE, part) {
         segments: 96,
       },
     );
+    if (wheel?.material) {
+      wheel.material.dispose?.();
+      wheel.material = createLandingTraditionalColorWheelMaterial(THREE);
+    }
   } else {
     const chipCanvas = document.createElement('canvas');
     chipCanvas.width = 124;
@@ -10390,17 +10474,17 @@ function mountProfileSamplerPart(host, THREE, part) {
   let startedAt = window.__resumeProfileSamplerStartedAt;
   const render = (now) => {
     const time = (now - startedAt) / 1000;
-    const samplerFrame = 0;
-    fieldUnit.x = 0.64;
-    fieldUnit.y = 0.42;
+    const samplerFrame = Math.floor(time * 24);
+    fieldUnit.x = Math.max(0, Math.min(1, 0.5 + Math.cos(time * 1.08) * 0.34));
+    fieldUnit.y = Math.max(0, Math.min(1, 0.5 + Math.sin(time * 0.82) * 0.32));
     const cell = `${Math.round(fieldUnit.x * 6) / 6}:${Math.round(fieldUnit.y * 5) / 5}`;
-    const shuffleTick = 0;
+    const shuffleTick = Math.floor(time * 12);
     host.dataset.samplerFrame = String(samplerFrame);
     host.dataset.samplerCell = cell;
 
     if (wheel) {
-      const centerColor = source.matchSculptureCieDisplayColorForFieldUnit(fieldUnit);
-      const centerColorStyle = centerColor.getStyle();
+      const centerColorStyle = landingTraditionalColorForSamplePoint(fieldUnit);
+      const centerColor = new THREE.Color(centerColorStyle);
       const awardSampleCount = 32;
       const awardSamples = Array.from({ length: awardSampleCount }, (_, index) => {
         const point = landingAwardSamplePoint(index, awardSampleCount, {
@@ -10412,7 +10496,7 @@ function mountProfileSamplerPart(host, THREE, part) {
           y: Math.max(0, Math.min(1, point.y)),
         };
         return {
-          color: source.matchSculptureCieDisplayColorForFieldUnit(sampleFieldUnit).getStyle(),
+          color: landingTraditionalColorForSamplePoint(point),
           fieldUnit: sampleFieldUnit,
           point,
         };
