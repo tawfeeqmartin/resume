@@ -10595,7 +10595,7 @@ function LandingAwardIcon({ award }) {
         </>
       )}
       {family === 'emmy' && (
-        <polygon className="landing-profile-award__fill" points="40,8 60,46 20,46" />
+        <ellipse className="landing-profile-award__fill" cx="40" cy="27" rx="16" ry="21" />
       )}
       {family === 'sxsw' && (
         <>
