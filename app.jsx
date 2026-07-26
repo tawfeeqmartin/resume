@@ -1508,6 +1508,7 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile-award__fill--additive {
   fill: var(--award-sampled-color, var(--award-color, #245cff));
+  mix-blend-mode: screen;
   opacity: 1;
 }
 .landing-profile-award__solid {
@@ -10841,6 +10842,10 @@ function LandingAwardIcon({ award }) {
         <>
           <circle className="landing-profile-award__fill" cx="29" cy="27" r="16" />
           <circle className="landing-profile-award__fill landing-profile-award__fill--alt" cx="51" cy="27" r="16" />
+          <path
+            className="landing-profile-award__fill landing-profile-award__fill--additive"
+            d="M 40 15.38 A 16 16 0 0 1 40 38.62 A 16 16 0 0 1 40 15.38 Z"
+          />
         </>
       )}
       {family === 'emmy' && (
