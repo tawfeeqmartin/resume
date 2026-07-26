@@ -1438,13 +1438,22 @@ const LANDING_VARIANT_CSS = `
   opacity: 0.36;
 }
 .landing-profile-award-connectors .landing-profile-award-connectors__surface {
-  opacity: 0.46;
+  opacity: 0.68;
   mix-blend-mode: multiply;
   pointer-events: none;
 }
-.landing-profile-award-connectors .landing-profile-award-connectors__surface-pixel {
+.landing-profile-award-connectors .landing-profile-award-connectors__surface-fill {
+  fill: #245cff;
   stroke: none;
   shape-rendering: crispEdges;
+}
+.landing-profile-award-connectors .landing-profile-award-connectors__surface-marker {
+  stroke: rgba(4, 8, 16, 0.68);
+  stroke-width: 1;
+  stroke-dasharray: none;
+  stroke-linecap: square;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.82;
 }
 .landing-profile-award-connectors .landing-profile-award-connectors__sample {
   vector-effect: non-scaling-stroke;
@@ -11724,7 +11733,7 @@ const LANDING_AWARD_SURFACE_SPECS = {
   ],
 };
 
-const LANDING_AWARD_SURFACE_PIXEL_SIZE = 3;
+const LANDING_AWARD_SURFACE_MARKER_SIZE = 3.25;
 
 function landingAwardPatternSurfaces(patternId, wheelSamples = []) {
   const specs = LANDING_AWARD_SURFACE_SPECS[patternId] || [];
@@ -11751,29 +11760,25 @@ function landingAwardSurfaceFromSpec(patternId, wheelSamples = [], spec = {}, su
   const width = maxX - minX;
   const height = maxY - minY;
   if (width < 1 || height < 1) return null;
-  const columns = Math.max(1, Math.round(spec.columns || 3) * 2);
-  const rows = Math.max(1, Math.round(spec.rows || 3) * 2);
-  const palette = samples.map((sample) => sample.color);
-  const pixels = [];
+  const columns = Math.max(1, Math.round(spec.columns || 3));
+  const rows = Math.max(1, Math.round(spec.rows || 3));
+  const markers = [];
   const cellWidth = width / columns;
   const cellHeight = height / rows;
   for (let row = 0; row < rows; row += 1) {
     for (let column = 0; column < columns; column += 1) {
-      const colorIndex = (column + row * 2 + surfaceIndex) % palette.length;
-      pixels.push({
+      markers.push({
         id: `${row}-${column}`,
-        x: minX + cellWidth * (column + 0.5) - LANDING_AWARD_SURFACE_PIXEL_SIZE * 0.5,
-        y: minY + cellHeight * (row + 0.5) - LANDING_AWARD_SURFACE_PIXEL_SIZE * 0.5,
-        size: LANDING_AWARD_SURFACE_PIXEL_SIZE,
-        color: palette[colorIndex],
+        x: minX + cellWidth * (column + 0.5),
+        y: minY + cellHeight * (row + 0.5),
+        size: LANDING_AWARD_SURFACE_MARKER_SIZE,
       });
     }
   }
   return {
     id: `${patternId || 'pattern'}-${spec.id || surfaceIndex}`,
     points: samples.map((sample) => `${sample.x1.toFixed(2)},${sample.y1.toFixed(2)}`).join(' '),
-    baseColor: palette[0],
-    pixels,
+    markers,
   };
 }
 
@@ -11921,22 +11926,27 @@ function LandingProfileAwardConnectors({ awards = [] }) {
           key={surface.id}
         >
           <polygon
-            className="landing-profile-award-connectors__surface-pixel"
-            fill={surface.baseColor}
-            opacity="0.20"
+            className="landing-profile-award-connectors__surface-fill"
+            opacity="0.54"
             points={surface.points}
           />
-          {surface.pixels.map((pixel) => (
-            <rect
-              className="landing-profile-award-connectors__surface-pixel"
-              fill={pixel.color}
-              height={pixel.size}
-              key={pixel.id}
-              opacity="0.72"
-              width={pixel.size}
-              x={pixel.x}
-              y={pixel.y}
-            />
+          {surface.markers.map((marker) => (
+            <React.Fragment key={marker.id}>
+              <line
+                className="landing-profile-award-connectors__surface-marker"
+                x1={marker.x - marker.size}
+                y1={marker.y}
+                x2={marker.x + marker.size}
+                y2={marker.y}
+              />
+              <line
+                className="landing-profile-award-connectors__surface-marker"
+                x1={marker.x}
+                y1={marker.y - marker.size}
+                x2={marker.x}
+                y2={marker.y + marker.size}
+              />
+            </React.Fragment>
           ))}
         </g>
       ))}
