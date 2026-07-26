@@ -11242,122 +11242,345 @@ const LANDING_ISOMETRIC_GRID_PAIRS = [
   [11, 15],
 ];
 
+function landingAwardRotateXY(point = [0, 0, 0], angle = 0) {
+  const [x = 0, y = 0, z = 0] = point;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  return [
+    x * cos - y * sin,
+    x * sin + y * cos,
+    z,
+  ];
+}
+
+function landingAwardClosedPairs(start = 0, count = 0) {
+  return Array.from({ length: Math.max(0, count) }, (_, index) => [
+    start + index,
+    start + ((index + 1) % count),
+  ]);
+}
+
+const LANDING_AWARD_BOX_PAIRS = [
+  ...landingAwardClosedPairs(0, 4),
+  ...landingAwardClosedPairs(4, 4),
+  [0, 4],
+  [1, 5],
+  [2, 6],
+  [3, 7],
+  ...landingAwardClosedPairs(8, 4),
+  ...landingAwardClosedPairs(12, 4),
+  [8, 12],
+  [9, 13],
+  [10, 14],
+  [11, 15],
+];
+
+const LANDING_AWARD_TV_POINTS = [
+  [-1.0, -0.54, 0.24],
+  [1.0, -0.54, 0.24],
+  [1.0, 0.54, 0.24],
+  [-1.0, 0.54, 0.24],
+  [-1.0, -0.54, -0.24],
+  [1.0, -0.54, -0.24],
+  [1.0, 0.54, -0.24],
+  [-1.0, 0.54, -0.24],
+  [-0.10, 0.54, 0.30],
+  [-0.46, 1.0, 0.36],
+  [0.10, 0.54, 0.30],
+  [0.46, 1.0, 0.36],
+  [-0.68, -0.34, 0.32],
+  [0.68, -0.34, 0.32],
+  [0.68, 0.34, 0.32],
+  [-0.68, 0.34, 0.32],
+];
+
+const LANDING_AWARD_TV_PAIRS = [
+  ...LANDING_AWARD_BOX_PAIRS.slice(0, 12),
+  [8, 9],
+  [10, 11],
+  ...landingAwardClosedPairs(12, 4),
+];
+
+const LANDING_AWARD_DIAMOND_POINTS = [
+  [0, 1.05, 0.24],
+  [1.05, 0, 0.24],
+  [0, -1.05, 0.24],
+  [-1.05, 0, 0.24],
+  [0, 1.05, -0.24],
+  [1.05, 0, -0.24],
+  [0, -1.05, -0.24],
+  [-1.05, 0, -0.24],
+  [0, 0.56, 0.32],
+  [0.56, 0, 0.32],
+  [0, -0.56, 0.32],
+  [-0.56, 0, 0.32],
+  [0, 0.56, -0.12],
+  [0.56, 0, -0.12],
+  [0, -0.56, -0.12],
+  [-0.56, 0, -0.12],
+];
+
+const LANDING_AWARD_DIAMOND_PAIRS = [
+  ...LANDING_AWARD_BOX_PAIRS,
+  [0, 2],
+  [1, 3],
+  [8, 10],
+  [9, 11],
+];
+
+const LANDING_AWARD_CANNES_PAIRS = [
+  ...landingAwardClosedPairs(0, 8),
+  ...landingAwardClosedPairs(8, 8),
+  [1, 13],
+  [2, 14],
+  [5, 9],
+  [6, 10],
+];
+
+const LANDING_AWARD_ONE_SHOW_POINTS = [
+  [-1.02, -0.25, 0.24],
+  [1.02, -0.25, 0.24],
+  [1.02, 0.25, 0.24],
+  [-1.02, 0.25, 0.24],
+  [-1.02, -0.25, -0.24],
+  [1.02, -0.25, -0.24],
+  [1.02, 0.25, -0.24],
+  [-1.02, 0.25, -0.24],
+  [-0.62, -0.12, 0.32],
+  [0.62, -0.12, 0.32],
+  [0.62, 0.12, 0.32],
+  [-0.62, 0.12, 0.32],
+  [-0.62, -0.12, -0.12],
+  [0.62, -0.12, -0.12],
+  [0.62, 0.12, -0.12],
+  [-0.62, 0.12, -0.12],
+].map((point) => landingAwardRotateXY(point, -0.66));
+
+const LANDING_AWARD_SXSW_POINTS = [
+  [-1.00, -0.60, 0.22],
+  [0.24, -0.60, 0.22],
+  [0.24, -0.28, 0.22],
+  [-1.00, -0.28, 0.22],
+  [-1.00, -0.60, -0.22],
+  [0.24, -0.60, -0.22],
+  [0.24, -0.28, -0.22],
+  [-1.00, -0.28, -0.22],
+  [0.06, -0.60, 0.24],
+  [0.82, -0.60, 0.24],
+  [0.82, 0.62, 0.24],
+  [0.06, 0.62, 0.24],
+  [0.06, -0.60, -0.24],
+  [0.82, -0.60, -0.24],
+  [0.82, 0.62, -0.24],
+  [0.06, 0.62, -0.24],
+];
+
+const LANDING_AWARD_TRIANGLE_POINTS = [
+  [0, 1.08, 0.26],
+  [1.08, -0.82, 0.26],
+  [-1.08, -0.82, 0.26],
+  [0, 1.08, -0.26],
+  [1.08, -0.82, -0.26],
+  [-1.08, -0.82, -0.26],
+  [0, 0.48, 0.34],
+  [0.50, -0.44, 0.34],
+  [-0.50, -0.44, 0.34],
+  [0, 0.48, -0.10],
+  [0.50, -0.44, -0.10],
+  [-0.50, -0.44, -0.10],
+  [0, 1.08, 0.26],
+  [0, -0.82, 0.26],
+  [-1.08, -0.82, 0.26],
+  [1.08, -0.82, 0.26],
+];
+
+const LANDING_AWARD_TRIANGLE_PAIRS = [
+  ...landingAwardClosedPairs(0, 3),
+  ...landingAwardClosedPairs(3, 3),
+  [0, 3],
+  [1, 4],
+  [2, 5],
+  ...landingAwardClosedPairs(6, 3),
+  ...landingAwardClosedPairs(9, 3),
+  [6, 9],
+  [7, 10],
+  [8, 11],
+  [12, 13],
+  [14, 15],
+];
+
+const LANDING_AWARD_TECHNICOLOR_POINTS = [
+  [-1.08, -0.74, 0.24],
+  [-0.48, -0.74, 0.24],
+  [-0.48, 0.74, 0.24],
+  [-1.08, 0.74, 0.24],
+  [-0.30, -0.74, 0.28],
+  [0.30, -0.74, 0.28],
+  [0.30, 0.74, 0.28],
+  [-0.30, 0.74, 0.28],
+  [0.48, -0.74, 0.24],
+  [1.08, -0.74, 0.24],
+  [1.08, 0.74, 0.24],
+  [0.48, 0.74, 0.24],
+  [-1.08, -0.74, -0.22],
+  [1.08, -0.74, -0.22],
+  [1.08, 0.74, -0.22],
+  [-1.08, 0.74, -0.22],
+];
+
+const LANDING_AWARD_TECHNICOLOR_PAIRS = [
+  ...landingAwardClosedPairs(0, 4),
+  ...landingAwardClosedPairs(4, 4),
+  ...landingAwardClosedPairs(8, 4),
+  ...landingAwardClosedPairs(12, 4),
+  [0, 12],
+  [9, 13],
+  [10, 14],
+  [3, 15],
+];
+
+const LANDING_AWARD_SIGGRAPH_PAIRS = [
+  ...landingAwardClosedPairs(0, 8),
+  ...landingAwardClosedPairs(8, 8),
+  [0, 8],
+  [2, 10],
+  [4, 12],
+  [6, 14],
+];
+
+const LANDING_AWARD_AICP_POINTS = [
+  [-0.92, -0.92, 0.26],
+  [0.92, -0.92, 0.26],
+  [0.92, 0.92, 0.26],
+  [-0.92, 0.92, 0.26],
+  [-0.92, -0.92, -0.26],
+  [0.92, -0.92, -0.26],
+  [0.92, 0.92, -0.26],
+  [-0.92, 0.92, -0.26],
+  [-0.52, -0.52, 0.34],
+  [0.52, -0.52, 0.34],
+  [0.52, 0.52, 0.34],
+  [-0.52, 0.52, 0.34],
+  [-0.52, -0.52, -0.10],
+  [0.52, -0.52, -0.10],
+  [0.52, 0.52, -0.10],
+  [-0.52, 0.52, -0.10],
+];
+
+function landingAwardProjectModelPoint(points, index, t, scale = 0.37, phase = 0) {
+  return landingProject3DPoint(points[index % points.length], t * 0.46 + phase, scale);
+}
+
+function landingAwardRingModelPoint(index, t, options = {}) {
+  const {
+    centers = [[0, 0]],
+    radius = 0.44,
+    scale = 0.39,
+    phase = 0,
+    depth = 0.20,
+  } = options;
+  const ringIndex = Math.floor(index / 8) % centers.length;
+  const pointIndex = index % 8;
+  const angle = (pointIndex / 8) * Math.PI * 2 + t * 0.32 + phase;
+  const center = centers[ringIndex] || centers[0] || [0, 0];
+  const x = center[0] + Math.cos(angle) * radius;
+  const y = center[1] + Math.sin(angle) * radius * 0.92;
+  const z = Math.sin(angle) * depth + (ringIndex % 2 ? -0.08 : 0.08);
+  return landingProject3DPoint([x, y, z], t * 0.38 + phase, scale);
+}
+
 const LANDING_AWARD_PATTERNS = [
   {
-    id: 'hypercube-projection',
-    label: 'Hypercube projection',
-    formula: 'Q₄ vertices → rotate xy/xw/yw → project',
-    edgePairs: LANDING_TESSERACT_EDGE_PAIRS,
+    id: 'award-emmy-tv',
+    label: 'Emmy TV model',
+    formula: '4:3 slab + antenna · extruded',
+    edgePairs: LANDING_AWARD_TV_PAIRS,
     point(index, total, t) {
-      return landingProject4DPoint(LANDING_TESSERACT_VERTICES[index % LANDING_TESSERACT_VERTICES.length], t, 0.30);
+      return landingAwardProjectModelPoint(LANDING_AWARD_TV_POINTS, index, t, 0.36, 0.10);
     },
   },
   {
-    id: 'cube-octahedron',
-    label: 'Cube / octahedron',
-    formula: 'dual solids · hexahedron + octahedron',
-    edgePairs: LANDING_CUBE_OCTAHEDRON_PAIRS,
+    id: 'award-hpa-diamond',
+    label: 'HPA diamond prism',
+    formula: 'rhombus → prism · corner rails',
+    edgePairs: LANDING_AWARD_DIAMOND_PAIRS,
     point(index, total, t) {
-      const vertex = LANDING_CUBE_OCTAHEDRON_POINTS[index % LANDING_CUBE_OCTAHEDRON_POINTS.length];
-      return landingProject3DPoint(vertex, t, 0.35);
+      return landingAwardProjectModelPoint(LANDING_AWARD_DIAMOND_POINTS, index, t, 0.37, 0.52);
     },
   },
   {
-    id: 'octahedral-diamond',
-    label: 'Octahedral diamond',
-    formula: 'six poles + eight triangular faces',
-    edgePairs: LANDING_OCTAHEDRON_PAIRS,
+    id: 'award-cannes-rings',
+    label: 'Cannes twin rings',
+    formula: 'two overlapping cylinders · additive field',
+    edgePairs: LANDING_AWARD_CANNES_PAIRS,
     point(index, total, t) {
-      const vertex = LANDING_OCTAHEDRON_POINTS[index % LANDING_OCTAHEDRON_POINTS.length];
-      return landingProject3DPoint(vertex, t, 0.39);
-    },
-  },
-  {
-    id: 'nested-squares',
-    label: 'Nested squares',
-    formula: 'four scaled squares · shared corner rays',
-    edgePairs: LANDING_NESTED_SQUARE_PAIRS,
-    point(index, total, t) {
-      const squareIndex = Math.floor(index / 4);
-      const cornerIndex = index % 4;
-      const sizes = [0.455, 0.345, 0.235, 0.125];
-      const base = [
-        [-1, -1],
-        [1, -1],
-        [1, 1],
-        [-1, 1],
-      ][cornerIndex];
-      const rotation = t * 0.18 + squareIndex * 0.18;
-      const cos = Math.cos(rotation);
-      const sin = Math.sin(rotation);
-      const x = base[0] * sizes[squareIndex];
-      const y = base[1] * sizes[squareIndex];
-      return landingPatternClampPoint({
-        x: 0.5 + x * cos - y * sin,
-        y: 0.5 + x * sin + y * cos,
+      return landingAwardRingModelPoint(index, t, {
+        centers: [[-0.36, 0], [0.36, 0]],
+        radius: 0.43,
+        scale: 0.40,
+        phase: 0.18,
+        depth: 0.18,
       });
     },
   },
   {
-    id: 'pyramid-frustum',
-    label: 'Pyramid / frustum',
-    formula: 'apex + near plane + far plane',
-    edgePairs: LANDING_PYRAMID_PAIRS,
+    id: 'award-one-show-bar',
+    label: 'One Show bar',
+    formula: 'slanted cuboid · −38° construction',
+    edgePairs: LANDING_AWARD_BOX_PAIRS,
     point(index, total, t) {
-      const vertex = LANDING_PYRAMID_POINTS[index % LANDING_PYRAMID_POINTS.length];
-      return landingProject3DPoint(vertex, t, 0.37);
+      return landingAwardProjectModelPoint(LANDING_AWARD_ONE_SHOW_POINTS, index, t, 0.41, 0.86);
     },
   },
   {
-    id: 'hexagram-compass',
-    label: 'Hexagram compass',
-    formula: 'two triangles + cardinal axes',
-    edgePairs: LANDING_HEXAGRAM_PAIRS,
+    id: 'award-sxsw-blocks',
+    label: 'SXSW block step',
+    formula: 'two offset cuboids · shared baseline',
+    edgePairs: LANDING_AWARD_BOX_PAIRS,
     point(index, total, t) {
-      const rotation = t * 0.22 - Math.PI / 2;
-      if (index >= 12) {
-        const axes = [
-          [0, -0.455],
-          [0.455, 0],
-          [0, 0.455],
-          [-0.455, 0],
-        ][index - 12] || [0, 0];
-        return landingPatternClampPoint({
-          x: 0.5 + axes[0],
-          y: 0.5 + axes[1],
-        });
-      }
-      const angle = (index / 12) * Math.PI * 2 + rotation;
-      const radius = index % 2 === 0 ? 0.455 : 0.245;
-      return landingPatternPolarPoint(angle, radius);
+      return landingAwardProjectModelPoint(LANDING_AWARD_SXSW_POINTS, index, t, 0.40, 1.18);
     },
   },
   {
-    id: 'star-polygon',
-    label: 'Star polygon',
-    formula: '{16/5} · modular chord walk',
-    edgePairs: landingStarPairs(16, 5),
+    id: 'award-webby-pyramid',
+    label: 'Webby triangular prism',
+    formula: 'triangle → prism · inner face',
+    edgePairs: LANDING_AWARD_TRIANGLE_PAIRS,
     point(index, total, t) {
-      const count = Math.max(2, total);
-      const theta = (index / count) * Math.PI * 2 + t * 0.30 - Math.PI / 2;
-      return landingPatternPolarPoint(theta, 0.455);
+      return landingAwardProjectModelPoint(LANDING_AWARD_TRIANGLE_POINTS, index, t, 0.39, 1.48);
     },
   },
   {
-    id: 'isometric-lattice',
-    label: 'Isometric lattice',
-    formula: '4×4 grid → 30° construction plane',
-    edgePairs: LANDING_ISOMETRIC_GRID_PAIRS,
+    id: 'award-technicolor-bars',
+    label: 'Technicolor slabs',
+    formula: 'three vertical prisms · RGB stack',
+    edgePairs: LANDING_AWARD_TECHNICOLOR_PAIRS,
     point(index, total, t) {
-      const col = index % 4;
-      const row = Math.floor(index / 4);
-      const x = (col - 1.5) * 0.23;
-      const y = (row - 1.5) * 0.23;
-      const wobble = Math.sin(t * 0.42) * 0.04;
-      return landingPatternClampPoint({
-        x: 0.5 + (x - y) * 0.86,
-        y: 0.5 + (x + y) * 0.50 + wobble,
+      return landingAwardProjectModelPoint(LANDING_AWARD_TECHNICOLOR_POINTS, index, t, 0.38, 1.82);
+    },
+  },
+  {
+    id: 'award-siggraph-rings',
+    label: 'SIGGRAPH ring model',
+    formula: 'concentric cylinders · inner core',
+    edgePairs: LANDING_AWARD_SIGGRAPH_PAIRS,
+    point(index, total, t) {
+      return landingAwardRingModelPoint(index, t, {
+        centers: [[0, 0], [0, 0]],
+        radius: index < 8 ? 0.54 : 0.27,
+        scale: 0.39,
+        phase: 2.04,
+        depth: index < 8 ? 0.18 : 0.08,
       });
+    },
+  },
+  {
+    id: 'award-aicp-square',
+    label: 'AICP square slab',
+    formula: 'square face → nested cube section',
+    edgePairs: LANDING_AWARD_BOX_PAIRS,
+    point(index, total, t) {
+      return landingAwardProjectModelPoint(LANDING_AWARD_AICP_POINTS, index, t, 0.38, 2.42);
     },
   },
 ];
