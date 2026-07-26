@@ -1437,6 +1437,15 @@ const LANDING_VARIANT_CSS = `
   vector-effect: non-scaling-stroke;
   opacity: 0.36;
 }
+.landing-profile-award-connectors .landing-profile-award-connectors__surface {
+  opacity: 0.46;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+.landing-profile-award-connectors .landing-profile-award-connectors__surface-pixel {
+  stroke: none;
+  shape-rendering: crispEdges;
+}
 .landing-profile-award-connectors .landing-profile-award-connectors__sample {
   vector-effect: non-scaling-stroke;
   stroke: #fff;
@@ -11676,6 +11685,95 @@ function landingAwardPatternConnectionCircles(patternId, wheelSamples = []) {
   return [];
 }
 
+const LANDING_AWARD_SURFACE_SPECS = {
+  'award-emmy-tv': [
+    { id: 'cabinet-face', indices: [0, 1, 2, 3], columns: 4, rows: 2 },
+    { id: 'screen-face', indices: [12, 13, 14, 15], columns: 4, rows: 3 },
+  ],
+  'award-hpa-diamond': [
+    { id: 'outer-face', indices: [0, 1, 2, 3], columns: 4, rows: 4 },
+    { id: 'inner-face', indices: [8, 9, 10, 11], columns: 3, rows: 3 },
+  ],
+  'award-cannes-rings': [
+    { id: 'upper-overlap', indices: [1, 2, 14, 13], columns: 4, rows: 2 },
+    { id: 'lower-overlap', indices: [5, 6, 10, 9], columns: 4, rows: 2 },
+  ],
+  'award-one-show-bar': [
+    { id: 'slab-face', indices: [0, 1, 2, 3], columns: 5, rows: 2 },
+    { id: 'inner-face', indices: [8, 9, 10, 11], columns: 4, rows: 2 },
+  ],
+  'award-sxsw-blocks': [
+    { id: 'left-block', indices: [0, 1, 2, 3], columns: 4, rows: 2 },
+    { id: 'right-block', indices: [8, 9, 10, 11], columns: 3, rows: 4 },
+  ],
+  'award-webby-pyramid': [
+    { id: 'outer-face', indices: [0, 1, 2], columns: 4, rows: 3 },
+    { id: 'inner-face', indices: [6, 7, 8], columns: 3, rows: 2 },
+  ],
+  'award-technicolor-bars': [
+    { id: 'left-slab', indices: [0, 1, 2, 3], columns: 2, rows: 5 },
+    { id: 'right-slab', indices: [8, 9, 10, 11], columns: 2, rows: 5 },
+  ],
+  'award-siggraph-rings': [
+    { id: 'outer-arc-surface', indices: [0, 1, 9, 8], columns: 4, rows: 2 },
+    { id: 'inner-arc-surface', indices: [3, 4, 12, 11], columns: 4, rows: 2 },
+  ],
+  'award-aicp-square': [
+    { id: 'outer-square', indices: [0, 1, 2, 3], columns: 4, rows: 4 },
+    { id: 'inner-square', indices: [8, 9, 10, 11], columns: 3, rows: 3 },
+  ],
+};
+
+function landingAwardPatternSurfaces(patternId, wheelSamples = []) {
+  const specs = LANDING_AWARD_SURFACE_SPECS[patternId] || [];
+  return specs
+    .map((spec, surfaceIndex) => landingAwardSurfaceFromSpec(patternId, wheelSamples, spec, surfaceIndex))
+    .filter(Boolean);
+}
+
+function landingAwardSurfaceFromSpec(patternId, wheelSamples = [], spec = {}, surfaceIndex = 0) {
+  const samples = (Array.isArray(spec.indices) ? spec.indices : [])
+    .map((sampleIndex) => wheelSamples[sampleIndex])
+    .filter((sample) => (
+      Number.isFinite(sample?.x1)
+      && Number.isFinite(sample?.y1)
+      && typeof sample?.color === 'string'
+    ));
+  if (samples.length < 3) return null;
+  const xs = samples.map((sample) => sample.x1);
+  const ys = samples.map((sample) => sample.y1);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const width = maxX - minX;
+  const height = maxY - minY;
+  if (width < 1 || height < 1) return null;
+  const columns = Math.max(1, Math.round(spec.columns || 3));
+  const rows = Math.max(1, Math.round(spec.rows || 3));
+  const palette = samples.map((sample) => sample.color);
+  const pixels = [];
+  for (let row = 0; row < rows; row += 1) {
+    for (let column = 0; column < columns; column += 1) {
+      const colorIndex = (column + row * 2 + surfaceIndex) % palette.length;
+      pixels.push({
+        id: `${row}-${column}`,
+        x: minX + (width * column) / columns,
+        y: minY + (height * row) / rows,
+        width: width / columns + 0.75,
+        height: height / rows + 0.75,
+        color: palette[colorIndex],
+      });
+    }
+  }
+  return {
+    id: `${patternId || 'pattern'}-${spec.id || surfaceIndex}`,
+    points: samples.map((sample) => `${sample.x1.toFixed(2)},${sample.y1.toFixed(2)}`).join(' '),
+    baseColor: palette[0],
+    pixels,
+  };
+}
+
 function landingAwardRenderedParts(root) {
   if (!root) return [];
   const selector = [
@@ -11692,7 +11790,12 @@ function landingAwardRenderedParts(root) {
 }
 
 function LandingProfileAwardConnectors({ awards = [] }) {
-  const [geometry, setGeometry] = useState({ lines: [], shapeEdges: [], shapeCircles: [] });
+  const [geometry, setGeometry] = useState({
+    lines: [],
+    shapeEdges: [],
+    shapeCircles: [],
+    shapeSurfaces: [],
+  });
 
   useEffect(() => {
     const count = awards.length;
@@ -11755,6 +11858,7 @@ function LandingProfileAwardConnectors({ awards = [] }) {
           })
           .filter(Boolean);
         const shapeCircles = landingAwardPatternConnectionCircles(patternId, wheelSamples);
+        const shapeSurfaces = landingAwardPatternSurfaces(patternId, wheelSamples);
         const next = wheelSamples.map((wheelSample, sampleIndex) => {
           const target = targets[sampleIndex];
           if (!target) return wheelSample;
@@ -11777,7 +11881,7 @@ function LandingProfileAwardConnectors({ awards = [] }) {
             y2,
           };
         });
-        setGeometry({ lines: next, shapeEdges, shapeCircles });
+        setGeometry({ lines: next, shapeEdges, shapeCircles, shapeSurfaces });
       });
     };
 
@@ -11798,6 +11902,41 @@ function LandingProfileAwardConnectors({ awards = [] }) {
   if (!geometry.lines.length) return null;
   return (
     <svg className="landing-profile-award-connectors" aria-hidden="true">
+      {!!geometry.shapeSurfaces.length && (
+        <defs>
+          {geometry.shapeSurfaces.map((surface) => (
+            <clipPath id={`landing-${surface.id}`} key={surface.id}>
+              <polygon points={surface.points} />
+            </clipPath>
+          ))}
+        </defs>
+      )}
+      {geometry.shapeSurfaces.map((surface) => (
+        <g
+          className="landing-profile-award-connectors__surface"
+          clipPath={`url(#landing-${surface.id})`}
+          key={surface.id}
+        >
+          <polygon
+            className="landing-profile-award-connectors__surface-pixel"
+            fill={surface.baseColor}
+            opacity="0.20"
+            points={surface.points}
+          />
+          {surface.pixels.map((pixel) => (
+            <rect
+              className="landing-profile-award-connectors__surface-pixel"
+              fill={pixel.color}
+              height={pixel.height}
+              key={pixel.id}
+              opacity="0.72"
+              width={pixel.width}
+              x={pixel.x}
+              y={pixel.y}
+            />
+          ))}
+        </g>
+      ))}
       {geometry.shapeCircles.map((circle) => (
         <circle
           className="landing-profile-award-connectors__shape"
