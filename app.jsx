@@ -1255,6 +1255,36 @@ const LANDING_VARIANT_CSS = `
   font-size: 1.055em;
   font-weight: 760;
 }
+@media (min-width: 761px) {
+  .landing-profile {
+    --landing-text-moon-width: clamp(4.5rem, min(11.8vw, 16svh), 9.5rem);
+  }
+  .landing-profile__copy,
+  .landing-profile__proof {
+    max-width: none;
+    width: calc(100% + var(--landing-text-moon-width));
+  }
+  .landing-profile__bio--hook {
+    max-width: 17ch;
+  }
+  .landing-profile__bio--hook::before,
+  .landing-profile__bio--details::before {
+    content: "";
+    display: block;
+    width: var(--landing-text-moon-width);
+    height: var(--landing-text-fit-height, 100%);
+    shape-margin: clamp(0.15rem, calc(var(--landing-scale-u) * 0.6), 0.7rem);
+    pointer-events: none;
+  }
+  .landing-profile__bio--hook::before {
+    float: right;
+    shape-outside: circle(50% at 100% 50%);
+  }
+  .landing-profile__bio--details::before {
+    float: left;
+    shape-outside: circle(50% at 0 50%);
+  }
+}
 .landing-profile__links {
   display: flex;
   flex-wrap: wrap;
@@ -10981,6 +11011,7 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
 
     let frame = 0;
     const clearFit = () => {
+      profile.style.removeProperty('--landing-text-fit-height');
       hook.style.removeProperty('--landing-hook-fit-font-size');
       proof.style.removeProperty('--landing-proof-fit-font-size');
       proof.style.removeProperty('--landing-proof-fit-line-height');
@@ -11011,6 +11042,7 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
       const targetTop = Math.max(hookRect.top, proofRect.top);
       const verticalPad = Math.max(10, window.innerHeight * 0.016);
       const targetHeight = Math.max(120, awardsRect.top - targetTop - verticalPad);
+      profile.style.setProperty('--landing-text-fit-height', `${targetHeight.toFixed(2)}px`);
       proof.style.setProperty('--landing-proof-fit-line-height', '1.13');
       fitElementHeight(hook, '--landing-hook-fit-font-size', targetHeight, 18, 96);
       fitElementHeight(proof, '--landing-proof-fit-font-size', targetHeight, 12, 46);
