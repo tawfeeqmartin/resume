@@ -11724,6 +11724,8 @@ const LANDING_AWARD_SURFACE_SPECS = {
   ],
 };
 
+const LANDING_AWARD_SURFACE_PIXEL_SIZE = 3;
+
 function landingAwardPatternSurfaces(patternId, wheelSamples = []) {
   const specs = LANDING_AWARD_SURFACE_SPECS[patternId] || [];
   return specs
@@ -11749,19 +11751,20 @@ function landingAwardSurfaceFromSpec(patternId, wheelSamples = [], spec = {}, su
   const width = maxX - minX;
   const height = maxY - minY;
   if (width < 1 || height < 1) return null;
-  const columns = Math.max(1, Math.round(spec.columns || 3));
-  const rows = Math.max(1, Math.round(spec.rows || 3));
+  const columns = Math.max(1, Math.round(spec.columns || 3) * 2);
+  const rows = Math.max(1, Math.round(spec.rows || 3) * 2);
   const palette = samples.map((sample) => sample.color);
   const pixels = [];
+  const cellWidth = width / columns;
+  const cellHeight = height / rows;
   for (let row = 0; row < rows; row += 1) {
     for (let column = 0; column < columns; column += 1) {
       const colorIndex = (column + row * 2 + surfaceIndex) % palette.length;
       pixels.push({
         id: `${row}-${column}`,
-        x: minX + (width * column) / columns,
-        y: minY + (height * row) / rows,
-        width: width / columns + 0.75,
-        height: height / rows + 0.75,
+        x: minX + cellWidth * (column + 0.5) - LANDING_AWARD_SURFACE_PIXEL_SIZE * 0.5,
+        y: minY + cellHeight * (row + 0.5) - LANDING_AWARD_SURFACE_PIXEL_SIZE * 0.5,
+        size: LANDING_AWARD_SURFACE_PIXEL_SIZE,
         color: palette[colorIndex],
       });
     }
@@ -11927,10 +11930,10 @@ function LandingProfileAwardConnectors({ awards = [] }) {
             <rect
               className="landing-profile-award-connectors__surface-pixel"
               fill={pixel.color}
-              height={pixel.height}
+              height={pixel.size}
               key={pixel.id}
               opacity="0.72"
-              width={pixel.width}
+              width={pixel.size}
               x={pixel.x}
               y={pixel.y}
             />
