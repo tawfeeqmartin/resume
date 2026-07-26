@@ -10997,7 +10997,7 @@ function landingProjectAward3DPoint(point = [0, 0, 0], localTime = 0, scale = 0.
   const perspective = 3.2 / Math.max(1.2, 3.2 - zz);
   return landingPatternClampPoint({
     x: 0.5 + xr * perspective * scale,
-    y: 0.5 + yr * perspective * scale,
+    y: 0.5 - yr * perspective * scale,
   });
 }
 
