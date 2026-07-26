@@ -1409,24 +1409,24 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile-award__line {
   fill: none;
-  stroke: color-mix(in srgb, var(--award-color) 88%, black 12%);
+  stroke: var(--award-sampled-color, var(--award-color, #245cff));
   stroke-width: 3;
   stroke-linecap: square;
   stroke-linejoin: miter;
 }
 .landing-profile-award__fill {
-  fill: color-mix(in srgb, var(--award-color) 74%, white 26%);
+  fill: var(--award-sampled-color, var(--award-color, #245cff));
   stroke: none;
 }
 .landing-profile-award__fill--alt {
-  fill: var(--award-color-alt, color-mix(in srgb, var(--award-color) 82%, black 18%));
+  fill: var(--award-sampled-color, var(--award-color-alt, var(--award-color, #245cff)));
 }
 .landing-profile-award__fill--additive {
-  fill: color-mix(in srgb, var(--award-color) 44%, white 56%);
-  opacity: 0.94;
+  fill: var(--award-sampled-color, var(--award-color, #245cff));
+  opacity: 1;
 }
 .landing-profile-award__solid {
-  fill: color-mix(in srgb, var(--award-color) 92%, black 8%);
+  fill: var(--award-sampled-color, var(--award-color, #245cff));
   stroke: none;
   opacity: 1;
 }
@@ -10394,6 +10394,22 @@ function mountProfileSamplerPart(host, THREE, part) {
     if (wheel) {
       const centerColor = source.matchSculptureCieDisplayColorForFieldUnit(fieldUnit);
       const centerColorStyle = centerColor.getStyle();
+      const awardSampleCount = 32;
+      const awardSamples = Array.from({ length: awardSampleCount }, (_, index) => {
+        const point = landingAwardSamplePoint(index, awardSampleCount, {
+          fieldUnit: { x: fieldUnit.x, y: fieldUnit.y },
+          frame: Math.floor(time * 24),
+        });
+        const sampleFieldUnit = {
+          x: Math.max(0, Math.min(1, point.x)),
+          y: Math.max(0, Math.min(1, point.y)),
+        };
+        return {
+          color: source.matchSculptureCieDisplayColorForFieldUnit(sampleFieldUnit).getStyle(),
+          fieldUnit: sampleFieldUnit,
+          point,
+        };
+      });
       wheel.material.uniforms.uFieldUnit.value.set(fieldUnit.x, fieldUnit.y);
       wheel.material.uniforms.uCenterColor.value.copy(centerColor);
       host.dataset.samplerColor = centerColorStyle;
@@ -10406,6 +10422,7 @@ function mountProfileSamplerPart(host, THREE, part) {
         color: centerColorStyle,
         fieldUnit: { x: fieldUnit.x, y: fieldUnit.y },
         frame: Math.floor(time * 24),
+        awardSamples,
         paletteKey: `${cell}:${shuffleTick}`,
         shuffleTick,
       };
@@ -10714,6 +10731,26 @@ function landingAwardSamplePoint(index, total = 1, sample = {}) {
   };
 }
 
+function landingAwardSampleColor(sample = {}, index = 0) {
+  const awardSamples = Array.isArray(sample?.awardSamples) ? sample.awardSamples : [];
+  return awardSamples[index]?.color || sample?.color || 'rgb(36, 92, 255)';
+}
+
+function landingAwardRenderedParts(root) {
+  if (!root) return [];
+  const selector = [
+    '.landing-profile-award__fill',
+    '.landing-profile-award__solid',
+    '.landing-profile-award__line',
+  ].join(',');
+  return Array.from(root.querySelectorAll('.landing-profile-award')).flatMap((awardNode, awardIndex) => {
+    const parts = Array.from(awardNode.querySelectorAll(selector));
+    return (parts.length ? parts : [awardNode.querySelector('.landing-profile-award__icon')])
+      .filter(Boolean)
+      .map((targetNode, fillIndex) => ({ awardIndex, fillIndex, targetNode }));
+  });
+}
+
 function LandingProfileAwardConnectors({ awards = [] }) {
   const [geometry, setGeometry] = useState([]);
 
@@ -10745,26 +10782,18 @@ function LandingProfileAwardConnectors({ awards = [] }) {
         const wheelRadius = Math.min(wheelRect.width, wheelRect.height) * 0.42;
         const wheelCenterX = wheelRect.left + wheelRect.width * 0.5 - profileRect.left;
         const wheelCenterY = wheelRect.top + wheelRect.height * 0.5 - profileRect.top;
-        const targets = Array.from(awardItems).flatMap((awardNode, awardIndex) => {
-          const fills = Array.from(awardNode.querySelectorAll('.landing-profile-award__fill'));
-          return (fills.length ? fills : [awardNode.querySelector('.landing-profile-award__icon')])
-            .filter(Boolean)
-            .map((targetNode, fillIndex) => ({ awardIndex, fillIndex, targetNode }));
-        });
-        const [baseHue, baseSaturation, baseLightness] = rgbToHsl(parseCssRgbColor(sample?.color));
+        const targets = landingAwardRenderedParts(profile);
         const next = targets.map(({ awardIndex, fillIndex, targetNode }, sampleIndex) => {
-          const point = landingAwardSamplePoint(sampleIndex, targets.length, sample);
+          const sampled = Array.isArray(sample?.awardSamples) ? sample.awardSamples[sampleIndex] : null;
+          const point = sampled?.point || landingAwardSamplePoint(sampleIndex, targets.length, sample);
           const targetRect = targetNode.getBoundingClientRect();
           const x1 = wheelCenterX + (point.x - 0.5) * 2 * wheelRadius;
           const y1 = wheelCenterY + (point.y - 0.5) * 2 * wheelRadius;
           const x2 = targetRect.left + targetRect.width * 0.5 - profileRect.left;
           const y2 = targetRect.top + targetRect.height * 0.5 - profileRect.top;
-          const hue = (baseHue + awardIndex * 31 + fillIndex * 42 + (Number(sample?.frame) || 0) * 0.72) % 360;
-          const saturation = Math.max(0.46, Math.min(0.88, baseSaturation * 0.72 + 0.24));
-          const lightness = Math.max(0.42, Math.min(0.66, baseLightness * 0.72 + 0.18 + (fillIndex % 3) * 0.035));
           return {
             id: `${awardIndex}-${fillIndex}`,
-            color: hslToCssColor(hue, saturation, lightness),
+            color: landingAwardSampleColor(sample, sampleIndex),
             x1,
             y1,
             x2,
@@ -10819,15 +10848,14 @@ function LandingProfileAwards({ items = [] }) {
       const frameKey = sample?.frame == null ? 'initial' : String(sample.frame);
       if (frameKey === lastFrameKey) return;
       lastFrameKey = frameKey;
-      const [baseHue, baseSaturation, baseLightness] = rgbToHsl(parseCssRgbColor(sample?.color));
-      const frame = Number(sample?.frame) || 0;
-      root.querySelectorAll('.landing-profile-award').forEach((node, index) => {
-        const hue = (baseHue + index * 31 + frame * 0.72) % 360;
-        const altHue = (hue + 42) % 360;
-        const saturation = Math.max(0.46, Math.min(0.88, baseSaturation * 0.72 + 0.24));
-        const lightness = Math.max(0.42, Math.min(0.62, baseLightness * 0.72 + 0.18 + (index % 3) * 0.025));
-        node.style.setProperty('--award-color', hslToCssColor(hue, saturation, lightness));
-        node.style.setProperty('--award-color-alt', hslToCssColor(altHue, saturation, Math.min(0.66, lightness + 0.06)));
+      landingAwardRenderedParts(root).forEach(({ targetNode }, sampleIndex) => {
+        const color = landingAwardSampleColor(sample, sampleIndex);
+        targetNode.style.setProperty('--award-sampled-color', color);
+        if (targetNode.classList.contains('landing-profile-award__line')) {
+          targetNode.style.stroke = color;
+        } else {
+          targetNode.style.fill = color;
+        }
       });
       if (sample?.frame != null) root.dataset.samplerFrame = String(sample.frame);
     };
