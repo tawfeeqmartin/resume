@@ -10877,14 +10877,21 @@ function LandingProfileAwardConnectors({ awards = [] }) {
         const next = targets.map(({ awardIndex, fillIndex, targetNode }, sampleIndex) => {
           const sampled = Array.isArray(sample?.awardSamples) ? sample.awardSamples[sampleIndex] : null;
           const point = sampled?.point || landingAwardSamplePoint(sampleIndex, targets.length, sample);
+          const color = landingAwardSampleColor(sample, sampleIndex);
           const targetRect = targetNode.getBoundingClientRect();
           const x1 = wheelCenterX + (point.x - 0.5) * 2 * wheelRadius;
           const y1 = wheelCenterY + (point.y - 0.5) * 2 * wheelRadius;
           const x2 = targetRect.left + targetRect.width * 0.5 - profileRect.left;
           const y2 = targetRect.top + targetRect.height * 0.5 - profileRect.top;
+          targetNode.style.setProperty('--award-sampled-color', color);
+          if (targetNode.classList.contains('landing-profile-award__line')) {
+            targetNode.style.stroke = color;
+          } else {
+            targetNode.style.fill = color;
+          }
           return {
             id: `${awardIndex}-${fillIndex}`,
-            color: landingAwardSampleColor(sample, sampleIndex),
+            color,
             x1,
             y1,
             x2,
@@ -10925,37 +10932,6 @@ function LandingProfileAwardConnectors({ awards = [] }) {
 function LandingProfileAwards({ items = [] }) {
   const rootRef = useRef(null);
   const awards = landingAwardGroups(items);
-
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root) return undefined;
-    const samplerStore = window.__resumeProfileSamplerStore || {
-      listeners: new Set(),
-      last: null,
-    };
-    window.__resumeProfileSamplerStore = samplerStore;
-    let lastFrameKey = '';
-    const applySample = (sample) => {
-      const frameKey = sample?.frame == null ? 'initial' : String(sample.frame);
-      if (frameKey === lastFrameKey) return;
-      lastFrameKey = frameKey;
-      landingAwardRenderedParts(root).forEach(({ targetNode }, sampleIndex) => {
-        const color = landingAwardSampleColor(sample, sampleIndex);
-        targetNode.style.setProperty('--award-sampled-color', color);
-        if (targetNode.classList.contains('landing-profile-award__line')) {
-          targetNode.style.stroke = color;
-        } else {
-          targetNode.style.fill = color;
-        }
-      });
-      if (sample?.frame != null) root.dataset.samplerFrame = String(sample.frame);
-    };
-    samplerStore.listeners.add(applySample);
-    applySample(samplerStore.last);
-    return () => {
-      samplerStore.listeners.delete(applySample);
-    };
-  }, []);
 
   if (!awards.length) return null;
   return (
