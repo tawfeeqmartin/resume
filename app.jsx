@@ -1312,6 +1312,26 @@ const LANDING_VARIANT_CSS = `
   color: var(--ink);
   pointer-events: none;
 }
+.landing-profile-award-connectors {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.landing-profile-award-connectors line {
+  stroke: color-mix(in srgb, var(--landing-profile-sampler-color, #245cff) 46%, rgba(10,12,16,0.5));
+  stroke-width: 1;
+  stroke-linecap: square;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.34;
+}
+.landing-profile-award-connectors circle {
+  fill: color-mix(in srgb, var(--landing-profile-sampler-color, #245cff) 64%, white 36%);
+  opacity: 0.82;
+}
 .landing-profile-awards__label {
   position: absolute;
   width: 1px;
@@ -1469,11 +1489,17 @@ const LANDING_VARIANT_CSS = `
   .landing-profile-awards__grid {
     grid-template-columns: repeat(9, minmax(0, 1fr));
   }
+  .landing-profile-award-connectors {
+    display: none;
+  }
 }
 @media (max-width: 760px) {
   .landing-profile {
     min-height: 100svh;
     padding-top: clamp(3.5rem, 10vh, 5rem);
+  }
+  .landing-profile-award-connectors {
+    display: none;
   }
   .landing-profile--summary-only {
     min-height: 0;
@@ -10287,7 +10313,7 @@ function mountProfileSamplerPart(host, THREE, part) {
   let chipTexture = null;
   let chipContext = null;
   let lastChipCell = '';
-  const profileContent = host.closest('.landing-profile__content');
+  const profileRoot = host.closest('.landing-profile');
   const samplerStore = window.__resumeProfileSamplerStore || {
     listeners: new Set(),
     last: null,
@@ -10398,7 +10424,7 @@ function mountProfileSamplerPart(host, THREE, part) {
       wheel.material.uniforms.uFieldUnit.value.set(fieldUnit.x, fieldUnit.y);
       wheel.material.uniforms.uCenterColor.value.copy(centerColor);
       host.dataset.samplerColor = centerColorStyle;
-      profileContent?.style.setProperty(
+      profileRoot?.style.setProperty(
         '--landing-profile-sampler-color',
         centerColorStyle,
       );
@@ -10693,6 +10719,98 @@ function landingAwardGroups(items = []) {
     }));
 }
 
+const LANDING_AWARD_GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+
+function landingAwardSamplePoint(index, sample = {}) {
+  const frame = Number(sample?.frame) || 0;
+  const fieldX = Number(sample?.fieldUnit?.x);
+  const fieldY = Number(sample?.fieldUnit?.y);
+  const basePhase = Number.isFinite(fieldX) ? fieldX * Math.PI * 2 : 0;
+  const breathing = Number.isFinite(fieldY) ? (fieldY - 0.5) * 0.1 : 0;
+  const angle = basePhase + index * LANDING_AWARD_GOLDEN_ANGLE + frame * 0.012;
+  const radius = 0.28 + ((index * 5) % 4) * 0.075 + breathing;
+  return {
+    x: 0.5 + Math.cos(angle) * radius,
+    y: 0.5 + Math.sin(angle) * radius,
+  };
+}
+
+function LandingProfileAwardConnectors({ count = 0 }) {
+  const [geometry, setGeometry] = useState([]);
+
+  useEffect(() => {
+    if (!count) return undefined;
+    const samplerStore = window.__resumeProfileSamplerStore || {
+      listeners: new Set(),
+      last: null,
+    };
+    window.__resumeProfileSamplerStore = samplerStore;
+    let frameId = 0;
+    let lastFrameKey = '';
+
+    const update = (sample = samplerStore.last) => {
+      const frameKey = sample?.frame == null
+        ? `initial:${window.innerWidth}:${window.innerHeight}`
+        : `${sample.frame}:${window.innerWidth}:${window.innerHeight}`;
+      if (frameKey === lastFrameKey) return;
+      lastFrameKey = frameKey;
+      if (frameId) window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(() => {
+        const profile = document.querySelector('.landing-profile');
+        const wheel = profile?.querySelector('.landing-profile__instrument--wheel');
+        const awardIcons = profile?.querySelectorAll('.landing-profile-award__icon');
+        if (!profile || !wheel || !awardIcons?.length) return;
+        const profileRect = profile.getBoundingClientRect();
+        const wheelRect = wheel.getBoundingClientRect();
+        const wheelRadius = Math.min(wheelRect.width, wheelRect.height) * 0.42;
+        const wheelCenterX = wheelRect.left + wheelRect.width * 0.5 - profileRect.left;
+        const wheelCenterY = wheelRect.top + wheelRect.height * 0.5 - profileRect.top;
+        const next = Array.from(awardIcons).slice(0, count).map((icon, index) => {
+          const point = landingAwardSamplePoint(index, sample);
+          const iconRect = icon.getBoundingClientRect();
+          const x1 = wheelCenterX + (point.x - 0.5) * 2 * wheelRadius;
+          const y1 = wheelCenterY + (point.y - 0.5) * 2 * wheelRadius;
+          const x2 = iconRect.left + iconRect.width * 0.5 - profileRect.left;
+          const y2 = iconRect.top + iconRect.height * 0.5 - profileRect.top;
+          return {
+            id: `${index}-${Math.round(x1)}-${Math.round(y1)}-${Math.round(x2)}-${Math.round(y2)}`,
+            x1,
+            y1,
+            x2,
+            y2,
+          };
+        });
+        setGeometry(next);
+      });
+    };
+
+    const onResize = () => {
+      lastFrameKey = '';
+      update(samplerStore.last);
+    };
+    samplerStore.listeners.add(update);
+    window.addEventListener('resize', onResize, { passive: true });
+    update(samplerStore.last);
+    return () => {
+      if (frameId) window.cancelAnimationFrame(frameId);
+      samplerStore.listeners.delete(update);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [count]);
+
+  if (!geometry.length) return null;
+  return (
+    <svg className="landing-profile-award-connectors" aria-hidden="true">
+      {geometry.map((line) => (
+        <React.Fragment key={line.id}>
+          <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
+          <circle cx={line.x1} cy={line.y1} r="2.1" />
+        </React.Fragment>
+      ))}
+    </svg>
+  );
+}
+
 function LandingProfileAwards({ items = [] }) {
   const rootRef = useRef(null);
   const awards = landingAwardGroups(items);
@@ -10746,6 +10864,7 @@ function LandingProfileAwards({ items = [] }) {
 }
 
 function LandingProfileSection({ summaryOnly = false } = {}) {
+  const profileAwardGroups = landingAwardGroups(RESUME.awards);
   return (
     <section
       className={`landing-profile${summaryOnly ? ' landing-profile--summary-only' : ''}`}
@@ -10789,6 +10908,7 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
           {!summaryOnly && <BeautifulGameLoadingSummaryInstrument part="wheel" />}
         </div>
       </div>
+      {!summaryOnly && <LandingProfileAwardConnectors count={profileAwardGroups.length} />}
       {!summaryOnly && <LandingProfileAwards items={RESUME.awards} />}
     </section>
   );
