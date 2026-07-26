@@ -938,6 +938,9 @@ ${u}</style>`,E.appendChild(b);let M="url('data:image/gif;base64,R0lGODlhAQABAIA
     gap: clamp(2.5rem, 8vh, 4rem);
     margin-top: clamp(2.5rem, 8vh, 4rem);
   }
+  .landing-profile__proof {
+    transform: translateY(calc(var(--landing-scale-u) * -8.33));
+  }
   .landing-profile__instrument--wheel {
     width: min(100%, 31rem);
     height: min(92vw, 27rem);
