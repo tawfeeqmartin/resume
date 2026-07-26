@@ -10929,11 +10929,9 @@ function landingAwardGroups(items = []) {
     }));
 }
 
-const LANDING_AWARD_PHI = (1 + Math.sqrt(5)) / 2;
-const LANDING_AWARD_GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 const LANDING_AWARD_PATTERN_CYCLE_SECONDS = 3.2;
 const LANDING_AWARD_PATTERN_MORPH_SECONDS = 0.58;
-const LANDING_AWARD_PATTERN_EDGE_LIMIT = 0.405;
+const LANDING_AWARD_PATTERN_EDGE_LIMIT = 0.455;
 
 const landingPatternClampPoint = (point = {}) => {
   const rawX = Number(point.x);
@@ -10955,20 +10953,6 @@ const landingPatternPolarPoint = (angle, radius) => landingPatternClampPoint({
   x: 0.5 + Math.cos(angle) * radius,
   y: 0.5 + Math.sin(angle) * radius,
 });
-
-function landingSuperformulaRadius(angle, {
-  a = 1,
-  b = 1,
-  m = 6,
-  n1 = 0.32,
-  n2 = 1.45,
-  n3 = 1.45,
-  scale = 0.26,
-} = {}) {
-  const p1 = Math.pow(Math.abs(Math.cos((m * angle) / 4) / a), n2);
-  const p2 = Math.pow(Math.abs(Math.sin((m * angle) / 4) / b), n3);
-  return scale * Math.pow(Math.max(0.0001, p1 + p2), -1 / n1);
-}
 
 function landingProject3DPoint(point = [0, 0, 0], t = 0, scale = 0.27) {
   const [x = 0, y = 0, z = 0] = point;
@@ -11025,8 +11009,8 @@ function landingCoprimeStep(total = 0, preferred = 5) {
 const LANDING_AWARD_PATTERNS = [
   {
     id: 'star-polygon',
-    label: 'Heptadecagram',
-    formula: '{17/5} · θᵢ=2π·(5i mod 17)/17',
+    label: 'Hexadecagram',
+    formula: '{16/5} · θᵢ=2π·(5i mod 16)/16',
     lineStep: 1,
     point(index, total, t) {
       const n = Math.max(3, total);
@@ -11034,6 +11018,100 @@ const LANDING_AWARD_PATTERNS = [
       const order = (index * step) % n;
       const angle = (order / n) * Math.PI * 2 - Math.PI / 2 + t * 0.5;
       return landingPatternPolarPoint(angle, LANDING_AWARD_PATTERN_EDGE_LIMIT);
+    },
+  },
+  {
+    id: 'seed-of-life',
+    label: 'Seed of Life',
+    formula: '7 equal circles · sixfold compass construction',
+    edgePairs: [
+      [0, 1],
+      [0, 2],
+      [0, 3],
+      [0, 4],
+      [0, 5],
+      [0, 6],
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 5],
+      [5, 6],
+      [6, 1],
+      [7, 8],
+      [8, 9],
+      [9, 10],
+      [10, 11],
+      [11, 12],
+      [12, 7],
+    ],
+    point(index, total, t) {
+      const ring = 0.72;
+      const inner = 0.37;
+      const points = [
+        [0, 0],
+        ...Array.from({ length: 6 }, (_, step) => {
+          const angle = -Math.PI / 2 + step * Math.PI / 3;
+          return [Math.cos(angle) * inner, Math.sin(angle) * inner];
+        }),
+        ...Array.from({ length: 6 }, (_, step) => {
+          const angle = -Math.PI / 2 + Math.PI / 6 + step * Math.PI / 3;
+          return [Math.cos(angle) * ring, Math.sin(angle) * ring];
+        }),
+        [-0.72, 0],
+        [0.72, 0],
+        [0, -0.72],
+        [0, 0.72],
+      ];
+      return landingConstellationPoint(index, t, points, 0.56);
+    },
+  },
+  {
+    id: 'metatron-cube',
+    label: "Metatron's cube",
+    formula: '13 nodes · all Platonic solids encoded',
+    edgePairs: [
+      [0, 1],
+      [0, 2],
+      [0, 3],
+      [0, 4],
+      [0, 5],
+      [0, 6],
+      [1, 3],
+      [3, 5],
+      [5, 1],
+      [2, 4],
+      [4, 6],
+      [6, 2],
+      [7, 10],
+      [10, 9],
+      [9, 12],
+      [12, 11],
+      [11, 8],
+      [8, 7],
+      [1, 7],
+      [2, 8],
+      [3, 9],
+      [4, 10],
+      [5, 11],
+      [6, 12],
+    ],
+    point(index, total, t) {
+      const points = [
+        [0, 0],
+        ...Array.from({ length: 6 }, (_, step) => {
+          const angle = -Math.PI / 2 + step * Math.PI / 3;
+          return [Math.cos(angle) * 0.32, Math.sin(angle) * 0.32];
+        }),
+        ...Array.from({ length: 6 }, (_, step) => {
+          const angle = -Math.PI / 2 + step * Math.PI / 3;
+          return [Math.cos(angle) * 0.74, Math.sin(angle) * 0.74];
+        }),
+        [-0.42, -0.42],
+        [0.42, -0.42],
+        [0, 0.66],
+        [0, -0.66],
+      ];
+      return landingConstellationPoint(index, t, points, 0.58);
     },
   },
   {
@@ -11164,54 +11242,131 @@ const LANDING_AWARD_PATTERNS = [
     },
   },
   {
-    id: 'cardioid',
-    label: 'Cardioid',
-    formula: 'r=.19·(1+cosθ) · θᵢ=2πi/17+t',
+    id: 'sine-wave',
+    label: 'Sine wave',
+    formula: 'y=sin(2π·2x+t) · oscilloscope trace',
     lineStep: 1,
     point(index, total, t) {
-      const theta = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.42;
-      const radius = 0.19 * (1 + Math.cos(theta));
-      return landingPatternPolarPoint(theta, radius);
-    },
-  },
-  {
-    id: 'astroid',
-    label: 'Astroid',
-    formula: 'x=.39cos³u · y=.39sin³u',
-    lineStep: 1,
-    point(index, total, t) {
-      const u = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.32;
+      const count = Math.max(2, total);
+      const u = index / (count - 1);
+      const x = -0.86 + u * 1.72;
+      const y = Math.sin(u * Math.PI * 4 + t * 1.25) * 0.42;
       return landingPatternClampPoint({
-        x: 0.5 + 0.39 * Math.pow(Math.cos(u), 3),
-        y: 0.5 + 0.39 * Math.pow(Math.sin(u), 3),
+        x: 0.5 + x * 0.5,
+        y: 0.5 + y * 0.5,
       });
     },
   },
   {
-    id: 'hypocycloid',
-    label: 'Hypocycloid',
-    formula: 'R/r=7 · x=6cosu+cos6u',
+    id: 'cube-stack',
+    label: 'Nested cube projection',
+    formula: 'p=Π(RᵧRₓ·v) · cube ⊂ cube',
     lineStep: 1,
     point(index, total, t) {
-      const u = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.44;
-      const x = 6 * Math.cos(u) + Math.cos(6 * u);
-      const y = 6 * Math.sin(u) - Math.sin(6 * u);
-      return landingPatternClampPoint({
-        x: 0.5 + (x / 7) * LANDING_AWARD_PATTERN_EDGE_LIMIT,
-        y: 0.5 + (y / 7) * LANDING_AWARD_PATTERN_EDGE_LIMIT,
-      });
+      const vertices = [
+        [-1, -1, -1],
+        [1, -1, -1],
+        [1, 1, -1],
+        [-1, 1, -1],
+        [-1, -1, 1],
+        [1, -1, 1],
+        [1, 1, 1],
+        [-1, 1, 1],
+        [-0.48, -0.48, -0.48],
+        [0.48, -0.48, -0.48],
+        [0.48, 0.48, -0.48],
+        [-0.48, 0.48, -0.48],
+        [-0.48, -0.48, 0.48],
+        [0.48, -0.48, 0.48],
+        [0.48, 0.48, 0.48],
+        [-0.48, 0.48, 0.48],
+      ];
+      const path = [0, 1, 2, 3, 0, 4, 8, 9, 10, 11, 15, 14, 13, 12, 8, 5, 6];
+      return landingProjectedPathPoint(index, t, vertices, path, 0.25);
     },
   },
   {
-    id: 'lemniscate',
-    label: 'Lemniscate',
-    formula: 'r²=.145·cos(2θ) · Bernoulli figure-eight',
+    id: 'perspective-grid',
+    label: 'Perspective grid',
+    formula: 'p=Π(x,y,z) · vanishing lattice',
     lineStep: 1,
     point(index, total, t) {
-      const theta = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.36;
-      const cos2 = Math.cos(2 * theta);
-      const radius = Math.sign(cos2) * Math.sqrt(Math.abs(cos2)) * 0.39;
-      return landingPatternPolarPoint(theta, radius);
+      const points = [
+        [-1.15, -0.92, -0.6],
+        [-0.58, -0.92, -0.2],
+        [0, -0.92, 0.18],
+        [0.58, -0.92, -0.2],
+        [1.15, -0.92, -0.6],
+        [-0.82, -0.36, 0.0],
+        [-0.40, -0.36, 0.44],
+        [0, -0.36, 0.74],
+        [0.40, -0.36, 0.44],
+        [0.82, -0.36, 0.0],
+        [-0.48, 0.22, 0.38],
+        [0, 0.22, 0.78],
+        [0.48, 0.22, 0.38],
+        [-0.18, 0.74, 0.58],
+        [0.18, 0.74, 0.58],
+        [0, 0.98, 0.3],
+        [0, -1.12, -0.85],
+      ];
+      return landingProjectedPathPoint(index, t, points, points.map((_, pointIndex) => pointIndex), 0.31);
+    },
+  },
+  {
+    id: 'section-cut',
+    label: 'Section cut',
+    formula: 'orthographic plan · elevation · axis',
+    lineStep: 1,
+    point(index, total, t) {
+      const points = [
+        [-0.72, -0.48],
+        [-0.30, -0.48],
+        [-0.30, -0.12],
+        [0.18, -0.12],
+        [0.18, -0.48],
+        [0.68, -0.48],
+        [0.68, 0.36],
+        [0.36, 0.36],
+        [0.36, 0.06],
+        [-0.06, 0.06],
+        [-0.06, 0.36],
+        [-0.72, 0.36],
+        [-0.72, -0.48],
+        [-0.88, 0],
+        [0.88, 0],
+        [0, -0.70],
+        [0, 0.62],
+      ];
+      return landingConstellationPoint(index, t, points, 0.42);
+    },
+  },
+  {
+    id: 'axis-rig',
+    label: 'Axis rig',
+    formula: 'origin + XYZ basis · projected calibration rig',
+    lineStep: 1,
+    point(index, total, t) {
+      const points = [
+        [0, 0, 0],
+        [1.22, 0, 0],
+        [0.92, 0.10, 0],
+        [0.92, -0.10, 0],
+        [0, 1.22, 0],
+        [0.10, 0.92, 0],
+        [-0.10, 0.92, 0],
+        [0, 0, 1.22],
+        [0.10, 0, 0.92],
+        [-0.10, 0, 0.92],
+        [-0.72, -0.48, -0.32],
+        [0.72, -0.48, -0.32],
+        [0.72, 0.48, -0.32],
+        [-0.72, 0.48, -0.32],
+        [-0.72, -0.48, 0.32],
+        [0.72, -0.48, 0.32],
+        [0.72, 0.48, 0.32],
+      ];
+      return landingProjectedPathPoint(index, t, points, points.map((_, pointIndex) => pointIndex), 0.3);
     },
   },
 ];
