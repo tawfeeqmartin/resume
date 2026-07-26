@@ -1359,20 +1359,16 @@ const LANDING_VARIANT_CSS = `
 .landing-profile-award-connectors line {
   stroke: var(--ink);
   stroke-width: 1;
+  stroke-dasharray: 5 5;
   stroke-linecap: square;
   vector-effect: non-scaling-stroke;
-  opacity: 0.42;
+  opacity: 0.38;
 }
 .landing-profile-award-connectors rect {
   vector-effect: non-scaling-stroke;
 }
-.landing-profile-award-connectors .landing-profile-award-connectors__sample-outer {
-  fill: var(--ink);
-  opacity: 0.92;
-}
-.landing-profile-award-connectors .landing-profile-award-connectors__sample-inner {
-  fill: #fff;
-  opacity: 0.96;
+.landing-profile-award-connectors .landing-profile-award-connectors__sample {
+  opacity: 0.88;
 }
 .landing-profile-awards__label {
   position: absolute;
@@ -10931,18 +10927,12 @@ function LandingProfileAwardConnectors({ awards = [] }) {
         <React.Fragment key={line.id}>
           <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
           <rect
-            className="landing-profile-award-connectors__sample-outer"
+            className="landing-profile-award-connectors__sample"
             x={line.x1 - 3}
             y={line.y1 - 3}
             width="6"
             height="6"
-          />
-          <rect
-            className="landing-profile-award-connectors__sample-inner"
-            x={line.x1 - 1.35}
-            y={line.y1 - 1.35}
-            width="2.7"
-            height="2.7"
+            style={{ fill: line.color }}
           />
         </React.Fragment>
       ))}
