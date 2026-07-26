@@ -622,7 +622,7 @@ ${u}</style>`,E.appendChild(b);let M="url('data:image/gif;base64,R0lGODlhAQABAIA
 .landing-profile__name {
   margin: 0;
   font-family: var(--sans);
-  font-size: clamp(2.35rem, calc(var(--landing-scale-u) * 13), 8rem);
+  font-size: clamp(2.35rem, calc(var(--landing-scale-u) * 10), 8rem);
   font-weight: 700;
   line-height: 0.92;
   letter-spacing: -0.055em;
@@ -665,7 +665,7 @@ ${u}</style>`,E.appendChild(b);let M="url('data:image/gif;base64,R0lGODlhAQABAIA
 }
 .landing-profile__bio--hook {
   max-width: 16ch;
-  font-size: clamp(0.98rem, calc(var(--landing-scale-u) * 3.25), 2.45rem);
+  font-size: clamp(0.98rem, calc(var(--landing-scale-u) * 2.9), 2.45rem);
   line-height: 0.98;
   letter-spacing: -0.035em;
 }
@@ -675,8 +675,8 @@ ${u}</style>`,E.appendChild(b);let M="url('data:image/gif;base64,R0lGODlhAQABAIA
 .landing-profile__bio--details {
   color: var(--ink);
   max-width: 46ch;
-  font-size: clamp(0.62rem, calc(var(--landing-scale-u) * 1.55), 0.98rem);
-  line-height: 1.6;
+  font-size: clamp(0.62rem, calc(var(--landing-scale-u) * 1.25), 0.98rem);
+  line-height: 1.52;
 }
 .landing-profile__bio--details strong {
   color: var(--ink);
@@ -690,7 +690,7 @@ ${u}</style>`,E.appendChild(b);let M="url('data:image/gif;base64,R0lGODlhAQABAIA
   gap: 0.8rem 1.8rem;
   margin-top: clamp(0.7rem, 1.6vh, 1.1rem);
   font-family: var(--mono);
-  font-size: clamp(0.52rem, calc(var(--landing-scale-u) * 0.95), 0.78rem);
+  font-size: clamp(0.52rem, calc(var(--landing-scale-u) * 0.8), 0.78rem);
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
