@@ -1325,7 +1325,7 @@ const LANDING_VARIANT_CSS = `
   align-self: start;
   width: min(100%, clamp(19rem, min(34vw, 43svh), 39rem));
   height: clamp(19rem, min(34vw, 43svh), 39rem);
-  transform: translateY(calc(var(--landing-wheel-lift) - clamp(0.25rem, calc(var(--landing-scale-u) * 1.1), 1.2rem)));
+  transform: translateY(calc(var(--landing-wheel-lift) - clamp(0.25rem, calc(var(--landing-scale-u) * 1.1), 1.2rem) + var(--landing-wheel-fit-shift, 0px)));
 }
 .landing-profile__instrument-canvas {
   display: block;
@@ -11012,6 +11012,7 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
     let frame = 0;
     const clearFit = () => {
       profile.style.removeProperty('--landing-text-fit-height');
+      profile.style.removeProperty('--landing-wheel-fit-shift');
       hook.style.removeProperty('--landing-hook-fit-font-size');
       proof.style.removeProperty('--landing-proof-fit-font-size');
       proof.style.removeProperty('--landing-proof-fit-line-height');
@@ -11056,6 +11057,19 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
           Math.min(1.42, (proofLineHeightPx / proofFontSize) * (targetHeight / proofHeight)),
         );
         proof.style.setProperty('--landing-proof-fit-line-height', nextLineHeight.toFixed(3));
+      }
+      const wheel = profile.querySelector('.landing-profile__instrument--wheel');
+      const finalHookRect = hook.getBoundingClientRect();
+      const finalProofRect = proof.getBoundingClientRect();
+      const wheelRect = wheel?.getBoundingClientRect?.();
+      if (wheelRect && wheelRect.width > 0 && wheelRect.height > 0) {
+        const textCenter = (
+          Math.min(finalHookRect.top, finalProofRect.top)
+          + Math.max(finalHookRect.bottom, finalProofRect.bottom)
+        ) / 2;
+        const wheelCenter = wheelRect.top + wheelRect.height / 2;
+        const shift = Math.max(-120, Math.min(140, textCenter - wheelCenter));
+        profile.style.setProperty('--landing-wheel-fit-shift', `${shift.toFixed(2)}px`);
       }
     };
     const schedule = () => {
