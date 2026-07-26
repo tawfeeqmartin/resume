@@ -910,6 +910,9 @@ ${u}</style>`,E.appendChild(b);let M="url('data:image/gif;base64,R0lGODlhAQABAIA
   .landing-profile {
     min-height: 100svh;
   }
+  .landing-profile__proof {
+    transform: none;
+  }
 }
 @media (max-width: 760px) {
   .landing-profile {

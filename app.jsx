@@ -1474,6 +1474,9 @@ const LANDING_VARIANT_CSS = `
   .landing-profile {
     min-height: 100svh;
   }
+  .landing-profile__proof {
+    transform: none;
+  }
 }
 @media (max-width: 760px) {
   .landing-profile {
