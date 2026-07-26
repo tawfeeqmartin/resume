@@ -1199,8 +1199,8 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile__story {
   display: grid;
-  grid-template-columns: minmax(0, 0.72fr) minmax(0, 0.92fr) minmax(0, 0.98fr);
-  align-items: stretch;
+  grid-template-columns: minmax(15rem, 0.78fr) minmax(18rem, 0.9fr) minmax(18rem, 1fr);
+  align-items: center;
   align-self: stretch;
   gap: clamp(1.75rem, calc(var(--landing-scale-u) * 3.6), 4.5rem);
   margin-top: clamp(0.85rem, calc(var(--landing-scale-u) * 1.75), 1.65rem);
@@ -1210,18 +1210,18 @@ const LANDING_VARIANT_CSS = `
   grid-column: 1;
   position: relative;
   z-index: 3;
-  align-self: stretch;
+  align-self: center;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   max-width: clamp(15rem, calc(var(--landing-scale-u) * 30), 30rem);
 }
 .landing-profile__proof {
   grid-column: 3;
   position: relative;
   z-index: 3;
-  align-self: stretch;
+  align-self: center;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   max-width: clamp(17rem, calc(var(--landing-scale-u) * 40), 40rem);
   justify-self: end;
   transform: none;
@@ -1235,8 +1235,8 @@ const LANDING_VARIANT_CSS = `
   line-height: 1.58;
 }
 .landing-profile__bio--hook {
-  max-width: 12.4ch;
-  font-size: var(--landing-hook-fit-font-size, clamp(1.25rem, min(calc(var(--landing-scale-u) * 4.1), 5.9svh), 3.6rem));
+  max-width: 13.2ch;
+  font-size: clamp(1.38rem, min(calc(var(--landing-scale-u) * 3.9), 5.45svh), 3.45rem);
   line-height: 0.93;
   letter-spacing: -0.042em;
 }
@@ -1246,8 +1246,8 @@ const LANDING_VARIANT_CSS = `
 .landing-profile__bio--details {
   color: var(--ink);
   max-width: 42ch;
-  font-size: var(--landing-proof-fit-font-size, clamp(0.82rem, min(calc(var(--landing-scale-u) * 2.12), 3.47svh), 1.57rem));
-  line-height: var(--landing-proof-fit-line-height, 1.255);
+  font-size: clamp(0.86rem, min(calc(var(--landing-scale-u) * 1.74), 2.85svh), 1.42rem);
+  line-height: 1.18;
   text-align: right;
 }
 .landing-profile__bio--details strong {
@@ -1323,10 +1323,10 @@ const LANDING_VARIANT_CSS = `
 .landing-profile__instrument--wheel {
   grid-column: 2;
   justify-self: center;
-  align-self: start;
+  align-self: center;
   width: min(100%, clamp(19rem, min(34vw, 43svh), 39rem));
   height: clamp(19rem, min(34vw, 43svh), 39rem);
-  transform: translateY(calc(var(--landing-wheel-lift) - clamp(0.25rem, calc(var(--landing-scale-u) * 1.1), 1.2rem) + var(--landing-wheel-fit-shift, 0px)));
+  transform: none;
 }
 .landing-profile__instrument-canvas {
   display: block;
@@ -10997,141 +10997,8 @@ function LandingProfileAwards({ items = [] }) {
 
 function LandingProfileSection({ summaryOnly = false } = {}) {
   const profileAwardGroups = landingAwardGroups(RESUME.awards);
-  const useProfileFitEffect = React.useLayoutEffect || useEffect;
   const profileRef = useRef(null);
   const nameRef = useRef(null);
-  const hookRef = useRef(null);
-  const proofRef = useRef(null);
-  const lastProfileFitRef = useRef(null);
-
-  useProfileFitEffect(() => {
-    if (summaryOnly) return undefined;
-    const profile = profileRef.current;
-    const name = nameRef.current;
-    const hook = hookRef.current;
-    const proof = proofRef.current;
-    if (!profile || !name || !hook || !proof) return undefined;
-
-    let frame = 0;
-    let lastSignature = '';
-    const clearFit = () => {
-      profile.style.removeProperty('--landing-text-fit-height');
-      profile.style.removeProperty('--landing-wheel-fit-shift');
-      hook.style.removeProperty('--landing-hook-fit-font-size');
-      proof.style.removeProperty('--landing-proof-fit-font-size');
-      proof.style.removeProperty('--landing-proof-fit-line-height');
-    };
-    const fitElementHeight = (node, cssVar, targetHeight, minPx, maxPx) => {
-      if (!node || !Number.isFinite(targetHeight) || targetHeight <= 0) return;
-      node.style.removeProperty(cssVar);
-      const baseSize = parseFloat(window.getComputedStyle(node).fontSize);
-      let low = minPx;
-      let high = Math.max(minPx, Math.min(maxPx, baseSize * 1.9));
-      for (let i = 0; i < 10; i += 1) {
-        const mid = (low + high) / 2;
-        node.style.setProperty(cssVar, `${mid.toFixed(3)}px`);
-        const height = node.getBoundingClientRect().height;
-        if (height > targetHeight) high = mid;
-        else low = mid;
-      }
-      node.style.setProperty(cssVar, `${low.toFixed(3)}px`);
-    };
-    const fit = () => {
-      frame = 0;
-      const awards = profile.querySelector('.landing-profile-awards');
-      const awardsRect = awards?.getBoundingClientRect?.();
-      if (!awardsRect || awardsRect.height <= 0) return;
-      const hookRect = hook.getBoundingClientRect();
-      const proofRect = proof.getBoundingClientRect();
-      const targetTop = Math.max(hookRect.top, proofRect.top);
-      const verticalPad = Math.max(10, window.innerHeight * 0.016);
-      const rawTargetHeight = awardsRect.top - targetTop - verticalPad;
-      const viewportHeight = window.visualViewport?.height || window.innerHeight || 720;
-      const minimumStableHeight = Math.max(170, viewportHeight * 0.22);
-      const maximumStableHeight = Math.max(minimumStableHeight, viewportHeight * 0.64);
-      if (!Number.isFinite(rawTargetHeight) || rawTargetHeight < minimumStableHeight) {
-        const lastFit = lastProfileFitRef.current;
-        if (lastFit) {
-          profile.style.setProperty('--landing-text-fit-height', `${lastFit.targetHeight}px`);
-          profile.style.setProperty('--landing-wheel-fit-shift', `${lastFit.wheelShift}px`);
-          hook.style.setProperty('--landing-hook-fit-font-size', `${lastFit.hookFontSize}px`);
-          proof.style.setProperty('--landing-proof-fit-font-size', `${lastFit.proofFontSize}px`);
-          proof.style.setProperty('--landing-proof-fit-line-height', `${lastFit.proofLineHeight}`);
-        }
-        return;
-      }
-      const targetHeight = Math.min(rawTargetHeight, maximumStableHeight);
-      const signature = [
-        Math.round(window.innerWidth),
-        Math.round(viewportHeight),
-        Math.round(profile.getBoundingClientRect().width),
-        Math.round(awardsRect.top),
-        Math.round(targetTop),
-        Math.round(targetHeight),
-      ].join(':');
-      if (signature === lastSignature) return;
-      lastSignature = signature;
-      profile.style.setProperty('--landing-text-fit-height', `${targetHeight.toFixed(2)}px`);
-      proof.style.setProperty('--landing-proof-fit-line-height', '1.13');
-      fitElementHeight(hook, '--landing-hook-fit-font-size', targetHeight, 18, 96);
-      fitElementHeight(proof, '--landing-proof-fit-font-size', targetHeight, 12, 46);
-      const proofHeight = proof.getBoundingClientRect().height;
-      const proofStyle = window.getComputedStyle(proof);
-      const proofFontSize = parseFloat(proofStyle.fontSize);
-      const proofLineHeightPx = parseFloat(proofStyle.lineHeight);
-      if (proofHeight > 0 && proofFontSize > 0 && proofLineHeightPx > 0) {
-        const nextLineHeight = Math.max(
-          1.05,
-          Math.min(1.42, (proofLineHeightPx / proofFontSize) * (targetHeight / proofHeight)),
-        );
-        proof.style.setProperty('--landing-proof-fit-line-height', nextLineHeight.toFixed(3));
-      }
-      const wheel = profile.querySelector('.landing-profile__instrument--wheel');
-      const finalHookRect = hook.getBoundingClientRect();
-      const finalProofRect = proof.getBoundingClientRect();
-      const wheelRect = wheel?.getBoundingClientRect?.();
-      if (wheelRect && wheelRect.width > 0 && wheelRect.height > 0) {
-        const textCenter = (
-          Math.min(finalHookRect.top, finalProofRect.top)
-          + Math.max(finalHookRect.bottom, finalProofRect.bottom)
-        ) / 2;
-        const wheelCenter = wheelRect.top + wheelRect.height / 2;
-        const shift = Math.max(-120, Math.min(140, textCenter - wheelCenter));
-        profile.style.setProperty('--landing-wheel-fit-shift', `${shift.toFixed(2)}px`);
-      }
-      const fitStyle = window.getComputedStyle(proof);
-      lastProfileFitRef.current = {
-        targetHeight: Number(targetHeight.toFixed(2)),
-        wheelShift: Number.parseFloat(profile.style.getPropertyValue('--landing-wheel-fit-shift')) || 0,
-        hookFontSize: Number.parseFloat(window.getComputedStyle(hook).fontSize) || 0,
-        proofFontSize: Number.parseFloat(fitStyle.fontSize) || 0,
-        proofLineHeight: Number.parseFloat(proof.style.getPropertyValue('--landing-proof-fit-line-height'))
-          || Number.parseFloat(fitStyle.lineHeight) / Math.max(1, Number.parseFloat(fitStyle.fontSize))
-          || 1.13,
-      };
-    };
-    const schedule = () => {
-      if (frame) return;
-      frame = window.requestAnimationFrame(() => {
-        frame = window.requestAnimationFrame(fit);
-      });
-    };
-    const observer = new ResizeObserver(schedule);
-    observer.observe(name);
-    const awards = profile.querySelector('.landing-profile-awards');
-    if (awards) observer.observe(awards);
-    window.addEventListener('resize', schedule, { passive: true });
-    window.visualViewport?.addEventListener?.('resize', schedule, { passive: true });
-    document.fonts?.ready?.then(schedule).catch(() => {});
-    schedule();
-    return () => {
-      if (frame) window.cancelAnimationFrame(frame);
-      observer.disconnect();
-      window.removeEventListener('resize', schedule);
-      window.visualViewport?.removeEventListener?.('resize', schedule);
-      clearFit();
-    };
-  }, [summaryOnly]);
 
   return (
     <section
@@ -11159,14 +11026,14 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
         </div>
         <div className="landing-profile__story">
           <div className="landing-profile__copy">
-            <p className="landing-profile__bio landing-profile__bio--hook" ref={hookRef}>
+            <p className="landing-profile__bio landing-profile__bio--hook">
               I’ve somehow turned “what happens if I press this button?” into a 20-year career
               of curious design and make-believe.
             </p>
           </div>
           {!summaryOnly && <BeautifulGameLoadingSummaryInstrument part="wheel" />}
           <div className="landing-profile__proof">
-            <p className="landing-profile__bio landing-profile__bio--details" ref={proofRef}>
+            <p className="landing-profile__bio landing-profile__bio--details">
               <strong>Research and Development</strong>, StageCraft team at
               Industrial Light &amp; Magic. Previously Head of <strong>Creative Engineering</strong> and <strong>Creative
               Technology Director</strong> at The Mill, where I led 0-to-1 product
