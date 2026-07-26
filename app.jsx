@@ -1432,7 +1432,7 @@ const LANDING_VARIANT_CSS = `
 .landing-profile-award-connectors .landing-profile-award-connectors__sample {
   vector-effect: non-scaling-stroke;
   stroke: #fff;
-  stroke-width: 1.25;
+  stroke-width: 1;
   stroke-dasharray: none;
   stroke-linecap: square;
   opacity: 0.95;
@@ -11100,7 +11100,7 @@ function LandingProfileAwardConnectors({ awards = [] }) {
         const wheelCenterX = wheelRect.left + wheelRect.width * 0.5 - profileRect.left;
         const wheelCenterY = wheelRect.top + wheelRect.height * 0.5 - profileRect.top;
         const targets = landingAwardRenderedParts(profile);
-        const sampleCount = Math.max(32, targets.length);
+        const sampleCount = targets.length;
         const wheelSamples = Array.from({ length: sampleCount }, (_, sampleIndex) => {
           const sampled = Array.isArray(sample?.awardSamples) ? sample.awardSamples[sampleIndex] : null;
           const point = sampled?.point || landingAwardSamplePoint(sampleIndex, sampleCount, sample);
@@ -11164,17 +11164,17 @@ function LandingProfileAwardConnectors({ awards = [] }) {
           )}
           <line
             className="landing-profile-award-connectors__sample"
-            x1={line.x1 - 3.25}
-            y1={line.y1 - 3.25}
-            x2={line.x1 + 3.25}
-            y2={line.y1 + 3.25}
+            x1={line.x1 - 2.25}
+            y1={line.y1 - 2.25}
+            x2={line.x1 + 2.25}
+            y2={line.y1 + 2.25}
           />
           <line
             className="landing-profile-award-connectors__sample"
-            x1={line.x1 + 3.25}
-            y1={line.y1 - 3.25}
-            x2={line.x1 - 3.25}
-            y2={line.y1 + 3.25}
+            x1={line.x1 + 2.25}
+            y1={line.y1 - 2.25}
+            x2={line.x1 - 2.25}
+            y2={line.y1 + 2.25}
           />
         </React.Fragment>
       ))}
