@@ -10298,8 +10298,8 @@ function landingHsvToRgb(hue, saturation, value) {
 }
 
 function landingTraditionalColorForSamplePoint(point = {}) {
-  const dx = (Number(point.x) - 0.5) / 0.42;
-  const dy = (Number(point.y) - 0.5) / 0.42;
+  const dx = (Number(point.x) - 0.5) / 0.44;
+  const dy = (0.5 - Number(point.y)) / 0.44;
   const radius = landingClamp01(Math.hypot(dx, dy));
   const hue = (Math.atan2(dy, dx) / (Math.PI * 2) + 1) % 1;
   const [r, g, b] = landingHsvToRgb(hue, radius, 1);
@@ -10870,7 +10870,7 @@ function LandingProfileAwardConnectors({ awards = [] }) {
         if (!profile || !wheel || !awardItems?.length) return;
         const profileRect = profile.getBoundingClientRect();
         const wheelRect = wheel.getBoundingClientRect();
-        const wheelRadius = Math.min(wheelRect.width, wheelRect.height) * 0.42;
+        const wheelRadius = Math.min(wheelRect.width, wheelRect.height) * 0.44;
         const wheelCenterX = wheelRect.left + wheelRect.width * 0.5 - profileRect.left;
         const wheelCenterY = wheelRect.top + wheelRect.height * 0.5 - profileRect.top;
         const targets = landingAwardRenderedParts(profile);
