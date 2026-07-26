@@ -591,6 +591,7 @@ ${u}</style>`,E.appendChild(b);let M="url('data:image/gif;base64,R0lGODlhAQABAIA
   --landing-wheel-lift: clamp(-3.6rem, calc(var(--landing-award-row-h) * -0.42), -1.65rem);
   position: relative;
   z-index: 12;
+  box-sizing: border-box;
   width: 100vw;
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
