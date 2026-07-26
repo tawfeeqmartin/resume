@@ -682,8 +682,8 @@ ${u}</style>`,E.appendChild(b);let M="url('data:image/gif;base64,R0lGODlhAQABAIA
 .landing-profile__bio--details {
   color: var(--ink);
   max-width: 42ch;
-  font-size: clamp(0.82rem, min(calc(var(--landing-scale-u) * 1.82), 3.22svh), 1.45rem);
-  line-height: 1.34;
+  font-size: clamp(0.82rem, min(calc(var(--landing-scale-u) * 2.22), 3.62svh), 1.64rem);
+  line-height: 1.22;
 }
 .landing-profile__bio--details strong {
   color: var(--ink);
