@@ -10897,8 +10897,8 @@ function landingAwardGroups(items = []) {
     }));
 }
 
-const LANDING_AWARD_PATTERN_CYCLE_SECONDS = 2.75;
-const LANDING_AWARD_PATTERN_MORPH_SECONDS = 0.58;
+const LANDING_AWARD_PATTERN_CYCLE_SECONDS = 2.05;
+const LANDING_AWARD_PATTERN_MORPH_SECONDS = 0.40;
 const LANDING_AWARD_PATTERN_EDGE_LIMIT = 0.472;
 
 const landingPatternClampPoint = (point = {}) => {
@@ -10944,12 +10944,12 @@ function landingProject3DPoint(point = [0, 0, 0], t = 0, scale = 0.27) {
 function landingProjectAward3DPoint(point = [0, 0, 0], localTime = 0, scale = 0.37, phase = 0) {
   const [x = 0, y = 0, z = 0] = point;
   const time = Math.max(0, Number(localTime) || 0);
-  const holdSeconds = 0.46;
+  const holdSeconds = 0.30;
   const spinTime = Math.max(0, time - holdSeconds);
-  const reveal = landingSmooth01(Math.min(1, spinTime / 0.58));
-  const yaw = reveal * (phase + spinTime * 0.88);
-  const pitch = reveal * (-0.22 + Math.sin(phase + spinTime * 0.72) * 0.18);
-  const roll = reveal * Math.sin(phase * 0.7 + spinTime * 0.55) * 0.055;
+  const reveal = landingSmooth01(Math.min(1, spinTime / 0.36));
+  const yaw = reveal * (phase + spinTime * 1.36);
+  const pitch = reveal * (-0.24 + Math.sin(phase + spinTime * 1.08) * 0.20);
+  const roll = reveal * Math.sin(phase * 0.7 + spinTime * 0.86) * 0.075;
   const cr = Math.cos(roll);
   const sr = Math.sin(roll);
   const x0 = x * cr - y * sr;
@@ -11474,13 +11474,13 @@ function landingAwardRingModelPoint(index, t, options = {}) {
   const ringIndex = Math.floor(index / 8) % centers.length;
   const pointIndex = index % 8;
   const time = Math.max(0, Number(t) || 0);
-  const holdSeconds = 0.46;
+  const holdSeconds = 0.30;
   const spinTime = Math.max(0, time - holdSeconds);
-  const reveal = landingSmooth01(Math.min(1, spinTime / 0.58));
-  const angle = (pointIndex / 8) * Math.PI * 2 + reveal * (spinTime * 0.34 + phase * 0.25);
+  const reveal = landingSmooth01(Math.min(1, spinTime / 0.36));
+  const angle = (pointIndex / 8) * Math.PI * 2 + reveal * (spinTime * 0.74 + phase * 0.25);
   const center = centers[ringIndex] || centers[0] || [0, 0];
   const x = center[0] + Math.cos(angle) * radius;
-  const y = center[1] + Math.sin(angle) * radius * 0.92;
+  const y = center[1] + Math.sin(angle) * radius;
   const z = Math.sin(angle) * depth * reveal + (ringIndex % 2 ? -0.08 : 0.08) * reveal;
   return landingProjectAward3DPoint([x, y, z], time, scale, phase);
 }
@@ -11640,7 +11640,7 @@ function landingAwardPatternConnectionPairs(patternId, total = 0) {
   return Array.from({ length: count }, (_, index) => [index, (index + step) % count]);
 }
 
-function landingAwardRingEllipseFromSamples(samples = [], start = 0, count = 8, id = 'ring') {
+function landingAwardRingCircleFromSamples(samples = [], start = 0, count = 8, id = 'ring') {
   const ringSamples = samples.slice(start, start + count).filter((sample) => (
     Number.isFinite(sample?.x1) && Number.isFinite(sample?.y1)
   ));
@@ -11651,26 +11651,26 @@ function landingAwardRingEllipseFromSamples(samples = [], start = 0, count = 8, 
   const maxX = Math.max(...xs);
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
+  const radius = Math.max(1, Math.max(maxX - minX, maxY - minY) * 0.5);
   return {
     id,
     cx: (minX + maxX) * 0.5,
     cy: (minY + maxY) * 0.5,
-    rx: Math.max(1, (maxX - minX) * 0.5),
-    ry: Math.max(1, (maxY - minY) * 0.5),
+    r: radius,
   };
 }
 
-function landingAwardPatternConnectionEllipses(patternId, wheelSamples = []) {
+function landingAwardPatternConnectionCircles(patternId, wheelSamples = []) {
   if (patternId === 'award-cannes-rings') {
     return [
-      landingAwardRingEllipseFromSamples(wheelSamples, 0, 8, 'cannes-left-ring'),
-      landingAwardRingEllipseFromSamples(wheelSamples, 8, 8, 'cannes-right-ring'),
+      landingAwardRingCircleFromSamples(wheelSamples, 0, 8, 'cannes-left-ring'),
+      landingAwardRingCircleFromSamples(wheelSamples, 8, 8, 'cannes-right-ring'),
     ].filter(Boolean);
   }
   if (patternId === 'award-siggraph-rings') {
     return [
-      landingAwardRingEllipseFromSamples(wheelSamples, 0, 8, 'siggraph-outer-ring'),
-      landingAwardRingEllipseFromSamples(wheelSamples, 8, 8, 'siggraph-inner-ring'),
+      landingAwardRingCircleFromSamples(wheelSamples, 0, 8, 'siggraph-outer-ring'),
+      landingAwardRingCircleFromSamples(wheelSamples, 8, 8, 'siggraph-inner-ring'),
     ].filter(Boolean);
   }
   return [];
@@ -11692,7 +11692,7 @@ function landingAwardRenderedParts(root) {
 }
 
 function LandingProfileAwardConnectors({ awards = [] }) {
-  const [geometry, setGeometry] = useState({ lines: [], shapeEdges: [], shapeEllipses: [] });
+  const [geometry, setGeometry] = useState({ lines: [], shapeEdges: [], shapeCircles: [] });
 
   useEffect(() => {
     const count = awards.length;
@@ -11754,7 +11754,7 @@ function LandingProfileAwardConnectors({ awards = [] }) {
             };
           })
           .filter(Boolean);
-        const shapeEllipses = landingAwardPatternConnectionEllipses(patternId, wheelSamples);
+        const shapeCircles = landingAwardPatternConnectionCircles(patternId, wheelSamples);
         const next = wheelSamples.map((wheelSample, sampleIndex) => {
           const target = targets[sampleIndex];
           if (!target) return wheelSample;
@@ -11777,7 +11777,7 @@ function LandingProfileAwardConnectors({ awards = [] }) {
             y2,
           };
         });
-        setGeometry({ lines: next, shapeEdges, shapeEllipses });
+        setGeometry({ lines: next, shapeEdges, shapeCircles });
       });
     };
 
@@ -11798,14 +11798,13 @@ function LandingProfileAwardConnectors({ awards = [] }) {
   if (!geometry.lines.length) return null;
   return (
     <svg className="landing-profile-award-connectors" aria-hidden="true">
-      {geometry.shapeEllipses.map((ellipse) => (
-        <ellipse
+      {geometry.shapeCircles.map((circle) => (
+        <circle
           className="landing-profile-award-connectors__shape"
-          key={ellipse.id}
-          cx={ellipse.cx}
-          cy={ellipse.cy}
-          rx={ellipse.rx}
-          ry={ellipse.ry}
+          key={circle.id}
+          cx={circle.cx}
+          cy={circle.cy}
+          r={circle.r}
         />
       ))}
       {geometry.shapeEdges.map((edge) => (
