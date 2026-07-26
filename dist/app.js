@@ -693,7 +693,7 @@ ${u}</style>`,P.appendChild(b);let M="url('data:image/gif;base64,R0lGODlhAQABAIA
 }
 @media (min-width: 761px) {
   .landing-profile {
-    --landing-text-moon-width: clamp(4.5rem, min(11.8vw, 16svh), 9.5rem);
+    --landing-text-moon-width: clamp(1.45rem, min(4.2vw, 5.5svh), 3.75rem);
   }
   .landing-profile__copy,
   .landing-profile__proof {
@@ -709,6 +709,7 @@ ${u}</style>`,P.appendChild(b);let M="url('data:image/gif;base64,R0lGODlhAQABAIA
     display: block;
     width: var(--landing-text-moon-width);
     height: var(--landing-text-fit-height, 100%);
+    max-height: 82%;
     shape-margin: clamp(0.15rem, calc(var(--landing-scale-u) * 0.6), 0.7rem);
     pointer-events: none;
   }
