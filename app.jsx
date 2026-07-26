@@ -1183,7 +1183,7 @@ const LANDING_VARIANT_CSS = `
 .landing-profile__story {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: center;
+  align-items: start;
   gap: clamp(2.5rem, 6vw, 7rem);
   margin-top: clamp(2.75rem, 6vh, 4.75rem);
 }
@@ -1250,8 +1250,10 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile__instrument--wheel {
   justify-self: stretch;
+  align-self: start;
   width: 100%;
   height: clamp(20rem, 34vw, 31rem);
+  transform: translateY(clamp(-4.8rem, -6.2vh, -2.2rem));
 }
 .landing-profile__instrument-canvas {
   display: block;
@@ -1296,7 +1298,7 @@ const LANDING_VARIANT_CSS = `
   position: absolute;
   left: max(var(--pad), calc((100vw - var(--maxw)) / 2));
   right: max(var(--pad), calc((100vw - var(--maxw)) / 2));
-  bottom: clamp(1.1rem, 2.2vh, 1.85rem);
+  bottom: clamp(1.25rem, 2.6vh, 2.25rem);
   z-index: 3;
   margin: 0;
   padding: 0;
@@ -1314,7 +1316,7 @@ const LANDING_VARIANT_CSS = `
 .landing-profile-awards__grid {
   display: grid;
   grid-template-columns: repeat(9, minmax(0, 1fr));
-  gap: clamp(0.72rem, 1.25vw, 1.35rem);
+  gap: clamp(0.8rem, 1.5vw, 1.7rem);
   align-items: start;
   margin: 0;
   padding: 0;
@@ -1325,7 +1327,7 @@ const LANDING_VARIANT_CSS = `
   display: grid;
   grid-template-rows: auto 1fr;
   justify-items: center;
-  gap: 0.38rem;
+  gap: clamp(0.38rem, 0.75vh, 0.62rem);
   min-width: 0;
   color: var(--ink);
   text-align: center;
@@ -1341,8 +1343,8 @@ const LANDING_VARIANT_CSS = `
   color: rgba(10,12,16,0.62);
 }
 .landing-profile-award__icon {
-  width: clamp(2.35rem, 3.7vw, 3.85rem);
-  height: clamp(1.72rem, 2.75vw, 2.65rem);
+  width: clamp(3.6rem, 5.6vw, 5.85rem);
+  height: clamp(2.65rem, 4.05vw, 4rem);
   overflow: visible;
   color: var(--ink);
 }
@@ -1371,7 +1373,7 @@ const LANDING_VARIANT_CSS = `
 .landing-profile-award__title {
   max-width: 14ch;
   font-family: var(--mono);
-  font-size: clamp(0.48rem, 0.58vw, 0.68rem);
+  font-size: clamp(0.58rem, 0.72vw, 0.84rem);
   font-weight: 560;
   letter-spacing: 0.12em;
   line-height: 1.12;
@@ -1444,9 +1446,17 @@ const LANDING_VARIANT_CSS = `
     justify-self: start;
     width: min(72vw, 34rem);
     height: clamp(20rem, 48vw, 31rem);
+    transform: translateY(-1.25rem);
   }
   .landing-profile-awards__grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+  }
+  .landing-profile-award__icon {
+    width: clamp(2.4rem, 4.4vw, 3.4rem);
+    height: clamp(1.8rem, 3.2vw, 2.45rem);
+  }
+  .landing-profile-award__title {
+    font-size: clamp(0.44rem, 0.62vw, 0.58rem);
   }
 }
 @media (max-width: 760px) {
@@ -1479,9 +1489,10 @@ const LANDING_VARIANT_CSS = `
     width: min(100%, 31rem);
     height: min(92vw, 27rem);
     justify-self: center;
+    transform: none;
   }
-  .landing-profile-awards__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .landing-profile-awards {
+    display: none;
   }
 }
 /* ── CRT zoom: scroll "into" the real 3D Mac until the screen fills the
@@ -10586,12 +10597,10 @@ function LandingAwardIcon({ award }) {
         </>
       )}
       {family === 'emmy' && (
-        <>
-          <rect className="landing-profile-award__solid" x="24" y="42" width="32" height="5" rx="1" />
-          <rect className="landing-profile-award__fill landing-profile-award__fill--alt" x="35" y="25" width="10" height="18" rx="1" />
-          <path className="landing-profile-award__fill" d="M40 9L52 28H28Z" />
-          <circle className="landing-profile-award__fill landing-profile-award__fill--additive" cx="40" cy="18" r="7" />
-        </>
+        <path
+          className="landing-profile-award__fill"
+          d="M40 7L53 29H45V46H35V29H27Z"
+        />
       )}
       {family === 'sxsw' && (
         <>
