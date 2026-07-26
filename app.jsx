@@ -1168,10 +1168,7 @@ const LANDING_VARIANT_CSS = `
   margin: 0 auto;
 }
 .landing-profile__name-row {
-  display: grid;
-  grid-template-columns: max-content minmax(10rem, 1fr);
-  align-items: center;
-  gap: clamp(2rem, 5vw, 6rem);
+  display: block;
 }
 .landing-profile__name {
   margin: 0;
@@ -1189,10 +1186,10 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile__story {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 0.88fr) minmax(24rem, 1.12fr);
   align-items: start;
-  gap: clamp(2.5rem, 6vw, 7rem);
-  margin-top: clamp(2.75rem, 6vh, 4.75rem);
+  gap: clamp(3rem, 6.5vw, 8rem);
+  margin-top: clamp(2.4rem, 5vh, 4.25rem);
 }
 .landing-profile__bio {
   margin: 0;
@@ -1256,11 +1253,11 @@ const LANDING_VARIANT_CSS = `
   height: clamp(5.75rem, 9vw, 8.5rem);
 }
 .landing-profile__instrument--wheel {
-  justify-self: stretch;
+  justify-self: end;
   align-self: start;
-  width: 100%;
-  height: clamp(20rem, 34vw, 31rem);
-  transform: translateY(var(--landing-wheel-lift));
+  width: min(100%, clamp(29rem, 45vw, 45rem));
+  height: clamp(26rem, 43vw, 42rem);
+  transform: translateY(calc(var(--landing-wheel-lift) - clamp(0.75rem, 2.2vw, 2.4rem)));
 }
 .landing-profile__instrument-canvas {
   display: block;
@@ -1444,8 +1441,7 @@ const LANDING_VARIANT_CSS = `
     padding-bottom: clamp(4rem, 8svh, 6.5rem);
   }
   .landing-profile__name-row {
-    grid-template-columns: 1fr;
-    gap: clamp(1.5rem, 4vw, 2.75rem);
+    display: block;
   }
   .landing-profile__name {
     max-width: 11ch;
@@ -1458,14 +1454,9 @@ const LANDING_VARIANT_CSS = `
   .landing-profile__name span + span {
     margin-left: 0;
   }
-  .landing-profile__instrument--chips {
-    justify-self: start;
-    width: min(42vw, 19rem);
-    height: clamp(5.75rem, 12vw, 8.5rem);
-  }
   .landing-profile__story {
     grid-template-columns: 1fr;
-    gap: clamp(2.25rem, 5vw, 4rem);
+    gap: clamp(1.8rem, 4vw, 3rem);
     margin-top: clamp(2.5rem, 5svh, 4rem);
   }
   .landing-profile__bio {
@@ -1482,9 +1473,9 @@ const LANDING_VARIANT_CSS = `
   }
   .landing-profile__instrument--wheel {
     justify-self: start;
-    width: min(72vw, 34rem);
-    height: clamp(20rem, 48vw, 31rem);
-    transform: translateY(-1.25rem);
+    width: min(78vw, 38rem);
+    height: clamp(22rem, 52vw, 35rem);
+    transform: translateY(-1.4rem);
   }
   .landing-profile-awards__grid {
     grid-template-columns: repeat(9, minmax(0, 1fr));
@@ -1509,13 +1500,7 @@ const LANDING_VARIANT_CSS = `
     margin-top: 0;
   }
   .landing-profile__name-row {
-    grid-template-columns: 1fr;
-    gap: 1.75rem;
-  }
-  .landing-profile__instrument--chips {
-    justify-self: start;
-    width: min(58vw, 15rem);
-    height: clamp(5rem, 22vw, 7rem);
+    display: block;
   }
   .landing-profile__story {
     grid-template-columns: 1fr;
@@ -10871,7 +10856,6 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
       aria-labelledby="landing-profile-name"
     >
       <div className="landing-profile__content">
-        {!summaryOnly && <LandingProfileInstrumentLink />}
         <div className="landing-profile__name-row">
           <h1
             className="landing-profile__name"
@@ -10881,7 +10865,6 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
             <span>Tawfeeq</span>
             <span>Martin</span>
           </h1>
-          {!summaryOnly && <BeautifulGameLoadingSummaryInstrument part="chips" />}
         </div>
         <div className="landing-profile__story">
           <div className="landing-profile__copy">
