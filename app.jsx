@@ -1357,15 +1357,22 @@ const LANDING_VARIANT_CSS = `
   pointer-events: none;
 }
 .landing-profile-award-connectors line {
-  stroke: color-mix(in srgb, var(--landing-profile-sampler-color, #245cff) 46%, rgba(10,12,16,0.5));
+  stroke: var(--ink);
   stroke-width: 1;
   stroke-linecap: square;
   vector-effect: non-scaling-stroke;
-  opacity: 0.34;
+  opacity: 0.42;
 }
-.landing-profile-award-connectors circle {
-  fill: color-mix(in srgb, var(--landing-profile-sampler-color, #245cff) 64%, white 36%);
-  opacity: 0.82;
+.landing-profile-award-connectors rect {
+  vector-effect: non-scaling-stroke;
+}
+.landing-profile-award-connectors .landing-profile-award-connectors__sample-outer {
+  fill: var(--ink);
+  opacity: 0.92;
+}
+.landing-profile-award-connectors .landing-profile-award-connectors__sample-inner {
+  fill: #fff;
+  opacity: 0.96;
 }
 .landing-profile-awards__label {
   position: absolute;
@@ -10922,8 +10929,21 @@ function LandingProfileAwardConnectors({ awards = [] }) {
     <svg className="landing-profile-award-connectors" aria-hidden="true">
       {geometry.map((line) => (
         <React.Fragment key={line.id}>
-          <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} style={{ stroke: line.color }} />
-          <circle cx={line.x1} cy={line.y1} r="2.2" style={{ fill: line.color }} />
+          <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
+          <rect
+            className="landing-profile-award-connectors__sample-outer"
+            x={line.x1 - 3}
+            y={line.y1 - 3}
+            width="6"
+            height="6"
+          />
+          <rect
+            className="landing-profile-award-connectors__sample-inner"
+            x={line.x1 - 1.35}
+            y={line.y1 - 1.35}
+            width="2.7"
+            height="2.7"
+          />
         </React.Fragment>
       ))}
     </svg>
