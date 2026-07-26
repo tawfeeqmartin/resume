@@ -1345,6 +1345,7 @@ const LANDING_VARIANT_CSS = `
 .landing-profile-award__icon {
   width: clamp(3.6rem, 5.6vw, 5.85rem);
   height: clamp(2.65rem, 4.05vw, 4rem);
+  display: block;
   overflow: visible;
   color: var(--ink);
 }
@@ -10588,44 +10589,44 @@ function LandingAwardIcon({ award }) {
     <svg className="landing-profile-award__icon" viewBox="0 0 80 54" aria-hidden="true">
       {family === 'cannes' && (
         <>
-          <circle className="landing-profile-award__fill" cx="29" cy="27" r="15" />
-          <circle className="landing-profile-award__fill landing-profile-award__fill--alt" cx="51" cy="27" r="15" />
-          <ellipse className="landing-profile-award__fill landing-profile-award__fill--additive" cx="40" cy="27" rx="7.5" ry="13.5" />
+          <circle className="landing-profile-award__fill" cx="29" cy="27" r="16" />
+          <circle className="landing-profile-award__fill landing-profile-award__fill--alt" cx="51" cy="27" r="16" />
+          <ellipse className="landing-profile-award__fill landing-profile-award__fill--additive" cx="40" cy="27" rx="5.6" ry="13" />
         </>
       )}
       {family === 'emmy' && (
-        <polygon className="landing-profile-award__fill" points="40,7 56,45 24,45" />
+        <polygon className="landing-profile-award__fill" points="40,8 60,46 20,46" />
       )}
       {family === 'sxsw' && (
         <>
-          <rect className="landing-profile-award__solid" x="15" y="35" width="28" height="5" />
-          <rect className="landing-profile-award__fill" x="42" y="20" width="22" height="20" />
+          <rect className="landing-profile-award__fill landing-profile-award__fill--alt" x="18" y="34" width="28" height="8" />
+          <rect className="landing-profile-award__fill" x="42" y="18" width="20" height="24" />
         </>
       )}
       {family === 'webby' && (
-        <polygon className="landing-profile-award__fill" points="40,13 65,43 15,43" />
+        <polygon className="landing-profile-award__fill" points="40,10 64,44 16,44" />
       )}
       {family === 'hpa' && (
-        <polygon className="landing-profile-award__fill" points="40,9 68,27 40,45 12,27" />
+        <polygon className="landing-profile-award__fill" points="40,8 64,27 40,46 16,27" />
       )}
       {family === 'one-show' && (
-        <rect className="landing-profile-award__fill" x="26" y="15" width="32" height="12" transform="rotate(-38 42 21)" />
+        <rect className="landing-profile-award__fill" x="23" y="17" width="40" height="16" transform="rotate(-38 43 25)" />
       )}
       {family === 'technicolor' && (
         <>
-          <rect className="landing-profile-award__solid" x="19" y="17" width="42" height="22" />
-          <rect className="landing-profile-award__fill" x="27" y="17" width="11" height="22" />
-          <rect className="landing-profile-award__fill" x="46" y="17" width="11" height="22" />
+          <rect className="landing-profile-award__fill" x="18" y="15" width="14" height="28" />
+          <rect className="landing-profile-award__fill landing-profile-award__fill--alt" x="33" y="15" width="14" height="28" />
+          <rect className="landing-profile-award__fill landing-profile-award__fill--additive" x="48" y="15" width="14" height="28" />
         </>
       )}
       {family === 'siggraph' && (
         <>
-          <circle className="landing-profile-award__solid" cx="40" cy="27" r="17" />
-          <circle className="landing-profile-award__fill" cx="40" cy="27" r="9" />
+          <circle className="landing-profile-award__fill landing-profile-award__fill--alt" cx="40" cy="27" r="18" />
+          <circle className="landing-profile-award__fill" cx="40" cy="27" r="10" />
         </>
       )}
       {family === 'aicp' && (
-        <rect className="landing-profile-award__fill" x="22" y="18" width="36" height="24" />
+        <rect className="landing-profile-award__fill" x="22" y="13" width="36" height="32" />
       )}
       {family === 'recognition' && (
         <>
