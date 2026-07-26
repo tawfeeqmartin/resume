@@ -1145,10 +1145,11 @@ const LANDING_VARIANT_CSS = `
   padding-bottom: 0;
 }
 .landing-profile {
-  --landing-award-icon-w: clamp(4.6rem, min(7.85vw, 10.8vh), 8.15rem);
-  --landing-award-icon-h: clamp(3.35rem, min(5.7vw, 7.45vh), 5.6rem);
-  --landing-award-label-size: clamp(0.42rem, min(0.5vw, 0.76vh), 0.58rem);
-  --landing-award-gap: clamp(0.32rem, 0.64vh, 0.58rem);
+  --landing-scale-u: min(1vw, 1svh);
+  --landing-award-icon-w: clamp(4.6rem, calc(var(--landing-scale-u) * 10.8), 8.15rem);
+  --landing-award-icon-h: clamp(3.35rem, calc(var(--landing-scale-u) * 7.45), 5.6rem);
+  --landing-award-label-size: clamp(0.42rem, calc(var(--landing-scale-u) * 0.76), 0.58rem);
+  --landing-award-gap: clamp(0.32rem, calc(var(--landing-scale-u) * 0.64), 0.58rem);
   --landing-award-row-h: calc(var(--landing-award-icon-h) + var(--landing-award-label-size) * 2.3 + var(--landing-award-gap));
   --landing-award-bottom: clamp(2.45rem, calc(var(--landing-award-row-h) * 0.62), 5.8rem);
   --landing-wheel-lift: clamp(-3.6rem, calc(var(--landing-award-row-h) * -0.42), -1.65rem);
@@ -1158,7 +1159,7 @@ const LANDING_VARIANT_CSS = `
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
   min-height: 100svh;
-  padding: clamp(3.7rem, 8.4vh, 6.6rem) var(--pad) clamp(3.1rem, 6.6vh, 5.6rem);
+  padding: clamp(3.7rem, calc(var(--landing-scale-u) * 8.4), 6.6rem) var(--pad) clamp(3.1rem, calc(var(--landing-scale-u) * 6.6), 5.6rem);
   color: var(--ink);
   background: var(--paper);
 }
@@ -1178,7 +1179,7 @@ const LANDING_VARIANT_CSS = `
 .landing-profile__name {
   margin: 0;
   font-family: var(--sans);
-  font-size: clamp(3.25rem, min(8vw, 13vh), 8rem);
+  font-size: clamp(3.25rem, calc(var(--landing-scale-u) * 13), 8rem);
   font-weight: 700;
   line-height: 0.92;
   letter-spacing: -0.055em;
@@ -1193,8 +1194,8 @@ const LANDING_VARIANT_CSS = `
   display: grid;
   grid-template-columns: minmax(18rem, 0.78fr) minmax(27rem, 0.94fr) minmax(18rem, 0.78fr);
   align-items: start;
-  gap: clamp(1.75rem, 3.6vw, 4.5rem);
-  margin-top: clamp(1.35rem, 3vh, 2.65rem);
+  gap: clamp(1.75rem, calc(var(--landing-scale-u) * 3.6), 4.5rem);
+  margin-top: clamp(1.35rem, calc(var(--landing-scale-u) * 3), 2.65rem);
 }
 .landing-profile__copy {
   grid-column: 1;
@@ -1219,7 +1220,7 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile__bio--hook {
   max-width: 16ch;
-  font-size: clamp(1.55rem, min(3.1vw, 4.9vh), 2.92rem);
+  font-size: clamp(1.55rem, calc(var(--landing-scale-u) * 4.9), 2.92rem);
   line-height: 0.98;
   letter-spacing: -0.035em;
 }
@@ -1229,7 +1230,7 @@ const LANDING_VARIANT_CSS = `
 .landing-profile__bio--details {
   color: var(--ink);
   max-width: 46ch;
-  font-size: clamp(0.84rem, min(0.96vw, 1.55vh), 0.98rem);
+  font-size: clamp(0.84rem, calc(var(--landing-scale-u) * 1.55), 0.98rem);
   line-height: 1.6;
 }
 .landing-profile__bio--details strong {
@@ -1275,9 +1276,9 @@ const LANDING_VARIANT_CSS = `
   grid-column: 2;
   justify-self: center;
   align-self: start;
-  width: min(100%, clamp(27rem, min(42vw, 58vh), 43rem));
-  height: clamp(24rem, min(41vw, 54vh), 40rem);
-  transform: translateY(calc(var(--landing-wheel-lift) - clamp(0.25rem, 1.1vw, 1.2rem)));
+  width: min(100%, clamp(27rem, calc(var(--landing-scale-u) * 58), 43rem));
+  height: clamp(24rem, calc(var(--landing-scale-u) * 54), 40rem);
+  transform: translateY(calc(var(--landing-wheel-lift) - clamp(0.25rem, calc(var(--landing-scale-u) * 1.1), 1.2rem)));
 }
 .landing-profile__instrument-canvas {
   display: block;
