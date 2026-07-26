@@ -1353,7 +1353,11 @@ const LANDING_VARIANT_CSS = `
   vector-effect: non-scaling-stroke;
 }
 .landing-profile-award__line {
-  display: none;
+  fill: none;
+  stroke: color-mix(in srgb, var(--award-color) 88%, black 12%);
+  stroke-width: 3;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
 }
 .landing-profile-award__fill {
   fill: color-mix(in srgb, var(--award-color) 74%, white 26%);
@@ -10595,7 +10599,11 @@ function LandingAwardIcon({ award }) {
         </>
       )}
       {family === 'emmy' && (
-        <polygon className="landing-profile-award__fill" points="40,8 58,18 58,36 40,46 22,36 22,18" />
+        <>
+          <line className="landing-profile-award__line" x1="40" y1="16" x2="28" y2="7" />
+          <line className="landing-profile-award__line" x1="40" y1="16" x2="52" y2="7" />
+          <rect className="landing-profile-award__fill" x="18" y="16" width="44" height="33" rx="1" />
+        </>
       )}
       {family === 'sxsw' && (
         <>
