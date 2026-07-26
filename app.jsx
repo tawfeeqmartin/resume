@@ -1248,6 +1248,7 @@ const LANDING_VARIANT_CSS = `
   max-width: 42ch;
   font-size: var(--landing-proof-fit-font-size, clamp(0.82rem, min(calc(var(--landing-scale-u) * 2.12), 3.47svh), 1.57rem));
   line-height: var(--landing-proof-fit-line-height, 1.255);
+  text-align: right;
 }
 .landing-profile__bio--details strong {
   color: var(--ink);
