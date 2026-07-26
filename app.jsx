@@ -1159,7 +1159,9 @@ const LANDING_VARIANT_CSS = `
   width: 100vw;
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
-  min-height: 100svh;
+  height: 100svh;
+  min-height: 0;
+  overflow: hidden;
   padding: clamp(3.7rem, calc(var(--landing-scale-u) * 8.4), 6.6rem) var(--pad) clamp(3.1rem, calc(var(--landing-scale-u) * 6.6), 5.6rem);
   color: var(--ink);
   background: var(--paper);
@@ -1193,7 +1195,7 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile__story {
   display: grid;
-  grid-template-columns: minmax(18rem, 0.78fr) minmax(27rem, 0.94fr) minmax(18rem, 0.78fr);
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.18fr) minmax(0, 0.72fr);
   align-items: start;
   gap: clamp(1.75rem, calc(var(--landing-scale-u) * 3.6), 4.5rem);
   margin-top: clamp(1.35rem, calc(var(--landing-scale-u) * 3), 2.65rem);
@@ -1202,13 +1204,13 @@ const LANDING_VARIANT_CSS = `
   grid-column: 1;
   position: relative;
   z-index: 3;
-  max-width: clamp(20rem, 32vw, 31rem);
+  max-width: clamp(15rem, calc(var(--landing-scale-u) * 31), 31rem);
 }
 .landing-profile__proof {
   grid-column: 3;
   position: relative;
   z-index: 3;
-  max-width: clamp(20rem, 30vw, 32rem);
+  max-width: clamp(15rem, calc(var(--landing-scale-u) * 32), 32rem);
   justify-self: end;
 }
 .landing-profile__bio {
@@ -1322,8 +1324,8 @@ const LANDING_VARIANT_CSS = `
 .landing-profile-awards {
   --award-color-fallback: #245cff;
   position: absolute;
-  left: max(var(--pad), calc((100vw - var(--maxw)) / 2));
-  right: max(var(--pad), calc((100vw - var(--maxw)) / 2));
+  left: max(var(--pad), calc((100vw - min(100vw, var(--maxw))) / 2));
+  right: max(var(--pad), calc((100vw - min(100vw, var(--maxw))) / 2));
   bottom: var(--landing-award-bottom);
   z-index: 3;
   margin: 0;
@@ -1452,71 +1454,33 @@ const LANDING_VARIANT_CSS = `
     overflow-x: clip;
   }
   .landing-profile {
-    --landing-award-icon-w: clamp(3.45rem, 6.1vw, 5rem);
-    --landing-award-icon-h: clamp(2.55rem, 4.45vw, 3.65rem);
-    --landing-award-label-size: clamp(0.38rem, 0.5vw, 0.48rem);
-    --landing-award-gap: clamp(0.28rem, 0.55vh, 0.48rem);
-    --landing-award-bottom: clamp(2.2rem, calc(var(--landing-award-row-h) * 0.66), 4.4rem);
-    --landing-wheel-lift: -1.25rem;
-    min-height: auto;
-    padding-top: clamp(4.5rem, 9svh, 7rem);
-    padding-bottom: clamp(4rem, 8svh, 6.5rem);
-  }
-  .landing-profile__name-row {
-    align-items: flex-start;
-    justify-content: flex-start;
-    text-align: left;
+    min-height: 100svh;
   }
   .landing-profile__name {
-    max-width: 11ch;
-    font-size: clamp(4.2rem, 11vw, 7rem);
-    line-height: 0.9;
-  }
-  .landing-profile__name span {
-    display: block;
-  }
-  .landing-profile__name span + span {
-    margin-left: 0;
+    max-width: none;
   }
   .landing-profile__story {
-    grid-template-columns: 1fr;
-    gap: clamp(1.8rem, 4vw, 3rem);
-    margin-top: clamp(2.5rem, 5svh, 4rem);
+    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.18fr) minmax(0, 0.72fr);
   }
-  .landing-profile__copy,
-  .landing-profile__proof {
+  .landing-profile__copy {
     grid-column: 1;
-    max-width: 60ch;
-    justify-self: start;
   }
-  .landing-profile__bio {
-    max-width: 58ch;
-    font-size: clamp(1rem, 1.7vw, 1.16rem);
+  .landing-profile__proof {
+    grid-column: 3;
+    justify-self: end;
   }
   .landing-profile__bio--hook {
-    max-width: 17ch;
-    font-size: clamp(1.4rem, 3vw, 1.88rem);
-  }
-  .landing-profile__bio--details {
-    max-width: 56ch;
-    font-size: clamp(0.98rem, 1.52vw, 1.1rem);
+    max-width: 16ch;
   }
   .landing-profile__instrument--wheel {
-    justify-self: start;
-    width: min(78vw, 38rem);
-    height: clamp(22rem, 52vw, 35rem);
-    transform: translateY(-1.4rem);
-  }
-  .landing-profile-awards__grid {
-    grid-template-columns: repeat(9, minmax(0, 1fr));
-  }
-  .landing-profile-award-connectors {
-    display: none;
+    justify-self: center;
   }
 }
 @media (max-width: 760px) {
   .landing-profile {
+    height: auto;
     min-height: 100svh;
+    overflow: visible;
     padding-top: clamp(3.5rem, 10vh, 5rem);
   }
   .landing-profile-award-connectors {
