@@ -11021,151 +11021,84 @@ const LANDING_AWARD_PATTERNS = [
     },
   },
   {
-    id: 'seed-of-life',
-    label: 'Seed of Life',
-    formula: '7 equal circles · sixfold compass construction',
-    edgePairs: [
-      [0, 1],
-      [0, 2],
-      [0, 3],
-      [0, 4],
-      [0, 5],
-      [0, 6],
-      [1, 2],
-      [2, 3],
-      [3, 4],
-      [4, 5],
-      [5, 6],
-      [6, 1],
-      [7, 8],
-      [8, 9],
-      [9, 10],
-      [10, 11],
-      [11, 12],
-      [12, 7],
-    ],
-    point(index, total, t) {
-      const ring = 0.72;
-      const inner = 0.37;
-      const points = [
-        [0, 0],
-        ...Array.from({ length: 6 }, (_, step) => {
-          const angle = -Math.PI / 2 + step * Math.PI / 3;
-          return [Math.cos(angle) * inner, Math.sin(angle) * inner];
-        }),
-        ...Array.from({ length: 6 }, (_, step) => {
-          const angle = -Math.PI / 2 + Math.PI / 6 + step * Math.PI / 3;
-          return [Math.cos(angle) * ring, Math.sin(angle) * ring];
-        }),
-        [-0.72, 0],
-        [0.72, 0],
-        [0, -0.72],
-        [0, 0.72],
-      ];
-      return landingConstellationPoint(index, t, points, 0.56);
-    },
-  },
-  {
-    id: 'metatron-cube',
-    label: "Metatron's cube",
-    formula: '13 nodes · all Platonic solids encoded',
-    edgePairs: [
-      [0, 1],
-      [0, 2],
-      [0, 3],
-      [0, 4],
-      [0, 5],
-      [0, 6],
-      [1, 3],
-      [3, 5],
-      [5, 1],
-      [2, 4],
-      [4, 6],
-      [6, 2],
-      [7, 10],
-      [10, 9],
-      [9, 12],
-      [12, 11],
-      [11, 8],
-      [8, 7],
-      [1, 7],
-      [2, 8],
-      [3, 9],
-      [4, 10],
-      [5, 11],
-      [6, 12],
-    ],
+    id: 'camera-frustum',
+    label: 'Camera frustum',
+    formula: 'camera → near plane → far plane · FOV solve',
+    lineStep: 1,
     point(index, total, t) {
       const points = [
-        [0, 0],
-        ...Array.from({ length: 6 }, (_, step) => {
-          const angle = -Math.PI / 2 + step * Math.PI / 3;
-          return [Math.cos(angle) * 0.32, Math.sin(angle) * 0.32];
-        }),
-        ...Array.from({ length: 6 }, (_, step) => {
-          const angle = -Math.PI / 2 + step * Math.PI / 3;
-          return [Math.cos(angle) * 0.74, Math.sin(angle) * 0.74];
-        }),
-        [-0.42, -0.42],
-        [0.42, -0.42],
-        [0, 0.66],
-        [0, -0.66],
+        [0, 0, -1.0],
+        [-0.30, -0.20, -0.22],
+        [0.30, -0.20, -0.22],
+        [0.30, 0.20, -0.22],
+        [-0.30, 0.20, -0.22],
+        [-0.78, -0.52, 0.80],
+        [0.78, -0.52, 0.80],
+        [0.78, 0.52, 0.80],
+        [-0.78, 0.52, 0.80],
+        [0, 0, -1.0],
+        [-0.78, -0.52, 0.80],
+        [0, 0, -1.0],
+        [0.78, -0.52, 0.80],
+        [0, 0, -1.0],
+        [0.78, 0.52, 0.80],
+        [0, 0, -1.0],
       ];
-      return landingConstellationPoint(index, t, points, 0.58);
+      return landingProjectedPathPoint(index, t, points, points.map((_, pointIndex) => pointIndex), 0.32);
     },
   },
   {
-    id: 'cube-wire',
-    label: 'Cube projection',
-    formula: 'p=Π(RᵧRₓ·v) · 8 vertices / 12 edges',
+    id: 'led-volume',
+    label: 'LED volume mouth',
+    formula: 'curved wall + ceiling + floor · volume mouth',
     lineStep: 1,
     point(index, total, t) {
-      const vertices = [
-        [-1, -1, -1],
-        [1, -1, -1],
-        [1, 1, -1],
-        [-1, 1, -1],
-        [-1, -1, 1],
-        [1, -1, 1],
-        [1, 1, 1],
-        [-1, 1, 1],
+      const points = [
+        [-1.08, -0.62, 0.05],
+        [-0.72, -0.62, 0.36],
+        [-0.24, -0.62, 0.52],
+        [0.24, -0.62, 0.52],
+        [0.72, -0.62, 0.36],
+        [1.08, -0.62, 0.05],
+        [1.08, 0.44, 0.05],
+        [0.72, 0.62, 0.36],
+        [0.24, 0.70, 0.52],
+        [-0.24, 0.70, 0.52],
+        [-0.72, 0.62, 0.36],
+        [-1.08, 0.44, 0.05],
+        [-1.08, -0.62, 0.05],
+        [-0.24, -0.62, 0.52],
+        [-0.24, 0.70, 0.52],
+        [0.24, 0.70, 0.52],
       ];
-      const path = [0, 1, 2, 3, 0, 4, 5, 6, 7, 4, 5, 1, 2, 6, 7, 3, 0];
-      return landingProjectedPathPoint(index, t, vertices, path, 0.25);
+      return landingProjectedPathPoint(index, t, points, points.map((_, pointIndex) => pointIndex), 0.31);
     },
   },
   {
-    id: 'octa-wire',
-    label: 'Octahedron projection',
-    formula: 'p=Π(RᵧRₓ·v) · |x|+|y|+|z|=1',
+    id: 'inner-frustum',
+    label: 'Inner / outer frustum',
+    formula: 'tracked inner frustum + static outer light field',
     lineStep: 1,
     point(index, total, t) {
-      const vertices = [
-        [0, 1.18, 0],
-        [0, -1.18, 0],
-        [1.18, 0, 0],
-        [0, 0, 1.18],
-        [-1.18, 0, 0],
-        [0, 0, -1.18],
+      const points = [
+        [-1.08, -0.62, 0.20],
+        [1.08, -0.62, 0.20],
+        [1.08, 0.62, 0.20],
+        [-1.08, 0.62, 0.20],
+        [-1.08, -0.62, 0.20],
+        [-0.42, -0.24, 0.72],
+        [0.42, -0.24, 0.72],
+        [0.42, 0.24, 0.72],
+        [-0.42, 0.24, 0.72],
+        [-0.42, -0.24, 0.72],
+        [0, -0.78, -0.70],
+        [-0.42, -0.24, 0.72],
+        [0, -0.78, -0.70],
+        [0.42, -0.24, 0.72],
+        [0, -0.78, -0.70],
+        [0.42, 0.24, 0.72],
       ];
-      const path = [0, 2, 1, 3, 0, 4, 1, 5, 0, 2, 3, 4, 5, 2, 1, 4, 0];
-      return landingProjectedPathPoint(index, t, vertices, path, 0.28);
-    },
-  },
-  {
-    id: 'tetra-wire',
-    label: 'Tetrahedron projection',
-    formula: 'p=Π(RᵧRₓ·v) · 4 triangular faces',
-    lineStep: 1,
-    point(index, total, t) {
-      const vertices = [
-        [1, 1, 1],
-        [-1, -1, 1],
-        [-1, 1, -1],
-        [1, -1, -1],
-      ];
-      const path = [0, 1, 2, 0, 3, 1, 2, 3, 0, 1, 3, 2, 0, 2, 1, 3, 0];
-      return landingProjectedPathPoint(index, t, vertices, path, 0.31);
+      return landingProjectedPathPoint(index, t, points, points.map((_, pointIndex) => pointIndex), 0.31);
     },
   },
   {
@@ -11258,57 +11191,55 @@ const LANDING_AWARD_PATTERNS = [
     },
   },
   {
-    id: 'cube-stack',
-    label: 'Nested cube projection',
-    formula: 'p=Π(RᵧRₓ·v) · cube ⊂ cube',
-    lineStep: 1,
-    point(index, total, t) {
-      const vertices = [
-        [-1, -1, -1],
-        [1, -1, -1],
-        [1, 1, -1],
-        [-1, 1, -1],
-        [-1, -1, 1],
-        [1, -1, 1],
-        [1, 1, 1],
-        [-1, 1, 1],
-        [-0.48, -0.48, -0.48],
-        [0.48, -0.48, -0.48],
-        [0.48, 0.48, -0.48],
-        [-0.48, 0.48, -0.48],
-        [-0.48, -0.48, 0.48],
-        [0.48, -0.48, 0.48],
-        [0.48, 0.48, 0.48],
-        [-0.48, 0.48, 0.48],
-      ];
-      const path = [0, 1, 2, 3, 0, 4, 8, 9, 10, 11, 15, 14, 13, 12, 8, 5, 6];
-      return landingProjectedPathPoint(index, t, vertices, path, 0.25);
-    },
-  },
-  {
-    id: 'perspective-grid',
-    label: 'Perspective grid',
-    formula: 'p=Π(x,y,z) · vanishing lattice',
+    id: 'epipolar-rig',
+    label: 'Epipolar rig',
+    formula: "x'ᵀFx=0 · baseline + correspondence rays",
     lineStep: 1,
     point(index, total, t) {
       const points = [
-        [-1.15, -0.92, -0.6],
-        [-0.58, -0.92, -0.2],
-        [0, -0.92, 0.18],
-        [0.58, -0.92, -0.2],
-        [1.15, -0.92, -0.6],
-        [-0.82, -0.36, 0.0],
-        [-0.40, -0.36, 0.44],
-        [0, -0.36, 0.74],
-        [0.40, -0.36, 0.44],
-        [0.82, -0.36, 0.0],
-        [-0.48, 0.22, 0.38],
-        [0, 0.22, 0.78],
-        [0.48, 0.22, 0.38],
-        [-0.18, 0.74, 0.58],
-        [0.18, 0.74, 0.58],
-        [0, 0.98, 0.3],
-        [0, -1.12, -0.85],
+        [-0.78, -0.26, -0.25],
+        [-0.46, -0.38, 0.42],
+        [-0.46, 0.38, 0.42],
+        [-0.78, -0.26, -0.25],
+        [0.78, -0.26, -0.25],
+        [0.46, -0.38, 0.42],
+        [0.46, 0.38, 0.42],
+        [0.78, -0.26, -0.25],
+        [-0.78, -0.26, -0.25],
+        [0.78, -0.26, -0.25],
+        [-0.12, 0.08, 0.82],
+        [-0.78, -0.26, -0.25],
+        [-0.12, 0.08, 0.82],
+        [0.78, -0.26, -0.25],
+        [-0.46, -0.38, 0.42],
+        [0.46, -0.38, 0.42],
+      ];
+      return landingProjectedPathPoint(index, t, points, points.map((_, pointIndex) => pointIndex), 0.34);
+    },
+  },
+  {
+    id: 'mocap-wand',
+    label: 'Mocap wand volume',
+    formula: 'wand sweep + L-frame · solve origin + axes',
+    lineStep: 1,
+    point(index, total, t) {
+      const points = [
+        [-0.72, 0.38, 0.18],
+        [-0.42, 0.16, 0.34],
+        [-0.10, -0.04, 0.50],
+        [0.22, -0.18, 0.42],
+        [0.52, -0.34, 0.20],
+        [-0.66, -0.62, -0.20],
+        [-0.26, -0.62, -0.20],
+        [-0.66, -0.22, -0.20],
+        [-0.66, -0.62, -0.20],
+        [0.58, 0.50, -0.15],
+        [0.78, 0.50, -0.15],
+        [0.78, 0.30, -0.15],
+        [0.58, 0.30, -0.15],
+        [0.58, 0.50, -0.15],
+        [-0.10, -0.04, 0.50],
+        [0.58, 0.50, -0.15],
       ];
       return landingProjectedPathPoint(index, t, points, points.map((_, pointIndex) => pointIndex), 0.31);
     },
