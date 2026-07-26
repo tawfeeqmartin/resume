@@ -1298,7 +1298,7 @@ const LANDING_VARIANT_CSS = `
   position: absolute;
   left: max(var(--pad), calc((100vw - var(--maxw)) / 2));
   right: max(var(--pad), calc((100vw - var(--maxw)) / 2));
-  bottom: clamp(1rem, 2.2vh, 1.9rem);
+  bottom: clamp(2.2rem, 5vh, 4.25rem);
   z-index: 3;
   margin: 0;
   padding: 0;
