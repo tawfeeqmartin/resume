@@ -10590,17 +10590,11 @@ function LandingAwardIcon({ award }) {
         <>
           <circle className="landing-profile-award__fill" cx="29" cy="27" r="15" />
           <circle className="landing-profile-award__fill landing-profile-award__fill--alt" cx="51" cy="27" r="15" />
-          <path
-            className="landing-profile-award__fill landing-profile-award__fill--additive"
-            d="M40 16.8A15 15 0 0 1 40 37.2A15 15 0 0 1 40 16.8Z"
-          />
+          <ellipse className="landing-profile-award__fill landing-profile-award__fill--additive" cx="40" cy="27" rx="7.5" ry="13.5" />
         </>
       )}
       {family === 'emmy' && (
-        <path
-          className="landing-profile-award__fill"
-          d="M40 7L53 29H45V46H35V29H27Z"
-        />
+        <polygon className="landing-profile-award__fill" points="40,7 56,45 24,45" />
       )}
       {family === 'sxsw' && (
         <>
@@ -10609,13 +10603,13 @@ function LandingAwardIcon({ award }) {
         </>
       )}
       {family === 'webby' && (
-        <path className="landing-profile-award__fill" d="M40 13L65 43H15Z" />
+        <polygon className="landing-profile-award__fill" points="40,13 65,43 15,43" />
       )}
       {family === 'hpa' && (
-        <path className="landing-profile-award__fill" d="M40 9L68 27L40 45L12 27Z" />
+        <polygon className="landing-profile-award__fill" points="40,9 68,27 40,45 12,27" />
       )}
       {family === 'one-show' && (
-        <path className="landing-profile-award__fill" d="M19 42L54 15L63 25L28 51Z" />
+        <rect className="landing-profile-award__fill" x="26" y="15" width="32" height="12" transform="rotate(-38 42 21)" />
       )}
       {family === 'technicolor' && (
         <>
@@ -10626,8 +10620,8 @@ function LandingAwardIcon({ award }) {
       )}
       {family === 'siggraph' && (
         <>
-          <path className="landing-profile-award__solid" d="M16 27C25 12 55 12 64 27C55 42 25 42 16 27Z" />
-          <circle className="landing-profile-award__fill" cx="40" cy="27" r="10" />
+          <circle className="landing-profile-award__solid" cx="40" cy="27" r="17" />
+          <circle className="landing-profile-award__fill" cx="40" cy="27" r="9" />
         </>
       )}
       {family === 'aicp' && (
