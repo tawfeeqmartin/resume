@@ -1427,12 +1427,12 @@ const LANDING_VARIANT_CSS = `
   stroke-dasharray: 5 5;
   stroke-linecap: square;
   vector-effect: non-scaling-stroke;
-  opacity: 0.42;
+  opacity: 0.32;
 }
 .landing-profile-award-connectors .landing-profile-award-connectors__shape {
   stroke: var(--ink);
   stroke-dasharray: none;
-  opacity: 0.2;
+  opacity: 0.36;
 }
 .landing-profile-award-connectors .landing-profile-award-connectors__sample {
   vector-effect: non-scaling-stroke;
@@ -10932,8 +10932,8 @@ function landingAwardGroups(items = []) {
 
 const LANDING_AWARD_PHI = (1 + Math.sqrt(5)) / 2;
 const LANDING_AWARD_GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
-const LANDING_AWARD_PATTERN_CYCLE_SECONDS = 3.6;
-const LANDING_AWARD_PATTERN_MORPH_SECONDS = 0.72;
+const LANDING_AWARD_PATTERN_CYCLE_SECONDS = 3.2;
+const LANDING_AWARD_PATTERN_MORPH_SECONDS = 0.58;
 const LANDING_AWARD_PATTERN_EDGE_LIMIT = 0.405;
 
 const landingPatternClampPoint = (point = {}) => {
@@ -10957,6 +10957,57 @@ const landingPatternPolarPoint = (angle, radius) => landingPatternClampPoint({
   y: 0.5 + Math.sin(angle) * radius,
 });
 
+function landingSuperformulaRadius(angle, {
+  a = 1,
+  b = 1,
+  m = 6,
+  n1 = 0.32,
+  n2 = 1.45,
+  n3 = 1.45,
+  scale = 0.26,
+} = {}) {
+  const p1 = Math.pow(Math.abs(Math.cos((m * angle) / 4) / a), n2);
+  const p2 = Math.pow(Math.abs(Math.sin((m * angle) / 4) / b), n3);
+  return scale * Math.pow(Math.max(0.0001, p1 + p2), -1 / n1);
+}
+
+function landingProject3DPoint(point = [0, 0, 0], t = 0, scale = 0.27) {
+  const [x = 0, y = 0, z = 0] = point;
+  const yaw = t * 0.42 + 0.72;
+  const pitch = t * 0.27 - 0.34;
+  const cy = Math.cos(yaw);
+  const sy = Math.sin(yaw);
+  const cp = Math.cos(pitch);
+  const sp = Math.sin(pitch);
+  const xr = x * cy + z * sy;
+  const zr = -x * sy + z * cy;
+  const yr = y * cp - zr * sp;
+  const zz = y * sp + zr * cp;
+  const perspective = 3.2 / Math.max(1.2, 3.2 - zz);
+  return landingPatternClampPoint({
+    x: 0.5 + xr * perspective * scale,
+    y: 0.5 + yr * perspective * scale,
+  });
+}
+
+function landingProjectedPathPoint(index, t, vertices = [], path = [], scale = 0.27) {
+  const vertex = vertices[path[index % Math.max(1, path.length)] || 0] || vertices[0] || [0, 0, 0];
+  return landingProject3DPoint(vertex, t, scale);
+}
+
+function landingConstellationPoint(index, t, points = [], scale = 0.36) {
+  const point = points[index % Math.max(1, points.length)] || [0, 0];
+  const drift = t * 0.08;
+  const cos = Math.cos(drift);
+  const sin = Math.sin(drift);
+  const x = point[0] * cos - point[1] * sin;
+  const y = point[0] * sin + point[1] * cos;
+  return landingPatternClampPoint({
+    x: 0.5 + x * scale,
+    y: 0.5 + y * scale,
+  });
+}
+
 function landingCoprimeStep(total = 0, preferred = 5) {
   const count = Math.max(3, Math.round(total));
   const gcd = (a, b) => (b ? gcd(b, a % b) : Math.abs(a));
@@ -10975,8 +11026,9 @@ function landingCoprimeStep(total = 0, preferred = 5) {
 const LANDING_AWARD_PATTERNS = [
   {
     id: 'star-polygon',
-    label: 'Star polygon',
+    label: 'Heptadecagram',
     formula: '{17/5} · θᵢ=2π·(5i mod 17)/17',
+    lineStep: 1,
     point(index, total, t) {
       const n = Math.max(3, total);
       const step = landingCoprimeStep(n, 5);
@@ -10986,63 +11038,208 @@ const LANDING_AWARD_PATTERNS = [
     },
   },
   {
+    id: 'cube-wire',
+    label: 'Cube projection',
+    formula: 'p=Π(RᵧRₓ·v) · 8 vertices / 12 edges',
+    lineStep: 1,
+    point(index, total, t) {
+      const vertices = [
+        [-1, -1, -1],
+        [1, -1, -1],
+        [1, 1, -1],
+        [-1, 1, -1],
+        [-1, -1, 1],
+        [1, -1, 1],
+        [1, 1, 1],
+        [-1, 1, 1],
+      ];
+      const path = [0, 1, 2, 3, 0, 4, 5, 6, 7, 4, 5, 1, 2, 6, 7, 3, 0];
+      return landingProjectedPathPoint(index, t, vertices, path, 0.25);
+    },
+  },
+  {
+    id: 'octa-wire',
+    label: 'Octahedron projection',
+    formula: 'p=Π(RᵧRₓ·v) · |x|+|y|+|z|=1',
+    lineStep: 1,
+    point(index, total, t) {
+      const vertices = [
+        [0, 1.18, 0],
+        [0, -1.18, 0],
+        [1.18, 0, 0],
+        [0, 0, 1.18],
+        [-1.18, 0, 0],
+        [0, 0, -1.18],
+      ];
+      const path = [0, 2, 1, 3, 0, 4, 1, 5, 0, 2, 3, 4, 5, 2, 1, 4, 0];
+      return landingProjectedPathPoint(index, t, vertices, path, 0.28);
+    },
+  },
+  {
+    id: 'orion-map',
+    label: 'Orion star map',
+    formula: 'Betelgeuse→belt→Rigel · authored star graph',
+    edgePairs: [
+      [0, 4],
+      [1, 4],
+      [4, 5],
+      [5, 6],
+      [6, 2],
+      [6, 3],
+      [4, 7],
+      [7, 8],
+      [8, 9],
+    ],
+    point(index, total, t) {
+      const points = [
+        [-0.58, -0.42],
+        [0.52, -0.48],
+        [-0.48, 0.68],
+        [0.48, 0.62],
+        [-0.20, -0.02],
+        [0.00, 0.02],
+        [0.20, 0.06],
+        [0.02, -0.58],
+        [0.00, 0.24],
+        [0.02, 0.43],
+        [-0.70, -0.02],
+        [0.68, -0.08],
+        [-0.34, -0.76],
+        [0.30, -0.78],
+        [-0.68, 0.35],
+        [0.70, 0.32],
+        [0.00, 0.78],
+      ];
+      return landingConstellationPoint(index, t, points, 0.39);
+    },
+  },
+  {
+    id: 'dipper-map',
+    label: 'Big Dipper map',
+    formula: 'α→β→γ→δ→ε→ζ→η · 7-star asterism',
+    edgePairs: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 5],
+      [5, 6],
+    ],
+    point(index, total, t) {
+      const points = [
+        [-0.72, 0.24],
+        [-0.46, 0.30],
+        [-0.30, 0.08],
+        [-0.06, 0.10],
+        [0.18, -0.06],
+        [0.42, -0.22],
+        [0.72, -0.20],
+        [-0.64, -0.40],
+        [-0.28, -0.50],
+        [0.16, 0.40],
+        [0.55, 0.34],
+        [0.75, 0.10],
+        [-0.80, -0.06],
+        [-0.08, -0.28],
+        [0.34, 0.16],
+        [0.04, -0.60],
+        [0.64, -0.54],
+      ];
+      return landingConstellationPoint(index, t, points, 0.37);
+    },
+  },
+  {
+    id: 'maurer-rose',
+    label: 'Maurer rose',
+    formula: 'r=sin(6θ) · θᵢ=2π·(7i mod 17)/17',
+    lineStep: 1,
+    point(index, total, t) {
+      const n = Math.max(3, total);
+      const order = (index * landingCoprimeStep(n, 7)) % n;
+      const theta = (order / n) * Math.PI * 2 + t * 0.36;
+      const radius = Math.sin(6 * theta) * 0.38;
+      return landingPatternPolarPoint(theta, radius);
+    },
+  },
+  {
+    id: 'lissajous',
+    label: 'Lissajous knot',
+    formula: 'x=sin(5u+π/2+t) · y=sin(8u)',
+    lineStep: 1,
+    point(index, total, t) {
+      const u = (index / Math.max(1, total)) * Math.PI * 2;
+      return landingPatternClampPoint({
+        x: 0.5 + Math.sin(5 * u + Math.PI / 2 + t * 0.58) * 0.385,
+        y: 0.5 + Math.sin(8 * u + t * 0.36) * 0.385,
+      });
+    },
+  },
+  {
+    id: 'cardioid',
+    label: 'Cardioid',
+    formula: 'r=.19·(1+cosθ) · θᵢ=2πi/17+t',
+    lineStep: 1,
+    point(index, total, t) {
+      const theta = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.42;
+      const radius = 0.19 * (1 + Math.cos(theta));
+      return landingPatternPolarPoint(theta, radius);
+    },
+  },
+  {
+    id: 'astroid',
+    label: 'Astroid',
+    formula: 'x=.39cos³u · y=.39sin³u',
+    lineStep: 1,
+    point(index, total, t) {
+      const u = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.32;
+      return landingPatternClampPoint({
+        x: 0.5 + 0.39 * Math.pow(Math.cos(u), 3),
+        y: 0.5 + 0.39 * Math.pow(Math.sin(u), 3),
+      });
+    },
+  },
+  {
+    id: 'hypocycloid',
+    label: 'Hypocycloid',
+    formula: 'R/r=7 · x=6cosu+cos6u',
+    lineStep: 1,
+    point(index, total, t) {
+      const u = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.44;
+      const x = 6 * Math.cos(u) + Math.cos(6 * u);
+      const y = 6 * Math.sin(u) - Math.sin(6 * u);
+      return landingPatternClampPoint({
+        x: 0.5 + (x / 7) * LANDING_AWARD_PATTERN_EDGE_LIMIT,
+        y: 0.5 + (y / 7) * LANDING_AWARD_PATTERN_EDGE_LIMIT,
+      });
+    },
+  },
+  {
+    id: 'superformula',
+    label: 'Superformula bloom',
+    formula: 'r=(|cos(6θ/4)|¹·⁴⁵+|sin(6θ/4)|¹·⁴⁵)^−1/.32',
+    lineStep: 2,
+    point(index, total, t) {
+      const theta = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.28;
+      const radius = landingSuperformulaRadius(theta, {
+        m: 6,
+        n1: 0.32,
+        n2: 1.45,
+        n3: 1.45,
+        scale: 0.32,
+      });
+      return landingPatternPolarPoint(theta, radius);
+    },
+  },
+  {
     id: 'phyllotaxis',
-    label: 'Phyllotaxis',
+    label: 'Golden spiral',
     formula: 'θᵢ=i·137.5°+t · rᵢ=√(i/N)',
+    lineStep: 1,
     point(index, total, t) {
       const safeTotal = Math.max(1, total - 1);
       const radius = 0.05 + Math.sqrt((index + 0.5) / (safeTotal + 1)) * 0.355;
       const angle = index * LANDING_AWARD_GOLDEN_ANGLE + t * 0.46;
       return landingPatternPolarPoint(angle, radius);
-    },
-  },
-  {
-    id: 'lissajous',
-    label: 'Lissajous',
-    formula: 'x=sin(3u+π/2+t) · y=sin(4u)',
-    point(index, total, t) {
-      const u = (index / Math.max(1, total)) * Math.PI * 2;
-      return landingPatternClampPoint({
-        x: 0.5 + Math.sin(3 * u + Math.PI / 2 + t * 0.72) * 0.385,
-        y: 0.5 + Math.sin(4 * u + t * 0.48) * 0.385,
-      });
-    },
-  },
-  {
-    id: 'rose-window',
-    label: 'Rose window',
-    formula: 'r=sin(5θ) · θᵢ=2πi/17+t',
-    point(index, total, t) {
-      const theta = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.42;
-      const radius = Math.sin(5 * theta) * 0.365;
-      return landingPatternPolarPoint(theta, radius);
-    },
-  },
-  {
-    id: 'superellipse',
-    label: 'Superellipse',
-    formula: '|x/a|ⁿ+|y/b|ⁿ=1 · n=4',
-    point(index, total, t) {
-      const theta = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.22;
-      const n = 4;
-      const cos = Math.cos(theta);
-      const sin = Math.sin(theta);
-      const radius = 0.34 / Math.pow(Math.pow(Math.abs(cos), n) + Math.pow(Math.abs(sin), n), 1 / n);
-      return landingPatternPolarPoint(theta, radius);
-    },
-  },
-  {
-    id: 'hypotrochoid',
-    label: 'Hypocycloid',
-    formula: 'x=4cosu+cos4u · y=4sinu−sin4u',
-    point(index, total, t) {
-      const u = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.52;
-      const x = 4 * Math.cos(u) + Math.cos(4 * u);
-      const y = 4 * Math.sin(u) - Math.sin(4 * u);
-      return landingPatternClampPoint({
-        x: 0.5 + (x / 5) * LANDING_AWARD_PATTERN_EDGE_LIMIT,
-        y: 0.5 + (y / 5) * LANDING_AWARD_PATTERN_EDGE_LIMIT,
-      });
     },
   },
 ];
@@ -11095,11 +11292,15 @@ function landingAwardSampleColor(sample = {}, index = 0) {
 function landingAwardPatternConnectionPairs(patternId, total = 0) {
   const count = Math.max(0, total);
   if (count < 2) return [];
-  if (patternId === 'phyllotaxis') {
-    const step = Math.min(count - 1, 5);
-    return Array.from({ length: count - step }, (_, index) => [index, index + step]);
+  const pattern = LANDING_AWARD_PATTERNS.find((item) => item.id === patternId);
+  if (Array.isArray(pattern?.edgePairs)) {
+    return pattern.edgePairs.filter(([from, to]) => from < count && to < count);
   }
-  return Array.from({ length: count }, (_, index) => [index, (index + 1) % count]);
+  const step = Math.max(1, Math.min(count - 1, Number(pattern?.lineStep) || 1));
+  if (patternId === 'phyllotaxis') {
+    return Array.from({ length: count - 1 }, (_, index) => [index, index + 1]);
+  }
+  return Array.from({ length: count }, (_, index) => [index, (index + step) % count]);
 }
 
 function landingAwardRenderedParts(root) {
