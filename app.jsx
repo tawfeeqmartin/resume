@@ -10996,12 +10996,14 @@ function LandingProfileAwards({ items = [] }) {
 
 function LandingProfileSection({ summaryOnly = false } = {}) {
   const profileAwardGroups = landingAwardGroups(RESUME.awards);
+  const useProfileFitEffect = React.useLayoutEffect || useEffect;
   const profileRef = useRef(null);
   const nameRef = useRef(null);
   const hookRef = useRef(null);
   const proofRef = useRef(null);
+  const lastProfileFitRef = useRef(null);
 
-  useEffect(() => {
+  useProfileFitEffect(() => {
     if (summaryOnly) return undefined;
     const profile = profileRef.current;
     const name = nameRef.current;
@@ -11010,6 +11012,7 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
     if (!profile || !name || !hook || !proof) return undefined;
 
     let frame = 0;
+    let lastSignature = '';
     const clearFit = () => {
       profile.style.removeProperty('--landing-text-fit-height');
       profile.style.removeProperty('--landing-wheel-fit-shift');
@@ -11034,7 +11037,6 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
     };
     const fit = () => {
       frame = 0;
-      clearFit();
       const awards = profile.querySelector('.landing-profile-awards');
       const awardsRect = awards?.getBoundingClientRect?.();
       if (!awardsRect || awardsRect.height <= 0) return;
@@ -11042,7 +11044,32 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
       const proofRect = proof.getBoundingClientRect();
       const targetTop = Math.max(hookRect.top, proofRect.top);
       const verticalPad = Math.max(10, window.innerHeight * 0.016);
-      const targetHeight = Math.max(120, awardsRect.top - targetTop - verticalPad);
+      const rawTargetHeight = awardsRect.top - targetTop - verticalPad;
+      const viewportHeight = window.visualViewport?.height || window.innerHeight || 720;
+      const minimumStableHeight = Math.max(170, viewportHeight * 0.22);
+      const maximumStableHeight = Math.max(minimumStableHeight, viewportHeight * 0.64);
+      if (!Number.isFinite(rawTargetHeight) || rawTargetHeight < minimumStableHeight) {
+        const lastFit = lastProfileFitRef.current;
+        if (lastFit) {
+          profile.style.setProperty('--landing-text-fit-height', `${lastFit.targetHeight}px`);
+          profile.style.setProperty('--landing-wheel-fit-shift', `${lastFit.wheelShift}px`);
+          hook.style.setProperty('--landing-hook-fit-font-size', `${lastFit.hookFontSize}px`);
+          proof.style.setProperty('--landing-proof-fit-font-size', `${lastFit.proofFontSize}px`);
+          proof.style.setProperty('--landing-proof-fit-line-height', `${lastFit.proofLineHeight}`);
+        }
+        return;
+      }
+      const targetHeight = Math.min(rawTargetHeight, maximumStableHeight);
+      const signature = [
+        Math.round(window.innerWidth),
+        Math.round(viewportHeight),
+        Math.round(profile.getBoundingClientRect().width),
+        Math.round(awardsRect.top),
+        Math.round(targetTop),
+        Math.round(targetHeight),
+      ].join(':');
+      if (signature === lastSignature) return;
+      lastSignature = signature;
       profile.style.setProperty('--landing-text-fit-height', `${targetHeight.toFixed(2)}px`);
       proof.style.setProperty('--landing-proof-fit-line-height', '1.13');
       fitElementHeight(hook, '--landing-hook-fit-font-size', targetHeight, 18, 96);
@@ -11071,20 +11098,37 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
         const shift = Math.max(-120, Math.min(140, textCenter - wheelCenter));
         profile.style.setProperty('--landing-wheel-fit-shift', `${shift.toFixed(2)}px`);
       }
+      const fitStyle = window.getComputedStyle(proof);
+      lastProfileFitRef.current = {
+        targetHeight: Number(targetHeight.toFixed(2)),
+        wheelShift: Number.parseFloat(profile.style.getPropertyValue('--landing-wheel-fit-shift')) || 0,
+        hookFontSize: Number.parseFloat(window.getComputedStyle(hook).fontSize) || 0,
+        proofFontSize: Number.parseFloat(fitStyle.fontSize) || 0,
+        proofLineHeight: Number.parseFloat(proof.style.getPropertyValue('--landing-proof-fit-line-height'))
+          || Number.parseFloat(fitStyle.lineHeight) / Math.max(1, Number.parseFloat(fitStyle.fontSize))
+          || 1.13,
+      };
     };
     const schedule = () => {
-      if (!frame) frame = window.requestAnimationFrame(fit);
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = window.requestAnimationFrame(fit);
+      });
     };
     const observer = new ResizeObserver(schedule);
-    observer.observe(profile);
     observer.observe(name);
+    const awards = profile.querySelector('.landing-profile-awards');
+    if (awards) observer.observe(awards);
     window.addEventListener('resize', schedule, { passive: true });
+    window.visualViewport?.addEventListener?.('resize', schedule, { passive: true });
     document.fonts?.ready?.then(schedule).catch(() => {});
     schedule();
     return () => {
       if (frame) window.cancelAnimationFrame(frame);
       observer.disconnect();
       window.removeEventListener('resize', schedule);
+      window.visualViewport?.removeEventListener?.('resize', schedule);
+      clearFit();
     };
   }, [summaryOnly]);
 
