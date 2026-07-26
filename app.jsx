@@ -1169,7 +1169,9 @@ const LANDING_VARIANT_CSS = `
   z-index: 2;
 }
 .landing-profile__name-row {
-  display: block;
+  display: flex;
+  justify-content: center;
+  text-align: center;
 }
 .landing-profile__name {
   margin: 0;
@@ -1187,7 +1189,7 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile__story {
   display: grid;
-  grid-template-columns: minmax(18rem, 0.78fr) minmax(28rem, 0.92fr) minmax(8rem, 0.78fr);
+  grid-template-columns: minmax(18rem, 0.78fr) minmax(27rem, 0.94fr) minmax(18rem, 0.78fr);
   align-items: start;
   gap: clamp(1.75rem, 3.6vw, 4.5rem);
   margin-top: clamp(2.15rem, 4.6vh, 3.7rem);
@@ -1197,6 +1199,13 @@ const LANDING_VARIANT_CSS = `
   position: relative;
   z-index: 3;
   max-width: clamp(20rem, 32vw, 31rem);
+}
+.landing-profile__proof {
+  grid-column: 3;
+  position: relative;
+  z-index: 3;
+  max-width: clamp(20rem, 30vw, 32rem);
+  justify-self: end;
 }
 .landing-profile__bio {
   margin: 0;
@@ -1215,38 +1224,11 @@ const LANDING_VARIANT_CSS = `
 .landing-profile__bio + .landing-profile__bio {
   margin-top: clamp(1.35rem, 3.2vh, 2.1rem);
 }
-.landing-profile__role-stack {
-  display: grid;
-  gap: 0.42rem;
-  margin: clamp(1.35rem, 3vh, 2rem) 0 clamp(1.1rem, 2.4vh, 1.75rem);
-  padding: 0;
-  list-style: none;
-  color: var(--ink);
-  font-family: var(--mono);
-  font-size: clamp(0.56rem, 0.72vw, 0.76rem);
-  font-weight: 600;
-  letter-spacing: 0.105em;
-  line-height: 1.15;
-  text-transform: uppercase;
-}
-.landing-profile__role-stack li {
-  display: flex;
-  align-items: baseline;
-  gap: 0.58rem;
-}
-.landing-profile__role-stack li::before {
-  content: "";
-  flex: 0 0 clamp(1.15rem, 2.2vw, 2.1rem);
-  height: 1px;
-  background: currentColor;
-  transform: translateY(-0.08em);
-  opacity: 0.86;
-}
 .landing-profile__bio--details {
   color: var(--ink);
-  max-width: 44ch;
-  font-size: clamp(0.88rem, 0.98vw, 0.98rem);
-  line-height: 1.54;
+  max-width: 46ch;
+  font-size: clamp(0.88rem, 0.96vw, 0.98rem);
+  line-height: 1.6;
 }
 .landing-profile__bio--details strong {
   color: var(--ink);
@@ -1476,7 +1458,8 @@ const LANDING_VARIANT_CSS = `
     padding-bottom: clamp(4rem, 8svh, 6.5rem);
   }
   .landing-profile__name-row {
-    display: block;
+    justify-content: flex-start;
+    text-align: left;
   }
   .landing-profile__name {
     max-width: 11ch;
@@ -1493,6 +1476,12 @@ const LANDING_VARIANT_CSS = `
     grid-template-columns: 1fr;
     gap: clamp(1.8rem, 4vw, 3rem);
     margin-top: clamp(2.5rem, 5svh, 4rem);
+  }
+  .landing-profile__copy,
+  .landing-profile__proof {
+    grid-column: 1;
+    max-width: 60ch;
+    justify-self: start;
   }
   .landing-profile__bio {
     max-width: 58ch;
@@ -1535,7 +1524,8 @@ const LANDING_VARIANT_CSS = `
     margin-top: 0;
   }
   .landing-profile__name-row {
-    display: block;
+    justify-content: flex-start;
+    text-align: left;
   }
   .landing-profile__story {
     grid-template-columns: 1fr;
@@ -10925,12 +10915,9 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
               I’ve somehow turned “what happens if I press this button?” into a 20-year career
               of curious design and make-believe.
             </p>
-            <ul className="landing-profile__role-stack" aria-label="Current and previous leadership roles">
-              <li>Research and Development</li>
-              <li>StageCraft</li>
-              <li>Creative Engineering</li>
-              <li>Creative Technology Director</li>
-            </ul>
+          </div>
+          {!summaryOnly && <BeautifulGameLoadingSummaryInstrument part="wheel" />}
+          <div className="landing-profile__proof">
             <p className="landing-profile__bio landing-profile__bio--details">
               <strong>Research and Development</strong>, StageCraft team at
               Industrial Light &amp; Magic. Previously Head of <strong>Creative Engineering</strong> and <strong>Creative
@@ -10947,7 +10934,6 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
               </nav>
             )}
           </div>
-          {!summaryOnly && <BeautifulGameLoadingSummaryInstrument part="wheel" />}
         </div>
       </div>
       {!summaryOnly && <LandingProfileAwardConnectors awards={profileAwardGroups} />}
