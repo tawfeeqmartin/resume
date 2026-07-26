@@ -10704,26 +10704,33 @@ function landingAwardGroups(items = []) {
     }));
 }
 
+const LANDING_AWARD_PHI = (1 + Math.sqrt(5)) / 2;
 const LANDING_AWARD_GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
-function landingAwardSamplePoint(index, sample = {}) {
+function landingAwardSamplePoint(index, total = 1, sample = {}) {
   const frame = Number(sample?.frame) || 0;
   const fieldX = Number(sample?.fieldUnit?.x);
   const fieldY = Number(sample?.fieldUnit?.y);
+  const safeTotal = Math.max(1, total);
   const basePhase = Number.isFinite(fieldX) ? fieldX * Math.PI * 2 : 0;
-  const breathing = Number.isFinite(fieldY) ? (fieldY - 0.5) * 0.1 : 0;
-  const angle = basePhase + index * LANDING_AWARD_GOLDEN_ANGLE + frame * 0.012;
-  const radius = 0.28 + ((index * 5) % 4) * 0.075 + breathing;
+  const orbit = frame * (0.012 + (index % 5) * 0.0017);
+  const outward = 1 - Math.pow(LANDING_AWARD_PHI, -(index + 1));
+  const outwardMax = 1 - Math.pow(LANDING_AWARD_PHI, -safeTotal);
+  const radiusUnit = outwardMax > 0 ? outward / outwardMax : 0;
+  const breathing = Number.isFinite(fieldY) ? (fieldY - 0.5) * 0.045 : 0;
+  const angle = basePhase + index * LANDING_AWARD_GOLDEN_ANGLE + orbit;
+  const radius = 0.055 + radiusUnit * 0.38 + breathing;
   return {
     x: 0.5 + Math.cos(angle) * radius,
     y: 0.5 + Math.sin(angle) * radius,
   };
 }
 
-function LandingProfileAwardConnectors({ count = 0 }) {
+function LandingProfileAwardConnectors({ awards = [] }) {
   const [geometry, setGeometry] = useState([]);
 
   useEffect(() => {
+    const count = awards.length;
     if (!count) return undefined;
     const samplerStore = window.__resumeProfileSamplerStore || {
       listeners: new Set(),
@@ -10743,22 +10750,33 @@ function LandingProfileAwardConnectors({ count = 0 }) {
       frameId = window.requestAnimationFrame(() => {
         const profile = document.querySelector('.landing-profile');
         const wheel = profile?.querySelector('.landing-profile__instrument--wheel');
-        const awardIcons = profile?.querySelectorAll('.landing-profile-award__icon');
-        if (!profile || !wheel || !awardIcons?.length) return;
+        const awardItems = profile?.querySelectorAll('.landing-profile-award');
+        if (!profile || !wheel || !awardItems?.length) return;
         const profileRect = profile.getBoundingClientRect();
         const wheelRect = wheel.getBoundingClientRect();
         const wheelRadius = Math.min(wheelRect.width, wheelRect.height) * 0.42;
         const wheelCenterX = wheelRect.left + wheelRect.width * 0.5 - profileRect.left;
         const wheelCenterY = wheelRect.top + wheelRect.height * 0.5 - profileRect.top;
-        const next = Array.from(awardIcons).slice(0, count).map((icon, index) => {
-          const point = landingAwardSamplePoint(index, sample);
-          const iconRect = icon.getBoundingClientRect();
+        const targets = Array.from(awardItems).flatMap((awardNode, awardIndex) => {
+          const fills = Array.from(awardNode.querySelectorAll('.landing-profile-award__fill'));
+          return (fills.length ? fills : [awardNode.querySelector('.landing-profile-award__icon')])
+            .filter(Boolean)
+            .map((targetNode, fillIndex) => ({ awardIndex, fillIndex, targetNode }));
+        });
+        const [baseHue, baseSaturation, baseLightness] = rgbToHsl(parseCssRgbColor(sample?.color));
+        const next = targets.map(({ awardIndex, fillIndex, targetNode }, sampleIndex) => {
+          const point = landingAwardSamplePoint(sampleIndex, targets.length, sample);
+          const targetRect = targetNode.getBoundingClientRect();
           const x1 = wheelCenterX + (point.x - 0.5) * 2 * wheelRadius;
           const y1 = wheelCenterY + (point.y - 0.5) * 2 * wheelRadius;
-          const x2 = iconRect.left + iconRect.width * 0.5 - profileRect.left;
-          const y2 = iconRect.top + iconRect.height * 0.5 - profileRect.top;
+          const x2 = targetRect.left + targetRect.width * 0.5 - profileRect.left;
+          const y2 = targetRect.top + targetRect.height * 0.5 - profileRect.top;
+          const hue = (baseHue + awardIndex * 31 + fillIndex * 42 + (Number(sample?.frame) || 0) * 0.72) % 360;
+          const saturation = Math.max(0.46, Math.min(0.88, baseSaturation * 0.72 + 0.24));
+          const lightness = Math.max(0.42, Math.min(0.66, baseLightness * 0.72 + 0.18 + (fillIndex % 3) * 0.035));
           return {
-            id: `${index}-${Math.round(x1)}-${Math.round(y1)}-${Math.round(x2)}-${Math.round(y2)}`,
+            id: `${awardIndex}-${fillIndex}`,
+            color: hslToCssColor(hue, saturation, lightness),
             x1,
             y1,
             x2,
@@ -10781,15 +10799,15 @@ function LandingProfileAwardConnectors({ count = 0 }) {
       samplerStore.listeners.delete(update);
       window.removeEventListener('resize', onResize);
     };
-  }, [count]);
+  }, [awards]);
 
   if (!geometry.length) return null;
   return (
     <svg className="landing-profile-award-connectors" aria-hidden="true">
       {geometry.map((line) => (
         <React.Fragment key={line.id}>
-          <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
-          <circle cx={line.x1} cy={line.y1} r="2.1" />
+          <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} style={{ stroke: line.color }} />
+          <circle cx={line.x1} cy={line.y1} r="2.2" style={{ fill: line.color }} />
         </React.Fragment>
       ))}
     </svg>
@@ -10891,7 +10909,7 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
           {!summaryOnly && <BeautifulGameLoadingSummaryInstrument part="wheel" />}
         </div>
       </div>
-      {!summaryOnly && <LandingProfileAwardConnectors count={profileAwardGroups.length} />}
+      {!summaryOnly && <LandingProfileAwardConnectors awards={profileAwardGroups} />}
       {!summaryOnly && <LandingProfileAwards items={RESUME.awards} />}
     </section>
   );
