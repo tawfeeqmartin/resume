@@ -10600,9 +10600,9 @@ function LandingAwardIcon({ award }) {
       )}
       {family === 'emmy' && (
         <>
-          <line className="landing-profile-award__line" x1="40" y1="16" x2="28" y2="7" />
-          <line className="landing-profile-award__line" x1="40" y1="16" x2="52" y2="7" />
-          <rect className="landing-profile-award__fill" x="18" y="16" width="44" height="33" rx="1" />
+          <line className="landing-profile-award__line" x1="40" y1="19" x2="30" y2="11" />
+          <line className="landing-profile-award__line" x1="40" y1="19" x2="50" y2="11" />
+          <rect className="landing-profile-award__fill" x="18" y="19" width="44" height="26" rx="1" />
         </>
       )}
       {family === 'sxsw' && (
