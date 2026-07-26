@@ -10890,7 +10890,7 @@ function landingAwardGroups(items = []) {
 }
 
 const LANDING_AWARD_PATTERN_CYCLE_SECONDS = 1.45;
-const LANDING_AWARD_PATTERN_MORPH_SECONDS = 0.24;
+const LANDING_AWARD_PATTERN_MORPH_SECONDS = 0.44;
 const LANDING_AWARD_PATTERN_EDGE_LIMIT = 0.472;
 
 const landingPatternClampPoint = (point = {}) => {
@@ -11578,6 +11578,10 @@ function landingSmooth01(value) {
   return t * t * (3 - 2 * t);
 }
 
+function landingLinear01(value) {
+  return Math.max(0, Math.min(1, value));
+}
+
 function landingAwardPatternState(time = 0) {
   const count = LANDING_AWARD_PATTERNS.length;
   const cycle = Math.max(0, time) / LANDING_AWARD_PATTERN_CYCLE_SECONDS;
@@ -11586,7 +11590,7 @@ function landingAwardPatternState(time = 0) {
   const phase = cycle - Math.floor(cycle);
   const currentLocalTime = phase * LANDING_AWARD_PATTERN_CYCLE_SECONDS;
   const morphStart = 1 - (LANDING_AWARD_PATTERN_MORPH_SECONDS / LANDING_AWARD_PATTERN_CYCLE_SECONDS);
-  const morph = landingSmooth01((phase - morphStart) / Math.max(0.001, 1 - morphStart));
+  const morph = landingLinear01((phase - morphStart) / Math.max(0.001, 1 - morphStart));
   const current = LANDING_AWARD_PATTERNS[patternIndex];
   const next = LANDING_AWARD_PATTERNS[nextIndex];
   return {
