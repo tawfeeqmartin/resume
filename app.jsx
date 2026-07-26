@@ -10927,8 +10927,8 @@ function landingAwardGroups(items = []) {
 
 const LANDING_AWARD_PHI = (1 + Math.sqrt(5)) / 2;
 const LANDING_AWARD_GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
-const LANDING_AWARD_PATTERN_CYCLE_SECONDS = 5.8;
-const LANDING_AWARD_PATTERN_MORPH_SECONDS = 1.18;
+const LANDING_AWARD_PATTERN_CYCLE_SECONDS = 3.6;
+const LANDING_AWARD_PATTERN_MORPH_SECONDS = 0.72;
 
 const landingPatternClampPoint = (point = {}) => ({
   x: Math.max(0.055, Math.min(0.945, Number(point.x) || 0.5)),
@@ -10941,6 +10941,18 @@ const landingPatternPolarPoint = (angle, radius) => landingPatternClampPoint({
 });
 
 const LANDING_AWARD_PATTERNS = [
+  {
+    id: 'star-polygon',
+    label: 'Star polygon',
+    formula: 'θᵢ=2π·(i·5 mod N)/N + t',
+    point(index, total, t) {
+      const n = Math.max(3, total);
+      const step = Math.max(2, Math.floor(n / 3));
+      const order = (index * step) % n;
+      const angle = (order / n) * Math.PI * 2 - Math.PI / 2 + t * 0.5;
+      return landingPatternPolarPoint(angle, 0.43);
+    },
+  },
   {
     id: 'phyllotaxis',
     label: 'Phyllotaxis',
@@ -10955,23 +10967,23 @@ const LANDING_AWARD_PATTERNS = [
   {
     id: 'lissajous',
     label: 'Lissajous',
-    formula: 'x=sin(3u+π/2+t) · y=sin(4u)',
+    formula: 'x=sin(2u+π/2+t) · y=sin(3u)',
     point(index, total, t) {
       const u = (index / Math.max(1, total)) * Math.PI * 2;
       return landingPatternClampPoint({
-        x: 0.5 + Math.sin(3 * u + Math.PI / 2 + t * 0.55) * 0.39,
-        y: 0.5 + Math.sin(4 * u + t * 0.38) * 0.39,
+        x: 0.5 + Math.sin(2 * u + Math.PI / 2 + t * 0.72) * 0.41,
+        y: 0.5 + Math.sin(3 * u + t * 0.48) * 0.41,
       });
     },
   },
   {
-    id: 'maurer-rose',
-    label: 'Maurer rose',
-    formula: 'θᵢ=i·71°+t · r=sin(6θ)',
+    id: 'rose-window',
+    label: 'Rose window',
+    formula: 'r=|sin(5θ)| · θᵢ=2πi/N+t',
     point(index, total, t) {
-      const theta = index * 71 * Math.PI / 180 + t * 0.32;
-      const radius = Math.abs(Math.sin(6 * theta)) * 0.42;
-      return landingPatternPolarPoint(theta, 0.055 + radius);
+      const theta = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.42;
+      const radius = 0.13 + Math.abs(Math.sin(5 * theta)) * 0.31;
+      return landingPatternPolarPoint(theta, radius);
     },
   },
   {
@@ -10992,9 +11004,9 @@ const LANDING_AWARD_PATTERNS = [
   {
     id: 'hypotrochoid',
     label: 'Hypotrochoid',
-    formula: 'x=(R-r)cos u+d cos((R-r)u/r)',
+    formula: 'x=2cosu+4.2cos(2u/3)',
     point(index, total, t) {
-      const u = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.42;
+      const u = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.62;
       const R = 5;
       const r = 3;
       const d = 4.2;
