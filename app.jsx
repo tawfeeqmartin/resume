@@ -1429,6 +1429,11 @@ const LANDING_VARIANT_CSS = `
   vector-effect: non-scaling-stroke;
   opacity: 0.42;
 }
+.landing-profile-award-connectors .landing-profile-award-connectors__shape {
+  stroke: var(--ink);
+  stroke-dasharray: none;
+  opacity: 0.2;
+}
 .landing-profile-award-connectors .landing-profile-award-connectors__sample {
   vector-effect: non-scaling-stroke;
   stroke: #fff;
@@ -10929,28 +10934,55 @@ const LANDING_AWARD_PHI = (1 + Math.sqrt(5)) / 2;
 const LANDING_AWARD_GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 const LANDING_AWARD_PATTERN_CYCLE_SECONDS = 3.6;
 const LANDING_AWARD_PATTERN_MORPH_SECONDS = 0.72;
+const LANDING_AWARD_PATTERN_EDGE_LIMIT = 0.405;
 
-const landingPatternClampPoint = (point = {}) => ({
-  x: Math.max(0.055, Math.min(0.945, Number(point.x) || 0.5)),
-  y: Math.max(0.055, Math.min(0.945, Number(point.y) || 0.5)),
-});
+const landingPatternClampPoint = (point = {}) => {
+  const rawX = Number(point.x);
+  const rawY = Number(point.y);
+  const dx = (Number.isFinite(rawX) ? rawX : 0.5) - 0.5;
+  const dy = (Number.isFinite(rawY) ? rawY : 0.5) - 0.5;
+  const radius = Math.hypot(dx, dy);
+  if (radius <= LANDING_AWARD_PATTERN_EDGE_LIMIT || radius < 0.0001) {
+    return { x: 0.5 + dx, y: 0.5 + dy };
+  }
+  const scale = LANDING_AWARD_PATTERN_EDGE_LIMIT / radius;
+  return {
+    x: 0.5 + dx * scale,
+    y: 0.5 + dy * scale,
+  };
+};
 
 const landingPatternPolarPoint = (angle, radius) => landingPatternClampPoint({
   x: 0.5 + Math.cos(angle) * radius,
   y: 0.5 + Math.sin(angle) * radius,
 });
 
+function landingCoprimeStep(total = 0, preferred = 5) {
+  const count = Math.max(3, Math.round(total));
+  const gcd = (a, b) => (b ? gcd(b, a % b) : Math.abs(a));
+  const candidates = [
+    preferred,
+    7,
+    6,
+    5,
+    4,
+    3,
+    2,
+  ].filter((step) => step > 1 && step < count / 2);
+  return candidates.find((step) => gcd(count, step) === 1) || 2;
+}
+
 const LANDING_AWARD_PATTERNS = [
   {
     id: 'star-polygon',
     label: 'Star polygon',
-    formula: 'θᵢ=2π·(i·5 mod N)/N + t',
+    formula: '{17/5} · θᵢ=2π·(5i mod 17)/17',
     point(index, total, t) {
       const n = Math.max(3, total);
-      const step = Math.max(2, Math.floor(n / 3));
+      const step = landingCoprimeStep(n, 5);
       const order = (index * step) % n;
       const angle = (order / n) * Math.PI * 2 - Math.PI / 2 + t * 0.5;
-      return landingPatternPolarPoint(angle, 0.43);
+      return landingPatternPolarPoint(angle, LANDING_AWARD_PATTERN_EDGE_LIMIT);
     },
   },
   {
@@ -10959,7 +10991,7 @@ const LANDING_AWARD_PATTERNS = [
     formula: 'θᵢ=i·137.5°+t · rᵢ=√(i/N)',
     point(index, total, t) {
       const safeTotal = Math.max(1, total - 1);
-      const radius = 0.055 + Math.sqrt((index + 0.5) / (safeTotal + 1)) * 0.405;
+      const radius = 0.05 + Math.sqrt((index + 0.5) / (safeTotal + 1)) * 0.355;
       const angle = index * LANDING_AWARD_GOLDEN_ANGLE + t * 0.46;
       return landingPatternPolarPoint(angle, radius);
     },
@@ -10967,22 +10999,22 @@ const LANDING_AWARD_PATTERNS = [
   {
     id: 'lissajous',
     label: 'Lissajous',
-    formula: 'x=sin(2u+π/2+t) · y=sin(3u)',
+    formula: 'x=sin(3u+π/2+t) · y=sin(4u)',
     point(index, total, t) {
       const u = (index / Math.max(1, total)) * Math.PI * 2;
       return landingPatternClampPoint({
-        x: 0.5 + Math.sin(2 * u + Math.PI / 2 + t * 0.72) * 0.41,
-        y: 0.5 + Math.sin(3 * u + t * 0.48) * 0.41,
+        x: 0.5 + Math.sin(3 * u + Math.PI / 2 + t * 0.72) * 0.385,
+        y: 0.5 + Math.sin(4 * u + t * 0.48) * 0.385,
       });
     },
   },
   {
     id: 'rose-window',
     label: 'Rose window',
-    formula: 'r=|sin(5θ)| · θᵢ=2πi/N+t',
+    formula: 'r=sin(5θ) · θᵢ=2πi/17+t',
     point(index, total, t) {
       const theta = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.42;
-      const radius = 0.13 + Math.abs(Math.sin(5 * theta)) * 0.31;
+      const radius = Math.sin(5 * theta) * 0.365;
       return landingPatternPolarPoint(theta, radius);
     },
   },
@@ -10995,26 +11027,21 @@ const LANDING_AWARD_PATTERNS = [
       const n = 4;
       const cos = Math.cos(theta);
       const sin = Math.sin(theta);
-      return landingPatternClampPoint({
-        x: 0.5 + Math.sign(cos) * Math.pow(Math.abs(cos), 2 / n) * 0.43,
-        y: 0.5 + Math.sign(sin) * Math.pow(Math.abs(sin), 2 / n) * 0.43,
-      });
+      const radius = 0.34 / Math.pow(Math.pow(Math.abs(cos), n) + Math.pow(Math.abs(sin), n), 1 / n);
+      return landingPatternPolarPoint(theta, radius);
     },
   },
   {
     id: 'hypotrochoid',
-    label: 'Hypotrochoid',
-    formula: 'x=2cosu+4.2cos(2u/3)',
+    label: 'Hypocycloid',
+    formula: 'x=4cosu+cos4u · y=4sinu−sin4u',
     point(index, total, t) {
-      const u = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.62;
-      const R = 5;
-      const r = 3;
-      const d = 4.2;
-      const x = (R - r) * Math.cos(u) + d * Math.cos(((R - r) / r) * u);
-      const y = (R - r) * Math.sin(u) - d * Math.sin(((R - r) / r) * u);
+      const u = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.52;
+      const x = 4 * Math.cos(u) + Math.cos(4 * u);
+      const y = 4 * Math.sin(u) - Math.sin(4 * u);
       return landingPatternClampPoint({
-        x: 0.5 + (x / 6.2) * 0.43,
-        y: 0.5 + (y / 6.2) * 0.43,
+        x: 0.5 + (x / 5) * LANDING_AWARD_PATTERN_EDGE_LIMIT,
+        y: 0.5 + (y / 5) * LANDING_AWARD_PATTERN_EDGE_LIMIT,
       });
     },
   },
@@ -11065,6 +11092,16 @@ function landingAwardSampleColor(sample = {}, index = 0) {
   return awardSamples[index]?.color || sample?.color || 'rgb(36, 92, 255)';
 }
 
+function landingAwardPatternConnectionPairs(patternId, total = 0) {
+  const count = Math.max(0, total);
+  if (count < 2) return [];
+  if (patternId === 'phyllotaxis') {
+    const step = Math.min(count - 1, 5);
+    return Array.from({ length: count - step }, (_, index) => [index, index + step]);
+  }
+  return Array.from({ length: count }, (_, index) => [index, (index + 1) % count]);
+}
+
 function landingAwardRenderedParts(root) {
   if (!root) return [];
   const selector = [
@@ -11081,7 +11118,7 @@ function landingAwardRenderedParts(root) {
 }
 
 function LandingProfileAwardConnectors({ awards = [] }) {
-  const [geometry, setGeometry] = useState([]);
+  const [geometry, setGeometry] = useState({ lines: [], shapeEdges: [] });
 
   useEffect(() => {
     const count = awards.length;
@@ -11113,6 +11150,9 @@ function LandingProfileAwardConnectors({ awards = [] }) {
         const wheelCenterY = wheelRect.top + wheelRect.height * 0.5 - profileRect.top;
         const targets = landingAwardRenderedParts(profile);
         const sampleCount = targets.length;
+        const patternId = sample?.patternState?.morph > 0.5
+          ? sample?.patternState?.next?.id
+          : (sample?.patternState?.current?.id || sample?.patternId);
         const wheelSamples = Array.from({ length: sampleCount }, (_, sampleIndex) => {
           const sampled = Array.isArray(sample?.awardSamples) ? sample.awardSamples[sampleIndex] : null;
           const point = sampled?.point || landingAwardSamplePoint(sampleIndex, sampleCount, sample);
@@ -11126,6 +11166,20 @@ function LandingProfileAwardConnectors({ awards = [] }) {
             y1,
           };
         });
+        const shapeEdges = landingAwardPatternConnectionPairs(patternId, wheelSamples.length)
+          .map(([from, to], edgeIndex) => {
+            const a = wheelSamples[from];
+            const b = wheelSamples[to];
+            if (!a || !b) return null;
+            return {
+              id: `shape-${patternId || 'pattern'}-${edgeIndex}`,
+              x1: a.x1,
+              y1: a.y1,
+              x2: b.x1,
+              y2: b.y1,
+            };
+          })
+          .filter(Boolean);
         const next = wheelSamples.map((wheelSample, sampleIndex) => {
           const target = targets[sampleIndex];
           if (!target) return wheelSample;
@@ -11148,7 +11202,7 @@ function LandingProfileAwardConnectors({ awards = [] }) {
             y2,
           };
         });
-        setGeometry(next);
+        setGeometry({ lines: next, shapeEdges });
       });
     };
 
@@ -11166,10 +11220,20 @@ function LandingProfileAwardConnectors({ awards = [] }) {
     };
   }, [awards]);
 
-  if (!geometry.length) return null;
+  if (!geometry.lines.length) return null;
   return (
     <svg className="landing-profile-award-connectors" aria-hidden="true">
-      {geometry.map((line) => (
+      {geometry.shapeEdges.map((edge) => (
+        <line
+          className="landing-profile-award-connectors__shape"
+          key={edge.id}
+          x1={edge.x1}
+          y1={edge.y1}
+          x2={edge.x2}
+          y2={edge.y2}
+        />
+      ))}
+      {geometry.lines.map((line) => (
         <React.Fragment key={line.id}>
           {Number.isFinite(line.x2) && Number.isFinite(line.y2) && (
             <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
