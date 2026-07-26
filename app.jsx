@@ -1430,8 +1430,11 @@ const LANDING_VARIANT_CSS = `
   opacity: 0.24;
 }
 .landing-profile-award-connectors .landing-profile-award-connectors__shape {
+  fill: none;
   stroke: var(--ink);
+  stroke-width: 1;
   stroke-dasharray: none;
+  vector-effect: non-scaling-stroke;
   opacity: 0.36;
 }
 .landing-profile-award-connectors .landing-profile-award-connectors__sample {
@@ -11357,8 +11360,6 @@ const LANDING_AWARD_DIAMOND_PAIRS = [
 ];
 
 const LANDING_AWARD_CANNES_PAIRS = [
-  ...landingAwardClosedPairs(0, 8),
-  ...landingAwardClosedPairs(8, 8),
   [1, 13],
   [2, 14],
   [5, 9],
@@ -11468,8 +11469,6 @@ const LANDING_AWARD_TECHNICOLOR_PAIRS = [
 ];
 
 const LANDING_AWARD_SIGGRAPH_PAIRS = [
-  ...landingAwardClosedPairs(0, 8),
-  ...landingAwardClosedPairs(8, 8),
   [0, 8],
   [2, 10],
   [4, 12],
@@ -11676,6 +11675,42 @@ function landingAwardPatternConnectionPairs(patternId, total = 0) {
   return Array.from({ length: count }, (_, index) => [index, (index + step) % count]);
 }
 
+function landingAwardRingEllipseFromSamples(samples = [], start = 0, count = 8, id = 'ring') {
+  const ringSamples = samples.slice(start, start + count).filter((sample) => (
+    Number.isFinite(sample?.x1) && Number.isFinite(sample?.y1)
+  ));
+  if (ringSamples.length < 3) return null;
+  const xs = ringSamples.map((sample) => sample.x1);
+  const ys = ringSamples.map((sample) => sample.y1);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  return {
+    id,
+    cx: (minX + maxX) * 0.5,
+    cy: (minY + maxY) * 0.5,
+    rx: Math.max(1, (maxX - minX) * 0.5),
+    ry: Math.max(1, (maxY - minY) * 0.5),
+  };
+}
+
+function landingAwardPatternConnectionEllipses(patternId, wheelSamples = []) {
+  if (patternId === 'award-cannes-rings') {
+    return [
+      landingAwardRingEllipseFromSamples(wheelSamples, 0, 8, 'cannes-left-ring'),
+      landingAwardRingEllipseFromSamples(wheelSamples, 8, 8, 'cannes-right-ring'),
+    ].filter(Boolean);
+  }
+  if (patternId === 'award-siggraph-rings') {
+    return [
+      landingAwardRingEllipseFromSamples(wheelSamples, 0, 8, 'siggraph-outer-ring'),
+      landingAwardRingEllipseFromSamples(wheelSamples, 8, 8, 'siggraph-inner-ring'),
+    ].filter(Boolean);
+  }
+  return [];
+}
+
 function landingAwardRenderedParts(root) {
   if (!root) return [];
   const selector = [
@@ -11692,7 +11727,7 @@ function landingAwardRenderedParts(root) {
 }
 
 function LandingProfileAwardConnectors({ awards = [] }) {
-  const [geometry, setGeometry] = useState({ lines: [], shapeEdges: [] });
+  const [geometry, setGeometry] = useState({ lines: [], shapeEdges: [], shapeEllipses: [] });
 
   useEffect(() => {
     const count = awards.length;
@@ -11754,6 +11789,7 @@ function LandingProfileAwardConnectors({ awards = [] }) {
             };
           })
           .filter(Boolean);
+        const shapeEllipses = landingAwardPatternConnectionEllipses(patternId, wheelSamples);
         const next = wheelSamples.map((wheelSample, sampleIndex) => {
           const target = targets[sampleIndex];
           if (!target) return wheelSample;
@@ -11776,7 +11812,7 @@ function LandingProfileAwardConnectors({ awards = [] }) {
             y2,
           };
         });
-        setGeometry({ lines: next, shapeEdges });
+        setGeometry({ lines: next, shapeEdges, shapeEllipses });
       });
     };
 
@@ -11797,6 +11833,16 @@ function LandingProfileAwardConnectors({ awards = [] }) {
   if (!geometry.lines.length) return null;
   return (
     <svg className="landing-profile-award-connectors" aria-hidden="true">
+      {geometry.shapeEllipses.map((ellipse) => (
+        <ellipse
+          className="landing-profile-award-connectors__shape"
+          key={ellipse.id}
+          cx={ellipse.cx}
+          cy={ellipse.cy}
+          rx={ellipse.rx}
+          ry={ellipse.ry}
+        />
+      ))}
       {geometry.shapeEdges.map((edge) => (
         <line
           className="landing-profile-award-connectors__shape"
