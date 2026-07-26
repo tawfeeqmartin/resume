@@ -10973,6 +10973,34 @@ function landingProject3DPoint(point = [0, 0, 0], t = 0, scale = 0.27) {
   });
 }
 
+function landingProjectAward3DPoint(point = [0, 0, 0], localTime = 0, scale = 0.37, phase = 0) {
+  const [x = 0, y = 0, z = 0] = point;
+  const time = Math.max(0, Number(localTime) || 0);
+  const holdSeconds = 0.46;
+  const spinTime = Math.max(0, time - holdSeconds);
+  const reveal = landingSmooth01(Math.min(1, spinTime / 0.58));
+  const yaw = reveal * (phase + spinTime * 0.88);
+  const pitch = reveal * (-0.22 + Math.sin(phase + spinTime * 0.72) * 0.18);
+  const roll = reveal * Math.sin(phase * 0.7 + spinTime * 0.55) * 0.055;
+  const cr = Math.cos(roll);
+  const sr = Math.sin(roll);
+  const x0 = x * cr - y * sr;
+  const y0 = x * sr + y * cr;
+  const cy = Math.cos(yaw);
+  const sy = Math.sin(yaw);
+  const cp = Math.cos(pitch);
+  const sp = Math.sin(pitch);
+  const xr = x0 * cy + z * sy;
+  const zr = -x0 * sy + z * cy;
+  const yr = y0 * cp - zr * sp;
+  const zz = y0 * sp + zr * cp;
+  const perspective = 3.2 / Math.max(1.2, 3.2 - zz);
+  return landingPatternClampPoint({
+    x: 0.5 + xr * perspective * scale,
+    y: 0.5 + yr * perspective * scale,
+  });
+}
+
 function landingProjectedPathPoint(index, t, vertices = [], path = [], scale = 0.27) {
   const vertex = vertices[path[index % Math.max(1, path.length)] || 0] || vertices[0] || [0, 0, 0];
   return landingProject3DPoint(vertex, t, scale);
@@ -11468,7 +11496,7 @@ const LANDING_AWARD_AICP_POINTS = [
 ];
 
 function landingAwardProjectModelPoint(points, index, t, scale = 0.37, phase = 0) {
-  return landingProject3DPoint(points[index % points.length], t * 0.46 + phase, scale);
+  return landingProjectAward3DPoint(points[index % points.length], t, scale, phase);
 }
 
 function landingAwardRingModelPoint(index, t, options = {}) {
@@ -11481,12 +11509,16 @@ function landingAwardRingModelPoint(index, t, options = {}) {
   } = options;
   const ringIndex = Math.floor(index / 8) % centers.length;
   const pointIndex = index % 8;
-  const angle = (pointIndex / 8) * Math.PI * 2 + t * 0.32 + phase;
+  const time = Math.max(0, Number(t) || 0);
+  const holdSeconds = 0.46;
+  const spinTime = Math.max(0, time - holdSeconds);
+  const reveal = landingSmooth01(Math.min(1, spinTime / 0.58));
+  const angle = (pointIndex / 8) * Math.PI * 2 + reveal * (spinTime * 0.34 + phase * 0.25);
   const center = centers[ringIndex] || centers[0] || [0, 0];
   const x = center[0] + Math.cos(angle) * radius;
   const y = center[1] + Math.sin(angle) * radius * 0.92;
-  const z = Math.sin(angle) * depth + (ringIndex % 2 ? -0.08 : 0.08);
-  return landingProject3DPoint([x, y, z], t * 0.38 + phase, scale);
+  const z = Math.sin(angle) * depth * reveal + (ringIndex % 2 ? -0.08 : 0.08) * reveal;
+  return landingProjectAward3DPoint([x, y, z], time, scale, phase);
 }
 
 const LANDING_AWARD_PATTERNS = [
@@ -11596,6 +11628,7 @@ function landingAwardPatternState(time = 0) {
   const patternIndex = Math.floor(cycle) % count;
   const nextIndex = (patternIndex + 1) % count;
   const phase = cycle - Math.floor(cycle);
+  const currentLocalTime = phase * LANDING_AWARD_PATTERN_CYCLE_SECONDS;
   const morphStart = 1 - (LANDING_AWARD_PATTERN_MORPH_SECONDS / LANDING_AWARD_PATTERN_CYCLE_SECONDS);
   const morph = landingSmooth01((phase - morphStart) / Math.max(0.001, 1 - morphStart));
   const current = LANDING_AWARD_PATTERNS[patternIndex];
@@ -11607,9 +11640,11 @@ function landingAwardPatternState(time = 0) {
     label: morph > 0.5 ? next.label : current.label,
     formula: morph > 0.5 ? next.formula : current.formula,
     point(index, total) {
-      const a = current.point(index, total, time);
+      const a = current.point(index, total, currentLocalTime, time);
       if (morph <= 0) return a;
-      const b = next.point(index, total, time);
+      // The incoming award resolves front-facing first; only after its own
+      // cycle begins does it rotate away. This keeps every reveal identifiable.
+      const b = next.point(index, total, 0, time);
       return landingPatternClampPoint({
         x: a.x + (b.x - a.x) * morph,
         y: a.y + (b.y - a.y) * morph,
