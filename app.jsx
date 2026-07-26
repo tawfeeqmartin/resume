@@ -11076,6 +11076,22 @@ const LANDING_AWARD_PATTERNS = [
     },
   },
   {
+    id: 'tetra-wire',
+    label: 'Tetrahedron projection',
+    formula: 'p=Π(RᵧRₓ·v) · 4 triangular faces',
+    lineStep: 1,
+    point(index, total, t) {
+      const vertices = [
+        [1, 1, 1],
+        [-1, -1, 1],
+        [-1, 1, -1],
+        [1, -1, -1],
+      ];
+      const path = [0, 1, 2, 0, 3, 1, 2, 3, 0, 1, 3, 2, 0, 2, 1, 3, 0];
+      return landingProjectedPathPoint(index, t, vertices, path, 0.31);
+    },
+  },
+  {
     id: 'orion-map',
     label: 'Orion star map',
     formula: 'Betelgeuse→belt→Rigel · authored star graph',
@@ -11149,32 +11165,6 @@ const LANDING_AWARD_PATTERNS = [
     },
   },
   {
-    id: 'maurer-rose',
-    label: 'Maurer rose',
-    formula: 'r=sin(6θ) · θᵢ=2π·(7i mod 17)/17',
-    lineStep: 1,
-    point(index, total, t) {
-      const n = Math.max(3, total);
-      const order = (index * landingCoprimeStep(n, 7)) % n;
-      const theta = (order / n) * Math.PI * 2 + t * 0.36;
-      const radius = Math.sin(6 * theta) * 0.38;
-      return landingPatternPolarPoint(theta, radius);
-    },
-  },
-  {
-    id: 'lissajous',
-    label: 'Lissajous knot',
-    formula: 'x=sin(5u+π/2+t) · y=sin(8u)',
-    lineStep: 1,
-    point(index, total, t) {
-      const u = (index / Math.max(1, total)) * Math.PI * 2;
-      return landingPatternClampPoint({
-        x: 0.5 + Math.sin(5 * u + Math.PI / 2 + t * 0.58) * 0.385,
-        y: 0.5 + Math.sin(8 * u + t * 0.36) * 0.385,
-      });
-    },
-  },
-  {
     id: 'cardioid',
     label: 'Cardioid',
     formula: 'r=.19·(1+cosθ) · θᵢ=2πi/17+t',
@@ -11214,32 +11204,15 @@ const LANDING_AWARD_PATTERNS = [
     },
   },
   {
-    id: 'superformula',
-    label: 'Superformula bloom',
-    formula: 'r=(|cos(6θ/4)|¹·⁴⁵+|sin(6θ/4)|¹·⁴⁵)^−1/.32',
-    lineStep: 2,
-    point(index, total, t) {
-      const theta = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.28;
-      const radius = landingSuperformulaRadius(theta, {
-        m: 6,
-        n1: 0.32,
-        n2: 1.45,
-        n3: 1.45,
-        scale: 0.32,
-      });
-      return landingPatternPolarPoint(theta, radius);
-    },
-  },
-  {
-    id: 'phyllotaxis',
-    label: 'Golden spiral',
-    formula: 'θᵢ=i·137.5°+t · rᵢ=√(i/N)',
+    id: 'lemniscate',
+    label: 'Lemniscate',
+    formula: 'r²=.145·cos(2θ) · Bernoulli figure-eight',
     lineStep: 1,
     point(index, total, t) {
-      const safeTotal = Math.max(1, total - 1);
-      const radius = 0.05 + Math.sqrt((index + 0.5) / (safeTotal + 1)) * 0.355;
-      const angle = index * LANDING_AWARD_GOLDEN_ANGLE + t * 0.46;
-      return landingPatternPolarPoint(angle, radius);
+      const theta = (index / Math.max(1, total)) * Math.PI * 2 + t * 0.36;
+      const cos2 = Math.cos(2 * theta);
+      const radius = Math.sign(cos2) * Math.sqrt(Math.abs(cos2)) * 0.39;
+      return landingPatternPolarPoint(theta, radius);
     },
   },
 ];
