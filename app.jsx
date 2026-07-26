@@ -1145,6 +1145,13 @@ const LANDING_VARIANT_CSS = `
   padding-bottom: 0;
 }
 .landing-profile {
+  --landing-award-icon-w: clamp(5.15rem, 7.85vw, 8.15rem);
+  --landing-award-icon-h: clamp(3.75rem, 5.7vw, 5.6rem);
+  --landing-award-label-size: clamp(0.44rem, 0.5vw, 0.58rem);
+  --landing-award-gap: clamp(0.38rem, 0.75vh, 0.62rem);
+  --landing-award-row-h: calc(var(--landing-award-icon-h) + var(--landing-award-label-size) * 2.3 + var(--landing-award-gap));
+  --landing-award-bottom: clamp(3.25rem, calc(var(--landing-award-row-h) * 0.68), 6.75rem);
+  --landing-wheel-lift: clamp(-3.6rem, calc(var(--landing-award-row-h) * -0.42), -1.65rem);
   position: relative;
   z-index: 12;
   width: 100vw;
@@ -1253,7 +1260,7 @@ const LANDING_VARIANT_CSS = `
   align-self: start;
   width: 100%;
   height: clamp(20rem, 34vw, 31rem);
-  transform: translateY(clamp(-4.8rem, -6.2vh, -2.2rem));
+  transform: translateY(var(--landing-wheel-lift));
 }
 .landing-profile__instrument-canvas {
   display: block;
@@ -1298,7 +1305,7 @@ const LANDING_VARIANT_CSS = `
   position: absolute;
   left: max(var(--pad), calc((100vw - var(--maxw)) / 2));
   right: max(var(--pad), calc((100vw - var(--maxw)) / 2));
-  bottom: clamp(2.2rem, 5vh, 4.25rem);
+  bottom: var(--landing-award-bottom);
   z-index: 3;
   margin: 0;
   padding: 0;
@@ -1327,7 +1334,7 @@ const LANDING_VARIANT_CSS = `
   display: grid;
   grid-template-rows: auto 1fr;
   justify-items: center;
-  gap: clamp(0.38rem, 0.75vh, 0.62rem);
+  gap: var(--landing-award-gap);
   min-width: 0;
   color: var(--ink);
   text-align: center;
@@ -1343,8 +1350,8 @@ const LANDING_VARIANT_CSS = `
   color: rgba(10,12,16,0.62);
 }
 .landing-profile-award__icon {
-  width: clamp(5.15rem, 7.85vw, 8.15rem);
-  height: clamp(3.75rem, 5.7vw, 5.6rem);
+  width: var(--landing-award-icon-w);
+  height: var(--landing-award-icon-h);
   display: block;
   overflow: visible;
   color: var(--ink);
@@ -1378,7 +1385,7 @@ const LANDING_VARIANT_CSS = `
 .landing-profile-award__title {
   max-width: 14ch;
   font-family: var(--mono);
-  font-size: clamp(0.44rem, 0.5vw, 0.58rem);
+  font-size: var(--landing-award-label-size);
   font-weight: 560;
   letter-spacing: 0.14em;
   line-height: 1.12;
@@ -1406,6 +1413,12 @@ const LANDING_VARIANT_CSS = `
     overflow-x: clip;
   }
   .landing-profile {
+    --landing-award-icon-w: clamp(3.45rem, 6.1vw, 5rem);
+    --landing-award-icon-h: clamp(2.55rem, 4.45vw, 3.65rem);
+    --landing-award-label-size: clamp(0.38rem, 0.5vw, 0.48rem);
+    --landing-award-gap: clamp(0.28rem, 0.55vh, 0.48rem);
+    --landing-award-bottom: clamp(2.2rem, calc(var(--landing-award-row-h) * 0.66), 4.4rem);
+    --landing-wheel-lift: -1.25rem;
     min-height: auto;
     padding-top: clamp(4.5rem, 9svh, 7rem);
     padding-bottom: clamp(4rem, 8svh, 6.5rem);
@@ -1455,13 +1468,6 @@ const LANDING_VARIANT_CSS = `
   }
   .landing-profile-awards__grid {
     grid-template-columns: repeat(9, minmax(0, 1fr));
-  }
-  .landing-profile-award__icon {
-    width: clamp(3.45rem, 6.1vw, 5rem);
-    height: clamp(2.55rem, 4.45vw, 3.65rem);
-  }
-  .landing-profile-award__title {
-    font-size: clamp(0.38rem, 0.5vw, 0.48rem);
   }
 }
 @media (max-width: 760px) {
