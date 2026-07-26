@@ -1368,6 +1368,7 @@ const LANDING_VARIANT_CSS = `
   vector-effect: non-scaling-stroke;
 }
 .landing-profile-award-connectors .landing-profile-award-connectors__sample {
+  fill: #fff;
   opacity: 0.88;
 }
 .landing-profile-awards__label {
@@ -10932,7 +10933,6 @@ function LandingProfileAwardConnectors({ awards = [] }) {
             y={line.y1 - 3}
             width="6"
             height="6"
-            style={{ fill: line.color }}
           />
         </React.Fragment>
       ))}
