@@ -1146,8 +1146,8 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile {
   --landing-scale-u: min(1vw, 1.7778svh);
-  --landing-award-icon-w: clamp(4.6rem, calc(var(--landing-scale-u) * 10.8), 8.15rem);
-  --landing-award-icon-h: clamp(3.35rem, calc(var(--landing-scale-u) * 7.45), 5.6rem);
+  --landing-award-icon-w: clamp(4rem, calc(var(--landing-scale-u) * 8.2), 6.9rem);
+  --landing-award-icon-h: clamp(2.9rem, calc(var(--landing-scale-u) * 5.65), 4.75rem);
   --landing-award-label-size: clamp(0.42rem, calc(var(--landing-scale-u) * 0.76), 0.58rem);
   --landing-award-gap: clamp(0.32rem, calc(var(--landing-scale-u) * 0.64), 0.58rem);
   --landing-award-row-h: calc(var(--landing-award-icon-h) + var(--landing-award-label-size) * 2.3 + var(--landing-award-gap));
@@ -1162,15 +1162,19 @@ const LANDING_VARIANT_CSS = `
   height: 100svh;
   min-height: 0;
   overflow: hidden;
-  padding: clamp(3.7rem, calc(var(--landing-scale-u) * 8.4), 6.6rem) var(--pad) clamp(3.1rem, calc(var(--landing-scale-u) * 6.6), 5.6rem);
+  padding: clamp(3rem, calc(var(--landing-scale-u) * 5.2), 5.2rem) var(--pad) clamp(1.35rem, calc(var(--landing-scale-u) * 2.6), 2.5rem);
   color: var(--ink);
   background: var(--paper);
 }
 .landing-profile__content {
   position: relative;
   width: min(100%, var(--maxw));
+  height: 100%;
   margin: 0 auto;
   z-index: 2;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  align-items: start;
 }
 .landing-profile__name-row {
   display: flex;
@@ -1196,9 +1200,11 @@ const LANDING_VARIANT_CSS = `
 .landing-profile__story {
   display: grid;
   grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.18fr) minmax(0, 0.72fr);
-  align-items: start;
+  align-items: center;
+  align-self: center;
   gap: clamp(1.75rem, calc(var(--landing-scale-u) * 3.6), 4.5rem);
   margin-top: clamp(1.35rem, calc(var(--landing-scale-u) * 3), 2.65rem);
+  min-height: 0;
 }
 .landing-profile__copy {
   grid-column: 1;
@@ -1223,7 +1229,7 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile__bio--hook {
   max-width: 16ch;
-  font-size: clamp(1.55rem, calc(var(--landing-scale-u) * 4.9), 2.92rem);
+  font-size: clamp(1.35rem, calc(var(--landing-scale-u) * 3.25), 2.45rem);
   line-height: 0.98;
   letter-spacing: -0.035em;
 }
@@ -1279,8 +1285,8 @@ const LANDING_VARIANT_CSS = `
   grid-column: 2;
   justify-self: center;
   align-self: start;
-  width: min(100%, clamp(27rem, calc(var(--landing-scale-u) * 58), 43rem));
-  height: clamp(24rem, calc(var(--landing-scale-u) * 54), 40rem);
+  width: min(100%, clamp(19rem, min(34vw, 43svh), 39rem));
+  height: clamp(19rem, min(34vw, 43svh), 39rem);
   transform: translateY(calc(var(--landing-wheel-lift) - clamp(0.25rem, calc(var(--landing-scale-u) * 1.1), 1.2rem)));
 }
 .landing-profile__instrument-canvas {
@@ -1323,12 +1329,13 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile-awards {
   --award-color-fallback: #245cff;
-  position: absolute;
-  left: max(var(--pad), calc((100vw - min(100vw, var(--maxw))) / 2));
-  right: max(var(--pad), calc((100vw - min(100vw, var(--maxw))) / 2));
-  bottom: var(--landing-award-bottom);
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  align-self: end;
   z-index: 3;
-  margin: 0;
+  margin: 0 0 clamp(0.15rem, calc(var(--landing-scale-u) * 0.45), 0.55rem);
   padding: 0;
   color: var(--ink);
   pointer-events: none;
@@ -10906,9 +10913,9 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
             </p>
           </div>
         </div>
+        {!summaryOnly && <LandingProfileAwards items={RESUME.awards} />}
       </div>
       {!summaryOnly && <LandingProfileAwardConnectors awards={profileAwardGroups} />}
-      {!summaryOnly && <LandingProfileAwards items={RESUME.awards} />}
     </section>
   );
 }
