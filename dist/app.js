@@ -581,7 +581,7 @@ ${u}</style>`,E.appendChild(b);let M="url('data:image/gif;base64,R0lGODlhAQABAIA
   padding-bottom: 0;
 }
 .landing-profile {
-  --landing-scale-u: min(1vw, 1svh);
+  --landing-scale-u: min(1vw, 1.7778svh);
   --landing-award-icon-w: clamp(4.6rem, calc(var(--landing-scale-u) * 10.8), 8.15rem);
   --landing-award-icon-h: clamp(3.35rem, calc(var(--landing-scale-u) * 7.45), 5.6rem);
   --landing-award-label-size: clamp(0.42rem, calc(var(--landing-scale-u) * 0.76), 0.58rem);
