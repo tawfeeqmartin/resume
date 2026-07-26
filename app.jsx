@@ -1503,7 +1503,7 @@ const LANDING_VARIANT_CSS = `
     margin-top: clamp(2.5rem, 8vh, 4rem);
   }
   .landing-profile__proof {
-    transform: translateY(calc(var(--landing-scale-u) * -8.33));
+    transform: translateY(calc(var(--landing-scale-u) * -5.7));
   }
   .landing-profile__instrument--wheel {
     width: min(100%, 31rem);
