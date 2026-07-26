@@ -1313,8 +1313,8 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile-awards__grid {
   display: grid;
-  grid-template-columns: repeat(14, minmax(0, 1fr));
-  gap: clamp(0.38rem, 0.76vw, 0.82rem);
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: clamp(0.72rem, 1.25vw, 1.35rem);
   align-items: start;
   margin: 0;
   padding: 0;
@@ -1323,9 +1323,9 @@ const LANDING_VARIANT_CSS = `
 .landing-profile-award {
   --award-color: var(--award-color-fallback);
   display: grid;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: auto 1fr;
   justify-items: center;
-  gap: 0.25rem;
+  gap: 0.38rem;
   min-width: 0;
   color: var(--ink);
   text-align: center;
@@ -1341,8 +1341,8 @@ const LANDING_VARIANT_CSS = `
   color: rgba(10,12,16,0.62);
 }
 .landing-profile-award__icon {
-  width: clamp(1.85rem, 2.7vw, 2.75rem);
-  height: clamp(1.35rem, 2vw, 1.95rem);
+  width: clamp(2.35rem, 3.7vw, 3.85rem);
+  height: clamp(1.72rem, 2.75vw, 2.65rem);
   overflow: visible;
   color: var(--ink);
 }
@@ -1369,12 +1369,12 @@ const LANDING_VARIANT_CSS = `
   opacity: 1;
 }
 .landing-profile-award__title {
-  max-width: 16ch;
+  max-width: 14ch;
   font-family: var(--mono);
-  font-size: clamp(0.39rem, 0.43vw, 0.54rem);
-  font-weight: 520;
-  letter-spacing: 0.09em;
-  line-height: 1.18;
+  font-size: clamp(0.48rem, 0.58vw, 0.68rem);
+  font-weight: 560;
+  letter-spacing: 0.12em;
+  line-height: 1.12;
   text-transform: uppercase;
   color: rgba(10,12,16,0.82);
 }
@@ -1444,9 +1444,6 @@ const LANDING_VARIANT_CSS = `
     justify-self: start;
     width: min(72vw, 34rem);
     height: clamp(20rem, 48vw, 31rem);
-  }
-  .landing-profile-awards {
-    margin-top: clamp(3rem, 6vh, 4.5rem);
   }
   .landing-profile-awards__grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -10646,9 +10643,41 @@ function landingAwardTitle(award) {
     .replace(/\s+·\s+/g, ' · ');
 }
 
+function landingAwardGroups(items = []) {
+  const config = {
+    emmy: { order: 0, org: 'Television Academy', label: 'EMMY' },
+    hpa: { order: 1, org: 'HPA', label: 'HPA' },
+    cannes: { order: 2, org: 'Cannes Lions', label: 'CANNES LIONS' },
+    'one-show': { order: 3, org: 'The One Show', label: 'ONE SHOW' },
+    sxsw: { order: 4, org: 'SXSW', label: 'SXSW' },
+    webby: { order: 5, org: 'Webby Awards', label: 'WEBBY' },
+    technicolor: { order: 6, org: 'Technicolor', label: 'TECHNICOLOR' },
+    siggraph: { order: 7, org: 'SIGGRAPH', label: 'SIGGRAPH' },
+    aicp: { order: 8, org: 'AICP', label: 'AICP' },
+    recognition: { order: 99, org: 'Recognition', label: 'RECOGNITION' },
+  };
+  const groups = new Map();
+  items.forEach((award) => {
+    const family = landingAwardFamily(award);
+    const existing = groups.get(family) || {
+      family,
+      count: 0,
+      ...config[family],
+    };
+    existing.count += 1;
+    groups.set(family, existing);
+  });
+  return Array.from(groups.values())
+    .sort((a, b) => a.order - b.order)
+    .map((group) => ({
+      ...group,
+      title: group.count > 1 ? `${group.count}× ${group.label}` : group.label,
+    }));
+}
+
 function LandingProfileAwards({ items = [] }) {
   const rootRef = useRef(null);
-  const awards = items;
+  const awards = landingAwardGroups(items);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -10688,10 +10717,9 @@ function LandingProfileAwards({ items = [] }) {
       <p className="landing-profile-awards__label">Selected recognition</p>
       <ul className="landing-profile-awards__grid">
         {awards.map((award, index) => (
-          <li className="landing-profile-award" key={`${award.org}-${award.title}-${index}`}>
-            <span className="landing-profile-award__org">{award.org}</span>
+          <li className="landing-profile-award" key={`${award.family}-${index}`}>
             <LandingAwardIcon award={award} />
-            <span className="landing-profile-award__title">{landingAwardTitle(award)}</span>
+            <span className="landing-profile-award__title">{award.title}</span>
           </li>
         ))}
       </ul>
