@@ -1475,7 +1475,7 @@ const LANDING_VARIANT_CSS = `
     min-height: 100svh;
   }
   .landing-profile__proof {
-    transform: none;
+    transform: translateY(calc(var(--landing-scale-u) * 6));
   }
 }
 @media (max-width: 760px) {

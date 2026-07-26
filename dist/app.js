@@ -911,7 +911,7 @@ ${u}</style>`,E.appendChild(b);let M="url('data:image/gif;base64,R0lGODlhAQABAIA
     min-height: 100svh;
   }
   .landing-profile__proof {
-    transform: none;
+    transform: translateY(calc(var(--landing-scale-u) * 6));
   }
 }
 @media (max-width: 760px) {
