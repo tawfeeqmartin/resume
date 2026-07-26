@@ -10720,10 +10720,6 @@ function LandingProfileInstrumentLink() {
 
 function BeautifulGameLoadingSummaryInstrument({ part }) {
   const hostRef = useRef(null);
-  const [activePattern, setActivePattern] = useState(() => ({
-    label: LANDING_AWARD_PATTERNS[0].label,
-    formula: LANDING_AWARD_PATTERNS[0].formula,
-  }));
 
   useEffect(() => {
     let dispose = () => {};
@@ -10741,49 +10737,13 @@ function BeautifulGameLoadingSummaryInstrument({ part }) {
     };
   }, [part]);
 
-  useEffect(() => {
-    if (part !== 'wheel') return undefined;
-    const samplerStore = window.__resumeProfileSamplerStore || {
-      listeners: new Set(),
-      last: null,
-    };
-    window.__resumeProfileSamplerStore = samplerStore;
-    let frame = 0;
-    let lastKey = '';
-    const update = (sample = samplerStore.last) => {
-      const key = `${sample?.patternLabel || ''}:${sample?.patternFormula || ''}`;
-      if (!sample?.patternLabel || key === lastKey) return;
-      lastKey = key;
-      if (frame) window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(() => {
-        setActivePattern({
-          label: sample.patternLabel,
-          formula: sample.patternFormula,
-        });
-      });
-    };
-    samplerStore.listeners.add(update);
-    update(samplerStore.last);
-    return () => {
-      if (frame) window.cancelAnimationFrame(frame);
-      samplerStore.listeners.delete(update);
-    };
-  }, [part]);
-
   return (
     <div
       className={`landing-profile__instrument landing-profile__instrument--${part}`}
       data-instrument-part={part}
       aria-hidden="true"
       ref={hostRef}
-    >
-      {part === 'wheel' && (
-        <div className="landing-profile__instrument-formula">
-          <strong>{activePattern.label}</strong>
-          <span>{activePattern.formula}</span>
-        </div>
-      )}
-    </div>
+    />
   );
 }
 
