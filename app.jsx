@@ -10838,7 +10838,6 @@ function LandingAwardIcon({ award }) {
         <>
           <circle className="landing-profile-award__fill" cx="29" cy="27" r="16" />
           <circle className="landing-profile-award__fill landing-profile-award__fill--alt" cx="51" cy="27" r="16" />
-          <ellipse className="landing-profile-award__fill landing-profile-award__fill--additive" cx="40" cy="27" rx="5.6" ry="13" />
         </>
       )}
       {family === 'emmy' && (
