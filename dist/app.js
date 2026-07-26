@@ -660,6 +660,7 @@ ${u}</style>`,E.appendChild(b);let M="url('data:image/gif;base64,R0lGODlhAQABAIA
   align-items: flex-start;
   max-width: clamp(15rem, calc(var(--landing-scale-u) * 34), 34rem);
   justify-self: end;
+  transform: translateY(calc(var(--landing-scale-u) * -13.25));
 }
 .landing-profile__bio {
   margin: 0;
@@ -681,7 +682,7 @@ ${u}</style>`,E.appendChild(b);let M="url('data:image/gif;base64,R0lGODlhAQABAIA
 .landing-profile__bio--details {
   color: var(--ink);
   max-width: 36ch;
-  font-size: clamp(0.82rem, min(calc(var(--landing-scale-u) * 1.64), 2.42svh), 1.34rem);
+  font-size: clamp(0.82rem, min(calc(var(--landing-scale-u) * 2.05), 3.65svh), 1.65rem);
   line-height: 1.34;
 }
 .landing-profile__bio--details strong {
