@@ -1157,8 +1157,8 @@ const LANDING_VARIANT_CSS = `
   width: 100vw;
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
-  min-height: max(100svh, 52rem);
-  padding: clamp(5rem, 12vh, 8.5rem) var(--pad) clamp(4rem, 9vh, 7rem);
+  min-height: max(100svh, 49rem);
+  padding: clamp(4.25rem, 9.5vh, 7rem) var(--pad) clamp(3.6rem, 7.5vh, 6rem);
   color: var(--ink);
   background: var(--paper);
 }
@@ -1170,6 +1170,8 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile__name-row {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
   text-align: center;
 }
@@ -1192,7 +1194,7 @@ const LANDING_VARIANT_CSS = `
   grid-template-columns: minmax(18rem, 0.78fr) minmax(27rem, 0.94fr) minmax(18rem, 0.78fr);
   align-items: start;
   gap: clamp(1.75rem, 3.6vw, 4.5rem);
-  margin-top: clamp(2.15rem, 4.6vh, 3.7rem);
+  margin-top: clamp(1.75rem, 3.7vh, 3rem);
 }
 .landing-profile__copy {
   grid-column: 1;
@@ -1238,8 +1240,9 @@ const LANDING_VARIANT_CSS = `
 .landing-profile__links {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.8rem 1.8rem;
-  margin-top: clamp(1.2rem, 2.7vh, 1.85rem);
+  margin-top: clamp(0.7rem, 1.6vh, 1.1rem);
   font-family: var(--mono);
   font-size: 0.78rem;
   font-weight: 500;
@@ -1458,6 +1461,7 @@ const LANDING_VARIANT_CSS = `
     padding-bottom: clamp(4rem, 8svh, 6.5rem);
   }
   .landing-profile__name-row {
+    align-items: flex-start;
     justify-content: flex-start;
     text-align: left;
   }
@@ -1524,6 +1528,7 @@ const LANDING_VARIANT_CSS = `
     margin-top: 0;
   }
   .landing-profile__name-row {
+    align-items: flex-start;
     justify-content: flex-start;
     text-align: left;
   }
@@ -10908,6 +10913,12 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
             <span>Tawfeeq</span>
             <span>Martin</span>
           </h1>
+          {!summaryOnly && (
+            <nav className="landing-profile__links" aria-label="Profile links">
+              <a href={`mailto:${RESUME.email}`}>Email</a>
+              <a href={RESUME.linkedin} target="_blank" rel="noreferrer">LinkedIn</a>
+            </nav>
+          )}
         </div>
         <div className="landing-profile__story">
           <div className="landing-profile__copy">
@@ -10927,12 +10938,6 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
               of the inventors of Mill Stitch™ and the Mill Blackbird car rig. Independent
               developer of AI tools and generative creative systems.
             </p>
-            {!summaryOnly && (
-              <nav className="landing-profile__links" aria-label="Profile links">
-                <a href={`mailto:${RESUME.email}`}>Email</a>
-                <a href={RESUME.linkedin} target="_blank" rel="noreferrer">LinkedIn</a>
-              </nav>
-            )}
           </div>
         </div>
       </div>
