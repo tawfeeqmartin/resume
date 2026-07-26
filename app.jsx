@@ -10897,8 +10897,8 @@ function landingAwardGroups(items = []) {
     }));
 }
 
-const LANDING_AWARD_PATTERN_CYCLE_SECONDS = 2.05;
-const LANDING_AWARD_PATTERN_MORPH_SECONDS = 0.40;
+const LANDING_AWARD_PATTERN_CYCLE_SECONDS = 1.45;
+const LANDING_AWARD_PATTERN_MORPH_SECONDS = 0.24;
 const LANDING_AWARD_PATTERN_EDGE_LIMIT = 0.472;
 
 const landingPatternClampPoint = (point = {}) => {
@@ -10944,12 +10944,12 @@ function landingProject3DPoint(point = [0, 0, 0], t = 0, scale = 0.27) {
 function landingProjectAward3DPoint(point = [0, 0, 0], localTime = 0, scale = 0.37, phase = 0) {
   const [x = 0, y = 0, z = 0] = point;
   const time = Math.max(0, Number(localTime) || 0);
-  const holdSeconds = 0.30;
+  const holdSeconds = 0.14;
   const spinTime = Math.max(0, time - holdSeconds);
-  const reveal = landingSmooth01(Math.min(1, spinTime / 0.36));
-  const yaw = reveal * (phase + spinTime * 1.36);
-  const pitch = reveal * (-0.24 + Math.sin(phase + spinTime * 1.08) * 0.20);
-  const roll = reveal * Math.sin(phase * 0.7 + spinTime * 0.86) * 0.075;
+  const reveal = landingSmooth01(Math.min(1, spinTime / 0.20));
+  const yaw = reveal * (phase + spinTime * 2.15);
+  const pitch = reveal * (-0.26 + Math.sin(phase + spinTime * 1.68) * 0.22);
+  const roll = reveal * Math.sin(phase * 0.7 + spinTime * 1.38) * 0.095;
   const cr = Math.cos(roll);
   const sr = Math.sin(roll);
   const x0 = x * cr - y * sr;
@@ -11474,10 +11474,10 @@ function landingAwardRingModelPoint(index, t, options = {}) {
   const ringIndex = Math.floor(index / 8) % centers.length;
   const pointIndex = index % 8;
   const time = Math.max(0, Number(t) || 0);
-  const holdSeconds = 0.30;
+  const holdSeconds = 0.14;
   const spinTime = Math.max(0, time - holdSeconds);
-  const reveal = landingSmooth01(Math.min(1, spinTime / 0.36));
-  const angle = (pointIndex / 8) * Math.PI * 2 + reveal * (spinTime * 0.74 + phase * 0.25);
+  const reveal = landingSmooth01(Math.min(1, spinTime / 0.20));
+  const angle = (pointIndex / 8) * Math.PI * 2 + reveal * (spinTime * 1.35 + phase * 0.25);
   const center = centers[ringIndex] || centers[0] || [0, 0];
   const x = center[0] + Math.cos(angle) * radius;
   const y = center[1] + Math.sin(angle) * radius;
