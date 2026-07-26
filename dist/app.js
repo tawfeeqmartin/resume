@@ -588,7 +588,7 @@ ${u}</style>`,E.appendChild(b);let M="url('data:image/gif;base64,R0lGODlhAQABAIA
   --landing-award-gap: clamp(0.32rem, calc(var(--landing-scale-u) * 0.64), 0.58rem);
   --landing-award-row-h: calc(var(--landing-award-icon-h) + var(--landing-award-label-size) * 2.3 + var(--landing-award-gap));
   --landing-award-bottom: clamp(2.45rem, calc(var(--landing-award-row-h) * 0.62), 5.8rem);
-  --landing-wheel-lift: clamp(-3.6rem, calc(var(--landing-award-row-h) * -0.42), -1.65rem);
+  --landing-wheel-lift: clamp(-1.5rem, calc(var(--landing-award-row-h) * -0.18), -0.55rem);
   position: relative;
   z-index: 12;
   box-sizing: border-box;
