@@ -1200,23 +1200,29 @@ const LANDING_VARIANT_CSS = `
 .landing-profile__story {
   display: grid;
   grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.18fr) minmax(0, 0.72fr);
-  align-items: center;
-  align-self: center;
+  align-items: stretch;
+  align-self: stretch;
   gap: clamp(1.75rem, calc(var(--landing-scale-u) * 3.6), 4.5rem);
-  margin-top: clamp(1.35rem, calc(var(--landing-scale-u) * 3), 2.65rem);
+  margin-top: clamp(0.85rem, calc(var(--landing-scale-u) * 1.75), 1.65rem);
   min-height: 0;
 }
 .landing-profile__copy {
   grid-column: 1;
   position: relative;
   z-index: 3;
-  max-width: clamp(15rem, calc(var(--landing-scale-u) * 31), 31rem);
+  align-self: stretch;
+  display: flex;
+  align-items: flex-start;
+  max-width: clamp(15rem, calc(var(--landing-scale-u) * 30), 30rem);
 }
 .landing-profile__proof {
   grid-column: 3;
   position: relative;
   z-index: 3;
-  max-width: clamp(15rem, calc(var(--landing-scale-u) * 32), 32rem);
+  align-self: stretch;
+  display: flex;
+  align-items: flex-start;
+  max-width: clamp(15rem, calc(var(--landing-scale-u) * 34), 34rem);
   justify-self: end;
 }
 .landing-profile__bio {
@@ -1228,19 +1234,19 @@ const LANDING_VARIANT_CSS = `
   line-height: 1.58;
 }
 .landing-profile__bio--hook {
-  max-width: 16ch;
-  font-size: clamp(0.98rem, calc(var(--landing-scale-u) * 2.9), 2.45rem);
-  line-height: 0.98;
-  letter-spacing: -0.035em;
+  max-width: 12.4ch;
+  font-size: clamp(1.25rem, min(calc(var(--landing-scale-u) * 3.85), 5.35svh), 3.35rem);
+  line-height: 0.93;
+  letter-spacing: -0.042em;
 }
 .landing-profile__bio + .landing-profile__bio {
   margin-top: clamp(1.35rem, 3.2vh, 2.1rem);
 }
 .landing-profile__bio--details {
   color: var(--ink);
-  max-width: 46ch;
-  font-size: clamp(0.62rem, calc(var(--landing-scale-u) * 1.25), 0.98rem);
-  line-height: 1.52;
+  max-width: 36ch;
+  font-size: clamp(0.82rem, min(calc(var(--landing-scale-u) * 1.62), 2.36svh), 1.36rem);
+  line-height: 1.34;
 }
 .landing-profile__bio--details strong {
   color: var(--ink);
@@ -10384,11 +10390,12 @@ function mountProfileSamplerPart(host, THREE, part) {
   let startedAt = window.__resumeProfileSamplerStartedAt;
   const render = (now) => {
     const time = (now - startedAt) / 1000;
-    fieldUnit.x = Math.max(0, Math.min(1, 0.5 + Math.cos(time * 1.08) * 0.34));
-    fieldUnit.y = Math.max(0, Math.min(1, 0.5 + Math.sin(time * 0.82) * 0.32));
+    const samplerFrame = 0;
+    fieldUnit.x = 0.64;
+    fieldUnit.y = 0.42;
     const cell = `${Math.round(fieldUnit.x * 6) / 6}:${Math.round(fieldUnit.y * 5) / 5}`;
-    const shuffleTick = Math.floor(time * 12);
-    host.dataset.samplerFrame = String(Math.floor(time * 24));
+    const shuffleTick = 0;
+    host.dataset.samplerFrame = String(samplerFrame);
     host.dataset.samplerCell = cell;
 
     if (wheel) {
@@ -10398,7 +10405,7 @@ function mountProfileSamplerPart(host, THREE, part) {
       const awardSamples = Array.from({ length: awardSampleCount }, (_, index) => {
         const point = landingAwardSamplePoint(index, awardSampleCount, {
           fieldUnit: { x: fieldUnit.x, y: fieldUnit.y },
-          frame: Math.floor(time * 24),
+          frame: samplerFrame,
         });
         const sampleFieldUnit = {
           x: Math.max(0, Math.min(1, point.x)),
@@ -10421,7 +10428,7 @@ function mountProfileSamplerPart(host, THREE, part) {
         cell,
         color: centerColorStyle,
         fieldUnit: { x: fieldUnit.x, y: fieldUnit.y },
-        frame: Math.floor(time * 24),
+        frame: samplerFrame,
         awardSamples,
         paletteKey: `${cell}:${shuffleTick}`,
         shuffleTick,
