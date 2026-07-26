@@ -671,7 +671,7 @@ ${u}</style>`,P.appendChild(b);let M="url('data:image/gif;base64,R0lGODlhAQABAIA
 }
 .landing-profile__bio--hook {
   max-width: 12.4ch;
-  font-size: clamp(1.25rem, min(calc(var(--landing-scale-u) * 3.95), 5.55svh), 3.45rem);
+  font-size: clamp(1.25rem, min(calc(var(--landing-scale-u) * 4.1), 5.9svh), 3.6rem);
   line-height: 0.93;
   letter-spacing: -0.042em;
 }
@@ -681,7 +681,7 @@ ${u}</style>`,P.appendChild(b);let M="url('data:image/gif;base64,R0lGODlhAQABAIA
 .landing-profile__bio--details {
   color: var(--ink);
   max-width: 36ch;
-  font-size: clamp(0.82rem, min(calc(var(--landing-scale-u) * 1.7), 2.5svh), 1.4rem);
+  font-size: clamp(0.82rem, min(calc(var(--landing-scale-u) * 1.64), 2.42svh), 1.34rem);
   line-height: 1.34;
 }
 .landing-profile__bio--details strong {
