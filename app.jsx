@@ -1429,14 +1429,6 @@ const LANDING_VARIANT_CSS = `
   vector-effect: non-scaling-stroke;
   opacity: 0.24;
 }
-.landing-profile-award-connectors .landing-profile-award-connectors__shape {
-  fill: none;
-  stroke: var(--ink);
-  stroke-width: 1;
-  stroke-dasharray: none;
-  vector-effect: non-scaling-stroke;
-  opacity: 0.36;
-}
 .landing-profile-award-connectors .landing-profile-award-connectors__sample {
   vector-effect: non-scaling-stroke;
   stroke: #fff;
@@ -11629,53 +11621,6 @@ function landingAwardSampleColor(sample = {}, index = 0) {
   return awardSamples[index]?.color || sample?.color || 'rgb(36, 92, 255)';
 }
 
-function landingAwardPatternConnectionPairs(patternId, total = 0) {
-  const count = Math.max(0, total);
-  if (count < 2) return [];
-  const pattern = LANDING_AWARD_PATTERNS.find((item) => item.id === patternId);
-  if (Array.isArray(pattern?.edgePairs)) {
-    return pattern.edgePairs.filter(([from, to]) => from < count && to < count);
-  }
-  const step = Math.max(1, Math.min(count - 1, Number(pattern?.lineStep) || 1));
-  return Array.from({ length: count }, (_, index) => [index, (index + step) % count]);
-}
-
-function landingAwardRingCircleFromSamples(samples = [], start = 0, count = 8, id = 'ring') {
-  const ringSamples = samples.slice(start, start + count).filter((sample) => (
-    Number.isFinite(sample?.x1) && Number.isFinite(sample?.y1)
-  ));
-  if (ringSamples.length < 3) return null;
-  const xs = ringSamples.map((sample) => sample.x1);
-  const ys = ringSamples.map((sample) => sample.y1);
-  const minX = Math.min(...xs);
-  const maxX = Math.max(...xs);
-  const minY = Math.min(...ys);
-  const maxY = Math.max(...ys);
-  const radius = Math.max(1, Math.max(maxX - minX, maxY - minY) * 0.5);
-  return {
-    id,
-    cx: (minX + maxX) * 0.5,
-    cy: (minY + maxY) * 0.5,
-    r: radius,
-  };
-}
-
-function landingAwardPatternConnectionCircles(patternId, wheelSamples = []) {
-  if (patternId === 'award-cannes-rings') {
-    return [
-      landingAwardRingCircleFromSamples(wheelSamples, 0, 8, 'cannes-left-ring'),
-      landingAwardRingCircleFromSamples(wheelSamples, 8, 8, 'cannes-right-ring'),
-    ].filter(Boolean);
-  }
-  if (patternId === 'award-siggraph-rings') {
-    return [
-      landingAwardRingCircleFromSamples(wheelSamples, 0, 8, 'siggraph-outer-ring'),
-      landingAwardRingCircleFromSamples(wheelSamples, 8, 8, 'siggraph-inner-ring'),
-    ].filter(Boolean);
-  }
-  return [];
-}
-
 function landingAwardRenderedParts(root) {
   if (!root) return [];
   const selector = [
@@ -11694,8 +11639,6 @@ function landingAwardRenderedParts(root) {
 function LandingProfileAwardConnectors({ awards = [] }) {
   const [geometry, setGeometry] = useState({
     lines: [],
-    shapeEdges: [],
-    shapeCircles: [],
   });
 
   useEffect(() => {
@@ -11728,9 +11671,6 @@ function LandingProfileAwardConnectors({ awards = [] }) {
         const wheelCenterY = wheelRect.top + wheelRect.height * 0.5 - profileRect.top;
         const targets = landingAwardRenderedParts(profile);
         const sampleCount = targets.length;
-        const patternId = sample?.patternState?.morph > 0.5
-          ? sample?.patternState?.next?.id
-          : (sample?.patternState?.current?.id || sample?.patternId);
         const wheelSamples = Array.from({ length: sampleCount }, (_, sampleIndex) => {
           const sampled = Array.isArray(sample?.awardSamples) ? sample.awardSamples[sampleIndex] : null;
           const point = sampled?.point || landingAwardSamplePoint(sampleIndex, sampleCount, sample);
@@ -11744,21 +11684,6 @@ function LandingProfileAwardConnectors({ awards = [] }) {
             y1,
           };
         });
-        const shapeEdges = landingAwardPatternConnectionPairs(patternId, wheelSamples.length)
-          .map(([from, to], edgeIndex) => {
-            const a = wheelSamples[from];
-            const b = wheelSamples[to];
-            if (!a || !b) return null;
-            return {
-              id: `shape-${patternId || 'pattern'}-${edgeIndex}`,
-              x1: a.x1,
-              y1: a.y1,
-              x2: b.x1,
-              y2: b.y1,
-            };
-          })
-          .filter(Boolean);
-        const shapeCircles = landingAwardPatternConnectionCircles(patternId, wheelSamples);
         const next = wheelSamples.map((wheelSample, sampleIndex) => {
           const target = targets[sampleIndex];
           if (!target) return wheelSample;
@@ -11766,6 +11691,29 @@ function LandingProfileAwardConnectors({ awards = [] }) {
           const targetRect = targetNode.getBoundingClientRect();
           const x2 = targetRect.left + targetRect.width * 0.5 - profileRect.left;
           const y2 = targetRect.top + targetRect.height * 0.5 - profileRect.top;
+          const dx = x2 - wheelSample.x1;
+          const dy = y2 - wheelSample.y1;
+          const length = Math.hypot(dx, dy);
+          let connectorX1 = wheelSample.x1;
+          let connectorY1 = wheelSample.y1;
+          if (length > 0.001) {
+            const fromCenterX = wheelSample.x1 - wheelCenterX;
+            const fromCenterY = wheelSample.y1 - wheelCenterY;
+            const a = dx * dx + dy * dy;
+            const b = 2 * (fromCenterX * dx + fromCenterY * dy);
+            const c = fromCenterX * fromCenterX + fromCenterY * fromCenterY - wheelRadius * wheelRadius;
+            const discriminant = b * b - 4 * a * c;
+            if (discriminant >= 0) {
+              const root = Math.sqrt(discriminant);
+              const candidates = [
+                (-b - root) / (2 * a),
+                (-b + root) / (2 * a),
+              ].filter((value) => value >= 0 && value <= 1);
+              const t = candidates.length ? Math.max(...candidates) : 0;
+              connectorX1 = wheelSample.x1 + dx * t + (dx / length) * 2;
+              connectorY1 = wheelSample.y1 + dy * t + (dy / length) * 2;
+            }
+          }
           targetNode.style.setProperty('--award-sampled-color', wheelSample.color);
           if (targetNode.classList.contains('landing-profile-award__line')) {
             targetNode.style.stroke = wheelSample.color;
@@ -11777,11 +11725,13 @@ function LandingProfileAwardConnectors({ awards = [] }) {
             color: wheelSample.color,
             x1: wheelSample.x1,
             y1: wheelSample.y1,
+            connectorX1,
+            connectorY1,
             x2,
             y2,
           };
         });
-        setGeometry({ lines: next, shapeEdges, shapeCircles });
+        setGeometry({ lines: next });
       });
     };
 
@@ -11802,29 +11752,15 @@ function LandingProfileAwardConnectors({ awards = [] }) {
   if (!geometry.lines.length) return null;
   return (
     <svg className="landing-profile-award-connectors" aria-hidden="true">
-      {geometry.shapeCircles.map((circle) => (
-        <circle
-          className="landing-profile-award-connectors__shape"
-          key={circle.id}
-          cx={circle.cx}
-          cy={circle.cy}
-          r={circle.r}
-        />
-      ))}
-      {geometry.shapeEdges.map((edge) => (
-        <line
-          className="landing-profile-award-connectors__shape"
-          key={edge.id}
-          x1={edge.x1}
-          y1={edge.y1}
-          x2={edge.x2}
-          y2={edge.y2}
-        />
-      ))}
       {geometry.lines.map((line) => (
         <React.Fragment key={line.id}>
           {Number.isFinite(line.x2) && Number.isFinite(line.y2) && (
-            <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
+            <line
+              x1={line.connectorX1}
+              y1={line.connectorY1}
+              x2={line.x2}
+              y2={line.y2}
+            />
           )}
           <line
             className="landing-profile-award-connectors__sample"
