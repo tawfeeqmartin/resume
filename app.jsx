@@ -10890,7 +10890,6 @@ function landingAwardGroups(items = []) {
 }
 
 const LANDING_AWARD_PATTERN_CYCLE_SECONDS = 1.45;
-const LANDING_AWARD_PATTERN_MORPH_SECONDS = 0.44;
 const LANDING_AWARD_PATTERN_EDGE_LIMIT = 0.472;
 
 const landingPatternClampPoint = (point = {}) => {
@@ -11588,9 +11587,7 @@ function landingAwardPatternState(time = 0) {
   const patternIndex = Math.floor(cycle) % count;
   const nextIndex = (patternIndex + 1) % count;
   const phase = cycle - Math.floor(cycle);
-  const currentLocalTime = phase * LANDING_AWARD_PATTERN_CYCLE_SECONDS;
-  const morphStart = 1 - (LANDING_AWARD_PATTERN_MORPH_SECONDS / LANDING_AWARD_PATTERN_CYCLE_SECONDS);
-  const morph = landingLinear01((phase - morphStart) / Math.max(0.001, 1 - morphStart));
+  const morph = landingLinear01(phase);
   const current = LANDING_AWARD_PATTERNS[patternIndex];
   const next = LANDING_AWARD_PATTERNS[nextIndex];
   return {
@@ -11600,10 +11597,10 @@ function landingAwardPatternState(time = 0) {
     label: morph > 0.5 ? next.label : current.label,
     formula: morph > 0.5 ? next.formula : current.formula,
     point(index, total) {
-      const a = current.point(index, total, currentLocalTime, time);
-      if (morph <= 0) return a;
-      // The incoming award resolves front-facing first; only after its own
-      // cycle begins does it rotate away. This keeps every reveal identifiable.
+      // Keep the launch-page sampler in constant motion: each award is a
+      // front-facing key pose, and the samples travel linearly into the next
+      // key pose for the entire cycle instead of holding and then snapping.
+      const a = current.point(index, total, 0, time);
       const b = next.point(index, total, 0, time);
       return landingPatternClampPoint({
         x: a.x + (b.x - a.x) * morph,
