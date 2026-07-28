@@ -45,6 +45,7 @@ try {
   document.documentElement.dataset.resumeVariant = RESUME_APP_VARIANT;
 } catch (_) {}
 const IS_MOBILE_MEDIA_TARGET = window.matchMedia('(max-width: 760px)').matches;
+const MAC_TABLET_DISABLE_QUERY = '(pointer: coarse) and (min-width: 761px) and (max-width: 1366px)';
 const helpMeshSource = (path) => ({
   videoUrl: sameOriginMediaUrl(path),
   projectionUrl: sameOriginMediaUrl(path),
@@ -641,6 +642,23 @@ window.RESUME_TV_CLIP_POOLS = {
 };
 const MOBILE_RESUME_QUERY = '(max-width: 760px)';
 
+function isProbablyIPad() {
+  const ua = navigator.userAgent || '';
+  return /iPad/i.test(ua)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function isMacSectionForcedOn() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('forceMac') === '1' || params.get('desktopTest') === '1';
+}
+
+function shouldSkipMacSectionForDevice() {
+  if (isMacSectionForcedOn()) return false;
+  if (window.matchMedia(MOBILE_RESUME_QUERY).matches) return false;
+  return isProbablyIPad() || window.matchMedia(MAC_TABLET_DISABLE_QUERY).matches;
+}
+
 function useMobileResumeMode() {
   const getMatch = () => window.matchMedia(MOBILE_RESUME_QUERY).matches;
   const [mobile, setMobile] = useState(getMatch);
@@ -656,6 +674,29 @@ function useMobileResumeMode() {
     };
   }, []);
   return mobile;
+}
+
+function useSkipMacSectionForDevice() {
+  const [skipMac, setSkipMac] = useState(shouldSkipMacSectionForDevice);
+  useEffect(() => {
+    const tabletQuery = window.matchMedia(MAC_TABLET_DISABLE_QUERY);
+    const mobileQuery = window.matchMedia(MOBILE_RESUME_QUERY);
+    const update = () => setSkipMac(shouldSkipMacSectionForDevice());
+    update();
+    if (tabletQuery.addEventListener) tabletQuery.addEventListener('change', update);
+    else tabletQuery.addListener?.(update);
+    if (mobileQuery.addEventListener) mobileQuery.addEventListener('change', update);
+    else mobileQuery.addListener?.(update);
+    window.addEventListener('orientationchange', update);
+    return () => {
+      if (tabletQuery.removeEventListener) tabletQuery.removeEventListener('change', update);
+      else tabletQuery.removeListener?.(update);
+      if (mobileQuery.removeEventListener) mobileQuery.removeEventListener('change', update);
+      else mobileQuery.removeListener?.(update);
+      window.removeEventListener('orientationchange', update);
+    };
+  }, []);
+  return skipMac;
 }
 
 function getStoredDesktopMode() {
@@ -11818,7 +11859,42 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
   );
 }
 
-function LandingPageV1({ mobile = false }) {
+function LandingPageV1PostSections() {
+  return (
+    <>
+      <HelpFeature src={HELP_VIDEO_URLS} />
+      <BlackbirdFeature
+        innovationSrc={BLACKBIRD_INNOVATION_VIDEO_URL}
+        behindScenesSrc={BLACKBIRD_VIDEO_URL}
+      />
+      <KissNewEraFeature
+        src={KISS_NEW_ERA_VIDEO_URL}
+        poster={KISS_NEW_ERA_POSTER_URL}
+        label="05 · REAL-TIME DIGITAL HUMANS · KISS / A NEW ERA BEGINS"
+      />
+      <LouisVuittonFeature
+        id="louis-vuitton-ss20-after-kiss"
+        src={LOUIS_VUITTON_SS20_VIDEO_URL}
+        poster={LOUIS_VUITTON_SS20_POSTER_URL}
+        label="06 · SELECTED WORK · LOUIS VUITTON SS20"
+        mediaFirst
+      />
+      <TouchDesignerSketchesFeature
+        sketches={TOUCHDESIGNER_SKETCHES}
+        label="07 · PERSONAL SKETCHES · GLITCH INTERACTIVE"
+      />
+      <HandOfGodFeature
+        videoSrc={HAND_OF_GOD_VIDEO_URL}
+        poster={HAND_OF_GOD_POSTER_URL}
+        interactiveSrc={HAND_OF_GOD_DEMO_URL}
+        label="08 · PERSONAL SKETCHES · THE BEAUTIFUL GAME / HAND OF GOD"
+      />
+      <LandingEndProof awards={RESUME.awards} references={RESUME.references} />
+    </>
+  );
+}
+
+function LandingPageV1({ mobile = false, skipMac = false }) {
   if (mobile) {
     return (
       <>
@@ -11831,6 +11907,25 @@ function LandingPageV1({ mobile = false }) {
             </main>
           </div>
         </div>
+      </>
+    );
+  }
+
+  if (skipMac) {
+    return (
+      <>
+        <VariantStyles />
+        <div
+          className="landing-v1-shell landing-v1-shell--tablet-lite"
+          data-mac-section="disabled-tablet"
+        >
+          <div className="page landing-v1__page">
+            <main>
+              <LandingProfileSection />
+            </main>
+          </div>
+        </div>
+        <LandingPageV1PostSections />
       </>
     );
   }
@@ -11890,34 +11985,7 @@ function LandingPageV1({ mobile = false }) {
           </main>
         </div>
       </div>
-      <HelpFeature src={HELP_VIDEO_URLS} />
-      <BlackbirdFeature
-        innovationSrc={BLACKBIRD_INNOVATION_VIDEO_URL}
-        behindScenesSrc={BLACKBIRD_VIDEO_URL}
-      />
-      <KissNewEraFeature
-        src={KISS_NEW_ERA_VIDEO_URL}
-        poster={KISS_NEW_ERA_POSTER_URL}
-        label="05 · REAL-TIME DIGITAL HUMANS · KISS / A NEW ERA BEGINS"
-      />
-      <LouisVuittonFeature
-        id="louis-vuitton-ss20-after-kiss"
-        src={LOUIS_VUITTON_SS20_VIDEO_URL}
-        poster={LOUIS_VUITTON_SS20_POSTER_URL}
-        label="06 · SELECTED WORK · LOUIS VUITTON SS20"
-        mediaFirst
-      />
-      <TouchDesignerSketchesFeature
-        sketches={TOUCHDESIGNER_SKETCHES}
-        label="07 · PERSONAL SKETCHES · GLITCH INTERACTIVE"
-      />
-      <HandOfGodFeature
-        videoSrc={HAND_OF_GOD_VIDEO_URL}
-        poster={HAND_OF_GOD_POSTER_URL}
-        interactiveSrc={HAND_OF_GOD_DEMO_URL}
-        label="08 · PERSONAL SKETCHES · THE BEAUTIFUL GAME / HAND OF GOD"
-      />
-      <LandingEndProof awards={RESUME.awards} references={RESUME.references} />
+      <LandingPageV1PostSections />
     </>
   );
 }
@@ -11930,7 +11998,9 @@ function LandingPageV1({ mobile = false }) {
 // (.landing-v1-shell, .crt-enter, .crt-frame, .crt-content) are kept so the
 // CrtZoom driver and its CSS machinery work unchanged; .landing-v2-shell and
 // .landing-v2__* hooks re-theme it from the landing-v2.html shell stylesheet.
-function LandingPageV2() {
+function LandingPageV2({ skipMac = false }) {
+  if (skipMac) return <LandingPageV1 mobile={false} skipMac />;
+
   return (
     <>
       <VariantStyles />
@@ -12000,12 +12070,14 @@ function LandingPageV2() {
 
 function App() {
   const mobileResume = useMobileResumeMode();
+  const skipMacSection = useSkipMacSectionForDevice();
   const [desktopMode, setDesktopMode] = useDesktopMode();
   const landingRoute = RESUME_APP_VARIANT === 'landing-v1';
   const landingV2Route = RESUME_APP_VARIANT === 'landing-v2';
   const resumeRoute = RESUME_APP_VARIANT === 'resume';
-  const interactiveMode = ((landingRoute || landingV2Route) && !mobileResume)
-    || (!resumeRoute && !mobileResume && desktopMode !== 'read-only');
+  const macCapableDesktop = !mobileResume && !skipMacSection;
+  const interactiveMode = ((landingRoute || landingV2Route) && macCapableDesktop)
+    || (!resumeRoute && macCapableDesktop && desktopMode !== 'read-only');
   useHelpMediaWarmup(interactiveMode);
 
   useEffect(() => {
@@ -12033,8 +12105,8 @@ function App() {
     );
   }
 
-  if (landingRoute) return <LandingPageV1 mobile={mobileResume} />;
-  if (landingV2Route) return <LandingPageV2 />;
+  if (landingRoute) return <LandingPageV1 mobile={mobileResume} skipMac={skipMacSection} />;
+  if (landingV2Route) return <LandingPageV2 skipMac={skipMacSection} />;
 
   if (mobileResume) return <MobileResume />;
   if (desktopMode === 'read-only') {
