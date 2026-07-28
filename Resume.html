@@ -591,12 +591,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   padding: 0;
   border: 0;
 }
-/* Eyebrow label only — drop the close-mark and rule entirely. */
-.section__mark,
-.section--triangle .section__mark,
-.section--circle .section__mark,
-.section--square .section__mark { display: none; }
-.section__rule { display: none; }
+/* Eyebrow label only. No decorative markers or rules on public sections. */
 .section__label {
   display: inline-flex; align-items: center; gap: 0.5rem;
   font-family: var(--sans);
@@ -792,11 +787,6 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 #louis-vuitton-ss20-after-kiss .video-slot,
 #human-race .video-slot,
 #kiss-new-era .video-slot { border-radius: 0; box-shadow: none; }
-#louis-vuitton-ss20 .section__rule,
-#louis-vuitton-ss20-after-kiss .section__rule,
-#human-race .section__rule,
-#kiss-new-era .section__rule { display: none; }
-
 #louis-vuitton-ss20-after-kiss .louis-vuitton-feature {
   grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.9fr);
   grid-template-areas: "player intro";
@@ -3063,26 +3053,6 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
   gap: 0.65rem;
   margin-bottom: 1rem;
 }
-.mobile-section__mark {
-  flex: 0 0 auto;
-  width: 0.58rem;
-  height: 0.52rem;
-  background: var(--mobile-accent);
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M6 1 L11 9 L1 9 Z' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M6 1 L11 9 L1 9 Z' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
-}
-.mobile-section--blue .mobile-section__mark {
-  width: 0.55rem;
-  height: 0.55rem;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='5' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='5' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
-}
-.mobile-section--red .mobile-section__mark {
-  width: 0.52rem;
-  height: 0.52rem;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Crect x='1' y='1' width='10' height='10' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Crect x='1' y='1' width='10' height='10' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
-}
 .mobile-section__label {
   color: var(--ink);
   font-size: 0.68rem;
@@ -3710,23 +3680,12 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
   }
   #summary { margin-top: 0.35rem; }
   #experience { margin-top: 1.7rem; }
-  .section__rule {
-    display: none !important;
-  }
   .section__header {
     display: flex;
     align-items: center;
     gap: 0.65rem;
     margin-left: 0;
     margin-bottom: 0.65rem;
-  }
-  .section__mark {
-    position: static;
-    flex: 0 0 auto;
-    display: none !important;
-  }
-  .section--triangle .section__mark {
-    flex-basis: 1.32rem;
   }
   .section__label {
     padding-top: 0;
@@ -3888,10 +3847,6 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
   .mobile-section__header {
     gap: 0.42rem;
     margin-bottom: 0.45rem;
-  }
-  .mobile-section__mark {
-    width: 0.42rem;
-    height: 0.38rem;
   }
   .mobile-section__label {
     font-size: 7.2pt;

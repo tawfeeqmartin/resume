@@ -836,7 +836,6 @@ function MobileResumeSection({ label, tone = 'yellow', children }) {
   return (
     <section className={`mobile-section mobile-section--${tone}`}>
       <header className="mobile-section__header">
-        <span className="mobile-section__mark" aria-hidden="true" />
         <span className="mobile-section__label mono">{label}</span>
       </header>
       <div className="mobile-section__body">{children}</div>
