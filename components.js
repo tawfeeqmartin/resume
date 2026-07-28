@@ -6084,8 +6084,6 @@ function Section({ id, label, children, dense }) {
     <section id={id} className={`section section--${shape} ${dense ? 'section--dense' : ''}`}>
       {label ? (
         <header className="section__header">
-          <span className="section__mark" aria-hidden="true" />
-          <span className="section__rule" />
           <span className="section__label mono">
             {numberMatch ? (
               <>
@@ -7532,40 +7530,9 @@ function createVfxMarkerCycTexture(THREE, renderer, options = {}) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
-  // A clean VFX-stage tracking grid. The canvas stays transparent so
-  // the existing blue stage, foreshadow imagery, and resolve graphics remain
-  // the compositing background; only the physical marker tape lives in 3D.
-  const columns = Math.max(2, Number(options.columns) || 5);
-  const rows = Math.max(2, Number(options.rows) || 3);
-  const insetX = canvas.width * 0.075;
-  const insetY = canvas.height * 0.105;
-  const spanX = canvas.width - insetX * 2;
-  const spanY = canvas.height - insetY * 2;
-  const arm = Math.round(canvas.height * 0.018);
-  const lineWidth = Math.max(5, Math.round(canvas.height * 0.0048));
-
+  // Public site no longer uses blue-screen tracking markers. Keep a transparent
+  // texture so any legacy mesh path becomes inert.
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  for (let row = 0; row < rows; row += 1) {
-    for (let column = 0; column < columns; column += 1) {
-      const x = insetX + (spanX * column) / (columns - 1);
-      const y = insetY + (spanY * row) / (rows - 1);
-      ctx.save();
-      ctx.shadowColor = 'rgba(0, 0, 40, 0.32)';
-      ctx.shadowBlur = lineWidth * 1.05;
-      ctx.shadowOffsetY = lineWidth * 0.22;
-      ctx.strokeStyle = 'rgba(248, 248, 242, 0.98)';
-      ctx.lineWidth = lineWidth;
-      ctx.beginPath();
-      ctx.moveTo(x - arm, y);
-      ctx.lineTo(x + arm, y);
-      ctx.moveTo(x, y - arm);
-      ctx.lineTo(x, y + arm);
-      ctx.stroke();
-      ctx.restore();
-    }
-  }
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -7679,7 +7646,7 @@ function createVfxStageTexture(THREE, renderer) {
         desynchronized: true,
       });
       if (!ctx) return null;
-      ctx.fillStyle = '#1118f2';
+      ctx.fillStyle = '#000106';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       return {
         index: region.index,
@@ -7727,7 +7694,7 @@ function createVfxStageTexture(THREE, renderer) {
   canvas.height = Math.round(canvas.width * (layout.height / logicalWidth));
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
-  ctx.fillStyle = '#1118f2';
+  ctx.fillStyle = '#000106';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   const texture = configureVfxStageCanvasTexture(
     THREE,
@@ -8120,7 +8087,7 @@ function createVfxLedPowerMaskMaterial(THREE, spec) {
         float powered = step(threshold, uPowerProgress);
         float offAlpha = 1.0 - powered;
         if (offAlpha < 0.001) discard;
-        gl_FragColor = vec4(0.0015, 0.0018, 0.0024, offAlpha);
+        gl_FragColor = vec4(0.0, 0.0003, 0.0018, offAlpha);
       }
     `,
     transparent: true,
@@ -10303,7 +10270,7 @@ function paintVfxMarkerCyc(cyc, options = {}) {
     ? options.phase
     : '';
   const glitchStrength = Math.max(0, Math.min(1, Number(options.glitchStrength) || 0));
-  let phase = 'blue';
+  let phase = 'off';
   if (resolve) phase = 'resolve';
   else if (requestedPhase) phase = requestedPhase;
   else {
@@ -10343,7 +10310,7 @@ function paintVfxMarkerCyc(cyc, options = {}) {
     }
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'copy';
-    ctx.fillStyle = '#1118f2';
+    ctx.fillStyle = '#000106';
     ctx.fillRect(0, 0, stageCanvas.width, stageCanvas.height);
     ctx.globalCompositeOperation = 'source-over';
   if (phase === 'resolve') {
@@ -10974,18 +10941,11 @@ function createVfxMarkerCyc(THREE, renderer, modelBox, anchorBox = modelBox) {
         float wallThreshold = mix(backgroundThreshold, bullThreshold, bullMask);
         float wallPowered = step(wallThreshold, uWallPowerProgress);
         // Boot is binary and physically legible: cabinets are either black
-        // (off) or the final stage blue (on). Do not tint the bull white or
-        // reveal program imagery until Enter hands the wall to DESIGN.
-        // The canvas blue is authored as sRGB #1118f2. Shader literals are
-        // linear values, so use its exact linear-light conversion instead of
-        // feeding the sRGB channel numbers directly and washing the wall out.
-        vec3 stageBlue = vec3(
-          0.0056053916,
-          0.0091340587,
-          0.8879231179
-        );
+        // (off) or a neutral dark stage base (on). Do not reveal program imagery
+        // until Enter hands the wall to DESIGN.
+        vec3 stageBase = vec3(0.0, 0.0003, 0.0018);
         vec3 poweredColor = mix(
-          stageBlue,
+          stageBase,
           diffuseColor.rgb,
           step(0.999, uWallPowerProgress)
         );
@@ -11000,24 +10960,25 @@ function createVfxMarkerCyc(THREE, renderer, modelBox, anchorBox = modelBox) {
   };
   surfaceMaterial.customProgramCacheKey = () => (
     stageProcessorMode
-      ? 'vfx-led-wall-4x-uhd-processor-bull-power-srgb-match-v5'
-      : 'vfx-led-wall-inline-bull-power-srgb-match-v4'
+      ? 'vfx-led-wall-4x-uhd-processor-neutral-power-v6'
+      : 'vfx-led-wall-inline-neutral-power-v5'
   );
   // The glitch/program feed is currently authored for the curved BP2 wall
   // only. The ceiling is an independent practical: it powers up with the wall
-  // but resolves to a stable blue instead of inheriting the wall program.
+  // as a neutral dark surface instead of reintroducing the old blue tracking
+  // plate.
   const ceilingMaterial = new THREE.MeshBasicMaterial({
-    color: 0x0018ff,
+    color: 0x000106,
     transparent: false,
     depthTest: true,
     depthWrite: true,
     side: THREE.DoubleSide,
     toneMapped: false,
   });
-  ceilingMaterial.name = 'VfxLedCeilingBluePracticalMaterial';
+  ceilingMaterial.name = 'VfxLedCeilingNeutralPracticalMaterial';
   ceilingMaterial.userData.mediaTarget = 'none';
   const floorMaterial = new THREE.MeshStandardMaterial({
-    color: 0x070a2d,
+    color: 0x000106,
     roughness: 0.96,
     metalness: 0.02,
     depthTest: true,
@@ -16102,7 +16063,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
               : 'off';
         wrapRef.current.dataset.cycWallPowerSilhouetteMask = 'cabinet-grid-design-aligned';
         wrapRef.current.dataset.cycCeilingPowerProgress = next > 0 ? '1.000' : '0.000';
-        wrapRef.current.dataset.cycCeilingPowerState = next > 0 ? 'blue-online' : 'off';
+        wrapRef.current.dataset.cycCeilingPowerState = next > 0 ? 'neutral-online' : 'off';
       }
       state.requestRender?.();
     };
@@ -19796,8 +19757,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	              ? 'booting'
 	              : 'off';
 	          wrap.dataset.cycWallPowerOrder = 'bull-silhouette-then-deterministic-random';
-	          wrap.dataset.cycWallPowerPalette = 'black-off-blue-on';
-	          wrap.dataset.cycWallPowerBlue = 'srgb-1118f2-linearized';
+	          wrap.dataset.cycWallPowerPalette = 'black-off-neutral-on';
+	          wrap.dataset.cycWallPowerBlue = 'removed';
 	          wrap.dataset.cycWallPowerSilhouette = 'off';
 	          wrap.dataset.cycWallPowerSilhouetteMask = 'cabinet-grid-design-aligned';
 	          wrap.dataset.cycWallPowerDrawCalls = '0';
@@ -19807,11 +19768,11 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	            markerCyc.userData.ceilingPowerProgress || 0
 	          ).toFixed(3);
 	          wrap.dataset.cycCeilingPowerState = markerCyc.userData.ceilingPowerProgress > 0
-	            ? 'blue-online'
+	            ? 'neutral-online'
 	            : 'off';
 	          wrap.dataset.cycCeilingPowerOrder = 'atomic-visibility-toggle';
 	          wrap.dataset.cycCeilingPowerDrawCalls = '0';
-	          wrap.dataset.cycCeilingPowerColor = '#0018ff';
+	          wrap.dataset.cycCeilingPowerColor = '#000106';
 	          wrap.dataset.cycWallRearMediaMapped = String(
 	            markerCyc.userData.wallRearMediaMapped === true,
 	          );

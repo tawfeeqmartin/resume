@@ -1694,18 +1694,29 @@ const LANDING_VARIANT_CSS = `
    the viewport, remove its fixed WebGL surface instead of letting later work
    sections paint over a still-running machine. */
 .landing-v1-shell.is-crt:not(.is-mac-section-active) .landing-v1__demo {
-  visibility: hidden;
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
   pointer-events: none;
 }
-.landing-v1-shell.is-crt[data-companion-gate="loading-machine"] .landing-v1__demo,
-.landing-v1-shell.is-crt[data-companion-gate="recovering-machine"] .landing-v1__demo {
+.landing-v1-shell.is-crt:not(.is-mac-section-active) .landing-v1__hero {
+  background: #030305 !important;
+}
+.landing-v1-shell.is-crt:not(.is-mac-section-active) .landing-v1__demo::before,
+.landing-v1-shell.is-crt:not(.is-mac-section-active) .crt-foreshadow,
+.landing-v1-shell:not(.is-mac-section-active) .crt-foreshadow {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none;
+}
+.landing-v1-shell.is-crt.is-mac-section-active[data-companion-gate="loading-machine"] .landing-v1__demo,
+.landing-v1-shell.is-crt.is-mac-section-active[data-companion-gate="recovering-machine"] .landing-v1__demo {
   visibility: visible;
+  opacity: 1;
   pointer-events: none;
 }
-.landing-v1-shell.is-crt[data-companion-gate="loading-machine"] .landing-v1__hero,
-.landing-v1-shell.is-crt[data-companion-gate="recovering-machine"] .landing-v1__hero,
-.landing-v1-shell.is-crt[data-companion-gate="loading-machine"] ~ #blackbird,
-.landing-v1-shell.is-crt[data-companion-gate="recovering-machine"] ~ #blackbird {
+.landing-v1-shell.is-crt.is-mac-section-active[data-companion-gate="loading-machine"] .landing-v1__hero,
+.landing-v1-shell.is-crt.is-mac-section-active[data-companion-gate="recovering-machine"] .landing-v1__hero {
   background: #030305 !important;
 }
 /* Pages on the glass: .crt-content is NOT shown in the viewport. It is laid out
@@ -1790,29 +1801,10 @@ const LANDING_VARIANT_CSS = `
   height: 100svh;
   min-height: 100svh;
   color: var(--lv-on-dark);
-  background: #1118f2;
+  background: #030305;
   overflow: visible;
   isolation: isolate;
   z-index: 5;
-}
-.vfx-marker-field {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  align-items: center;
-  justify-items: center;
-  padding: 3.5vh 11.5vw 4.5vh;
-  pointer-events: none;
-  overflow: hidden;
-}
-.landing-v1-shell[data-overture-resolve="true"] .vfx-marker-field {
-  opacity: 0;
-}
-.landing-v1-shell.has-3d-cyc .vfx-marker-field {
-  opacity: 0;
 }
 .landing-v1-shell.has-3d-cyc .landing-v1__hero {
   background: #030305;
@@ -1877,7 +1869,7 @@ const LANDING_VARIANT_CSS = `
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  background: #1118f2;
+  background: transparent;
   --crt-glitch-envelope: 0;
 }
 @property --crt-glitch-envelope {
@@ -1899,11 +1891,9 @@ const LANDING_VARIANT_CSS = `
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    repeating-linear-gradient(0deg, transparent 0 7px, rgba(17, 24, 242, 0.68) 7px 10px),
-    linear-gradient(90deg, rgba(255, 35, 103, 0.18), transparent 32%, transparent 68%, rgba(0, 216, 255, 0.2));
+  background: transparent;
   mix-blend-mode: multiply;
-  opacity: calc(0.08 + var(--crt-glitch-envelope, 0) * 0.92);
+  opacity: 0;
 }
 .crt-foreshadow__layer img {
   width: 100%;
@@ -2209,28 +2199,6 @@ const LANDING_VARIANT_CSS = `
 @media (prefers-reduced-motion: reduce) {
   .crt-foreshadow__layer { animation: none !important; }
 }
-.vfx-marker {
-  position: relative;
-  width: 34px;
-  height: 34px;
-  opacity: 0.94;
-  filter: drop-shadow(0 0 2px rgba(255,255,255,0.28));
-}
-.vfx-marker::before,
-.vfx-marker::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 30px;
-  height: 4px;
-  border-radius: 1px;
-  background: #ffffff;
-  transform: translate(-50%, -50%);
-}
-.vfx-marker::after { transform: translate(-50%, -50%) rotate(90deg); }
-.vfx-marker:nth-child(odd) { justify-self: start; }
-.vfx-marker:nth-child(even) { justify-self: end; }
 .landing-v1__intro {
   max-width: 41rem;
   position: relative;
@@ -3877,14 +3845,6 @@ function LandingEndProof({ awards, references }) {
       <div className="landing-end-proof__footer">
         <Footer data={RESUME} />
       </div>
-    </div>
-  );
-}
-
-function VfxMarkerField() {
-  return (
-    <div className="vfx-marker-field" aria-hidden="true">
-      {Array.from({ length: 6 }, (_, index) => <span className="vfx-marker" key={index} />)}
     </div>
   );
 }
@@ -11903,7 +11863,6 @@ function LandingPageV1({ mobile = false }) {
               <div className="crt-enter__sticky">
                 <section className="landing-v1__hero" aria-label="Interactive portfolio demo">
                   <CrtForeshadowField />
-                  <VfxMarkerField />
                   <div className="landing-v1__demo">
                     <TvHero sources={TV_VIDEO_SOURCES} vocalSamples={ACTIVE_VOCAL_SAMPLE_SOURCES} />
                   </div>
