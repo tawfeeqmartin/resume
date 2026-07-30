@@ -10921,6 +10921,10 @@ function landingAwardGroups(items = []) {
 
 const LANDING_AWARD_PATTERN_CYCLE_SECONDS = 1.45;
 const LANDING_AWARD_PATTERN_EDGE_LIMIT = 0.472;
+const LANDING_AWARD_SPECTRUM_START_TURN = 0.025;
+const LANDING_AWARD_SPECTRUM_SPAN_TURN = 0.80;
+const LANDING_AWARD_SPECTRUM_RADIUS = 0.392;
+const LANDING_AWARD_SPECTRUM_RADIUS_PULSE = 0.022;
 
 const landingPatternClampPoint = (point = {}) => {
   const rawX = Number(point.x);
@@ -10942,6 +10946,14 @@ const landingPatternPolarPoint = (angle, radius) => landingPatternClampPoint({
   x: 0.5 + Math.cos(angle) * radius,
   y: 0.5 + Math.sin(angle) * radius,
 });
+
+const landingColorWheelHuePoint = (hueTurn, radius) => {
+  const angle = (((Number(hueTurn) || 0) % 1) + 1) % 1 * Math.PI * 2;
+  return landingPatternClampPoint({
+    x: 0.5 + Math.cos(angle) * radius,
+    y: 0.5 - Math.sin(angle) * radius,
+  });
+};
 
 function landingProject3DPoint(point = [0, 0, 0], t = 0, scale = 0.27) {
   const [x = 0, y = 0, z = 0] = point;
@@ -11720,6 +11732,58 @@ function landingAwardRelationshipOffset(target = {}, time = 0) {
   };
 }
 
+function landingAwardSpectrumHueOffset(target = {}) {
+  const family = String(target.awardFamily || 'recognition');
+  const partCount = Math.max(1, Number(target.partCount) || 1);
+  const fillIndex = Math.max(0, Number(target.fillIndex) || 0);
+  const byFamily = {
+    cannes: [-0.035, 0.035, 0],
+    emmy: [-0.018, 0.018, 0],
+    hpa: [0],
+    'one-show': [0],
+    sxsw: [-0.020, 0.020],
+    webby: [0],
+    technicolor: [-0.052, 0, 0.052],
+    siggraph: [-0.026, 0.026],
+    aicp: [0],
+  };
+  const offsets = byFamily[family];
+  if (offsets?.length) return offsets[Math.min(fillIndex, offsets.length - 1)] || 0;
+  if (partCount <= 1) return 0;
+  return (fillIndex - (partCount - 1) * 0.5) * 0.018;
+}
+
+function landingAwardSpectrumRadiusOffset(target = {}) {
+  const family = String(target.awardFamily || 'recognition');
+  const fillIndex = Math.max(0, Number(target.fillIndex) || 0);
+  const byFamily = {
+    cannes: [0, 0, 0.018],
+    emmy: [-0.006, -0.006, 0.018],
+    sxsw: [-0.012, 0.012],
+    technicolor: [-0.014, 0.008, -0.014],
+    siggraph: [0.020, -0.020],
+  };
+  const offsets = byFamily[family];
+  if (offsets?.length) return offsets[Math.min(fillIndex, offsets.length - 1)] || 0;
+  return 0;
+}
+
+function landingAwardSpectrumAnchor(target = {}, awardSlot = 0, awardCount = 1, time = 0) {
+  const denom = Math.max(1, awardCount - 1);
+  const progress = awardCount <= 1 ? 0.5 : Math.max(0, Math.min(1, awardSlot / denom));
+  const awardIndex = Math.max(0, Number(target.awardIndex) || awardSlot);
+  const hue = LANDING_AWARD_SPECTRUM_START_TURN
+    + progress * LANDING_AWARD_SPECTRUM_SPAN_TURN
+    + landingAwardSpectrumHueOffset(target);
+  const radius = LANDING_AWARD_SPECTRUM_RADIUS
+    + landingAwardSpectrumRadiusOffset(target)
+    + Math.sin(time * 0.9 + awardIndex * 0.61) * LANDING_AWARD_SPECTRUM_RADIUS_PULSE;
+  return {
+    hue: (((hue % 1) + 1) % 1),
+    point: landingColorWheelHuePoint(hue, radius),
+  };
+}
+
 function landingRgbPartsFromString(color = '') {
   const match = String(color).match(/rgba?\(([^)]+)\)/i);
   if (!match) return [36, 92, 255];
@@ -11748,11 +11812,12 @@ function landingAwardRelationshipSamples(targets = [], sampleMeta = {}) {
   const awardCount = Math.max(1, awardIndexes.length);
   const samples = targets.map((target) => {
     const awardSlot = Math.max(0, awardIndexes.indexOf(target.awardIndex));
-    const anchor = landingAwardSamplePoint(awardSlot, awardCount, sampleMeta);
+    const spectrum = landingAwardSpectrumAnchor(target, awardSlot, awardCount, time);
+    const anchor = spectrum.point;
     const offset = landingAwardRelationshipOffset(target, time);
     const point = landingPatternClampPoint({
-      x: anchor.x + offset.x,
-      y: anchor.y + offset.y,
+      x: anchor.x + offset.x * 0.45,
+      y: anchor.y + offset.y * 0.45,
     });
     return {
       color: landingTraditionalColorForSamplePoint(point),
@@ -11765,6 +11830,7 @@ function landingAwardRelationshipSamples(targets = [], sampleMeta = {}) {
         awardFamily: target.awardFamily,
         awardIndex: target.awardIndex,
         fillIndex: target.fillIndex,
+        spectrumHue: spectrum.hue,
       },
     };
   });
