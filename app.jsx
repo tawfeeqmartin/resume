@@ -1373,6 +1373,49 @@ const LANDING_VARIANT_CSS = `
   width: 100%;
   height: 100%;
 }
+.landing-profile__clock-samplers {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.landing-profile__clock-sampler {
+  fill: rgba(255,255,255,0.96);
+  stroke: rgba(5,6,8,0.92);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  mix-blend-mode: normal;
+}
+.landing-profile__clock-hand-line {
+  fill: none;
+  stroke: rgba(5,6,8,0.88);
+  stroke-width: 1;
+  stroke-linecap: square;
+  vector-effect: non-scaling-stroke;
+  mix-blend-mode: normal;
+}
+.landing-profile__clock-connections {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.landing-profile__clock-connection {
+  fill: none;
+  stroke: color-mix(in oklch, var(--sample-color, rgba(10,12,16,0.42)), #050608 58%);
+  stroke-width: 0.65;
+  stroke-dasharray: 5 5;
+  stroke-linecap: square;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.82;
+  mix-blend-mode: multiply;
+}
 .landing-profile__instrument-formula {
   position: absolute;
   left: 50%;
@@ -1452,59 +1495,6 @@ const LANDING_VARIANT_CSS = `
   color: var(--ink);
   pointer-events: none;
 }
-.landing-profile-award-connectors {
-  position: absolute;
-  inset: 0;
-  z-index: 6;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  pointer-events: none;
-}
-.landing-profile-award-connectors line {
-  stroke: rgba(10, 12, 16, 0.62);
-  stroke-width: 1;
-  stroke-dasharray: 4 4;
-  stroke-linecap: square;
-  vector-effect: non-scaling-stroke;
-  opacity: 0.38;
-}
-.landing-profile-award-connectors__orbit {
-  fill: none;
-  stroke: rgba(10, 12, 16, 0.22);
-  stroke-width: 1;
-  stroke-dasharray: 2 8;
-  stroke-linecap: round;
-  vector-effect: non-scaling-stroke;
-  opacity: 0.22;
-}
-.landing-profile-award-connectors .landing-profile-award-connectors__sample {
-  vector-effect: non-scaling-stroke;
-  fill: none;
-  stroke: #fff;
-  stroke-width: 1;
-  stroke-dasharray: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0.95;
-}
-.landing-profile-award-connectors .landing-profile-award-connectors__sample-shape {
-  vector-effect: non-scaling-stroke;
-  fill: none;
-  stroke: #fff;
-  stroke-width: 1;
-  stroke-dasharray: none;
-  stroke-linecap: square;
-  stroke-linejoin: round;
-  opacity: 1;
-}
-.landing-profile-award-connectors .landing-profile-award-connectors__sample line.landing-profile-award-connectors__sample-shape {
-  stroke: #fff;
-  stroke-width: 1;
-  stroke-dasharray: none;
-  stroke-linecap: square;
-  opacity: 1;
-}
 .landing-profile-awards__label {
   position: absolute;
   width: 1px;
@@ -1524,6 +1514,8 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile-award {
   --award-color: var(--award-color-fallback);
+  --award-color-alt: color-mix(in oklch, var(--award-color), #fff 28%);
+  --award-color-additive: color-mix(in oklch, var(--award-color), var(--award-color-alt) 50%);
   display: grid;
   grid-template-rows: auto 1fr;
   justify-items: center;
@@ -1531,6 +1523,51 @@ const LANDING_VARIANT_CSS = `
   min-width: 0;
   color: var(--ink);
   text-align: center;
+}
+.landing-profile-award:nth-child(1) {
+  --award-color: var(--landing-award-color-0, #f6bf3f);
+  --award-color-alt: var(--landing-award-color-alt-0, #76d9ff);
+  --award-color-additive: var(--landing-award-color-additive-0, color-mix(in oklch, var(--award-color), var(--award-color-alt) 50%));
+}
+.landing-profile-award:nth-child(2) {
+  --award-color: var(--landing-award-color-1, #4528ff);
+  --award-color-alt: var(--landing-award-color-alt-1, #8fff58);
+  --award-color-additive: var(--landing-award-color-additive-1, color-mix(in oklch, var(--award-color), var(--award-color-alt) 50%));
+}
+.landing-profile-award:nth-child(3) {
+  --award-color: var(--landing-award-color-2, #62f05a);
+  --award-color-alt: var(--landing-award-color-alt-2, #50dfd0);
+  --award-color-additive: var(--landing-award-color-additive-2, color-mix(in oklch, var(--award-color), var(--award-color-alt) 50%));
+}
+.landing-profile-award:nth-child(4) {
+  --award-color: var(--landing-award-color-3, #b8ff0a);
+  --award-color-alt: var(--landing-award-color-alt-3, #5ee7ff);
+  --award-color-additive: var(--landing-award-color-additive-3, color-mix(in oklch, var(--award-color), var(--award-color-alt) 50%));
+}
+.landing-profile-award:nth-child(5) {
+  --award-color: var(--landing-award-color-4, #7040f2);
+  --award-color-alt: var(--landing-award-color-alt-4, #55d2ee);
+  --award-color-additive: var(--landing-award-color-additive-4, color-mix(in oklch, var(--award-color), var(--award-color-alt) 50%));
+}
+.landing-profile-award:nth-child(6) {
+  --award-color: var(--landing-award-color-5, #ffd21c);
+  --award-color-alt: var(--landing-award-color-alt-5, #6b93ff);
+  --award-color-additive: var(--landing-award-color-additive-5, color-mix(in oklch, var(--award-color), var(--award-color-alt) 50%));
+}
+.landing-profile-award:nth-child(7) {
+  --award-color: var(--landing-award-color-6, #5936f2);
+  --award-color-alt: var(--landing-award-color-alt-6, #18f255);
+  --award-color-additive: var(--landing-award-color-additive-6, color-mix(in oklch, var(--award-color), var(--award-color-alt) 50%));
+}
+.landing-profile-award:nth-child(8) {
+  --award-color: var(--landing-award-color-7, #f04aae);
+  --award-color-alt: var(--landing-award-color-alt-7, #37f5b7);
+  --award-color-additive: var(--landing-award-color-additive-7, color-mix(in oklch, var(--award-color), var(--award-color-alt) 50%));
+}
+.landing-profile-award:nth-child(9) {
+  --award-color: var(--landing-award-color-8, #ef62cf);
+  --award-color-alt: var(--landing-award-color-alt-8, #5ee7ff);
+  --award-color-additive: var(--landing-award-color-additive-8, color-mix(in oklch, var(--award-color), var(--award-color-alt) 50%));
 }
 .landing-profile-award__org {
   min-height: 1em;
@@ -1567,7 +1604,7 @@ const LANDING_VARIANT_CSS = `
   fill: var(--award-sampled-color, var(--award-color-alt, var(--award-color, #245cff)));
 }
 .landing-profile-award__fill--additive {
-  fill: var(--award-sampled-color, var(--award-color, #245cff));
+  fill: var(--award-sampled-color, var(--award-color-additive, var(--award-color, #245cff)));
   mix-blend-mode: screen;
   opacity: 1;
 }
@@ -1623,7 +1660,7 @@ const LANDING_VARIANT_CSS = `
     overflow: visible;
     padding-top: clamp(3.5rem, 10vh, 5rem);
   }
-  .landing-profile-award-connectors {
+  .landing-profile__clock-connections {
     display: none;
   }
   .landing-profile--summary-only {
@@ -2516,6 +2553,42 @@ const LANDING_VARIANT_CSS = `
 .landing-v1__demo .tv-hero.is-model-ready .tv-hero__canvas,
 .landing-v1__demo.is-machine-ready .tv-hero__canvas {
   opacity: 1;
+}
+.landing-v1__demo .tv-hero__hybrid-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity 80ms linear;
+}
+.landing-v1-shell.is-crt .landing-v1__demo .tv-hero__hybrid-video {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100svh;
+}
+.landing-v1__demo .tv-hero[data-hybrid-stage="playing"] .tv-hero__hybrid-video {
+  opacity: 1;
+}
+.landing-v1__demo .tv-hero[data-hybrid-stage="playing"] .tv-hero__canvas {
+  opacity: 0;
+  visibility: hidden;
+}
+.landing-v1__demo .tv-hero__hybrid-badge {
+  position: fixed;
+  z-index: 4;
+  right: 1rem;
+  bottom: 1rem;
+  color: rgba(255,255,255,.72);
+  font-family: var(--font-mono);
+  font-size: .625rem;
+  letter-spacing: .08em;
+  pointer-events: none;
+  text-transform: uppercase;
 }
 .landing-v1__demo .tv-hero__controls {
   right: clamp(3rem, 13vw, 14rem);
@@ -7474,7 +7547,7 @@ function CrtZoom() {
           frameIndex: Number.isFinite(frameIndex) ? frameIndex : 0,
           // Holding at intermission does not mean the calibration card is
           // still live. Once the 1 kHz tone completes, foregrounding must
-          // restore the blue/default wall instead of resurrecting the bars.
+          // restore the dark/default wall instead of resurrecting the bars.
           resolve: shell.dataset.overtureResolve === 'true'
             && shell.dataset.overtureResolveCard === 'bars',
           codeStable: normalizedPhase === 'make',
@@ -8907,8 +8980,8 @@ function CrtZoom() {
       intermissionResolveFallbackTimer = 0;
       loopResolveUntil = 0;
       // End the loop on the exact same authoritative path as Stop / reset:
-      // initial camera, floppy out, blank Macintosh, dark LED volume, blue
-      // tracking-screen environment, and a reusable phone Start control.
+      // initial camera, floppy out, blank Macintosh, dark LED volume, dark
+      // stage environment, and a reusable phone Start control.
       companionStartSequence += 1;
       autoplayReady = false;
       companionStartRequested = false;
@@ -8964,7 +9037,7 @@ function CrtZoom() {
       raf = 0;
       if (!pageActive || !isResumeForeground()) return;
       // The completed intro is parked independently of scroll position. Keep
-      // either its tone/bars or its post-tone blue reset authoritative until
+      // either its tone/bars or its post-tone dark reset authoritative until
       // the phone chooses a channel.
       if (companionIntermissionCommitted && companionIntermissionHeld) {
         window.__tvHeroFloppyProgress?.(1);
@@ -9198,6 +9271,7 @@ function CrtZoom() {
       window.dispatchEvent(new CustomEvent('resume-crt-overture-progress', {
         detail: {
           progress: overtureP,
+          elapsedMs: Math.max(0, performance.now() - autoplayStartedAt),
           floppyProgress,
           zoomProgress,
           beat: activeBeat.label,
@@ -10415,6 +10489,128 @@ function landingTraditionalColorForSamplePoint(point = {}) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
+function landingSaturationForSamplePoint(point = {}) {
+  const dx = (Number(point.x) - 0.5) / 0.44;
+  const dy = (0.5 - Number(point.y)) / 0.44;
+  return landingClamp01(Math.hypot(dx, dy));
+}
+
+function landingGreyscaleForSampleSaturation(saturation = 0, minSaturation = 0, maxSaturation = 1) {
+  const range = Math.max(0.001, maxSaturation - minSaturation);
+  const normalized = landingClamp01((landingClamp01(saturation) - minSaturation) / range);
+  const eased = Math.pow(normalized, 0.92);
+  const value = Math.round(250 + (30 - 250) * eased);
+  return `rgb(${value}, ${value}, ${value})`;
+}
+
+function landingClockExchangeEase(value = 0) {
+  const t = landingClamp01(value);
+  return 0.5 - Math.cos(t * Math.PI) * 0.5;
+}
+
+function landingClockSaturatedInwardProgress(value = 0) {
+  const t = landingClamp01(value);
+  return Math.pow(t, 2.35);
+}
+
+function landingClockSaturatedOutwardProgress(value = 0) {
+  const t = landingClamp01(value);
+  return 1 - Math.pow(1 - t, 2.35);
+}
+
+function landingClockModulo01(value = 0) {
+  return ((value % 1) + 1) % 1;
+}
+
+function landingClockRoundRobinProgress(segmentProgress = 0, profile = {}) {
+  const goldenConjugate = 0.618033988749895;
+  const profilePhase = Number.isFinite(profile.phase) ? profile.phase : 0;
+  const braidSeed = landingClockModulo01(profilePhase * goldenConjugate);
+  const travelDuration = landingClamp01(profile.travelDuration ?? 0.58);
+  const travelStart = 0.02 + braidSeed * (0.98 - travelDuration);
+  return landingClamp01((segmentProgress - travelStart) / travelDuration);
+}
+
+function landingClockHueForAngle(angle = 0) {
+  return ((-angle / (Math.PI * 2)) + 1) % 1;
+}
+
+function landingSaturatedClockColor(angle = 0, saturation = 0, profile = {}) {
+  const floor = Number.isFinite(profile.colorFloor) ? profile.colorFloor : 0.22;
+  const boost = Number.isFinite(profile.colorBoost) ? profile.colorBoost : 0.92;
+  const power = Number.isFinite(profile.colorPower) ? profile.colorPower : 0.64;
+  const displaySaturation = landingClamp01(floor + Math.pow(landingClamp01(saturation), power) * boost);
+  const [r, g, b] = landingHsvToRgb(landingClockHueForAngle(angle), displaySaturation, 1);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+function landingClockSampleFromPolar(angle = 0, radius = 0, profile = {}) {
+  const point = {
+    x: 0.5 + Math.cos(angle) * radius,
+    y: 0.5 + Math.sin(angle) * radius,
+  };
+  const saturation = landingSaturationForSamplePoint(point);
+  return {
+    angle,
+    radius,
+    color: landingSaturatedClockColor(angle, saturation, profile),
+    saturation,
+    gray: landingGreyscaleForSampleSaturation(saturation),
+    point,
+    x: point.x * 100,
+    y: point.y * 100,
+  };
+}
+
+function landingInterpolateClockSlots(fromSlot, toSlot, progress = 0, profile = {}) {
+  const rawProgress = landingClamp01(progress);
+  if (rawProgress < 0.5) {
+    const inward = landingClockSaturatedInwardProgress(rawProgress * 2);
+    return landingClockSampleFromPolar(
+      fromSlot.angle,
+      fromSlot.radius * (1 - inward),
+      profile,
+    );
+  }
+  const outward = landingClockSaturatedOutwardProgress((rawProgress - 0.5) * 2);
+  const angle = toSlot.angle;
+  const radius = toSlot.radius * outward;
+  return landingClockSampleFromPolar(angle, radius, profile);
+}
+
+function landingClockAwardSamplingProfile(award = {}, awardIndex = 0, awardCount = 9) {
+  const family = award?.family || landingAwardFamily(award);
+  const count = Math.max(1, Number(award?.count) || 1);
+  const baseProfiles = {
+    emmy: { radialRatio: 0.74, phase: 0.05, travelDuration: 0.54, colorFloor: 0.30, colorBoost: 0.92 },
+    hpa: { radialRatio: 0.48, phase: 0.38, travelDuration: 0.66, colorFloor: 0.22, colorBoost: 0.82 },
+    cannes: { radialRatio: 0.96, phase: 0.72, travelDuration: 0.48, colorFloor: 0.36, colorBoost: 0.96 },
+    'one-show': { radialRatio: 0.58, phase: 0.25, travelDuration: 0.62, colorFloor: 0.24, colorBoost: 0.86 },
+    sxsw: { radialRatio: 0.84, phase: 0.52, travelDuration: 0.54, colorFloor: 0.30, colorBoost: 0.92 },
+    webby: { radialRatio: 0.72, phase: 0.79, travelDuration: 0.56, colorFloor: 0.28, colorBoost: 0.90 },
+    technicolor: { radialRatio: 0.98, phase: 0.14, travelDuration: 0.46, colorFloor: 0.44, colorBoost: 1.00, colorPower: 0.58 },
+    siggraph: { radialRatio: 0.88, phase: 0.63, travelDuration: 0.50, colorFloor: 0.38, colorBoost: 0.98, colorPower: 0.60 },
+    aicp: { radialRatio: 0.62, phase: 0.91, travelDuration: 0.64, colorFloor: 0.24, colorBoost: 0.86 },
+    recognition: { radialRatio: 0.66, phase: 0.45, travelDuration: 0.60, colorFloor: 0.24, colorBoost: 0.86 },
+  };
+  const fallbackPhase = awardCount > 1 ? awardIndex / awardCount : 0;
+  const profile = {
+    radialRatio: 0.34 + landingClamp01((awardIndex + 1) / Math.max(1, awardCount)) * 0.58,
+    phase: fallbackPhase,
+    travelDuration: 0.58,
+    colorFloor: 0.24,
+    colorBoost: 0.88,
+    colorPower: 0.64,
+    ...(baseProfiles[family] || {}),
+  };
+  if (count > 1) {
+    profile.radialRatio = Math.min(0.985, profile.radialRatio + Math.min(0.08, count * 0.018));
+    profile.colorFloor = Math.min(0.48, profile.colorFloor + Math.min(0.08, count * 0.016));
+    profile.travelDuration = Math.max(0.44, profile.travelDuration - Math.min(0.045, count * 0.008));
+  }
+  return profile;
+}
+
 function createLandingTraditionalColorWheelMaterial(THREE) {
   return new THREE.ShaderMaterial({
     uniforms: {
@@ -10755,7 +10951,315 @@ function LandingProfileInstrumentLink() {
   );
 }
 
-function BeautifulGameLoadingSummaryInstrument({ part }) {
+function landingProfileClockSamplerState(sample = {}, awardsOrCount = 9) {
+  const awards = Array.isArray(awardsOrCount) ? awardsOrCount : [];
+  const count = Math.max(1, Math.round(awards.length || awardsOrCount || 9));
+  const hands = 3;
+  const perHand = Math.ceil(count / hands);
+  const nowMs = Number.isFinite(sample?.clockTimeMs)
+    ? sample.clockTimeMs
+    : Date.now();
+  const now = new Date(nowMs);
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+  const seconds = now.getSeconds();
+  const milliseconds = now.getMilliseconds();
+  const secondProgress = (seconds + milliseconds / 1000) / 60;
+  const minuteProgress = (minutes + secondProgress) / 60;
+  const hourProgress = ((hours % 12) + minuteProgress) / 12;
+  const clockAngle = (progress) => -Math.PI / 2 + progress * Math.PI * 2;
+  const timeLabel = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  const specs = [
+    { id: 'hour', angle: clockAngle(hourProgress), length: 0.255 },
+    { id: 'minute', angle: clockAngle(minuteProgress), length: 0.355 },
+    { id: 'second', angle: clockAngle(secondProgress), length: 0.41 },
+  ];
+  const place = (handIndex, radius, profile = {}) => {
+    const spec = specs[handIndex % specs.length];
+    return {
+      ...landingClockSampleFromPolar(spec.angle, radius, profile),
+      handIndex,
+    };
+  };
+  const placeOnHand = (handIndex, radialRatio, profile = {}) => {
+    const spec = specs[handIndex % specs.length];
+    const radius = spec.length * radialRatio;
+    return {
+      ...place(handIndex, radius, profile),
+      handIndex,
+      radialRatio,
+      radius,
+    };
+  };
+  const cyclePosition = secondProgress * hands;
+  const handShift = Math.floor(cyclePosition) % hands;
+  const cycleBlend = cyclePosition - Math.floor(cyclePosition);
+  const awardSamples = Array.from({ length: count }, (_, awardIndex) => {
+    const profile = landingClockAwardSamplingProfile(awards[awardIndex], awardIndex, count);
+    const homeHandIndex = Math.min(hands - 1, Math.floor(awardIndex / perHand));
+    const localIndex = awardIndex - homeHandIndex * perHand;
+    const baseRadialRatio = (localIndex + 1) / (perHand + 0.18);
+    const radialRatio = landingClamp01(Number.isFinite(profile.radialRatio)
+      ? profile.radialRatio
+      : baseRadialRatio);
+    const fromHandIndex = (homeHandIndex + handShift) % hands;
+    const toHandIndex = (fromHandIndex + 1) % hands;
+    const fromSlot = placeOnHand(fromHandIndex, radialRatio, profile);
+    const toSlot = placeOnHand(toHandIndex, radialRatio, profile);
+    const exchangeProgress = landingClockRoundRobinProgress(cycleBlend, profile);
+    const samplePoint = landingInterpolateClockSlots(fromSlot, toSlot, exchangeProgress, profile);
+    return {
+      ...samplePoint,
+      awardIndex,
+      family: awards[awardIndex]?.family,
+      profile,
+      homeHandIndex,
+      fromHandIndex,
+      toHandIndex,
+      localIndex,
+      radialRatio,
+      exchangeProgress,
+    };
+  });
+  const saturationValues = awardSamples
+    .filter(Boolean)
+    .map((awardSample) => awardSample.saturation);
+  const minSaturation = saturationValues.length ? Math.min(...saturationValues) : 0;
+  const maxSaturation = saturationValues.length ? Math.max(...saturationValues) : 1;
+  awardSamples.forEach((awardSample) => {
+    if (!awardSample) return;
+    awardSample.gray = landingGreyscaleForSampleSaturation(
+      awardSample.saturation,
+      minSaturation,
+      maxSaturation,
+    );
+  });
+  const handLines = specs.map((spec, handIndex) => {
+    const tip = place(handIndex, spec.length);
+    return {
+      id: `hand-${spec.id}`,
+      color: tip.color,
+      x1: 50,
+      y1: 50,
+      x2: tip.x,
+      y2: tip.y,
+    };
+  });
+  return { awardSamples, handLines, timeLabel };
+}
+
+function LandingProfileAwardClockSamplers({ awards = [] }) {
+  const svgRef = useRef(null);
+  const awardCount = awards.length || 9;
+  const [sample, setSample] = useState(() => ({ frame: 0 }));
+  const samplerState = landingProfileClockSamplerState(sample, awards.length ? awards : awardCount);
+
+  useEffect(() => {
+    const samplerStore = window.__resumeProfileSamplerStore || {
+      listeners: new Set(),
+      last: null,
+    };
+    window.__resumeProfileSamplerStore = samplerStore;
+    let lastFrame = -1;
+    let clockTick = 0;
+    const update = (nextSample = samplerStore.last) => {
+      const frame = Number.isFinite(nextSample?.frame) ? nextSample.frame : 0;
+      if (frame === lastFrame) return;
+      lastFrame = frame;
+      setSample({ ...(nextSample || { frame: 0 }), clockTimeMs: Date.now() });
+    };
+    samplerStore.listeners.add(update);
+    update(samplerStore.last || { frame: 0 });
+    clockTick = window.setInterval(() => {
+      setSample({ ...(samplerStore.last || { frame: 0 }), clockTimeMs: Date.now() });
+    }, 1000 / 30);
+    return () => {
+      samplerStore.listeners.delete(update);
+      if (clockTick) window.clearInterval(clockTick);
+    };
+  }, [awardCount]);
+
+  useEffect(() => {
+    const profile = svgRef.current?.closest('.landing-profile');
+    if (!profile) return;
+    samplerState.awardSamples.forEach((awardSample, index) => {
+      if (!awardSample?.color) return;
+      const altSample = samplerState.awardSamples[(index + 3) % samplerState.awardSamples.length]
+        || samplerState.awardSamples[(index + 1) % samplerState.awardSamples.length]
+        || awardSample;
+      const additiveSample = samplerState.awardSamples[(index + 6) % samplerState.awardSamples.length]
+        || samplerState.awardSamples[(index + 2) % samplerState.awardSamples.length]
+        || altSample
+        || awardSample;
+      profile.style.setProperty(`--landing-award-color-${index}`, awardSample.color);
+      profile.style.setProperty(`--landing-award-color-alt-${index}`, altSample.color || awardSample.color);
+      profile.style.setProperty(`--landing-award-color-additive-${index}`, additiveSample.color || altSample.color || awardSample.color);
+    });
+  }, [samplerState.awardSamples]);
+
+  return (
+    <svg
+      className="landing-profile__clock-samplers"
+      viewBox="0 0 100 100"
+      aria-hidden="true"
+      ref={svgRef}
+    >
+      {samplerState.handLines.map((hand) => (
+        <line
+          key={hand.id}
+          className="landing-profile__clock-hand-line"
+          x1={hand.x1.toFixed(3)}
+          y1={hand.y1.toFixed(3)}
+          x2={hand.x2.toFixed(3)}
+          y2={hand.y2.toFixed(3)}
+          style={{ '--sample-color': hand.color }}
+        />
+      ))}
+      {samplerState.awardSamples.map((awardSample, index) => (
+        <g key={`award-sampler-${index}`}>
+          <circle
+            className="landing-profile__clock-sampler"
+            data-award-sampler-index={index}
+            cx={awardSample.x.toFixed(3)}
+            cy={awardSample.y.toFixed(3)}
+            r="1.28"
+            style={{
+              '--sample-color': awardSample.color,
+              '--sample-gray': awardSample.gray,
+            }}
+          />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+function LandingProfileAwardClockConnections({ awards = [] }) {
+  const svgRef = useRef(null);
+  const awardCount = awards.length || 9;
+  const [geometry, setGeometry] = useState({
+    width: 1,
+    height: 1,
+    lines: [],
+  });
+
+  useEffect(() => {
+    const samplerStore = window.__resumeProfileSamplerStore || {
+      listeners: new Set(),
+      last: null,
+    };
+    window.__resumeProfileSamplerStore = samplerStore;
+    let frameId = 0;
+    let samplerObserver = null;
+
+    const update = (sample = samplerStore.last || { frame: 0 }) => {
+      if (frameId) window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(() => {
+        const svg = svgRef.current;
+        const content = svg?.closest('.landing-profile__content');
+        const wheel = content?.querySelector('.landing-profile__instrument--wheel');
+        const awardNodes = content?.querySelectorAll('.landing-profile-award');
+        if (!svg || !content || !wheel || !awardNodes?.length) return;
+        const contentRect = content.getBoundingClientRect();
+        const wheelRect = wheel.getBoundingClientRect();
+        const clockState = landingProfileClockSamplerState(sample, awards.length ? awards : awardCount);
+        const lines = clockState.awardSamples.slice(0, awardCount).map((awardSample, index) => {
+          const awardNode = awardNodes[index];
+          const targetNode = awardNode?.querySelector('.landing-profile-award__icon') || awardNode;
+          const samplerNode = content.querySelector(`.landing-profile__clock-sampler[data-award-sampler-index="${index}"]`);
+          if (!awardSample || !targetNode || !samplerNode) return null;
+          const samplerRect = samplerNode.getBoundingClientRect();
+          const targetRect = targetNode.getBoundingClientRect();
+          const x1 = samplerRect.left + samplerRect.width * 0.5 - contentRect.left;
+          const y1 = samplerRect.top + samplerRect.height * 0.5 - contentRect.top;
+          const x2 = targetRect.left + targetRect.width * 0.5 - contentRect.left;
+          const y2 = targetRect.top + targetRect.height * 0.52 - contentRect.top;
+          return {
+            id: `clock-award-${index}`,
+            color: samplerNode.style.getPropertyValue('--sample-color') || awardSample.color,
+            x1,
+            y1,
+            x2,
+            y2,
+          };
+        }).filter(Boolean);
+        setGeometry({
+          width: Math.max(1, contentRect.width),
+          height: Math.max(1, contentRect.height),
+          lines,
+        });
+      });
+    };
+
+    const attachSamplerObserver = () => {
+      if (samplerObserver) return;
+      const content = svgRef.current?.closest('.landing-profile__content');
+      const samplerSvg = content?.querySelector('.landing-profile__clock-samplers');
+      if (!samplerSvg || typeof MutationObserver === 'undefined') return;
+      samplerObserver = new MutationObserver(() => {
+        update(samplerStore.last || { frame: 0 });
+      });
+      samplerObserver.observe(samplerSvg, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['cx', 'cy', 'style'],
+      });
+    };
+
+    const onResize = () => {
+      attachSamplerObserver();
+      update(samplerStore.last || { frame: 0 });
+    };
+    samplerStore.listeners.add(update);
+    window.addEventListener('resize', onResize, { passive: true });
+    document.fonts?.ready?.then(onResize).catch(() => {});
+    const attachTick = window.setInterval(() => {
+      attachSamplerObserver();
+    }, 500);
+    attachSamplerObserver();
+    update(samplerStore.last || { frame: 0 });
+    return () => {
+      if (frameId) window.cancelAnimationFrame(frameId);
+      if (samplerObserver) samplerObserver.disconnect();
+      window.clearInterval(attachTick);
+      samplerStore.listeners.delete(update);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [awardCount]);
+
+  if (!geometry.lines.length) return (
+    <svg
+      className="landing-profile__clock-connections"
+      viewBox="0 0 1 1"
+      aria-hidden="true"
+      ref={svgRef}
+    />
+  );
+
+  return (
+    <svg
+      className="landing-profile__clock-connections"
+      viewBox={`0 0 ${geometry.width} ${geometry.height}`}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      ref={svgRef}
+    >
+      {geometry.lines.map((line) => (
+        <line
+          key={line.id}
+          className="landing-profile__clock-connection"
+          x1={line.x1.toFixed(3)}
+          y1={line.y1.toFixed(3)}
+          x2={line.x2.toFixed(3)}
+          y2={line.y2.toFixed(3)}
+          style={{ '--sample-color': line.color }}
+        />
+      ))}
+    </svg>
+  );
+}
+
+function BeautifulGameLoadingSummaryInstrument({ part, awards = [] }) {
   const hostRef = useRef(null);
 
   useEffect(() => {
@@ -10780,7 +11284,9 @@ function BeautifulGameLoadingSummaryInstrument({ part }) {
       data-instrument-part={part}
       aria-hidden="true"
       ref={hostRef}
-    />
+    >
+      {part === 'wheel' && <LandingProfileAwardClockSamplers awards={awards} />}
+    </div>
   );
 }
 
@@ -11636,31 +12142,74 @@ function landingLinear01(value) {
   return Math.max(0, Math.min(1, value));
 }
 
-function landingAwardPatternState(time = 0) {
-  const count = LANDING_AWARD_PATTERNS.length;
-  const cycle = Math.max(0, time) / LANDING_AWARD_PATTERN_CYCLE_SECONDS;
-  const patternIndex = Math.floor(cycle) % count;
-  const nextIndex = (patternIndex + 1) % count;
-  const phase = cycle - Math.floor(cycle);
-  const morph = landingLinear01(phase);
-  const current = LANDING_AWARD_PATTERNS[patternIndex];
-  const next = LANDING_AWARD_PATTERNS[nextIndex];
+const LANDING_AWARD_SOLAR_GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+const LANDING_AWARD_SOLAR_EDGE = 0.418;
+
+function landingAwardSolarPoint(index, total = 1, time = 0, options = {}) {
+  const count = Math.max(1, Math.round(total));
+  const seed = (index + 1) * 0.61803398875;
+  const tier = (index % 9) / 8;
+  const orbitalDirection = index % 2 ? -1 : 1;
+  const baseRadius = 0.11 + Math.sqrt((seed + 0.19) % 1) * 0.285;
+  const shell = 0.012 * Math.sin(time * 1.45 + index * 1.91)
+    + 0.008 * Math.sin(time * 2.7 + index * 0.43);
+  const radius = Math.min(LANDING_AWARD_SOLAR_EDGE, Math.max(0.055, baseRadius + shell));
+  const speed = (options.speed || 0.58) * (0.62 + tier * 0.66);
+  const angle = index * LANDING_AWARD_SOLAR_GOLDEN_ANGLE
+    + time * speed * orbitalDirection
+    + Math.sin(time * 0.31 + seed * Math.PI) * 0.16;
+  const ellipse = 0.92 + Math.sin(index * 1.37) * 0.045;
+  return landingPatternClampPoint({
+    x: 0.5 + Math.cos(angle) * radius,
+    y: 0.5 + Math.sin(angle) * radius * ellipse,
+  });
+}
+
+function landingAwardSolarParticle(index, total = 1, time = 0) {
+  const point = landingAwardSolarPoint(index, total, time, { speed: 0.82 });
+  const sizeSeed = ((index * 37) % 11) / 10;
   return {
-    current,
-    next,
-    morph,
-    label: morph > 0.5 ? next.label : current.label,
-    formula: morph > 0.5 ? next.formula : current.formula,
-    point(index, total) {
-      // Keep the launch-page sampler in constant motion: each award is a
-      // front-facing key pose, and the samples travel linearly into the next
-      // key pose for the entire cycle instead of holding and then snapping.
-      const a = current.point(index, total, 0, time);
-      const b = next.point(index, total, 0, time);
-      return landingPatternClampPoint({
-        x: a.x + (b.x - a.x) * morph,
-        y: a.y + (b.y - a.y) * morph,
+    ...point,
+    angle: index * 0.71 + time * ((index % 2 ? -1 : 1) * 1.05 + sizeSeed * 0.38),
+    glyph: index % 5 === 0 ? 'square' : index % 3 === 0 ? 'circle' : 'cross',
+    size: 5.1 + sizeSeed * 7.2,
+    opacity: 0.52 + ((index * 13) % 9) / 20,
+    color: landingTraditionalColorForSamplePoint(point),
+  };
+}
+
+function landingAwardSolarOrbitLines(particles = [], maxLines = 58) {
+  const lines = [];
+  const maxDistance = 0.104;
+  for (let i = 0; i < particles.length; i += 1) {
+    for (let j = i + 1; j < particles.length; j += 1) {
+      const a = particles[i];
+      const b = particles[j];
+      const distance = Math.hypot(a.x - b.x, a.y - b.y);
+      if (distance > maxDistance) continue;
+      lines.push({
+        id: `${i}-${j}`,
+        from: a,
+        to: b,
+        opacity: Math.max(0.12, 0.34 * (1 - distance / maxDistance)),
+        color: b.color,
       });
+      if (lines.length >= maxLines) return lines;
+    }
+  }
+  return lines;
+}
+
+function landingAwardPatternState(time = 0) {
+  const safeTime = Math.max(0, Number(time) || 0);
+  return {
+    current: LANDING_AWARD_PATTERNS[0],
+    next: LANDING_AWARD_PATTERNS[0],
+    morph: (safeTime / LANDING_AWARD_PATTERN_CYCLE_SECONDS) % 1,
+    label: 'Solar award sampler',
+    formula: 'θᵢ=tω+iφ · rᵢ=√fract(iφ)',
+    point(index, total) {
+      return landingAwardSolarPoint(index, total, safeTime);
     },
   };
 }
@@ -11805,115 +12354,25 @@ function landingAwardRenderedParts(root) {
   });
 }
 
-const LANDING_AWARD_SAMPLE_MARKER_SCALE = 0.36;
-const LANDING_AWARD_SAMPLE_LINE_MARKER_SCALE = 0.62;
-const LANDING_AWARD_SAMPLE_MARKER_ATTRS = {
-  circle: ['cx', 'cy', 'r'],
-  line: ['x1', 'y1', 'x2', 'y2'],
-  path: ['d'],
-  polygon: ['points'],
-  rect: ['x', 'y', 'width', 'height', 'rx', 'ry', 'transform'],
-};
-
-function landingAwardSampleMarkerFallbackBox(tag, attrs) {
-  const num = (name, fallback = 0) => {
-    const value = Number(attrs?.[name]);
-    return Number.isFinite(value) ? value : fallback;
-  };
-  if (tag === 'circle') {
-    const cx = num('cx', 40);
-    const cy = num('cy', 27);
-    const r = Math.max(0.1, num('r', 12));
-    return { x: cx - r, y: cy - r, width: r * 2, height: r * 2 };
+function landingAwardSampleGlyphForTarget(targetNode, family = '') {
+  const tag = String(targetNode?.tagName || '').toLowerCase();
+  if (targetNode?.classList?.contains('landing-profile-award__line')) {
+    const x1 = Number(targetNode.getAttribute('x1')) || 0;
+    const y1 = Number(targetNode.getAttribute('y1')) || 0;
+    const x2 = Number(targetNode.getAttribute('x2')) || 0;
+    const y2 = Number(targetNode.getAttribute('y2')) || 0;
+    const rotate = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+    return { glyph: 'line', rotate, aspect: 1.34 };
   }
-  if (tag === 'line') {
-    const x1 = num('x1', 32);
-    const y1 = num('y1', 27);
-    const x2 = num('x2', 48);
-    const y2 = num('y2', 27);
-    return {
-      x: Math.min(x1, x2),
-      y: Math.min(y1, y2),
-      width: Math.max(1, Math.abs(x2 - x1)),
-      height: Math.max(1, Math.abs(y2 - y1)),
-    };
-  }
-  if (tag === 'rect') {
-    return {
-      x: num('x', 24),
-      y: num('y', 18),
-      width: Math.max(1, num('width', 32)),
-      height: Math.max(1, num('height', 18)),
-    };
-  }
-  return { x: 20, y: 14, width: 40, height: 28 };
-}
-
-function landingAwardSampleMarkerFromNode(targetNode) {
-  if (!targetNode) return null;
-  const tag = String(targetNode.tagName || '').toLowerCase();
-  const attrNames = LANDING_AWARD_SAMPLE_MARKER_ATTRS[tag];
-  if (!attrNames) return null;
-  const attrs = {};
-  attrNames.forEach((name) => {
-    const value = targetNode.getAttribute(name);
-    if (value != null && value !== '') attrs[name] = value;
-  });
-  let box = null;
-  try {
-    if (typeof targetNode.getBBox === 'function') {
-      const bbox = targetNode.getBBox();
-      if (
-        Number.isFinite(bbox.x)
-        && Number.isFinite(bbox.y)
-        && Number.isFinite(bbox.width)
-        && Number.isFinite(bbox.height)
-        && Math.max(bbox.width, bbox.height) > 0
-      ) {
-        box = {
-          x: bbox.x,
-          y: bbox.y,
-          width: Math.max(1, bbox.width),
-          height: Math.max(1, bbox.height),
-        };
-      }
-    }
-  } catch {
-    box = null;
-  }
-  if (!box) box = landingAwardSampleMarkerFallbackBox(tag, attrs);
-  const maxDim = Math.max(box.width, box.height, 1);
-  const scale = tag === 'line'
-    ? LANDING_AWARD_SAMPLE_LINE_MARKER_SCALE
-    : LANDING_AWARD_SAMPLE_MARKER_SCALE;
-  return {
-    tag,
-    attrs,
-    centerX: box.x + box.width * 0.5,
-    centerY: box.y + box.height * 0.5,
-    scale,
-    connectorRadius: Math.max(4.2, Math.min(15, maxDim * scale * 0.5 + 1.4)),
-  };
-}
-
-function LandingProfileAwardSampleMarker({ line }) {
-  const marker = line?.marker;
-  if (!marker?.tag) return null;
-  return (
-    <g
-      className="landing-profile-award-connectors__sample"
-      transform={[
-        `translate(${line.x1} ${line.y1})`,
-        `scale(${marker.scale})`,
-        `translate(${-marker.centerX} ${-marker.centerY})`,
-      ].join(' ')}
-    >
-      {React.createElement(marker.tag, {
-        className: 'landing-profile-award-connectors__sample-shape',
-        ...marker.attrs,
-      })}
-    </g>
-  );
+  if (family === 'webby') return { glyph: 'triangle', rotate: 0, aspect: 1 };
+  if (family === 'hpa') return { glyph: 'diamond', rotate: 0, aspect: 1 };
+  if (family === 'one-show') return { glyph: 'bar', rotate: -38, aspect: 2.65 };
+  if (family === 'technicolor') return { glyph: 'rect', rotate: 0, aspect: 0.55 };
+  if (family === 'sxsw') return { glyph: 'rect', rotate: 0, aspect: 0.78 };
+  if (tag === 'circle') return { glyph: 'circle', rotate: 0, aspect: 1 };
+  if (tag === 'polygon') return { glyph: 'diamond', rotate: 0, aspect: 1 };
+  if (tag === 'path') return { glyph: 'lens', rotate: 0, aspect: 0.72 };
+  return { glyph: 'square', rotate: 0, aspect: 1 };
 }
 
 function LandingProfileAwardConnectors({ awards = [] }) {
@@ -11952,34 +12411,22 @@ function LandingProfileAwardConnectors({ awards = [] }) {
         const wheelCenterY = wheelRect.top + wheelRect.height * 0.5 - profileRect.top;
         const targets = landingAwardRenderedParts(profile);
         const sampleCount = targets.length;
+        const time = sample?.frame == null ? 0 : Number(sample.frame) / 24;
+        const toWheelPixel = (point) => ({
+          x: wheelCenterX + (point.x - 0.5) * 2 * wheelRadius,
+          y: wheelCenterY + (point.y - 0.5) * 2 * wheelRadius,
+        });
         const wheelSamples = Array.from({ length: sampleCount }, (_, sampleIndex) => {
-          const sampled = Array.isArray(sample?.awardSamples) ? sample.awardSamples[sampleIndex] : null;
-          const point = sampled?.point || landingAwardSamplePoint(sampleIndex, sampleCount, sample);
-          const color = sampled?.color || landingAwardSampleColor(sample, sampleIndex);
-          const x1 = wheelCenterX + (point.x - 0.5) * 2 * wheelRadius;
-          const y1 = wheelCenterY + (point.y - 0.5) * 2 * wheelRadius;
+          const point = landingAwardSamplePoint(sampleIndex, sampleCount, sample);
+          const color = landingTraditionalColorForSamplePoint(point);
+          const pixel = toWheelPixel(point);
           return {
             id: `sample-${sampleIndex}`,
             color,
-            relationship: sampled?.relationship || null,
-            x1,
-            y1,
+            size: 7.4,
+            x1: pixel.x,
+            y1: pixel.y,
           };
-        });
-        const orbitMap = new Map();
-        wheelSamples.forEach((wheelSample) => {
-          const relationship = wheelSample.relationship || {};
-          const awardIndex = Number(relationship.awardIndex);
-          const orbitTrackRadius = Number(relationship.orbitTrackRadius);
-          if (!Number.isFinite(awardIndex) || !Number.isFinite(orbitTrackRadius)) return;
-          const id = `orbit-${awardIndex}`;
-          if (orbitMap.has(id)) return;
-          orbitMap.set(id, {
-            id,
-            cx: wheelCenterX,
-            cy: wheelCenterY,
-            r: Math.max(0, orbitTrackRadius * 2 * wheelRadius),
-          });
         });
         const next = wheelSamples.map((wheelSample, sampleIndex) => {
           const target = targets[sampleIndex];
@@ -11988,16 +12435,30 @@ function LandingProfileAwardConnectors({ awards = [] }) {
           const targetRect = targetNode.getBoundingClientRect();
           const x2 = targetRect.left + targetRect.width * 0.5 - profileRect.left;
           const y2 = targetRect.top + targetRect.height * 0.5 - profileRect.top;
+          const family = landingAwardFamily(awards[awardIndex]);
+          const glyphSpec = landingAwardSampleGlyphForTarget(targetNode, family);
           const dx = x2 - wheelSample.x1;
           const dy = y2 - wheelSample.y1;
           const length = Math.hypot(dx, dy);
-          const marker = landingAwardSampleMarkerFromNode(targetNode);
-          const sampleMarkerRadius = marker?.connectorRadius || 3.1;
           let connectorX1 = wheelSample.x1;
           let connectorY1 = wheelSample.y1;
           if (length > 0.001) {
-            connectorX1 = wheelSample.x1 + (dx / length) * sampleMarkerRadius;
-            connectorY1 = wheelSample.y1 + (dy / length) * sampleMarkerRadius;
+            const fromCenterX = wheelSample.x1 - wheelCenterX;
+            const fromCenterY = wheelSample.y1 - wheelCenterY;
+            const a = dx * dx + dy * dy;
+            const b = 2 * (fromCenterX * dx + fromCenterY * dy);
+            const c = fromCenterX * fromCenterX + fromCenterY * fromCenterY - wheelRadius * wheelRadius;
+            const discriminant = b * b - 4 * a * c;
+            if (discriminant >= 0) {
+              const root = Math.sqrt(discriminant);
+              const candidates = [
+                (-b - root) / (2 * a),
+                (-b + root) / (2 * a),
+              ].filter((value) => value >= 0 && value <= 1);
+              const t = candidates.length ? Math.max(...candidates) : 0;
+              connectorX1 = wheelSample.x1 + dx * t + (dx / length) * 2;
+              connectorY1 = wheelSample.y1 + dy * t + (dy / length) * 2;
+            }
           }
           targetNode.style.setProperty('--award-sampled-color', wheelSample.color);
           if (targetNode.classList.contains('landing-profile-award__line')) {
@@ -12008,16 +12469,19 @@ function LandingProfileAwardConnectors({ awards = [] }) {
           return {
             id: `${awardIndex}-${fillIndex}`,
             color: wheelSample.color,
+            glyph: glyphSpec.glyph,
+            rotate: glyphSpec.rotate,
+            aspect: glyphSpec.aspect,
+            size: wheelSample.size,
             x1: wheelSample.x1,
             y1: wheelSample.y1,
-            marker,
             connectorX1,
             connectorY1,
             x2,
             y2,
           };
         });
-        setGeometry({ lines: next, orbits: Array.from(orbitMap.values()) });
+        setGeometry({ lines: next, orbits: [] });
       });
     };
 
@@ -12051,13 +12515,60 @@ function LandingProfileAwardConnectors({ awards = [] }) {
         <React.Fragment key={line.id}>
           {Number.isFinite(line.x2) && Number.isFinite(line.y2) && (
             <line
+              style={{ '--sample-color': line.color }}
               x1={line.connectorX1}
               y1={line.connectorY1}
               x2={line.x2}
               y2={line.y2}
             />
           )}
-          <LandingProfileAwardSampleMarker line={line} />
+          <g
+            className="landing-profile-award-connectors__sample-glyph"
+            transform={`translate(${line.x1} ${line.y1}) rotate(${line.rotate || 0})`}
+            style={{ '--sample-color': line.color }}
+          >
+            {line.glyph === 'circle' && <circle r={(line.size || 7.4) * 0.82} />}
+            {line.glyph === 'square' && (
+              <rect
+                x={-(line.size || 7.4)}
+                y={-(line.size || 7.4)}
+                width={(line.size || 7.4) * 2}
+                height={(line.size || 7.4) * 2}
+              />
+            )}
+            {line.glyph === 'rect' && (
+              <rect
+                x={-(line.size || 7.4) * (line.aspect || 0.6)}
+                y={-(line.size || 7.4)}
+                width={(line.size || 7.4) * 2 * (line.aspect || 0.6)}
+                height={(line.size || 7.4) * 2}
+              />
+            )}
+            {line.glyph === 'bar' && (
+              <rect
+                x={-(line.size || 7.4) * (line.aspect || 2.4)}
+                y={-(line.size || 7.4) * 0.34}
+                width={(line.size || 7.4) * 2 * (line.aspect || 2.4)}
+                height={(line.size || 7.4) * 0.68}
+              />
+            )}
+            {line.glyph === 'triangle' && (
+              <path d={`M 0 ${-(line.size || 7.4) * 1.05} L ${(line.size || 7.4) * 1.05} ${(line.size || 7.4) * 0.92} H ${-(line.size || 7.4) * 1.05} Z`} />
+            )}
+            {line.glyph === 'diamond' && (
+              <path d={`M 0 ${-(line.size || 7.4) * 1.14} L ${(line.size || 7.4) * 1.14} 0 L 0 ${(line.size || 7.4) * 1.14} L ${-(line.size || 7.4) * 1.14} 0 Z`} />
+            )}
+            {line.glyph === 'lens' && (
+              <path d={`M 0 ${-(line.size || 7.4) * 1.15} A ${(line.size || 7.4) * 0.78} ${(line.size || 7.4) * 1.15} 0 0 1 0 ${(line.size || 7.4) * 1.15} A ${(line.size || 7.4) * 0.78} ${(line.size || 7.4) * 1.15} 0 0 1 0 ${-(line.size || 7.4) * 1.15} Z`} />
+            )}
+            {line.glyph === 'line' && (
+              <path d={`M ${-(line.size || 7.4) * (line.aspect || 2.3)} 0 H ${(line.size || 7.4) * (line.aspect || 2.3)}`} />
+            )}
+            {!['circle', 'square', 'rect', 'bar', 'triangle', 'diamond', 'lens', 'line'].includes(line.glyph) && (
+              <path d={`M ${-(line.size || 7.4)} 0 H ${line.size || 7.4} M 0 ${-(line.size || 7.4)} V ${line.size || 7.4}`} />
+            )}
+            <circle className="is-filled" r="0.95" />
+          </g>
         </React.Fragment>
       ))}
     </svg>
@@ -12124,7 +12635,7 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
               of curious design and make-believe.
             </p>
           </div>
-          {!summaryOnly && <BeautifulGameLoadingSummaryInstrument part="wheel" />}
+          {!summaryOnly && <BeautifulGameLoadingSummaryInstrument part="wheel" awards={profileAwardGroups} />}
           <div className="landing-profile__proof">
             <p className="landing-profile__bio landing-profile__bio--details">
               <strong>Research and Development</strong>, StageCraft team at
@@ -12138,8 +12649,8 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
           </div>
         </div>
         {!summaryOnly && <LandingProfileAwards items={RESUME.awards} />}
+        {!summaryOnly && <LandingProfileAwardClockConnections awards={profileAwardGroups} />}
       </div>
-      {!summaryOnly && <LandingProfileAwardConnectors awards={profileAwardGroups} />}
     </section>
   );
 }

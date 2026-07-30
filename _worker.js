@@ -1,34 +1,5 @@
 const MEDIA_ORIGIN = 'https://media.tawfeeqmartin.com';
 const HAND_OF_GOD_SHORT_PATH = '/hand-of-god';
-const HAND_OF_GOD_ARTWORK_PATH = '/media/interactive/hand-of-god';
-const HAND_OF_GOD_ARTWORK_QUERY = [
-  'art=match-sculpture',
-  'mode=portrait',
-  'theme=auto',
-  'texture=none',
-  'goalFx=on',
-  'telemetry=on',
-  'goal=oneofone-hand-of-god-maradona-1986',
-  'list=ones',
-  'gender=men',
-  'play=1',
-  't=0.000',
-  'speed=1',
-  'end=loop',
-  'flow=fluid',
-  'flowSpeed=0.2',
-  'exportResolution=uhd',
-  'exportFps=24',
-  'exportQuality=gallery',
-  'clock=23%3A55',
-  'token=realtime',
-  'build=standalone-realtime-html',
-  'camOrbit=45',
-  'camLift=30',
-  'camZoom=0.94',
-  'camRoll=-20',
-  'cine=on',
-].join('&');
 const SAME_ORIGIN_MEDIA = new Set([
   '/media/help_full.webm',
 ]);
@@ -374,11 +345,8 @@ export default {
     if ((request.method === 'GET' || request.method === 'HEAD')
       && (url.pathname === HAND_OF_GOD_SHORT_PATH
         || url.pathname === `${HAND_OF_GOD_SHORT_PATH}/`)) {
-      const destination = new URL(
-        `${HAND_OF_GOD_ARTWORK_PATH}?${HAND_OF_GOD_ARTWORK_QUERY}`,
-        url.origin,
-      );
-      return Response.redirect(destination.toString(), 302);
+      const destination = new URL('/media/interactive/hand-of-god.html', url.origin);
+      return env.ASSETS.fetch(new Request(destination.toString(), request));
     }
 
     const companionResponse = await handleCompanionRequest(request, url);

@@ -7530,8 +7530,9 @@ function createVfxMarkerCycTexture(THREE, renderer, options = {}) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
-  // Public site no longer uses blue-screen tracking markers. Keep a transparent
-  // texture so any legacy mesh path becomes inert.
+  // Tracking-marker plates are intentionally retired from the public scene.
+  // Keep an origin-clean transparent texture so any legacy mesh/material path
+  // remains harmless if it is toggled by an old browser state.
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -10941,8 +10942,8 @@ function createVfxMarkerCyc(THREE, renderer, modelBox, anchorBox = modelBox) {
         float wallThreshold = mix(backgroundThreshold, bullThreshold, bullMask);
         float wallPowered = step(wallThreshold, uWallPowerProgress);
         // Boot is binary and physically legible: cabinets are either black
-        // (off) or a neutral dark stage base (on). Do not reveal program imagery
-        // until Enter hands the wall to DESIGN.
+        // (off) or the neutral stage base (on). Do not tint the bull white or
+        // reveal program imagery until Enter hands the wall to DESIGN.
         vec3 stageBase = vec3(0.0, 0.0003, 0.0018);
         vec3 poweredColor = mix(
           stageBase,
@@ -11133,7 +11134,7 @@ function createVfxMarkerCyc(THREE, renderer, modelBox, anchorBox = modelBox) {
   );
   cyc.userData.wallRearMediaMapped = Boolean(rearCabinetMaterial?.map);
   cyc.userData.ceilingMediaMapped = Boolean(ceilingMaterial.map);
-  cyc.userData.ceilingMediaState = 'blue-practical-unmapped';
+  cyc.userData.ceilingMediaState = 'neutral-practical-unmapped';
   cyc.userData.surfaceMesh = surfaceMesh;
   cyc.userData.ledMesh = ledMesh;
   cyc.userData.markerMesh = markerMesh;
@@ -12250,15 +12251,53 @@ async function rasterizePage(sourceEl, { width = 1280, scale = 1.5, fontCss = ''
 }
 
 const TV_HERO_PERSONALIZED_PROLOGUE_ENABLED = false;
-const TV_HERO_MAC_HYBRID_DEFAULT_VIDEO = 'media/mac-intro-hybrid-prerender.mp4';
+const TV_HERO_MAC_HYBRID_DEFAULT_VIDEO = 'media/mac-intro-hybrid-prerender-frames.mp4';
+const TV_HERO_MAC_HYBRID_START_MS = 2451;
+const TV_HERO_MAC_HYBRID_TIMELINE = [
+  { at: 0, progress: 0 },
+  { at: 1200, progress: 0 },
+  { at: 1201, progress: 0.165 },
+  { at: 1230, progress: 0.165 },
+  { at: 1231, progress: 0.18 },
+  { at: 2451, progress: 0.31 },
+  { at: 2731, progress: 0.31 },
+  { at: 2732, progress: 0.405 },
+  { at: 2750, progress: 0.405 },
+  { at: 2751, progress: 0.42 },
+  { at: 3971, progress: 0.55 },
+  { at: 8611, progress: 0.55 },
+  { at: 8612, progress: 0.645 },
+  { at: 8630, progress: 0.645 },
+  { at: 8631, progress: 0.66 },
+  { at: 9931, progress: 0.84 },
+  { at: 15481, progress: 0.84 },
+  { at: 15482, progress: 0.965 },
+  { at: 15682, progress: 0.965 },
+];
+
+function estimateMacHybridElapsedMs(progress = 0) {
+  const p = Math.max(0, Math.min(1, Number(progress) || 0));
+  let current = TV_HERO_MAC_HYBRID_TIMELINE[0];
+  for (let index = 1; index < TV_HERO_MAC_HYBRID_TIMELINE.length; index += 1) {
+    const next = TV_HERO_MAC_HYBRID_TIMELINE[index];
+    if (p <= next.progress + 0.0001) {
+      if (Math.abs(next.progress - current.progress) < 0.0001) return next.at;
+      const local = Math.max(0, Math.min(1, (p - current.progress) / (next.progress - current.progress)));
+      return current.at + (next.at - current.at) * local;
+    }
+    current = next;
+  }
+  return current.at;
+}
 
 function getTvHeroMacHybridConfig() {
   if (typeof window === 'undefined') return { enabled: false, src: '' };
   const params = new URLSearchParams(window.location.search || '');
-  const enabled = params.get('macHybrid') === '1';
   const requestedSrc = String(params.get('macHybridVideo') || '').trim();
   return {
-    enabled,
+    // Retired from the main page: old prerender passes can contain stale stage
+    // colors baked into the video and mask the live scene fixes.
+    enabled: false,
     // This is intentionally query-swappable so new Hermes-rendered passes can
     // be tested without touching code again.
     src: requestedSrc || TV_HERO_MAC_HYBRID_DEFAULT_VIDEO,
@@ -12346,6 +12385,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	    helpPlayerActive: false,
 	    helpPinned: false,
 	    helpImmersive: false,
+	    macHybridPrerenderActive: false,
 	    requestRender: null,
 	    powerPausedVideo: null,
 	    powerToggleInFlight: false,
@@ -12453,12 +12493,33 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
     }
     const video = hybridVideoRef.current;
     const setStage = (stage) => {
+      const state = stateRef.current;
+      const active = stage === 'playing';
+      const wasActive = state.macHybridPrerenderActive === true;
+      state.macHybridPrerenderActive = active;
+      if (active && !wasActive) {
+        cancelAnimationFrame(state.raf);
+        state.raf = 0;
+        cancelAnimationFrame(state.videoRaf);
+        state.videoRaf = 0;
+        if (state.videoFrameRequest && state.currentVideo?.cancelVideoFrameCallback) {
+          try { state.currentVideo.cancelVideoFrameCallback(state.videoFrameRequest); } catch (_) {}
+        }
+        state.videoFrameRequest = 0;
+        if (state.currentVideo) {
+          try { state.currentVideo.pause(); } catch (_) {}
+        }
+        for (const cachedVideo of state.videoCache.values()) {
+          try { cachedVideo.pause(); } catch (_) {}
+        }
+      }
       hybridStageRef.current = stage;
       wrap.dataset.hybridStage = stage;
       setHybridStage(stage);
       window.dispatchEvent(new CustomEvent('resume-mac-hybrid-state', {
         detail: { stage, src: macHybridConfig.src },
       }));
+      if (!active && wasActive) state.requestRender?.();
     };
     let canPlay = false;
     let started = false;
@@ -12483,7 +12544,11 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         setStage(video ? 'loading' : 'missing');
         return;
       }
-      const elapsedSec = Math.max(0, Number(detail.elapsedMs || 0) / 1000);
+      const rawElapsedMs = Number(detail.elapsedMs);
+      const elapsedMs = Number.isFinite(rawElapsedMs)
+        ? rawElapsedMs
+        : estimateMacHybridElapsedMs(detail.progress);
+      const elapsedSec = Math.max(0, (elapsedMs - TV_HERO_MAC_HYBRID_START_MS) / 1000);
       if (Number.isFinite(elapsedSec) && video.duration > 0) {
         const targetTime = Math.min(Math.max(0, video.duration - 0.05), elapsedSec);
         if (!started || Math.abs((video.currentTime || 0) - targetTime) > 0.18) {
@@ -14757,6 +14822,17 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	        ghostwriter: wrapRef.current?.dataset?.ghostwriter || '',
 	      };
 	    };
+	    window.__tvHeroForceRenderFrame = () => {
+	      const state = stateRef.current;
+	      state.requestRender?.();
+	      return {
+	        ok: Boolean(state.renderer && state.scene && state.camera),
+	        screenPaint: wrapRef.current?.dataset?.screenPaint || '',
+	        typingAction: wrapRef.current?.dataset?.typingAction || '',
+	        typingText: wrapRef.current?.dataset?.typingText || '',
+	        ghostwriter: wrapRef.current?.dataset?.ghostwriter || '',
+	      };
+	    };
 	    window.__resumeMacOvertureReady = companionIntroReady();
 	    if (window.__resumeMacOvertureReady) {
 	      window.dispatchEvent(new CustomEvent('resume-mac-overture-ready', {
@@ -14782,6 +14858,9 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	      }
 	      if (window.__tvHeroForceTerminalFrame) {
 	        delete window.__tvHeroForceTerminalFrame;
+	      }
+	      if (window.__tvHeroForceRenderFrame) {
+	        delete window.__tvHeroForceRenderFrame;
 	      }
 	    };
 	  }, [drawMacOffScreen]);
@@ -14980,7 +15059,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       started = true;
       // Let the loaded Macintosh register as an object before it starts typing.
       // During this authored hold the glass is completely blank and the stage
-      // remains the untouched blue tracking screen.
+      // remains off/black. The LED wall only turns blue through the authored
+      // power-up event, so reloads never expose the old tracking-screen plate.
       const startedAt = performance.now() + 700;
       const duration = 900 * MAC_OVERTURE_TYPING_TIME_SCALE;
       const tick = (now) => {
@@ -19914,6 +19994,10 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
       // Render loop
       const tick = () => {
         if (cancelled) return;
+        if (stateRef.current.macHybridPrerenderActive) {
+          stateRef.current.raf = 0;
+          return;
+        }
         const wrap = wrapRef.current;
         if (wrap) {
           const w = canvas.clientWidth, h = canvas.clientHeight;
@@ -19931,7 +20015,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         stateRef.current.raf = 0;
       };
       stateRef.current.requestRender = () => {
-        if (cancelled || stateRef.current.raf) return;
+        if (cancelled || stateRef.current.raf || stateRef.current.macHybridPrerenderActive) return;
         stateRef.current.raf = requestAnimationFrame(tick);
       };
       onResize = () => stateRef.current.requestRender?.();

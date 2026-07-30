@@ -2818,6 +2818,7 @@ async function importStandaloneRenderer() {
 
 document.documentElement.dataset.tokenExport = "true";
 try {
+  window.__beautifulGamePublicShortPath = /^\/hand-of-god\/?$/.test(window.location.pathname);
   const routeQuery = "art=match-sculpture&mode=portrait&theme=auto&texture=none&goalFx=on&telemetry=on&goal=oneofone-hand-of-god-maradona-1986&list=ones&gender=men&play=1&t=0.000&speed=1&end=loop&flow=fluid&flowSpeed=0.2&exportResolution=uhd&exportFps=24&exportQuality=gallery&clock=23%3A55&token=realtime&build=standalone-realtime-html&camOrbit=45&camLift=30&camZoom=0.94&camRoll=-20&cine=on";
   if (routeQuery) window.history.replaceState(null, "", window.location.pathname + "?" + routeQuery);
 } catch {}
@@ -2832,6 +2833,11 @@ try {
   if (settings.exportQualityKey) localStorage.setItem("beautifulgame.matchExportQuality.v1", String(settings.exportQualityKey));
 } catch {}
 await importStandaloneRenderer();
+try {
+  if (window.__beautifulGamePublicShortPath) {
+    window.history.replaceState(null, "", "/hand-of-god");
+  }
+} catch {}
 
 </script>
 <script>
