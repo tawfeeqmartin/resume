@@ -1475,10 +1475,9 @@ const LANDING_VARIANT_CSS = `
   stroke: #fff;
   stroke-width: 1;
   stroke-dasharray: none;
-  stroke-linecap: square;
-  stroke-linejoin: miter;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   opacity: 0.95;
-  shape-rendering: crispEdges;
 }
 .landing-profile-awards__label {
   position: absolute;
@@ -11698,25 +11697,12 @@ function LandingProfileAwardConnectors({ awards = [] }) {
           const dx = x2 - wheelSample.x1;
           const dy = y2 - wheelSample.y1;
           const length = Math.hypot(dx, dy);
+          const sampleMarkerRadius = 3.1;
           let connectorX1 = wheelSample.x1;
           let connectorY1 = wheelSample.y1;
           if (length > 0.001) {
-            const fromCenterX = wheelSample.x1 - wheelCenterX;
-            const fromCenterY = wheelSample.y1 - wheelCenterY;
-            const a = dx * dx + dy * dy;
-            const b = 2 * (fromCenterX * dx + fromCenterY * dy);
-            const c = fromCenterX * fromCenterX + fromCenterY * fromCenterY - wheelRadius * wheelRadius;
-            const discriminant = b * b - 4 * a * c;
-            if (discriminant >= 0) {
-              const root = Math.sqrt(discriminant);
-              const candidates = [
-                (-b - root) / (2 * a),
-                (-b + root) / (2 * a),
-              ].filter((value) => value >= 0 && value <= 1);
-              const t = candidates.length ? Math.max(...candidates) : 0;
-              connectorX1 = wheelSample.x1 + dx * t + (dx / length) * 2;
-              connectorY1 = wheelSample.y1 + dy * t + (dy / length) * 2;
-            }
+            connectorX1 = wheelSample.x1 + (dx / length) * sampleMarkerRadius;
+            connectorY1 = wheelSample.y1 + (dy / length) * sampleMarkerRadius;
           }
           targetNode.style.setProperty('--award-sampled-color', wheelSample.color);
           if (targetNode.classList.contains('landing-profile-award__line')) {
@@ -11766,12 +11752,11 @@ function LandingProfileAwardConnectors({ awards = [] }) {
               y2={line.y2}
             />
           )}
-          <rect
+          <circle
             className="landing-profile-award-connectors__sample"
-            x={line.x1 - 2.75}
-            y={line.y1 - 2.75}
-            width="5.5"
-            height="5.5"
+            cx={line.x1}
+            cy={line.y1}
+            r="3.1"
           />
         </React.Fragment>
       ))}
