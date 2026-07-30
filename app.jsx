@@ -1473,11 +1473,20 @@ const LANDING_VARIANT_CSS = `
   vector-effect: non-scaling-stroke;
   fill: none;
   stroke: #fff;
-  stroke-width: 1.35;
+  stroke-width: 1;
   stroke-dasharray: none;
   stroke-linecap: round;
   stroke-linejoin: round;
   opacity: 0.95;
+}
+.landing-profile-award-connectors__sample-shape {
+  vector-effect: non-scaling-stroke;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1;
+  stroke-dasharray: none;
+  stroke-linecap: square;
+  stroke-linejoin: round;
 }
 .landing-profile-awards__label {
   position: absolute;
@@ -11639,6 +11648,114 @@ function landingAwardRenderedParts(root) {
   });
 }
 
+const LANDING_AWARD_SAMPLE_MARKER_SCALE = 0.18;
+const LANDING_AWARD_SAMPLE_MARKER_ATTRS = {
+  circle: ['cx', 'cy', 'r'],
+  line: ['x1', 'y1', 'x2', 'y2'],
+  path: ['d'],
+  polygon: ['points'],
+  rect: ['x', 'y', 'width', 'height', 'rx', 'ry', 'transform'],
+};
+
+function landingAwardSampleMarkerFallbackBox(tag, attrs) {
+  const num = (name, fallback = 0) => {
+    const value = Number(attrs?.[name]);
+    return Number.isFinite(value) ? value : fallback;
+  };
+  if (tag === 'circle') {
+    const cx = num('cx', 40);
+    const cy = num('cy', 27);
+    const r = Math.max(0.1, num('r', 12));
+    return { x: cx - r, y: cy - r, width: r * 2, height: r * 2 };
+  }
+  if (tag === 'line') {
+    const x1 = num('x1', 32);
+    const y1 = num('y1', 27);
+    const x2 = num('x2', 48);
+    const y2 = num('y2', 27);
+    return {
+      x: Math.min(x1, x2),
+      y: Math.min(y1, y2),
+      width: Math.max(1, Math.abs(x2 - x1)),
+      height: Math.max(1, Math.abs(y2 - y1)),
+    };
+  }
+  if (tag === 'rect') {
+    return {
+      x: num('x', 24),
+      y: num('y', 18),
+      width: Math.max(1, num('width', 32)),
+      height: Math.max(1, num('height', 18)),
+    };
+  }
+  return { x: 20, y: 14, width: 40, height: 28 };
+}
+
+function landingAwardSampleMarkerFromNode(targetNode) {
+  if (!targetNode) return null;
+  const tag = String(targetNode.tagName || '').toLowerCase();
+  const attrNames = LANDING_AWARD_SAMPLE_MARKER_ATTRS[tag];
+  if (!attrNames) return null;
+  const attrs = {};
+  attrNames.forEach((name) => {
+    const value = targetNode.getAttribute(name);
+    if (value != null && value !== '') attrs[name] = value;
+  });
+  let box = null;
+  try {
+    if (typeof targetNode.getBBox === 'function') {
+      const bbox = targetNode.getBBox();
+      if (
+        Number.isFinite(bbox.x)
+        && Number.isFinite(bbox.y)
+        && Number.isFinite(bbox.width)
+        && Number.isFinite(bbox.height)
+        && Math.max(bbox.width, bbox.height) > 0
+      ) {
+        box = {
+          x: bbox.x,
+          y: bbox.y,
+          width: Math.max(1, bbox.width),
+          height: Math.max(1, bbox.height),
+        };
+      }
+    }
+  } catch {
+    box = null;
+  }
+  if (!box) box = landingAwardSampleMarkerFallbackBox(tag, attrs);
+  const maxDim = Math.max(box.width, box.height, 1);
+  const scale = LANDING_AWARD_SAMPLE_MARKER_SCALE;
+  return {
+    tag,
+    attrs,
+    centerX: box.x + box.width * 0.5,
+    centerY: box.y + box.height * 0.5,
+    scale,
+    connectorRadius: Math.max(3.1, Math.min(8.5, maxDim * scale * 0.5 + 1.1)),
+  };
+}
+
+function LandingProfileAwardSampleMarker({ line }) {
+  const marker = line?.marker;
+  if (!marker?.tag) return null;
+  return (
+    <g
+      className="landing-profile-award-connectors__sample"
+      transform={[
+        `translate(${line.x1} ${line.y1})`,
+        `scale(${marker.scale})`,
+        `translate(${-marker.centerX} ${-marker.centerY})`,
+      ].join(' ')}
+    >
+      {React.createElement(marker.tag, {
+        className: 'landing-profile-award-connectors__sample-shape',
+        ...marker.attrs,
+      })}
+    </g>
+  );
+}
+
 function LandingProfileAwardConnectors({ awards = [] }) {
   const [geometry, setGeometry] = useState({
     lines: [],
@@ -11697,7 +11814,8 @@ function LandingProfileAwardConnectors({ awards = [] }) {
           const dx = x2 - wheelSample.x1;
           const dy = y2 - wheelSample.y1;
           const length = Math.hypot(dx, dy);
-          const sampleMarkerRadius = 3.1;
+          const marker = landingAwardSampleMarkerFromNode(targetNode);
+          const sampleMarkerRadius = marker?.connectorRadius || 3.1;
           let connectorX1 = wheelSample.x1;
           let connectorY1 = wheelSample.y1;
           if (length > 0.001) {
@@ -11715,6 +11833,7 @@ function LandingProfileAwardConnectors({ awards = [] }) {
             color: wheelSample.color,
             x1: wheelSample.x1,
             y1: wheelSample.y1,
+            marker,
             connectorX1,
             connectorY1,
             x2,
@@ -11752,12 +11871,7 @@ function LandingProfileAwardConnectors({ awards = [] }) {
               y2={line.y2}
             />
           )}
-          <circle
-            className="landing-profile-award-connectors__sample"
-            cx={line.x1}
-            cy={line.y1}
-            r="3.1"
-          />
+          <LandingProfileAwardSampleMarker line={line} />
         </React.Fragment>
       ))}
     </svg>
