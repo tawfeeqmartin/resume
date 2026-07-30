@@ -844,25 +844,25 @@ ${u}</style>`,E.appendChild(v);let _="url('data:image/gif;base64,R0lGODlhAQABAIA
 .landing-profile-award-connectors {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 6;
   width: 100%;
   height: 100%;
   overflow: visible;
   pointer-events: none;
 }
 .landing-profile-award-connectors line {
-  stroke: rgba(28, 28, 31, 0.46);
+  stroke: rgba(10, 12, 16, 0.62);
   stroke-width: 1;
-  stroke-dasharray: 5 5;
+  stroke-dasharray: 4 4;
   stroke-linecap: square;
   vector-effect: non-scaling-stroke;
-  opacity: 0.24;
+  opacity: 0.38;
 }
 .landing-profile-award-connectors .landing-profile-award-connectors__sample {
   vector-effect: non-scaling-stroke;
   fill: none;
   stroke: #fff;
-  stroke-width: 1;
+  stroke-width: 1.35;
   stroke-dasharray: none;
   stroke-linecap: round;
   stroke-linejoin: round;
