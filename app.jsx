@@ -10583,24 +10583,35 @@ function mountProfileSamplerPart(host, THREE, part) {
     if (wheel) {
       const centerColorStyle = landingTraditionalColorForSamplePoint(fieldUnit);
       const centerColor = new THREE.Color(centerColorStyle);
-      const awardSampleCount = 32;
-      const awardSamples = Array.from({ length: awardSampleCount }, (_, index) => {
-        const point = landingAwardSamplePoint(index, awardSampleCount, {
-          time,
-          patternState,
-          fieldUnit: { x: fieldUnit.x, y: fieldUnit.y },
-          frame: samplerFrame,
+      const sampleMeta = {
+        time,
+        patternState,
+        fieldUnit: { x: fieldUnit.x, y: fieldUnit.y },
+        frame: samplerFrame,
+      };
+      const awardTargets = profileRoot
+        ? landingAwardRenderedParts(profileRoot)
+        : [];
+      const awardSampleCount = awardTargets.length || 32;
+      const awardSamples = awardTargets.length
+        ? landingAwardRelationshipSamples(awardTargets, sampleMeta)
+        : Array.from({ length: awardSampleCount }, (_, index) => {
+          const point = landingAwardSamplePoint(index, awardSampleCount, {
+            time,
+            patternState,
+            fieldUnit: { x: fieldUnit.x, y: fieldUnit.y },
+            frame: samplerFrame,
+          });
+          const sampleFieldUnit = {
+            x: Math.max(0, Math.min(1, point.x)),
+            y: Math.max(0, Math.min(1, point.y)),
+          };
+          return {
+            color: landingTraditionalColorForSamplePoint(point),
+            fieldUnit: sampleFieldUnit,
+            point,
+          };
         });
-        const sampleFieldUnit = {
-          x: Math.max(0, Math.min(1, point.x)),
-          y: Math.max(0, Math.min(1, point.y)),
-        };
-        return {
-          color: landingTraditionalColorForSamplePoint(point),
-          fieldUnit: sampleFieldUnit,
-          point,
-        };
-      });
       wheel.material.uniforms.uFieldUnit.value.set(fieldUnit.x, fieldUnit.y);
       wheel.material.uniforms.uCenterColor.value.copy(centerColor);
       host.dataset.samplerColor = centerColorStyle;
@@ -11641,6 +11652,152 @@ function landingAwardSampleColor(sample = {}, index = 0) {
   return awardSamples[index]?.color || sample?.color || 'rgb(36, 92, 255)';
 }
 
+function landingRotatePointOffset(offset = {}, angle = 0) {
+  const x = Number(offset.x) || 0;
+  const y = Number(offset.y) || 0;
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  return {
+    x: x * c - y * s,
+    y: x * s + y * c,
+  };
+}
+
+function landingAwardRelationshipOffset(target = {}, time = 0) {
+  const family = String(target.awardFamily || 'recognition');
+  const partCount = Math.max(1, Number(target.partCount) || 1);
+  const fillIndex = Math.max(0, Number(target.fillIndex) || 0);
+  const awardIndex = Math.max(0, Number(target.awardIndex) || 0);
+  const gentleTurn = Math.sin(time * 0.42 + awardIndex * 0.67) * 0.24;
+  const byFamily = {
+    cannes: [
+      { x: -0.038, y: 0 },
+      { x: 0.038, y: 0 },
+      { x: 0, y: 0 },
+    ],
+    emmy: [
+      { x: -0.022, y: -0.048 },
+      { x: 0.022, y: -0.048 },
+      { x: 0, y: 0.018 },
+    ],
+    hpa: [
+      { x: 0, y: 0 },
+    ],
+    'one-show': [
+      { x: 0, y: 0 },
+    ],
+    sxsw: [
+      { x: -0.032, y: 0.026 },
+      { x: 0.032, y: -0.026 },
+    ],
+    webby: [
+      { x: 0, y: 0 },
+    ],
+    technicolor: [
+      { x: -0.05, y: 0 },
+      { x: 0, y: 0 },
+      { x: 0.05, y: 0 },
+    ],
+    siggraph: [
+      { x: -0.018, y: 0.018 },
+      { x: 0.018, y: -0.018 },
+    ],
+    aicp: [
+      { x: 0, y: 0 },
+    ],
+  };
+  const offsets = byFamily[family];
+  if (offsets?.length) {
+    const offset = offsets[Math.min(fillIndex, offsets.length - 1)];
+    return landingRotatePointOffset(offset, gentleTurn);
+  }
+  if (partCount <= 1) return { x: 0, y: 0 };
+  const angle = (fillIndex / partCount) * Math.PI * 2 + gentleTurn;
+  const radius = Math.min(0.044, 0.025 + partCount * 0.0025);
+  return {
+    x: Math.cos(angle) * radius,
+    y: Math.sin(angle) * radius,
+  };
+}
+
+function landingRgbPartsFromString(color = '') {
+  const match = String(color).match(/rgba?\(([^)]+)\)/i);
+  if (!match) return [36, 92, 255];
+  const parts = match[1]
+    .split(',')
+    .slice(0, 3)
+    .map((part) => Math.max(0, Math.min(255, Math.round(Number(part.trim()) || 0))));
+  return parts.length === 3 ? parts : [36, 92, 255];
+}
+
+function landingScreenBlendRgbStrings(a, b) {
+  const first = landingRgbPartsFromString(a);
+  const second = landingRgbPartsFromString(b);
+  const blended = first.map((value, index) => (
+    Math.round(255 - ((255 - value) * (255 - second[index])) / 255)
+  ));
+  return `rgb(${blended[0]}, ${blended[1]}, ${blended[2]})`;
+}
+
+function landingAwardRelationshipSamples(targets = [], sampleMeta = {}) {
+  const time = Number.isFinite(sampleMeta.time)
+    ? sampleMeta.time
+    : (Number(sampleMeta.frame) || 0) / 24;
+  if (!targets.length) return [];
+  const awardIndexes = Array.from(new Set(targets.map((target) => target.awardIndex)));
+  const awardCount = Math.max(1, awardIndexes.length);
+  const samples = targets.map((target) => {
+    const awardSlot = Math.max(0, awardIndexes.indexOf(target.awardIndex));
+    const anchor = landingAwardSamplePoint(awardSlot, awardCount, sampleMeta);
+    const offset = landingAwardRelationshipOffset(target, time);
+    const point = landingPatternClampPoint({
+      x: anchor.x + offset.x,
+      y: anchor.y + offset.y,
+    });
+    return {
+      color: landingTraditionalColorForSamplePoint(point),
+      fieldUnit: {
+        x: Math.max(0, Math.min(1, point.x)),
+        y: Math.max(0, Math.min(1, point.y)),
+      },
+      point,
+      relationship: {
+        awardFamily: target.awardFamily,
+        awardIndex: target.awardIndex,
+        fillIndex: target.fillIndex,
+      },
+    };
+  });
+  const byAward = new Map();
+  targets.forEach((target, index) => {
+    const group = byAward.get(target.awardIndex) || [];
+    group.push({ target, index });
+    byAward.set(target.awardIndex, group);
+  });
+  byAward.forEach((group) => {
+    const first = group[0]?.target;
+    if (first?.awardFamily !== 'cannes') return;
+    const additive = group.find(({ target }) => (
+      target.targetNode?.classList?.contains('landing-profile-award__fill--additive')
+    ));
+    if (!additive) return;
+    const sourceSamples = group
+      .filter(({ target }) => target.fillIndex !== additive.target.fillIndex)
+      .slice(0, 2)
+      .map(({ index }) => samples[index]);
+    if (sourceSamples.length < 2) return;
+    samples[additive.index] = {
+      ...samples[additive.index],
+      color: landingScreenBlendRgbStrings(sourceSamples[0].color, sourceSamples[1].color),
+      relationship: {
+        ...samples[additive.index].relationship,
+        blend: 'screen',
+      },
+    };
+  });
+  return samples;
+}
+
 function landingAwardRenderedParts(root) {
   if (!root) return [];
   const selector = [
@@ -11650,9 +11807,17 @@ function landingAwardRenderedParts(root) {
   ].join(',');
   return Array.from(root.querySelectorAll('.landing-profile-award')).flatMap((awardNode, awardIndex) => {
     const parts = Array.from(awardNode.querySelectorAll(selector));
+    const awardFamily = awardNode.getAttribute('data-award-family') || 'recognition';
+    const partCount = parts.length || 1;
     return (parts.length ? parts : [awardNode.querySelector('.landing-profile-award__icon')])
       .filter(Boolean)
-      .map((targetNode, fillIndex) => ({ awardIndex, fillIndex, targetNode }));
+      .map((targetNode, fillIndex) => ({
+        awardFamily,
+        awardIndex,
+        fillIndex,
+        partCount,
+        targetNode,
+      }));
   });
 }
 
@@ -11899,7 +12064,11 @@ function LandingProfileAwards({ items = [] }) {
       <p className="landing-profile-awards__label">Selected recognition</p>
       <ul className="landing-profile-awards__grid">
         {awards.map((award, index) => (
-          <li className="landing-profile-award" key={`${award.family}-${index}`}>
+          <li
+            className="landing-profile-award"
+            data-award-family={award.family}
+            key={`${award.family}-${index}`}
+          >
             <LandingAwardIcon award={award} />
             <span className="landing-profile-award__title">{award.title}</span>
           </li>
