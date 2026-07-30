@@ -1489,6 +1489,13 @@ const LANDING_VARIANT_CSS = `
   stroke-linejoin: round;
   opacity: 1;
 }
+.landing-profile-award-connectors .landing-profile-award-connectors__sample line.landing-profile-award-connectors__sample-shape {
+  stroke: #fff;
+  stroke-width: 1;
+  stroke-dasharray: none;
+  stroke-linecap: square;
+  opacity: 1;
+}
 .landing-profile-awards__label {
   position: absolute;
   width: 1px;
@@ -11649,7 +11656,8 @@ function landingAwardRenderedParts(root) {
   });
 }
 
-const LANDING_AWARD_SAMPLE_MARKER_SCALE = 0.18;
+const LANDING_AWARD_SAMPLE_MARKER_SCALE = 0.36;
+const LANDING_AWARD_SAMPLE_LINE_MARKER_SCALE = 0.62;
 const LANDING_AWARD_SAMPLE_MARKER_ATTRS = {
   circle: ['cx', 'cy', 'r'],
   line: ['x1', 'y1', 'x2', 'y2'],
@@ -11726,14 +11734,16 @@ function landingAwardSampleMarkerFromNode(targetNode) {
   }
   if (!box) box = landingAwardSampleMarkerFallbackBox(tag, attrs);
   const maxDim = Math.max(box.width, box.height, 1);
-  const scale = LANDING_AWARD_SAMPLE_MARKER_SCALE;
+  const scale = tag === 'line'
+    ? LANDING_AWARD_SAMPLE_LINE_MARKER_SCALE
+    : LANDING_AWARD_SAMPLE_MARKER_SCALE;
   return {
     tag,
     attrs,
     centerX: box.x + box.width * 0.5,
     centerY: box.y + box.height * 0.5,
     scale,
-    connectorRadius: Math.max(3.1, Math.min(8.5, maxDim * scale * 0.5 + 1.1)),
+    connectorRadius: Math.max(4.2, Math.min(15, maxDim * scale * 0.5 + 1.4)),
   };
 }
 
