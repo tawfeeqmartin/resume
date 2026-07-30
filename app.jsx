@@ -1469,6 +1469,15 @@ const LANDING_VARIANT_CSS = `
   vector-effect: non-scaling-stroke;
   opacity: 0.38;
 }
+.landing-profile-award-connectors__orbit {
+  fill: none;
+  stroke: rgba(10, 12, 16, 0.22);
+  stroke-width: 1;
+  stroke-dasharray: 2 8;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.22;
+}
 .landing-profile-award-connectors .landing-profile-award-connectors__sample {
   vector-effect: non-scaling-stroke;
   fill: none;
@@ -10925,9 +10934,10 @@ const LANDING_AWARD_PATTERN_CYCLE_SECONDS = 1.45;
 const LANDING_AWARD_PATTERN_EDGE_LIMIT = 0.472;
 const LANDING_AWARD_SPECTRUM_START_TURN = 0.025;
 const LANDING_AWARD_SPECTRUM_SPAN_TURN = 0.80;
-const LANDING_AWARD_SPECTRUM_RADIUS = 0.392;
-const LANDING_AWARD_SPECTRUM_RADIUS_PULSE = 0.022;
-const LANDING_AWARD_SPECTRUM_DRIFT_TURNS_PER_SECOND = 0.085;
+const LANDING_AWARD_ORBIT_MIN_RADIUS = 0.132;
+const LANDING_AWARD_ORBIT_MAX_RADIUS = 0.405;
+const LANDING_AWARD_ORBIT_INNER_SPEED = 0.235;
+const LANDING_AWARD_ORBIT_OUTER_SPEED = 0.102;
 
 const landingPatternClampPoint = (point = {}) => {
   const rawX = Number(point.x);
@@ -11667,145 +11677,76 @@ function landingAwardSampleColor(sample = {}, index = 0) {
   return awardSamples[index]?.color || sample?.color || 'rgb(36, 92, 255)';
 }
 
-function landingRotatePointOffset(offset = {}, angle = 0) {
-  const x = Number(offset.x) || 0;
-  const y = Number(offset.y) || 0;
-  const c = Math.cos(angle);
-  const s = Math.sin(angle);
-  return {
-    x: x * c - y * s,
-    y: x * s + y * c,
-  };
+function landingAwardOrbitRadiusForSlot(awardSlot = 0, awardCount = 1) {
+  const denom = Math.max(1, awardCount - 1);
+  const progress = awardCount <= 1 ? 0.5 : Math.max(0, Math.min(1, awardSlot / denom));
+  return LANDING_AWARD_ORBIT_MIN_RADIUS
+    + Math.pow(progress, 0.72) * (LANDING_AWARD_ORBIT_MAX_RADIUS - LANDING_AWARD_ORBIT_MIN_RADIUS);
 }
 
-function landingAwardRelationshipOffset(target = {}, time = 0) {
-  const family = String(target.awardFamily || 'recognition');
-  const partCount = Math.max(1, Number(target.partCount) || 1);
-  const fillIndex = Math.max(0, Number(target.fillIndex) || 0);
-  const awardIndex = Math.max(0, Number(target.awardIndex) || 0);
-  const gentleTurn = Math.sin(time * 0.42 + awardIndex * 0.67) * 0.24;
-  const byFamily = {
-    cannes: [
-      { x: -0.038, y: 0 },
-      { x: 0.038, y: 0 },
-    ],
-    emmy: [
-      { x: -0.022, y: -0.048 },
-      { x: 0.022, y: -0.048 },
-      { x: 0, y: 0.018 },
-    ],
-    hpa: [
-      { x: 0, y: 0 },
-    ],
-    'one-show': [
-      { x: 0, y: 0 },
-    ],
-    sxsw: [
-      { x: -0.032, y: 0.026 },
-      { x: 0.032, y: -0.026 },
-    ],
-    webby: [
-      { x: 0, y: 0 },
-    ],
-    technicolor: [
-      { x: -0.05, y: 0 },
-      { x: 0, y: 0 },
-      { x: 0.05, y: 0 },
-    ],
-    siggraph: [
-      { x: -0.018, y: 0.018 },
-      { x: 0.018, y: -0.018 },
-    ],
-    aicp: [
-      { x: 0, y: 0 },
-    ],
-  };
-  const offsets = byFamily[family];
-  if (offsets?.length) {
-    const offset = offsets[Math.min(fillIndex, offsets.length - 1)];
-    return landingRotatePointOffset(offset, gentleTurn);
-  }
-  if (partCount <= 1) return { x: 0, y: 0 };
-  const angle = (fillIndex / partCount) * Math.PI * 2 + gentleTurn;
-  const radius = Math.min(0.044, 0.025 + partCount * 0.0025);
-  return {
-    x: Math.cos(angle) * radius,
-    y: Math.sin(angle) * radius,
-  };
+function landingAwardOrbitSpeedForSlot(awardSlot = 0, awardCount = 1) {
+  const denom = Math.max(1, awardCount - 1);
+  const progress = awardCount <= 1 ? 0.5 : Math.max(0, Math.min(1, awardSlot / denom));
+  return LANDING_AWARD_ORBIT_INNER_SPEED
+    + (LANDING_AWARD_ORBIT_OUTER_SPEED - LANDING_AWARD_ORBIT_INNER_SPEED) * progress;
 }
 
-function landingAwardSpectrumHueOffset(target = {}) {
+function landingAwardOrbitPartTurnOffset(target = {}) {
   const family = String(target.awardFamily || 'recognition');
   const partCount = Math.max(1, Number(target.partCount) || 1);
   const fillIndex = Math.max(0, Number(target.fillIndex) || 0);
   const byFamily = {
-    cannes: [-0.25, 0.25],
-    emmy: [-0.018, 0.018, 0],
+    cannes: [0, 0.5],
+    emmy: [-0.026, 0.026, 0.11],
     hpa: [0],
     'one-show': [0],
-    sxsw: [-0.020, 0.020],
+    sxsw: [-0.075, 0.075],
     webby: [0],
-    technicolor: [-0.052, 0, 0.052],
-    siggraph: [-0.25, 0.25],
+    technicolor: [-1 / 3, 0, 1 / 3],
+    siggraph: [0, 0.5],
     aicp: [0],
   };
   const offsets = byFamily[family];
   if (offsets?.length) return offsets[Math.min(fillIndex, offsets.length - 1)] || 0;
   if (partCount <= 1) return 0;
-  return (fillIndex - (partCount - 1) * 0.5) * 0.018;
+  return (fillIndex / partCount) - 0.5;
 }
 
-function landingAwardSpectrumRadiusOffset(target = {}) {
+function landingAwardOrbitRadiusOffset(target = {}) {
   const family = String(target.awardFamily || 'recognition');
   const fillIndex = Math.max(0, Number(target.fillIndex) || 0);
   const byFamily = {
-    cannes: [0, 0],
-    emmy: [-0.006, -0.006, 0.018],
-    sxsw: [-0.012, 0.012],
-    technicolor: [-0.014, 0.008, -0.014],
-    siggraph: [0.018, 0.018],
+    emmy: [0.008, 0.008, -0.010],
+    sxsw: [0.006, -0.006],
+    technicolor: [0.006, -0.008, 0.006],
   };
   const offsets = byFamily[family];
   if (offsets?.length) return offsets[Math.min(fillIndex, offsets.length - 1)] || 0;
   return 0;
 }
 
-function landingAwardSpectrumAnchor(target = {}, awardSlot = 0, awardCount = 1, time = 0) {
+function landingAwardOrbitAnchor(target = {}, awardSlot = 0, awardCount = 1, time = 0) {
   const denom = Math.max(1, awardCount - 1);
   const progress = awardCount <= 1 ? 0.5 : Math.max(0, Math.min(1, awardSlot / denom));
   const awardIndex = Math.max(0, Number(target.awardIndex) || awardSlot);
-  const drift = time * LANDING_AWARD_SPECTRUM_DRIFT_TURNS_PER_SECOND;
+  const orbitRadius = landingAwardOrbitRadiusForSlot(awardSlot, awardCount);
+  const orbitSpeed = landingAwardOrbitSpeedForSlot(awardSlot, awardCount);
+  const orbitDirection = awardSlot % 2 ? -1 : 1;
+  const orbitPhase = time * orbitSpeed * orbitDirection;
   const hue = LANDING_AWARD_SPECTRUM_START_TURN
-    + drift
     + progress * LANDING_AWARD_SPECTRUM_SPAN_TURN
-    + landingAwardSpectrumHueOffset(target);
-  const radius = LANDING_AWARD_SPECTRUM_RADIUS
-    + landingAwardSpectrumRadiusOffset(target)
-    + Math.sin(time * 0.9 + awardIndex * 0.61) * LANDING_AWARD_SPECTRUM_RADIUS_PULSE;
+    + orbitPhase
+    + landingAwardOrbitPartTurnOffset(target);
+  const radius = orbitRadius + landingAwardOrbitRadiusOffset(target);
   return {
     hue: (((hue % 1) + 1) % 1),
-    drift: (((drift % 1) + 1) % 1),
+    orbitDirection,
+    orbitPhase: (((orbitPhase % 1) + 1) % 1),
+    orbitRadius: radius,
+    orbitSpeed,
+    orbitTrackRadius: orbitRadius,
     point: landingColorWheelHuePoint(hue, radius),
   };
-}
-
-function landingRgbPartsFromString(color = '') {
-  const match = String(color).match(/rgba?\(([^)]+)\)/i);
-  if (!match) return [36, 92, 255];
-  const parts = match[1]
-    .split(',')
-    .slice(0, 3)
-    .map((part) => Math.max(0, Math.min(255, Math.round(Number(part.trim()) || 0))));
-  return parts.length === 3 ? parts : [36, 92, 255];
-}
-
-function landingScreenBlendRgbStrings(a, b) {
-  const first = landingRgbPartsFromString(a);
-  const second = landingRgbPartsFromString(b);
-  const blended = first.map((value, index) => (
-    Math.round(255 - ((255 - value) * (255 - second[index])) / 255)
-  ));
-  return `rgb(${blended[0]}, ${blended[1]}, ${blended[2]})`;
 }
 
 function landingAwardRelationshipSamples(targets = [], sampleMeta = {}) {
@@ -11817,13 +11758,8 @@ function landingAwardRelationshipSamples(targets = [], sampleMeta = {}) {
   const awardCount = Math.max(1, awardIndexes.length);
   const samples = targets.map((target) => {
     const awardSlot = Math.max(0, awardIndexes.indexOf(target.awardIndex));
-    const spectrum = landingAwardSpectrumAnchor(target, awardSlot, awardCount, time);
-    const anchor = spectrum.point;
-    const offset = landingAwardRelationshipOffset(target, time);
-    const point = landingPatternClampPoint({
-      x: anchor.x + offset.x * 0.45,
-      y: anchor.y + offset.y * 0.45,
-    });
+    const orbit = landingAwardOrbitAnchor(target, awardSlot, awardCount, time);
+    const point = orbit.point;
     return {
       color: landingTraditionalColorForSamplePoint(point),
       fieldUnit: {
@@ -11835,35 +11771,11 @@ function landingAwardRelationshipSamples(targets = [], sampleMeta = {}) {
         awardFamily: target.awardFamily,
         awardIndex: target.awardIndex,
         fillIndex: target.fillIndex,
-        spectrumHue: spectrum.hue,
-        spectrumDrift: spectrum.drift,
-      },
-    };
-  });
-  const byAward = new Map();
-  targets.forEach((target, index) => {
-    const group = byAward.get(target.awardIndex) || [];
-    group.push({ target, index });
-    byAward.set(target.awardIndex, group);
-  });
-  byAward.forEach((group) => {
-    const first = group[0]?.target;
-    if (first?.awardFamily !== 'cannes') return;
-    const additive = group.find(({ target }) => (
-      target.targetNode?.classList?.contains('landing-profile-award__fill--additive')
-    ));
-    if (!additive) return;
-    const sourceSamples = group
-      .filter(({ target }) => target.fillIndex !== additive.target.fillIndex)
-      .slice(0, 2)
-      .map(({ index }) => samples[index]);
-    if (sourceSamples.length < 2) return;
-    samples[additive.index] = {
-      ...samples[additive.index],
-      color: landingScreenBlendRgbStrings(sourceSamples[0].color, sourceSamples[1].color),
-      relationship: {
-        ...samples[additive.index].relationship,
-        blend: 'screen',
+        orbitDirection: orbit.orbitDirection,
+        orbitPhase: orbit.orbitPhase,
+        orbitRadius: orbit.orbitRadius,
+        orbitSpeed: orbit.orbitSpeed,
+        orbitTrackRadius: orbit.orbitTrackRadius,
       },
     };
   });
@@ -12007,6 +11919,7 @@ function LandingProfileAwardSampleMarker({ line }) {
 function LandingProfileAwardConnectors({ awards = [] }) {
   const [geometry, setGeometry] = useState({
     lines: [],
+    orbits: [],
   });
 
   useEffect(() => {
@@ -12048,9 +11961,25 @@ function LandingProfileAwardConnectors({ awards = [] }) {
           return {
             id: `sample-${sampleIndex}`,
             color,
+            relationship: sampled?.relationship || null,
             x1,
             y1,
           };
+        });
+        const orbitMap = new Map();
+        wheelSamples.forEach((wheelSample) => {
+          const relationship = wheelSample.relationship || {};
+          const awardIndex = Number(relationship.awardIndex);
+          const orbitTrackRadius = Number(relationship.orbitTrackRadius);
+          if (!Number.isFinite(awardIndex) || !Number.isFinite(orbitTrackRadius)) return;
+          const id = `orbit-${awardIndex}`;
+          if (orbitMap.has(id)) return;
+          orbitMap.set(id, {
+            id,
+            cx: wheelCenterX,
+            cy: wheelCenterY,
+            r: Math.max(0, orbitTrackRadius * 2 * wheelRadius),
+          });
         });
         const next = wheelSamples.map((wheelSample, sampleIndex) => {
           const target = targets[sampleIndex];
@@ -12088,7 +12017,7 @@ function LandingProfileAwardConnectors({ awards = [] }) {
             y2,
           };
         });
-        setGeometry({ lines: next });
+        setGeometry({ lines: next, orbits: Array.from(orbitMap.values()) });
       });
     };
 
@@ -12109,6 +12038,15 @@ function LandingProfileAwardConnectors({ awards = [] }) {
   if (!geometry.lines.length) return null;
   return (
     <svg className="landing-profile-award-connectors" aria-hidden="true">
+      {geometry.orbits.map((orbit) => (
+        <circle
+          key={orbit.id}
+          className="landing-profile-award-connectors__orbit"
+          cx={orbit.cx}
+          cy={orbit.cy}
+          r={orbit.r}
+        />
+      ))}
       {geometry.lines.map((line) => (
         <React.Fragment key={line.id}>
           {Number.isFinite(line.x2) && Number.isFinite(line.y2) && (
