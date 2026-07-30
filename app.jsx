@@ -11739,7 +11739,7 @@ function landingAwardSpectrumHueOffset(target = {}) {
   const partCount = Math.max(1, Number(target.partCount) || 1);
   const fillIndex = Math.max(0, Number(target.fillIndex) || 0);
   const byFamily = {
-    cannes: [-0.035, 0.035],
+    cannes: [-0.25, 0.25],
     emmy: [-0.018, 0.018, 0],
     hpa: [0],
     'one-show': [0],
