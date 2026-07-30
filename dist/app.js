@@ -868,7 +868,7 @@ ${u}</style>`,N.appendChild(y);let _="url('data:image/gif;base64,R0lGODlhAQABAIA
   stroke-linejoin: round;
   opacity: 0.95;
 }
-.landing-profile-award-connectors__sample-shape {
+.landing-profile-award-connectors .landing-profile-award-connectors__sample-shape {
   vector-effect: non-scaling-stroke;
   fill: none;
   stroke: #fff;
@@ -876,6 +876,7 @@ ${u}</style>`,N.appendChild(y);let _="url('data:image/gif;base64,R0lGODlhAQABAIA
   stroke-dasharray: none;
   stroke-linecap: square;
   stroke-linejoin: round;
+  opacity: 1;
 }
 .landing-profile-awards__label {
   position: absolute;

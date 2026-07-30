@@ -1479,7 +1479,7 @@ const LANDING_VARIANT_CSS = `
   stroke-linejoin: round;
   opacity: 0.95;
 }
-.landing-profile-award-connectors__sample-shape {
+.landing-profile-award-connectors .landing-profile-award-connectors__sample-shape {
   vector-effect: non-scaling-stroke;
   fill: none;
   stroke: #fff;
@@ -1487,6 +1487,7 @@ const LANDING_VARIANT_CSS = `
   stroke-dasharray: none;
   stroke-linecap: square;
   stroke-linejoin: round;
+  opacity: 1;
 }
 .landing-profile-awards__label {
   position: absolute;
