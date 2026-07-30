@@ -10925,6 +10925,7 @@ const LANDING_AWARD_SPECTRUM_START_TURN = 0.025;
 const LANDING_AWARD_SPECTRUM_SPAN_TURN = 0.80;
 const LANDING_AWARD_SPECTRUM_RADIUS = 0.392;
 const LANDING_AWARD_SPECTRUM_RADIUS_PULSE = 0.022;
+const LANDING_AWARD_SPECTRUM_DRIFT_TURNS_PER_SECOND = 0.085;
 
 const landingPatternClampPoint = (point = {}) => {
   const rawX = Number(point.x);
@@ -11772,7 +11773,9 @@ function landingAwardSpectrumAnchor(target = {}, awardSlot = 0, awardCount = 1, 
   const denom = Math.max(1, awardCount - 1);
   const progress = awardCount <= 1 ? 0.5 : Math.max(0, Math.min(1, awardSlot / denom));
   const awardIndex = Math.max(0, Number(target.awardIndex) || awardSlot);
+  const drift = time * LANDING_AWARD_SPECTRUM_DRIFT_TURNS_PER_SECOND;
   const hue = LANDING_AWARD_SPECTRUM_START_TURN
+    + drift
     + progress * LANDING_AWARD_SPECTRUM_SPAN_TURN
     + landingAwardSpectrumHueOffset(target);
   const radius = LANDING_AWARD_SPECTRUM_RADIUS
@@ -11780,6 +11783,7 @@ function landingAwardSpectrumAnchor(target = {}, awardSlot = 0, awardCount = 1, 
     + Math.sin(time * 0.9 + awardIndex * 0.61) * LANDING_AWARD_SPECTRUM_RADIUS_PULSE;
   return {
     hue: (((hue % 1) + 1) % 1),
+    drift: (((drift % 1) + 1) % 1),
     point: landingColorWheelHuePoint(hue, radius),
   };
 }
@@ -11831,6 +11835,7 @@ function landingAwardRelationshipSamples(targets = [], sampleMeta = {}) {
         awardIndex: target.awardIndex,
         fillIndex: target.fillIndex,
         spectrumHue: spectrum.hue,
+        spectrumDrift: spectrum.drift,
       },
     };
   });
