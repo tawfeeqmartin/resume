@@ -1562,6 +1562,12 @@ const LANDING_VARIANT_CSS = `
   mix-blend-mode: screen;
   opacity: 1;
 }
+.landing-profile-award[data-award-family="cannes"] .landing-profile-award__icon {
+  isolation: isolate;
+}
+.landing-profile-award__fill--computed-crossover {
+  mix-blend-mode: multiply;
+}
 .landing-profile-award__solid {
   fill: var(--award-sampled-color, var(--award-color, #245cff));
   stroke: none;
@@ -10823,11 +10829,7 @@ function LandingAwardIcon({ award }) {
       {family === 'cannes' && (
         <>
           <circle className="landing-profile-award__fill" cx="29" cy="27" r="16" />
-          <circle className="landing-profile-award__fill landing-profile-award__fill--alt" cx="51" cy="27" r="16" />
-          <path
-            className="landing-profile-award__fill landing-profile-award__fill--additive"
-            d="M 40 15.38 A 16 16 0 0 1 40 38.62 A 16 16 0 0 1 40 15.38 Z"
-          />
+          <circle className="landing-profile-award__fill landing-profile-award__fill--alt landing-profile-award__fill--computed-crossover" cx="51" cy="27" r="16" />
         </>
       )}
       {family === 'emmy' && (
@@ -11686,7 +11688,6 @@ function landingAwardRelationshipOffset(target = {}, time = 0) {
     cannes: [
       { x: -0.038, y: 0 },
       { x: 0.038, y: 0 },
-      { x: 0, y: 0 },
     ],
     emmy: [
       { x: -0.022, y: -0.048 },
@@ -11738,14 +11739,14 @@ function landingAwardSpectrumHueOffset(target = {}) {
   const partCount = Math.max(1, Number(target.partCount) || 1);
   const fillIndex = Math.max(0, Number(target.fillIndex) || 0);
   const byFamily = {
-    cannes: [-0.035, 0.035, 0],
+    cannes: [-0.035, 0.035],
     emmy: [-0.018, 0.018, 0],
     hpa: [0],
     'one-show': [0],
     sxsw: [-0.020, 0.020],
     webby: [0],
     technicolor: [-0.052, 0, 0.052],
-    siggraph: [-0.026, 0.026],
+    siggraph: [-0.25, 0.25],
     aicp: [0],
   };
   const offsets = byFamily[family];
@@ -11758,11 +11759,11 @@ function landingAwardSpectrumRadiusOffset(target = {}) {
   const family = String(target.awardFamily || 'recognition');
   const fillIndex = Math.max(0, Number(target.fillIndex) || 0);
   const byFamily = {
-    cannes: [0, 0, 0.018],
+    cannes: [0, 0],
     emmy: [-0.006, -0.006, 0.018],
     sxsw: [-0.012, 0.012],
     technicolor: [-0.014, 0.008, -0.014],
-    siggraph: [0.020, -0.020],
+    siggraph: [0.018, 0.018],
   };
   const offsets = byFamily[family];
   if (offsets?.length) return offsets[Math.min(fillIndex, offsets.length - 1)] || 0;
