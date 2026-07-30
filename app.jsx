@@ -1471,11 +1471,14 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile-award-connectors .landing-profile-award-connectors__sample {
   vector-effect: non-scaling-stroke;
+  fill: none;
   stroke: #fff;
   stroke-width: 1;
   stroke-dasharray: none;
   stroke-linecap: square;
+  stroke-linejoin: miter;
   opacity: 0.95;
+  shape-rendering: crispEdges;
 }
 .landing-profile-awards__label {
   position: absolute;
@@ -11763,19 +11766,12 @@ function LandingProfileAwardConnectors({ awards = [] }) {
               y2={line.y2}
             />
           )}
-          <line
+          <rect
             className="landing-profile-award-connectors__sample"
-            x1={line.x1 - 2.25}
-            y1={line.y1 - 2.25}
-            x2={line.x1 + 2.25}
-            y2={line.y1 + 2.25}
-          />
-          <line
-            className="landing-profile-award-connectors__sample"
-            x1={line.x1 + 2.25}
-            y1={line.y1 - 2.25}
-            x2={line.x1 - 2.25}
-            y2={line.y1 + 2.25}
+            x={line.x1 - 2.75}
+            y={line.y1 - 2.75}
+            width="5.5"
+            height="5.5"
           />
         </React.Fragment>
       ))}
