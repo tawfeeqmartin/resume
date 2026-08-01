@@ -3565,6 +3565,59 @@ html.has-inverted-poetry-preview #strudel.is-strudel-pinned .strudel-repl__macbo
   transform: rotate(45deg);
   transform-origin: center;
 }
+.video-sound-toggle {
+  appearance: none;
+  position: absolute;
+  right: 62px;
+  bottom: 10px;
+  z-index: 5;
+  width: 44px;
+  height: 44px;
+  padding: 9px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(244, 240, 230, 0.4);
+  border-radius: 50%;
+  background: rgba(10, 9, 8, 0.72);
+  color: #f4f0e6;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  cursor: pointer;
+  opacity: 0.94;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+.video-sound-toggle svg {
+  width: 24px;
+  height: 24px;
+  overflow: visible;
+}
+.video-sound-toggle__speaker {
+  fill: currentColor;
+}
+.video-sound-toggle__state {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.video-sound-toggle.is-audible {
+  color: var(--accent-yellow);
+  border-color: color-mix(in srgb, var(--accent-yellow) 70%, transparent);
+  background: rgba(10, 9, 8, 0.82);
+}
+.video-sound-toggle:hover,
+.video-sound-toggle:focus-visible {
+  color: var(--accent-yellow);
+  border-color: currentColor;
+  background: rgba(10, 9, 8, 0.9);
+  outline: none;
+  transform: scale(1.06);
+}
+.video-slot--bare .video-sound-toggle {
+  right: 12px;
+}
 .video-fullscreen-corner {
   appearance: none;
   position: absolute;
@@ -4069,6 +4122,6 @@ if (window.location.protocol === 'file:') {
 window.RESUME_APP_VARIANT = 'landing-v1';
 </script>
   <script src="dist/qrcode-bundle.js?v=cloud-companion-v1"></script>
-  <script type="module" src="dist/app.js?v=remove-blue-markers-v340-20260727"></script>
+  <script type="module" src="dist/app.js?v=video-audio-v341-20260731"></script>
 </body>
 </html>

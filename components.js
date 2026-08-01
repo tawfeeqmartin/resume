@@ -3539,15 +3539,6 @@ function markResumeSectionVideoSoundIntent(source = 'gesture') {
   return true;
 }
 
-function hasResumeSectionVideoSoundIntent() {
-  if (typeof window === 'undefined') return false;
-  return Boolean(
-    window.__resumeSectionVideoSoundUnlocked
-    || window.__resumeStrudelAudioEngine?.enabled
-    || document.documentElement.dataset.resumeSectionVideoSound === 'unlocked'
-  );
-}
-
 function setResumeVideoRouteAudible(video, audible) {
   if (!video || typeof window === 'undefined') return Promise.resolve(false);
   // Do not route selected-work videos through Web Audio. Most of these files
@@ -3586,7 +3577,7 @@ function isVideoSlotInAudioFocus(element) {
     && isElementNearViewportCenter(element, 0.48);
 }
 
-function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime = 0, playbackRate = 1, className = '', chrome = true }) {
+function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime = 0, playbackRate = 1, className = '', chrome = true, hasAudio = true }) {
   const slotRef = useRef(null);
   const videoRef = useRef(null);
   const slotIdRef = useRef(`video-slot-${Math.random().toString(36).slice(2)}`);
@@ -3623,42 +3614,6 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
     observer.observe(slot);
     return () => observer.disconnect();
   }, []);
-
-  useEffect(() => {
-    const markFromGesture = (event) => {
-      markResumeSectionVideoSoundIntent(event.type || 'gesture');
-      const slot = slotRef.current;
-      const video = videoRef.current;
-      if (
-        status === 'ready'
-        && slot
-        && video
-        && isElementMeaningfullyVisible(slot, 0.34)
-        && (slot.contains(event.target) || isElementNearViewportCenter(slot))
-      ) {
-        activateSlot({ withSound: true, userInitiated: true });
-      }
-    };
-    const markFromAudioReady = () => {
-      markResumeSectionVideoSoundIntent('intro-audio-ready');
-    };
-    window.addEventListener('pointerdown', markFromGesture, true);
-    window.addEventListener('click', markFromGesture, true);
-    window.addEventListener('keydown', markFromGesture, true);
-    window.addEventListener('touchstart', markFromGesture, true);
-    window.addEventListener('wheel', markFromGesture, { passive: true, capture: true });
-    window.addEventListener('resume-glitch-audio-ready', markFromAudioReady);
-    window.addEventListener('resume-mac-audio-ready', markFromAudioReady);
-    return () => {
-      window.removeEventListener('pointerdown', markFromGesture, true);
-      window.removeEventListener('click', markFromGesture, true);
-      window.removeEventListener('keydown', markFromGesture, true);
-      window.removeEventListener('touchstart', markFromGesture, true);
-      window.removeEventListener('wheel', markFromGesture, true);
-      window.removeEventListener('resume-glitch-audio-ready', markFromAudioReady);
-      window.removeEventListener('resume-mac-audio-ready', markFromAudioReady);
-    };
-  }, [status]);
 
   useEffect(() => {
     if (!shouldLoad) return undefined;
@@ -3754,9 +3709,7 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && entry.intersectionRatio >= 0.62 && video.paused) {
-          activateSlot({
-            withSound: hasResumeSectionVideoSoundIntent() && isVideoSlotInAudioFocus(video.closest('.video-slot')),
-          });
+          activateSlot({ withSound: false });
         } else if (!entry.isIntersecting || entry.intersectionRatio < 0.2) {
           if (!userHeldPlaybackRef.current) {
             video.muted = true;
@@ -3847,12 +3800,13 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
   function activateSlot({ withSound = false, restart = false, userInitiated = false } = {}) {
     const video = videoRef.current;
     if (!video) return;
+    withSound = Boolean(withSound && hasAudio);
     if (!userInitiated && window.__resumeHeldVideoSlot && window.__resumeHeldVideoSlot !== slotIdRef.current) return;
     window.dispatchEvent(new CustomEvent('resume-video-slot-active', {
       detail: { id: slotIdRef.current, userInitiated }
     }));
     if (restart) video.currentTime = startTime;
-    if (userInitiated) markResumeSectionVideoSoundIntent('video-user');
+    if (userInitiated && withSound) markResumeSectionVideoSoundIntent('video-user');
     video.defaultMuted = !withSound;
     video.muted = !withSound;
     video.volume = withSound ? 1 : 0;
@@ -3883,13 +3837,31 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
     const video = videoRef.current;
     if (!video) return;
     if (video.paused) {
-      activateSlot({ withSound: true, restart: true, userInitiated: true });
+      activateSlot({ withSound: !video.muted, restart: true, userInitiated: true });
     } else {
       stopPlayback();
     }
   };
 
-  const replayWithSound = () => activateSlot({ withSound: true, restart: true, userInitiated: true });
+  const replay = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    activateSlot({ withSound: !video.muted, restart: true, userInitiated: true });
+  };
+
+  const toggleMuted = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.muted) {
+      activateSlot({ withSound: true, userInitiated: true });
+      return;
+    }
+    userHeldPlaybackRef.current = false;
+    if (window.__resumeHeldVideoSlot === slotIdRef.current) window.__resumeHeldVideoSlot = null;
+    setResumeVideoRouteAudible(video, false);
+    setMuted(true);
+    emitVideoAudioState();
+  };
 
   const toggleFullscreen = () => {
     const slot = videoRef.current?.closest('.video-slot');
@@ -3929,11 +3901,11 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
       ref={slotRef}
       className={`video-slot ${className} ${muted ? 'is-muted' : ''} ${paused ? 'is-paused' : ''}`}
       style={hero ? { aspectRatio: '1.85 / 1', height: 'auto', minHeight: 0 } : undefined}
-      onMouseEnter={() => activateSlot({ withSound: hasResumeSectionVideoSoundIntent() })}
-      onFocus={() => activateSlot({ withSound: hasResumeSectionVideoSoundIntent() })}
+      onMouseEnter={() => activateSlot({ withSound: videoRef.current?.muted === false })}
+      onFocus={() => activateSlot({ withSound: videoRef.current?.muted === false })}
       onClick={(event) => {
-        if (event.target?.closest?.('.video-controls, .video-fullscreen-corner')) return;
-        activateSlot({ withSound: true, userInitiated: true });
+        if (event.target?.closest?.('.video-controls, .video-sound-toggle, .video-fullscreen-corner')) return;
+        activateSlot({ withSound: videoRef.current?.muted === false, userInitiated: true });
       }}
     >
       {status === 'ready' && (
@@ -3990,10 +3962,35 @@ function VideoSlot({ src, label, fallbackPath, poster, hero = false, startTime =
           <button className="video-control video-control--primary mono" onClick={togglePlayback} aria-label={paused ? 'Play video' : 'Pause video'}>
             <span className={`video-control__icon ${paused ? 'video-control__icon--play' : 'video-control__icon--stop'}`} aria-hidden="true" />
           </button>
-          <button className="video-control mono" onClick={replayWithSound} aria-label="Replay from beginning with sound">
+          <button className="video-control mono" onClick={replay} aria-label="Replay video from beginning">
             <span className="video-control__icon video-control__icon--replay" aria-hidden="true" />
           </button>
         </div>
+      )}
+      {status === 'ready' && hasAudio && (
+        <button
+          className={`video-sound-toggle ${muted ? 'is-muted' : 'is-audible'}`}
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            toggleMuted();
+          }}
+          aria-label={muted ? 'Unmute video' : 'Mute video'}
+          aria-pressed={!muted}
+          title={muted ? 'Unmute video' : 'Mute video'}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path className="video-sound-toggle__speaker" d="M4 9.25h3.6L12 5.6v12.8l-4.4-3.65H4z" />
+            {muted ? (
+              <path className="video-sound-toggle__state" d="m15.5 9 5 6m0-6-5 6" />
+            ) : (
+              <>
+                <path className="video-sound-toggle__state" d="M15.5 9.25a4 4 0 0 1 0 5.5" />
+                <path className="video-sound-toggle__state video-sound-toggle__state--outer" d="M18 7a7 7 0 0 1 0 10" />
+              </>
+            )}
+          </svg>
+        </button>
       )}
       {chrome && status === 'ready' && (
         <button className="video-fullscreen-corner" onClick={toggleFullscreen} aria-label="Enter fullscreen" />
@@ -4268,6 +4265,7 @@ function HandOfGodFeature({
             playbackRate={0.5}
             className="video-slot--bare hand-of-god-video-slot"
             chrome={false}
+            hasAudio={false}
           />
         </div>
         <aside className="hand-of-god-feature__note">
@@ -4452,6 +4450,7 @@ function TouchDesignerSketchesFeature({
                 src={sketch.src}
                 fallbackPath={sketch.fallbackPath || sketch.src}
                 label={`touchdesigner sketch ${String(index + 1).padStart(2, '0')}`}
+                hasAudio={sketch.hasAudio !== false}
               />
               <div className="touchdesigner-card__caption">
                 <span className="mono">{String(index + 1).padStart(2, '0')}</span>

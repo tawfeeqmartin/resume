@@ -35,6 +35,7 @@ const sameOriginMediaUrl = (path) => path;
 const withCacheKey = (url, key) => `${url}${url.includes('?') ? '&' : '?'}v=${key}`;
 const TV_CLIP_CACHE_KEY = '20260522-bass-track-no-laugh';
 const VOCAL_SAMPLE_CACHE_KEY = '20260522-vocal-rotation-no-laugh';
+const TOUCHDESIGNER_MEDIA_CACHE_KEY = '20260731-audio-restore';
 const SITE_MODE_STORAGE_KEY = 'resume.desktop.mode';
 const RESUME_APP_VARIANT = (() => {
   const value = String(window.RESUME_APP_VARIANT || '').trim().toLowerCase();
@@ -86,43 +87,49 @@ const TOUCHDESIGNER_SKETCHES = [
     id: 'glitch-ui',
     title: 'Glitch interface study',
     note: 'A realtime graphics sketch exploring signal breakup, interface rhythm, and tactile control language.',
-    src: mediaUrl('media/touchdesigner/web/touchdesigner-sketch-01-glitch-ui-720.mp4'),
+    src: withCacheKey(mediaUrl('media/touchdesigner/web/touchdesigner-sketch-01-glitch-ui-720.mp4'), TOUCHDESIGNER_MEDIA_CACHE_KEY),
     fallbackPath: 'resume/media/touchdesigner/web/touchdesigner-sketch-01-glitch-ui-720.mp4',
+    hasAudio: false,
   },
   {
     id: 'pearl-ascii',
     title: 'Pearl ASCII / image field',
     note: 'A procedural texture study turning image information into graphic structure and living display material.',
-    src: mediaUrl('media/touchdesigner/web/touchdesigner-sketch-02-pearl-ascii-720.mp4'),
+    src: withCacheKey(mediaUrl('media/touchdesigner/web/touchdesigner-sketch-02-pearl-ascii-720.mp4'), TOUCHDESIGNER_MEDIA_CACHE_KEY),
     fallbackPath: 'resume/media/touchdesigner/web/touchdesigner-sketch-02-pearl-ascii-720.mp4',
+    hasAudio: true,
   },
   {
     id: 'realtime-signal',
     title: 'Realtime signal object',
     note: 'A compact TouchDesigner sketch for generative motion, signal response, and screen-based object behavior.',
-    src: mediaUrl('media/touchdesigner/web/touchdesigner-sketch-03-realtime-signal-720.mp4'),
+    src: withCacheKey(mediaUrl('media/touchdesigner/web/touchdesigner-sketch-03-realtime-signal-720.mp4'), TOUCHDESIGNER_MEDIA_CACHE_KEY),
     fallbackPath: 'resume/media/touchdesigner/web/touchdesigner-sketch-03-realtime-signal-720.mp4',
+    hasAudio: true,
   },
   {
     id: 'ascii-fracture',
     title: 'ASCII fracture / image field',
     note: 'A monochrome image study that breaks a photographic frame into shifting ASCII texture and fractured geometry.',
-    src: mediaUrl('media/touchdesigner/web/touchdesigner-sketch-05-ascii-study-720.mp4'),
+    src: withCacheKey(mediaUrl('media/touchdesigner/web/touchdesigner-sketch-05-ascii-study-720.mp4'), TOUCHDESIGNER_MEDIA_CACHE_KEY),
     fallbackPath: 'resume/media/touchdesigner/web/touchdesigner-sketch-05-ascii-study-720.mp4',
+    hasAudio: false,
   },
   {
     id: 'scope-study',
     title: 'Oscilloscope signal study',
     note: 'An audio-reactive scope experiment turning live signal movement into a spare, luminous spatial drawing.',
-    src: mediaUrl('media/touchdesigner/web/touchdesigner-sketch-06-scope-study-720.mp4'),
+    src: withCacheKey(mediaUrl('media/touchdesigner/web/touchdesigner-sketch-06-scope-study-720.mp4'), TOUCHDESIGNER_MEDIA_CACHE_KEY),
     fallbackPath: 'resume/media/touchdesigner/web/touchdesigner-sketch-06-scope-study-720.mp4',
+    hasAudio: true,
   },
   {
     id: 'pearl-color-ascii',
     title: 'Pearl color ASCII',
     note: 'A color ASCII portrait test using symbol density, palette shifts, and negative space as a live image treatment.',
-    src: mediaUrl('media/touchdesigner/web/touchdesigner-sketch-07-pearl-ascii-study-720.mp4'),
+    src: withCacheKey(mediaUrl('media/touchdesigner/web/touchdesigner-sketch-07-pearl-ascii-study-720.mp4'), TOUCHDESIGNER_MEDIA_CACHE_KEY),
     fallbackPath: 'resume/media/touchdesigner/web/touchdesigner-sketch-07-pearl-ascii-study-720.mp4',
+    hasAudio: false,
   },
 ];
 
@@ -1383,7 +1390,7 @@ const LANDING_VARIANT_CSS = `
   pointer-events: none;
 }
 .landing-profile__clock-sampler {
-  fill: rgba(255,255,255,0.96);
+  fill: transparent;
   stroke: rgba(5,6,8,0.92);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
@@ -11104,17 +11111,33 @@ function LandingProfileAwardClockSamplers({ awards = [] }) {
       aria-hidden="true"
       ref={svgRef}
     >
-      {samplerState.handLines.map((hand) => (
-        <line
-          key={hand.id}
-          className="landing-profile__clock-hand-line"
-          x1={hand.x1.toFixed(3)}
-          y1={hand.y1.toFixed(3)}
-          x2={hand.x2.toFixed(3)}
-          y2={hand.y2.toFixed(3)}
-          style={{ '--sample-color': hand.color }}
-        />
-      ))}
+      <defs>
+        <mask id="landing-profile-clock-hand-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
+          <rect x="0" y="0" width="100" height="100" fill="#fff" />
+          {samplerState.awardSamples.map((awardSample, index) => (
+            <circle
+              key={`clock-hand-cutout-${index}`}
+              cx={awardSample.x.toFixed(3)}
+              cy={awardSample.y.toFixed(3)}
+              r="1.62"
+              fill="#000"
+            />
+          ))}
+        </mask>
+      </defs>
+      <g mask="url(#landing-profile-clock-hand-mask)">
+        {samplerState.handLines.map((hand) => (
+          <line
+            key={hand.id}
+            className="landing-profile__clock-hand-line"
+            x1={hand.x1.toFixed(3)}
+            y1={hand.y1.toFixed(3)}
+            x2={hand.x2.toFixed(3)}
+            y2={hand.y2.toFixed(3)}
+            style={{ '--sample-color': hand.color }}
+          />
+        ))}
+      </g>
       {samplerState.awardSamples.map((awardSample, index) => (
         <g key={`award-sampler-${index}`}>
           <circle
