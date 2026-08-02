@@ -7920,7 +7920,7 @@ function createVfxStrudelHtmlTexture(THREE, renderer, stage) {
   return bridge;
 }
 
-function createVfxLedVolumeTexture(THREE, renderer, options = {}) {
+function createVfxLedVolumeTexture(THREE, renderer) {
   if (!THREE) return null;
   const canvas = document.createElement('canvas');
   canvas.width = 1280;
@@ -7929,33 +7929,19 @@ function createVfxLedVolumeTexture(THREE, renderer, options = {}) {
   if (!ctx) return null;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  const type = options.type === 'ceiling' ? 'ceiling' : 'wall';
   // The Mandalorian wall used 1,572 ROE Black Pearl BP2 cabinets:
   // 500×500 mm, 176×176 pixels, 2.84 mm pitch. At 20 feet high this is
   // approximately 12 rows × 131 cabinets around the 270-degree wall.
-  // The 675-panel ceiling used ROE Carbon CB5:
-  // 600×1200 mm, 104×208 pixels, 5.77 mm pitch.
-  const spec = type === 'ceiling'
-    ? {
-      product: 'ROE Carbon CB5',
-      panelWidthMm: 600,
-      panelHeightMm: 1200,
-      pixelPitchMm: 5.77,
-      panelResolution: '104x208',
-      columns: 27,
-      rows: 25,
-      panelCount: 675,
-    }
-    : {
-      product: 'ROE Black Pearl BP2',
-      panelWidthMm: 500,
-      panelHeightMm: 500,
-      pixelPitchMm: 2.84,
-      panelResolution: '176x176',
-      columns: 131,
-      rows: 12,
-      panelCount: 1572,
-    };
+  const spec = {
+    product: 'ROE Black Pearl BP2',
+    panelWidthMm: 500,
+    panelHeightMm: 500,
+    pixelPitchMm: 2.84,
+    panelResolution: '176x176',
+    columns: 131,
+    rows: 12,
+    panelCount: 1572,
+  };
 
   // Keep this texture transparent. Cabinet joints are rendered by an
   // anti-aliased shader at their physical ratio below; raster lines at this
@@ -10687,14 +10673,14 @@ function createVfxMarkerCyc(THREE, renderer, modelBox, anchorBox = modelBox) {
   });
   const stage = createVfxStageTexture(THREE, renderer);
   const strudelHtml = createVfxStrudelHtmlTexture(THREE, renderer, stage);
-  const ledWall = createVfxLedVolumeTexture(THREE, renderer, { type: 'wall' });
-  const ledCeiling = createVfxLedVolumeTexture(THREE, renderer, { type: 'ceiling' });
-  if (!wallMarkerTexture || !floorMarkerTexture || !stage || !ledWall || !ledCeiling) return null;
+  const ledWall = createVfxLedVolumeTexture(THREE, renderer);
+  if (!wallMarkerTexture || !floorMarkerTexture || !stage || !ledWall) return null;
 
   // ILM's original StageCraft volume for The Mandalorian was a 75-foot
-  // diameter, 20-foot-high, 270-degree LED wall with an LED ceiling. The open
-  // 90 degrees was the access / filming mouth. Keep that architectural grammar
-  // here instead of treating the background as a conventional studio cyc.
+  // diameter, 20-foot-high, 270-degree LED wall. The open 90 degrees was the
+  // access / filming mouth. Keep that architectural grammar here instead of
+  // treating the background as a conventional studio cyc. The ceiling is
+  // intentionally omitted until it has an authored role in the experience.
   const mouthAngle = Math.PI * 0.5;
   const mouthHalfAngle = mouthAngle * 0.5;
   const arcStart = mouthHalfAngle;
@@ -10790,16 +10776,6 @@ function createVfxMarkerCyc(THREE, renderer, modelBox, anchorBox = modelBox) {
   // the real cabinet thickness rather than a paper-thin, double-sided screen.
   const cabinetDepth = radius * (0.09 / referenceWallRadiusM);
   const wallRearGeometry = makeWallGeometry(wallHeight, 0, cabinetDepth);
-  const referenceCeilingAreaM2 = (
-    ledCeiling.panelCount
-    * (ledCeiling.panelWidthMm / 1000)
-    * (ledCeiling.panelHeightMm / 1000)
-  );
-  const referenceCeilingRadiusM = Math.sqrt(referenceCeilingAreaM2 / Math.PI);
-  const ceilingRadius = radius * (referenceCeilingRadiusM / referenceWallRadiusM);
-  const ceilingGeometry = new THREE.CircleGeometry(ceilingRadius, 128);
-  ceilingGeometry.rotateX(Math.PI * 0.5);
-  ceilingGeometry.translate(0, wallHeight, 0);
   const floorGeometry = new THREE.CircleGeometry(radius * 1.035, 128);
   floorGeometry.rotateX(-Math.PI * 0.5);
   const floorMarkerGeometry = floorGeometry.clone();
@@ -10963,20 +10939,6 @@ function createVfxMarkerCyc(THREE, renderer, modelBox, anchorBox = modelBox) {
       ? 'vfx-led-wall-4x-uhd-processor-neutral-power-v6'
       : 'vfx-led-wall-inline-neutral-power-v5'
   );
-  // The glitch/program feed is currently authored for the curved BP2 wall
-  // only. The ceiling is an independent practical: it powers up with the wall
-  // as a neutral dark surface instead of reintroducing the old blue tracking
-  // plate.
-  const ceilingMaterial = new THREE.MeshBasicMaterial({
-    color: 0x000106,
-    transparent: false,
-    depthTest: true,
-    depthWrite: true,
-    side: THREE.DoubleSide,
-    toneMapped: false,
-  });
-  ceilingMaterial.name = 'VfxLedCeilingNeutralPracticalMaterial';
-  ceilingMaterial.userData.mediaTarget = 'none';
   const floorMaterial = new THREE.MeshStandardMaterial({
     color: 0x000106,
     roughness: 0.96,
@@ -11002,7 +10964,6 @@ function createVfxMarkerCyc(THREE, renderer, modelBox, anchorBox = modelBox) {
   const ledMaterial = createVfxLedCabinetMaterial(THREE, ledWall, 0.115);
   if (ledMaterial) ledMaterial.side = THREE.FrontSide;
   const wallPowerMaterial = createVfxLedPowerMaskMaterial(THREE, ledWall);
-  const ceilingLedMaterial = createVfxLedCabinetMaterial(THREE, ledCeiling, 0.075);
   const rearCabinetMaterial = createVfxLedRearCabinetMaterial(THREE, ledWall);
   const structureMaterial = new THREE.MeshBasicMaterial({
     color: 0x050508,
@@ -11016,11 +10977,9 @@ function createVfxMarkerCyc(THREE, renderer, modelBox, anchorBox = modelBox) {
   wallSurfaceMesh.name = 'VfxVolumeWall';
   const wallRearMesh = new THREE.Mesh(wallRearGeometry, rearCabinetMaterial);
   wallRearMesh.name = 'VfxVolumeWallRearCabinets';
-  const ceilingSurfaceMesh = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
-  ceilingSurfaceMesh.name = 'VfxVolumeCeiling';
   const floorSurfaceMesh = new THREE.Mesh(floorGeometry, floorMaterial);
   floorSurfaceMesh.name = 'VfxVolumePracticalFloor';
-  surfaceMesh.add(wallSurfaceMesh, wallRearMesh, ceilingSurfaceMesh, floorSurfaceMesh);
+  surfaceMesh.add(wallSurfaceMesh, wallRearMesh, floorSurfaceMesh);
   surfaceMesh.renderOrder = -4;
   surfaceMesh.traverse((object) => {
     object.frustumCulled = false;
@@ -11036,11 +10995,7 @@ function createVfxMarkerCyc(THREE, renderer, modelBox, anchorBox = modelBox) {
   wallPowerMesh.visible = false;
   const wallLedMesh = new THREE.Mesh(wallGeometry, ledMaterial);
   wallLedMesh.name = 'VfxLedWallPanels';
-  const ceilingLedMesh = new THREE.Mesh(ceilingGeometry, ceilingLedMaterial);
-  ceilingLedMesh.name = 'VfxLedCeilingPanels';
-  ceilingSurfaceMesh.visible = false;
-  ceilingLedMesh.visible = false;
-  ledMesh.add(wallPowerMesh, wallLedMesh, ceilingLedMesh);
+  ledMesh.add(wallPowerMesh, wallLedMesh);
   ledMesh.renderOrder = -3;
   ledMesh.traverse((object) => {
     object.frustumCulled = false;
@@ -11049,7 +11004,6 @@ function createVfxMarkerCyc(THREE, renderer, modelBox, anchorBox = modelBox) {
   // The black power mask sits above the media face but below cabinet seams.
   wallPowerMesh.renderOrder = -3.5;
   wallLedMesh.renderOrder = -3;
-  ceilingLedMesh.renderOrder = -3;
 
   const markerMesh = new THREE.Group();
   markerMesh.name = 'VfxVolumeTrackingMarkers';
@@ -11132,8 +11086,8 @@ function createVfxMarkerCyc(THREE, renderer, modelBox, anchorBox = modelBox) {
     stageProcessorTextures[0] || stage.texture
   );
   cyc.userData.wallRearMediaMapped = Boolean(rearCabinetMaterial?.map);
-  cyc.userData.ceilingMediaMapped = Boolean(ceilingMaterial.map);
-  cyc.userData.ceilingMediaState = 'neutral-practical-unmapped';
+  cyc.userData.ceilingMediaMapped = false;
+  cyc.userData.ceilingMediaState = 'disabled-no-geometry';
   cyc.userData.surfaceMesh = surfaceMesh;
   cyc.userData.ledMesh = ledMesh;
   cyc.userData.markerMesh = markerMesh;
@@ -11142,7 +11096,6 @@ function createVfxMarkerCyc(THREE, renderer, modelBox, anchorBox = modelBox) {
   cyc.userData.geometries = [
     wallGeometry,
     wallRearGeometry,
-    ceilingGeometry,
     floorGeometry,
     wallMarkerGeometry,
     floorMarkerGeometry,
@@ -11154,23 +11107,22 @@ function createVfxMarkerCyc(THREE, renderer, modelBox, anchorBox = modelBox) {
   cyc.userData.surfaceMaterials = [
     surfaceMaterial,
     rearCabinetMaterial,
-    ceilingMaterial,
     floorMaterial,
     structureMaterial,
   ];
   cyc.userData.ledMaterial = ledMaterial;
-  cyc.userData.ledMaterials = [wallPowerMaterial, ledMaterial, ceilingLedMaterial];
+  cyc.userData.ledMaterials = [wallPowerMaterial, ledMaterial];
   cyc.userData.markerMaterial = wallMarkerMaterial;
   cyc.userData.markerMaterials = [wallMarkerMaterial, floorMarkerMaterial];
   cyc.userData.ledTexture = ledWall.texture;
-  cyc.userData.ledTextures = [ledWall.texture, ledCeiling.texture];
+  cyc.userData.ledTextures = [ledWall.texture];
   cyc.userData.ledPixelPitch = `${ledWall.pixelPitchMm}mm`;
   cyc.userData.ledPanelGrid = ledWall.panelGrid;
   cyc.userData.ledWallSpec = ledWall;
   cyc.userData.wallPowerMesh = wallPowerMesh;
   cyc.userData.wallPowerMaterial = wallPowerMaterial;
-  cyc.userData.ceilingPowerSurfaceMesh = ceilingSurfaceMesh;
-  cyc.userData.ceilingPowerLedMesh = ceilingLedMesh;
+  cyc.userData.ceilingPowerSurfaceMesh = null;
+  cyc.userData.ceilingPowerLedMesh = null;
   cyc.userData.ceilingPowerProgress = 0;
   cyc.userData.wallPowerProgress = 0;
   cyc.userData.wallPowerLocked = false;
@@ -11184,10 +11136,7 @@ function createVfxMarkerCyc(THREE, renderer, modelBox, anchorBox = modelBox) {
     if (surfaceMaterial?.userData?.powerProgressUniform) {
       surfaceMaterial.userData.powerProgressUniform.value = next;
     }
-    const ceilingOn = next > 0;
-    ceilingSurfaceMesh.visible = ceilingOn;
-    ceilingLedMesh.visible = ceilingOn;
-    cyc.userData.ceilingPowerProgress = ceilingOn ? 1 : 0;
+    cyc.userData.ceilingPowerProgress = 0;
     paintVfxMarkerCyc(cyc, { force: true });
     return next;
   };
@@ -11195,12 +11144,12 @@ function createVfxMarkerCyc(THREE, renderer, modelBox, anchorBox = modelBox) {
   cyc.userData.wallCabinetDepth = cabinetDepth;
   cyc.userData.wallCabinetDepthMm = 90;
   cyc.userData.wallRearProfile = 'ROE-BP2V2-low-detail-rear-shader';
-  cyc.userData.ledCeilingSpec = ledCeiling;
+  cyc.userData.ledCeilingSpec = null;
   cyc.userData.displayType = 'led-volume';
   cyc.userData.markerCount = 0;
   cyc.userData.markerLayout = 'hidden-pending-map';
   cyc.userData.trackingMarkersEnabled = false;
-  cyc.userData.profile = 'stagecraft-270-wall-ceiling';
+  cyc.userData.profile = 'stagecraft-270-wall-open-top';
   cyc.userData.stageWidth = diameter;
   cyc.userData.stageCenterX = center.x;
   cyc.userData.backZ = backZ;
@@ -11218,12 +11167,12 @@ function createVfxMarkerCyc(THREE, renderer, modelBox, anchorBox = modelBox) {
   cyc.userData.arcAngleDeg = 270;
   cyc.userData.setupPlacement = '3ft-inside-mouth';
   cyc.userData.referenceSetupInsetM = referenceSetupInsetM;
-  cyc.userData.hasLedCeiling = true;
+  cyc.userData.hasLedCeiling = false;
   cyc.userData.referenceDimensions = '75ft-diameter_20ft-high';
   cyc.userData.referenceWallDiameterM = referenceWallRadiusM * 2;
   cyc.userData.referencePerformanceDiameterM = 75 * 0.3048;
   cyc.userData.referenceWallHeightM = referenceWallHeightM;
-  cyc.userData.referenceCeilingAreaM2 = referenceCeilingAreaM2;
+  cyc.userData.referenceCeilingAreaM2 = 0;
   cyc.userData.referenceClearanceM = (
     referenceWallRadiusM - (75 * 0.3048) * 0.5
   );
@@ -16141,8 +16090,8 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
               ? 'bull-forming'
               : 'off';
         wrapRef.current.dataset.cycWallPowerSilhouetteMask = 'cabinet-grid-design-aligned';
-        wrapRef.current.dataset.cycCeilingPowerProgress = next > 0 ? '1.000' : '0.000';
-        wrapRef.current.dataset.cycCeilingPowerState = next > 0 ? 'neutral-online' : 'off';
+        wrapRef.current.dataset.cycCeilingPowerProgress = '0.000';
+        wrapRef.current.dataset.cycCeilingPowerState = 'disabled';
       }
       state.requestRender?.();
     };
@@ -16232,7 +16181,7 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
         wrapRef.current.dataset.cycWallPowerSilhouette = 'off';
         wrapRef.current.dataset.cycWallPowerSilhouetteMask = 'cabinet-grid-design-aligned';
         wrapRef.current.dataset.cycCeilingPowerProgress = '0.000';
-        wrapRef.current.dataset.cycCeilingPowerState = 'off';
+        wrapRef.current.dataset.cycCeilingPowerState = 'disabled';
       }
       state.requestRender?.();
     };
@@ -19780,14 +19729,11 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	          );
 	          wrap.dataset.cycLedWallResolution = markerCyc.userData.ledWallSpec.panelResolution;
 	          wrap.dataset.cycLedWallPanels = String(markerCyc.userData.ledWallSpec.panelCount);
-	          wrap.dataset.cycLedCeilingProduct = markerCyc.userData.ledCeilingSpec.product;
-	          wrap.dataset.cycLedCeilingPitch = `${markerCyc.userData.ledCeilingSpec.pixelPitchMm}mm`;
-	          wrap.dataset.cycLedCeilingPanel = (
-	            `${markerCyc.userData.ledCeilingSpec.panelWidthMm}x`
-	            + `${markerCyc.userData.ledCeilingSpec.panelHeightMm}mm`
-	          );
-	          wrap.dataset.cycLedCeilingResolution = markerCyc.userData.ledCeilingSpec.panelResolution;
-	          wrap.dataset.cycLedCeilingPanels = String(markerCyc.userData.ledCeilingSpec.panelCount);
+	          wrap.dataset.cycLedCeilingProduct = 'disabled';
+	          wrap.dataset.cycLedCeilingPitch = '0mm';
+	          wrap.dataset.cycLedCeilingPanel = 'none';
+	          wrap.dataset.cycLedCeilingResolution = 'none';
+	          wrap.dataset.cycLedCeilingPanels = '0';
 	          wrap.dataset.cycMarkerCount = String(markerCyc.userData.markerCount);
 	          wrap.dataset.cycMarkerLayout = markerCyc.userData.markerLayout;
 	          wrap.dataset.cycMediaTargets = (markerCyc.userData.mediaTargets || []).join(',');
@@ -19846,12 +19792,10 @@ function TvHero({ sources = [], vocalSamples = [], children }) {
 	          wrap.dataset.cycCeilingPowerProgress = (
 	            markerCyc.userData.ceilingPowerProgress || 0
 	          ).toFixed(3);
-	          wrap.dataset.cycCeilingPowerState = markerCyc.userData.ceilingPowerProgress > 0
-	            ? 'neutral-online'
-	            : 'off';
-	          wrap.dataset.cycCeilingPowerOrder = 'atomic-visibility-toggle';
+	          wrap.dataset.cycCeilingPowerState = 'disabled';
+	          wrap.dataset.cycCeilingPowerOrder = 'none';
 	          wrap.dataset.cycCeilingPowerDrawCalls = '0';
-	          wrap.dataset.cycCeilingPowerColor = '#000106';
+	          wrap.dataset.cycCeilingPowerColor = 'none';
 	          wrap.dataset.cycWallRearMediaMapped = String(
 	            markerCyc.userData.wallRearMediaMapped === true,
 	          );
