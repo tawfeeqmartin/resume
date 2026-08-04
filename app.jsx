@@ -1193,15 +1193,12 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile {
   --landing-scale-u: min(1vw, 1.7778svh);
-  --secondary-orange: #d46c2f;
-  --secondary-violet: #704fa4;
-  --secondary-green: #347d62;
-  --secondary-vermilion: #c75543;
-  --secondary-blue-violet: #56539a;
-  --secondary-blue-green: #2f7d82;
-  --secondary-yellow-orange: #d49332;
-  --secondary-red-violet: #a45176;
-  --secondary-yellow-green: #81913f;
+  --award-primary-red: #e63d2f;
+  --award-primary-blue: #245cff;
+  --award-primary-yellow: #efbd22;
+  --award-mix-violet: #7048b8;
+  --award-mix-green: #2f8a61;
+  --award-mix-orange: #ef7b25;
   --landing-award-icon-w: clamp(4rem, calc(var(--landing-scale-u) * 8.2), 6.9rem);
   --landing-award-icon-h: clamp(2.9rem, calc(var(--landing-scale-u) * 5.65), 4.75rem);
   --landing-award-label-size: clamp(0.32rem, calc(var(--landing-scale-u) * 0.76), 0.58rem);
@@ -1404,6 +1401,16 @@ const LANDING_VARIANT_CSS = `
   stroke-width: 0.7;
   vector-effect: non-scaling-stroke;
   filter: drop-shadow(0 0.65px 0 color-mix(in oklch, var(--paper), transparent 20%));
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+}
+.landing-profile__clock-sampler:active {
+  cursor: grabbing;
+}
+.landing-profile__clock-sampler:focus-visible {
+  stroke: var(--ink);
+  stroke-width: 1.5;
 }
 .landing-profile__clock-connections {
   position: absolute;
@@ -11372,36 +11379,59 @@ function DynamicLandingProfileAwardClockConnections({ awards = [] }) {
   );
 }
 
-const LANDING_AWARD_SECONDARY_PALETTE = [
-  { primary: 'var(--secondary-orange)', neighbor: 'var(--secondary-blue-violet)', crossover: 'var(--secondary-blue-green)' },
-  { primary: 'var(--secondary-violet)', neighbor: 'var(--secondary-yellow-orange)', crossover: 'var(--secondary-green)' },
-  { primary: 'var(--secondary-green)', neighbor: 'var(--secondary-red-violet)', crossover: 'var(--secondary-orange)' },
-  { primary: 'var(--secondary-vermilion)', neighbor: 'var(--secondary-blue-green)', crossover: 'var(--secondary-yellow-green)' },
-  { primary: 'var(--secondary-blue-violet)', neighbor: 'var(--secondary-yellow-orange)', crossover: 'var(--secondary-green)' },
-  { primary: 'var(--secondary-blue-green)', neighbor: 'var(--secondary-red-violet)', crossover: 'var(--secondary-orange)' },
-  { primary: 'var(--secondary-yellow-orange)', neighbor: 'var(--secondary-blue-violet)', crossover: 'var(--secondary-blue-green)' },
-  { primary: 'var(--secondary-red-violet)', neighbor: 'var(--secondary-yellow-green)', crossover: 'var(--secondary-orange)' },
-  { primary: 'var(--secondary-yellow-green)', neighbor: 'var(--secondary-red-violet)', crossover: 'var(--secondary-violet)' },
+const LANDING_AWARD_PRIMARY_PALETTE = [
+  { primary: 'var(--award-primary-red)', neighbor: 'var(--award-primary-blue)', crossover: 'var(--award-mix-violet)' },
+  { primary: 'var(--award-primary-blue)', neighbor: 'var(--award-primary-yellow)', crossover: 'var(--award-mix-green)' },
+  { primary: 'var(--award-primary-yellow)', neighbor: 'var(--award-primary-red)', crossover: 'var(--award-mix-orange)' },
+  { primary: 'var(--award-primary-blue)', neighbor: 'var(--award-primary-red)', crossover: 'var(--award-mix-violet)' },
+  { primary: 'var(--award-primary-red)', neighbor: 'var(--award-primary-yellow)', crossover: 'var(--award-mix-orange)' },
+  { primary: 'var(--award-primary-yellow)', neighbor: 'var(--award-primary-blue)', crossover: 'var(--award-mix-green)' },
+  { primary: 'var(--award-primary-blue)', neighbor: 'var(--award-primary-yellow)', crossover: 'var(--award-mix-green)' },
+  { primary: 'var(--award-primary-red)', neighbor: 'var(--award-primary-blue)', crossover: 'var(--award-mix-violet)' },
+  { primary: 'var(--award-primary-yellow)', neighbor: 'var(--award-primary-red)', crossover: 'var(--award-mix-orange)' },
 ];
 
 const LANDING_AWARD_STATIC_POINTS = [
-  { x: 72, y: 38 },
-  { x: 50, y: 78 },
-  { x: 29, y: 37 },
-  { x: 82, y: 46 },
+  { x: 82, y: 50 },
   { x: 34, y: 70 },
-  { x: 18, y: 50 },
-  { x: 61, y: 27 },
-  { x: 76, y: 63 },
-  { x: 45, y: 21 },
+  { x: 64, y: 27 },
+  { x: 27, y: 68 },
+  { x: 71, y: 50 },
+  { x: 60, y: 35 },
+  { x: 40, y: 62 },
+  { x: 76, y: 43 },
+  { x: 54, y: 23 },
 ];
+
+const LANDING_AWARD_WHEEL_RADIUS = 42;
+
+function landingProfileConstrainSamplePoint(point = {}) {
+  const rawX = Number.isFinite(Number(point.x)) ? Number(point.x) : 50;
+  const rawY = Number.isFinite(Number(point.y)) ? Number(point.y) : 50;
+  const dx = rawX - 50;
+  const dy = rawY - 50;
+  const distance = Math.hypot(dx, dy);
+  if (distance <= LANDING_AWARD_WHEEL_RADIUS) return { x: rawX, y: rawY };
+  const scale = LANDING_AWARD_WHEEL_RADIUS / Math.max(0.001, distance);
+  return { x: 50 + dx * scale, y: 50 + dy * scale };
+}
+
+function landingProfileColorForSamplePoint(point = {}) {
+  const constrained = landingProfileConstrainSamplePoint(point);
+  const dx = (constrained.x - 50) / LANDING_AWARD_WHEEL_RADIUS;
+  const dy = (50 - constrained.y) / LANDING_AWARD_WHEEL_RADIUS;
+  const saturation = landingClamp01(Math.hypot(dx, dy));
+  const hue = landingClockModulo01(Math.atan2(dy, dx) / (Math.PI * 2));
+  const [r, g, b] = landingHsvToRgb(hue, saturation, 1);
+  return `rgb(${r}, ${g}, ${b})`;
+}
 
 function landingProfileStaticAwardState(awardsOrCount = 9) {
   const awards = Array.isArray(awardsOrCount) ? awardsOrCount : [];
   const count = Math.max(1, Math.round(awards.length || awardsOrCount || 9));
   return Array.from({ length: count }, (_, awardIndex) => {
     const point = LANDING_AWARD_STATIC_POINTS[awardIndex % LANDING_AWARD_STATIC_POINTS.length];
-    const palette = LANDING_AWARD_SECONDARY_PALETTE[awardIndex % LANDING_AWARD_SECONDARY_PALETTE.length];
+    const palette = LANDING_AWARD_PRIMARY_PALETTE[awardIndex % LANDING_AWARD_PRIMARY_PALETTE.length];
     return {
       ...point,
       ...palette,
@@ -11411,24 +11441,63 @@ function landingProfileStaticAwardState(awardsOrCount = 9) {
   });
 }
 
-function landingProfileAwardPaletteStyle(index) {
-  const palette = LANDING_AWARD_SECONDARY_PALETTE[index % LANDING_AWARD_SECONDARY_PALETTE.length];
+function landingProfileAwardPaletteStyle(index, samples = []) {
+  const palette = LANDING_AWARD_PRIMARY_PALETTE[index % LANDING_AWARD_PRIMARY_PALETTE.length];
+  const sample = samples[index];
   return {
-    '--award-color': palette.primary,
-    '--award-color-alt': palette.neighbor,
-    '--award-color-additive': palette.crossover,
+    '--award-color': sample?.primary || palette.primary,
+    '--award-color-alt': sample?.neighbor || palette.neighbor,
+    '--award-color-additive': sample?.crossover || palette.crossover,
   };
 }
 
-function LandingProfileAwardClockSamplers({ awards = [] }) {
-  const samples = landingProfileStaticAwardState(awards.length ? awards : 9);
+function LandingProfileAwardClockSamplers({ awards = [], samples = [], onSamplesChange }) {
+  const svgRef = useRef(null);
+  const resolvedSamples = samples.length
+    ? samples
+    : landingProfileStaticAwardState(awards.length ? awards : 9);
+  const updateSampleFromPointer = (event, awardIndex) => {
+    const svg = svgRef.current;
+    if (!svg || typeof onSamplesChange !== 'function') return;
+    const rect = svg.getBoundingClientRect();
+    const point = landingProfileConstrainSamplePoint({
+      x: ((event.clientX - rect.left) / Math.max(1, rect.width)) * 100,
+      y: ((event.clientY - rect.top) / Math.max(1, rect.height)) * 100,
+    });
+    onSamplesChange((currentSamples) => currentSamples.map((sample, index) => (
+      index === awardIndex
+        ? { ...sample, ...point, primary: landingProfileColorForSamplePoint(point) }
+        : sample
+    )));
+  };
+  const moveSampleWithKeyboard = (event, awardIndex) => {
+    const direction = {
+      ArrowLeft: [-1, 0],
+      ArrowRight: [1, 0],
+      ArrowUp: [0, -1],
+      ArrowDown: [0, 1],
+    }[event.key];
+    if (!direction || typeof onSamplesChange !== 'function') return;
+    event.preventDefault();
+    const step = event.shiftKey ? 4 : 1.5;
+    onSamplesChange((currentSamples) => currentSamples.map((sample, index) => {
+      if (index !== awardIndex) return sample;
+      const point = landingProfileConstrainSamplePoint({
+        x: sample.x + direction[0] * step,
+        y: sample.y + direction[1] * step,
+      });
+      return { ...sample, ...point, primary: landingProfileColorForSamplePoint(point) };
+    }));
+  };
   return (
     <svg
       className="landing-profile__clock-samplers"
       viewBox="0 0 100 100"
-      aria-hidden="true"
+      role="group"
+      aria-label="Movable color samples"
+      ref={svgRef}
     >
-      {samples.map((sample) => (
+      {resolvedSamples.map((sample) => (
         <circle
           key={`static-award-sampler-${sample.awardIndex}`}
           className="landing-profile__clock-sampler"
@@ -11437,13 +11506,33 @@ function LandingProfileAwardClockSamplers({ awards = [] }) {
           cy={sample.y}
           r="1.62"
           style={{ '--sample-color': sample.primary }}
+          role="slider"
+          tabIndex="0"
+          aria-label={`${sample.family || 'Award'} color sample`}
+          aria-valuetext={`${sample.x.toFixed(0)} percent across, ${sample.y.toFixed(0)} percent down`}
+          onKeyDown={(event) => moveSampleWithKeyboard(event, sample.awardIndex)}
+          onPointerDown={(event) => {
+            event.preventDefault();
+            event.currentTarget.setPointerCapture(event.pointerId);
+            updateSampleFromPointer(event, sample.awardIndex);
+          }}
+          onPointerMove={(event) => {
+            if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+            updateSampleFromPointer(event, sample.awardIndex);
+          }}
+          onPointerUp={(event) => {
+            updateSampleFromPointer(event, sample.awardIndex);
+            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }
+          }}
         />
       ))}
     </svg>
   );
 }
 
-function LandingProfileAwardClockConnections({ awards = [] }) {
+function LandingProfileAwardClockConnections({ awards = [], samples = [] }) {
   const svgRef = useRef(null);
   const awardCount = awards.length || 9;
   const [geometry, setGeometry] = useState({ width: 1, height: 1, lines: [] });
@@ -11457,8 +11546,10 @@ function LandingProfileAwardClockConnections({ awards = [] }) {
       const awardNodes = content?.querySelectorAll('.landing-profile-award');
       if (!svg || !content || !awardNodes?.length) return;
       const contentRect = content.getBoundingClientRect();
-      const samples = landingProfileStaticAwardState(awards.length ? awards : awardCount);
-      const lines = samples.slice(0, awardCount).map((sample, index) => {
+      const resolvedSamples = samples.length
+        ? samples
+        : landingProfileStaticAwardState(awards.length ? awards : awardCount);
+      const lines = resolvedSamples.slice(0, awardCount).map((sample, index) => {
         const targetNode = awardNodes[index]?.querySelector('.landing-profile-award__icon') || awardNodes[index];
         const samplerNode = content.querySelector(`.landing-profile__clock-sampler[data-award-sampler-index="${index}"]`);
         if (!targetNode || !samplerNode) return null;
@@ -11507,7 +11598,7 @@ function LandingProfileAwardClockConnections({ awards = [] }) {
       resizeObserver?.disconnect();
       window.removeEventListener('resize', schedule);
     };
-  }, [awardCount]);
+  }, [awardCount, samples]);
 
   return (
     <svg
@@ -11548,7 +11639,12 @@ function LandingProfileAwardClockConnections({ awards = [] }) {
   );
 }
 
-function BeautifulGameLoadingSummaryInstrument({ part, awards = [] }) {
+function BeautifulGameLoadingSummaryInstrument({
+  part,
+  awards = [],
+  samples = [],
+  onSamplesChange,
+}) {
   const hostRef = useRef(null);
 
   useEffect(() => {
@@ -11571,10 +11667,16 @@ function BeautifulGameLoadingSummaryInstrument({ part, awards = [] }) {
     <div
       className={`landing-profile__instrument landing-profile__instrument--${part}`}
       data-instrument-part={part}
-      aria-hidden="true"
+      aria-label="Interactive color wheel"
       ref={hostRef}
     >
-      {part === 'wheel' && <LandingProfileAwardClockSamplers awards={awards} />}
+      {part === 'wheel' && (
+        <LandingProfileAwardClockSamplers
+          awards={awards}
+          samples={samples}
+          onSamplesChange={onSamplesChange}
+        />
+      )}
     </div>
   );
 }
@@ -12864,7 +12966,7 @@ function LandingProfileAwardConnectors({ awards = [] }) {
   );
 }
 
-function LandingProfileAwards({ items = [] }) {
+function LandingProfileAwards({ items = [], samples = [] }) {
   const rootRef = useRef(null);
   const awards = landingAwardGroups(items);
 
@@ -12878,7 +12980,7 @@ function LandingProfileAwards({ items = [] }) {
             className="landing-profile-award"
             data-award-family={award.family}
             key={`${award.family}-${index}`}
-            style={landingProfileAwardPaletteStyle(index)}
+            style={landingProfileAwardPaletteStyle(index, samples)}
           >
             <LandingAwardIcon award={award} />
             <span className="landing-profile-award__title">{award.title}</span>
@@ -12891,6 +12993,9 @@ function LandingProfileAwards({ items = [] }) {
 
 function LandingProfileSection({ summaryOnly = false } = {}) {
   const profileAwardGroups = landingAwardGroups(RESUME.awards);
+  const [profileAwardSamples, setProfileAwardSamples] = useState(() => (
+    landingProfileStaticAwardState(profileAwardGroups)
+  ));
   const profileRef = useRef(null);
   const nameRef = useRef(null);
 
@@ -12925,7 +13030,14 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
               of curious design and make-believe.
             </p>
           </div>
-          {!summaryOnly && <BeautifulGameLoadingSummaryInstrument part="wheel" awards={profileAwardGroups} />}
+          {!summaryOnly && (
+            <BeautifulGameLoadingSummaryInstrument
+              part="wheel"
+              awards={profileAwardGroups}
+              samples={profileAwardSamples}
+              onSamplesChange={setProfileAwardSamples}
+            />
+          )}
           <div className="landing-profile__proof">
             <p className="landing-profile__bio landing-profile__bio--details">
               <strong>Research and Development</strong>, StageCraft team at
@@ -12938,8 +13050,13 @@ function LandingProfileSection({ summaryOnly = false } = {}) {
             </p>
           </div>
         </div>
-        {!summaryOnly && <LandingProfileAwards items={RESUME.awards} />}
-        {!summaryOnly && <LandingProfileAwardClockConnections awards={profileAwardGroups} />}
+        {!summaryOnly && <LandingProfileAwards items={RESUME.awards} samples={profileAwardSamples} />}
+        {!summaryOnly && (
+          <LandingProfileAwardClockConnections
+            awards={profileAwardGroups}
+            samples={profileAwardSamples}
+          />
+        )}
       </div>
     </section>
   );
