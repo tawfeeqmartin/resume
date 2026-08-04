@@ -1193,6 +1193,15 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile {
   --landing-scale-u: min(1vw, 1.7778svh);
+  --secondary-orange: #d46c2f;
+  --secondary-violet: #704fa4;
+  --secondary-green: #347d62;
+  --secondary-vermilion: #c75543;
+  --secondary-blue-violet: #56539a;
+  --secondary-blue-green: #2f7d82;
+  --secondary-yellow-orange: #d49332;
+  --secondary-red-violet: #a45176;
+  --secondary-yellow-green: #81913f;
   --landing-award-icon-w: clamp(4rem, calc(var(--landing-scale-u) * 8.2), 6.9rem);
   --landing-award-icon-h: clamp(2.9rem, calc(var(--landing-scale-u) * 5.65), 4.75rem);
   --landing-award-label-size: clamp(0.32rem, calc(var(--landing-scale-u) * 0.76), 0.58rem);
@@ -1375,6 +1384,46 @@ const LANDING_VARIANT_CSS = `
   height: clamp(19rem, min(34vw, 43svh), 39rem);
   transform: none;
 }
+.landing-profile__static-wheel {
+  position: absolute;
+  inset: 7%;
+  z-index: 1;
+  border: 1px solid color-mix(in oklch, var(--ink), transparent 84%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, var(--paper) 0 18%, transparent 18.5%),
+    conic-gradient(
+      from -22deg,
+      var(--secondary-orange) 0deg 40deg,
+      var(--secondary-red-violet) 40deg 80deg,
+      var(--secondary-violet) 80deg 120deg,
+      var(--secondary-blue-violet) 120deg 160deg,
+      var(--secondary-blue-green) 160deg 200deg,
+      var(--secondary-green) 200deg 240deg,
+      var(--secondary-yellow-green) 240deg 280deg,
+      var(--secondary-yellow-orange) 280deg 320deg,
+      var(--secondary-orange) 320deg 360deg
+    );
+  opacity: 0.2;
+  filter: saturate(0.82);
+  box-shadow:
+    inset 0 0 0 clamp(2.6rem, 7vw, 6.4rem) color-mix(in oklch, var(--paper), transparent 66%),
+    inset 0 0 0 1px color-mix(in oklch, var(--ink), transparent 88%);
+}
+.landing-profile__static-wheel::before,
+.landing-profile__static-wheel::after {
+  content: "";
+  position: absolute;
+  border: 1px solid color-mix(in oklch, var(--ink), transparent 86%);
+  border-radius: 50%;
+}
+.landing-profile__static-wheel::before {
+  inset: 19%;
+}
+.landing-profile__static-wheel::after {
+  inset: 38%;
+  background: color-mix(in oklch, var(--paper), transparent 12%);
+}
 .landing-profile__instrument-canvas {
   display: block;
   width: 100%;
@@ -1390,19 +1439,11 @@ const LANDING_VARIANT_CSS = `
   pointer-events: none;
 }
 .landing-profile__clock-sampler {
-  fill: transparent;
-  stroke: rgba(5,6,8,0.92);
-  stroke-width: 1;
+  fill: var(--sample-color);
+  stroke: color-mix(in oklch, var(--sample-color), var(--ink) 34%);
+  stroke-width: 0.7;
   vector-effect: non-scaling-stroke;
-  mix-blend-mode: normal;
-}
-.landing-profile__clock-hand-line {
-  fill: none;
-  stroke: rgba(5,6,8,0.88);
-  stroke-width: 1;
-  stroke-linecap: square;
-  vector-effect: non-scaling-stroke;
-  mix-blend-mode: normal;
+  filter: drop-shadow(0 0.65px 0 color-mix(in oklch, var(--paper), transparent 20%));
 }
 .landing-profile__clock-connections {
   position: absolute;
@@ -1416,11 +1457,23 @@ const LANDING_VARIANT_CSS = `
 .landing-profile__clock-connection {
   fill: none;
   stroke: color-mix(in oklch, var(--sample-color, rgba(10,12,16,0.42)), #050608 58%);
-  stroke-width: 0.65;
-  stroke-dasharray: 5 5;
+  stroke-width: 0.7;
+  stroke-dasharray: 8 5 1.5 5;
   stroke-linecap: square;
   vector-effect: non-scaling-stroke;
-  opacity: 0.82;
+  opacity: 0.76;
+  mix-blend-mode: multiply;
+}
+.landing-profile__clock-connection--neighbor {
+  stroke: color-mix(in oklch, var(--sample-color), #050608 44%);
+  stroke-dasharray: 4 4 1 4;
+  opacity: 0.68;
+}
+.landing-profile__clock-crossover {
+  fill: var(--sample-color);
+  stroke: var(--paper);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
   mix-blend-mode: multiply;
 }
 .landing-profile__instrument-formula {
@@ -1612,7 +1665,7 @@ const LANDING_VARIANT_CSS = `
 }
 .landing-profile-award__fill--additive {
   fill: var(--award-sampled-color, var(--award-color-additive, var(--award-color, #245cff)));
-  mix-blend-mode: screen;
+  mix-blend-mode: multiply;
   opacity: 1;
 }
 .landing-profile-award[data-award-family="cannes"] .landing-profile-award__icon {
@@ -11055,7 +11108,7 @@ function landingProfileClockSamplerState(sample = {}, awardsOrCount = 9) {
   return { awardSamples, handLines, timeLabel };
 }
 
-function LandingProfileAwardClockSamplers({ awards = [] }) {
+function DynamicLandingProfileAwardClockSamplers({ awards = [] }) {
   const svgRef = useRef(null);
   const awardCount = awards.length || 9;
   const [sample, setSample] = useState(() => ({ frame: 0 }));
@@ -11157,7 +11210,7 @@ function LandingProfileAwardClockSamplers({ awards = [] }) {
   );
 }
 
-function LandingProfileAwardClockConnections({ awards = [] }) {
+function DynamicLandingProfileAwardClockConnections({ awards = [] }) {
   const svgRef = useRef(null);
   const awardCount = awards.length || 9;
   const [geometry, setGeometry] = useState({
@@ -11282,33 +11335,195 @@ function LandingProfileAwardClockConnections({ awards = [] }) {
   );
 }
 
-function BeautifulGameLoadingSummaryInstrument({ part, awards = [] }) {
-  const hostRef = useRef(null);
+const LANDING_AWARD_SECONDARY_PALETTE = [
+  { primary: 'var(--secondary-orange)', neighbor: 'var(--secondary-blue-violet)', crossover: 'var(--secondary-blue-green)' },
+  { primary: 'var(--secondary-violet)', neighbor: 'var(--secondary-yellow-orange)', crossover: 'var(--secondary-green)' },
+  { primary: 'var(--secondary-green)', neighbor: 'var(--secondary-red-violet)', crossover: 'var(--secondary-orange)' },
+  { primary: 'var(--secondary-vermilion)', neighbor: 'var(--secondary-blue-green)', crossover: 'var(--secondary-yellow-green)' },
+  { primary: 'var(--secondary-blue-violet)', neighbor: 'var(--secondary-yellow-orange)', crossover: 'var(--secondary-green)' },
+  { primary: 'var(--secondary-blue-green)', neighbor: 'var(--secondary-red-violet)', crossover: 'var(--secondary-orange)' },
+  { primary: 'var(--secondary-yellow-orange)', neighbor: 'var(--secondary-blue-violet)', crossover: 'var(--secondary-blue-green)' },
+  { primary: 'var(--secondary-red-violet)', neighbor: 'var(--secondary-yellow-green)', crossover: 'var(--secondary-orange)' },
+  { primary: 'var(--secondary-yellow-green)', neighbor: 'var(--secondary-red-violet)', crossover: 'var(--secondary-violet)' },
+];
+
+const LANDING_AWARD_STATIC_POINTS = [
+  { x: 17, y: 51 },
+  { x: 24, y: 34 },
+  { x: 31, y: 69 },
+  { x: 40, y: 22 },
+  { x: 50, y: 51 },
+  { x: 60, y: 78 },
+  { x: 69, y: 32 },
+  { x: 77, y: 66 },
+  { x: 83, y: 47 },
+];
+
+function landingProfileStaticAwardState(awardsOrCount = 9) {
+  const awards = Array.isArray(awardsOrCount) ? awardsOrCount : [];
+  const count = Math.max(1, Math.round(awards.length || awardsOrCount || 9));
+  return Array.from({ length: count }, (_, awardIndex) => {
+    const point = LANDING_AWARD_STATIC_POINTS[awardIndex % LANDING_AWARD_STATIC_POINTS.length];
+    const palette = LANDING_AWARD_SECONDARY_PALETTE[awardIndex % LANDING_AWARD_SECONDARY_PALETTE.length];
+    return {
+      ...point,
+      ...palette,
+      awardIndex,
+      family: awards[awardIndex]?.family,
+    };
+  });
+}
+
+function landingProfileAwardPaletteStyle(index) {
+  const palette = LANDING_AWARD_SECONDARY_PALETTE[index % LANDING_AWARD_SECONDARY_PALETTE.length];
+  return {
+    '--award-color': palette.primary,
+    '--award-color-alt': palette.neighbor,
+    '--award-color-additive': palette.crossover,
+  };
+}
+
+function LandingProfileAwardClockSamplers({ awards = [] }) {
+  const samples = landingProfileStaticAwardState(awards.length ? awards : 9);
+  return (
+    <svg
+      className="landing-profile__clock-samplers"
+      viewBox="0 0 100 100"
+      aria-hidden="true"
+    >
+      {samples.map((sample) => (
+        <circle
+          key={`static-award-sampler-${sample.awardIndex}`}
+          className="landing-profile__clock-sampler"
+          data-award-sampler-index={sample.awardIndex}
+          cx={sample.x}
+          cy={sample.y}
+          r="1.62"
+          style={{ '--sample-color': sample.primary }}
+        />
+      ))}
+    </svg>
+  );
+}
+
+function LandingProfileAwardClockConnections({ awards = [] }) {
+  const svgRef = useRef(null);
+  const awardCount = awards.length || 9;
+  const [geometry, setGeometry] = useState({ width: 1, height: 1, lines: [] });
 
   useEffect(() => {
-    let dispose = () => {};
-    let cancelled = false;
-    const threeLoader = window.__loadThreeBundle || (() => window.__threePromise);
-    Promise.resolve(threeLoader?.()).then((bundle) => {
-      if (cancelled || !hostRef.current || !bundle?.THREE) return;
-      dispose = mountProfileSamplerPart(hostRef.current, bundle.THREE, part);
-    }).catch((error) => {
-      console.error('[loading-summary] Beautiful Game sampler failed', error);
-    });
-    return () => {
-      cancelled = true;
-      dispose();
+    let frameId = 0;
+    const update = () => {
+      frameId = 0;
+      const svg = svgRef.current;
+      const content = svg?.closest('.landing-profile__content');
+      const awardNodes = content?.querySelectorAll('.landing-profile-award');
+      if (!svg || !content || !awardNodes?.length) return;
+      const contentRect = content.getBoundingClientRect();
+      const samples = landingProfileStaticAwardState(awards.length ? awards : awardCount);
+      const lines = samples.slice(0, awardCount).map((sample, index) => {
+        const targetNode = awardNodes[index]?.querySelector('.landing-profile-award__icon') || awardNodes[index];
+        const samplerNode = content.querySelector(`.landing-profile__clock-sampler[data-award-sampler-index="${index}"]`);
+        if (!targetNode || !samplerNode) return null;
+        const samplerRect = samplerNode.getBoundingClientRect();
+        const targetRect = targetNode.getBoundingClientRect();
+        const x1 = samplerRect.left + samplerRect.width * 0.5 - contentRect.left;
+        const y1 = samplerRect.top + samplerRect.height * 0.5 - contentRect.top;
+        const x2 = targetRect.left + targetRect.width * 0.5 - contentRect.left;
+        const y2 = targetRect.top + targetRect.height * 0.52 - contentRect.top;
+        const length = Math.max(1, Math.hypot(x2 - x1, y2 - y1));
+        const split = 0.56 + ((index % 3) - 1) * 0.025;
+        const gapHalf = Math.min(0.035, Math.max(0.012, 7 / length));
+        const at = (amount) => ({
+          x: x1 + (x2 - x1) * amount,
+          y: y1 + (y2 - y1) * amount,
+        });
+        return {
+          id: `static-clock-award-${index}`,
+          primary: sample.primary,
+          neighbor: sample.neighbor,
+          crossover: sample.crossover,
+          from: { x: x1, y: y1 },
+          breakStart: at(split - gapHalf),
+          breakEnd: at(split + gapHalf),
+          crossoverPoint: at(split),
+          to: { x: x2, y: y2 },
+        };
+      }).filter(Boolean);
+      setGeometry({
+        width: Math.max(1, contentRect.width),
+        height: Math.max(1, contentRect.height),
+        lines,
+      });
     };
-  }, [part]);
+    const schedule = () => {
+      if (!frameId) frameId = window.requestAnimationFrame(update);
+    };
+    const content = svgRef.current?.closest('.landing-profile__content');
+    const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(schedule);
+    if (content && resizeObserver) resizeObserver.observe(content);
+    window.addEventListener('resize', schedule, { passive: true });
+    document.fonts?.ready?.then(schedule).catch(() => {});
+    schedule();
+    return () => {
+      if (frameId) window.cancelAnimationFrame(frameId);
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', schedule);
+    };
+  }, [awardCount]);
 
+  return (
+    <svg
+      className="landing-profile__clock-connections"
+      viewBox={`0 0 ${geometry.width} ${geometry.height}`}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      ref={svgRef}
+    >
+      {geometry.lines.map((line) => (
+        <React.Fragment key={line.id}>
+          <line
+            className="landing-profile__clock-connection"
+            x1={line.from.x}
+            y1={line.from.y}
+            x2={line.breakStart.x}
+            y2={line.breakStart.y}
+            style={{ '--sample-color': line.primary }}
+          />
+          <line
+            className="landing-profile__clock-connection landing-profile__clock-connection--neighbor"
+            x1={line.breakEnd.x}
+            y1={line.breakEnd.y}
+            x2={line.to.x}
+            y2={line.to.y}
+            style={{ '--sample-color': line.neighbor }}
+          />
+          <circle
+            className="landing-profile__clock-crossover"
+            cx={line.crossoverPoint.x}
+            cy={line.crossoverPoint.y}
+            r="1.7"
+            style={{ '--sample-color': line.crossover }}
+          />
+        </React.Fragment>
+      ))}
+    </svg>
+  );
+}
+
+function BeautifulGameLoadingSummaryInstrument({ part, awards = [] }) {
   return (
     <div
       className={`landing-profile__instrument landing-profile__instrument--${part}`}
       data-instrument-part={part}
       aria-hidden="true"
-      ref={hostRef}
     >
-      {part === 'wheel' && <LandingProfileAwardClockSamplers awards={awards} />}
+      {part === 'wheel' && (
+        <>
+          <div className="landing-profile__static-wheel" />
+          <LandingProfileAwardClockSamplers awards={awards} />
+        </>
+      )}
     </div>
   );
 }
@@ -12612,6 +12827,7 @@ function LandingProfileAwards({ items = [] }) {
             className="landing-profile-award"
             data-award-family={award.family}
             key={`${award.family}-${index}`}
+            style={landingProfileAwardPaletteStyle(index)}
           >
             <LandingAwardIcon award={award} />
             <span className="landing-profile-award__title">{award.title}</span>
