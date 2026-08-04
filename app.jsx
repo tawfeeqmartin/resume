@@ -1384,46 +1384,6 @@ const LANDING_VARIANT_CSS = `
   height: clamp(19rem, min(34vw, 43svh), 39rem);
   transform: none;
 }
-.landing-profile__static-wheel {
-  position: absolute;
-  inset: 7%;
-  z-index: 1;
-  border: 1px solid color-mix(in oklch, var(--ink), transparent 84%);
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 50%, var(--paper) 0 18%, transparent 18.5%),
-    conic-gradient(
-      from -22deg,
-      var(--secondary-orange) 0deg 40deg,
-      var(--secondary-red-violet) 40deg 80deg,
-      var(--secondary-violet) 80deg 120deg,
-      var(--secondary-blue-violet) 120deg 160deg,
-      var(--secondary-blue-green) 160deg 200deg,
-      var(--secondary-green) 200deg 240deg,
-      var(--secondary-yellow-green) 240deg 280deg,
-      var(--secondary-yellow-orange) 280deg 320deg,
-      var(--secondary-orange) 320deg 360deg
-    );
-  opacity: 0.2;
-  filter: saturate(0.82);
-  box-shadow:
-    inset 0 0 0 clamp(2.6rem, 7vw, 6.4rem) color-mix(in oklch, var(--paper), transparent 66%),
-    inset 0 0 0 1px color-mix(in oklch, var(--ink), transparent 88%);
-}
-.landing-profile__static-wheel::before,
-.landing-profile__static-wheel::after {
-  content: "";
-  position: absolute;
-  border: 1px solid color-mix(in oklch, var(--ink), transparent 86%);
-  border-radius: 50%;
-}
-.landing-profile__static-wheel::before {
-  inset: 19%;
-}
-.landing-profile__static-wheel::after {
-  inset: 38%;
-  background: color-mix(in oklch, var(--paper), transparent 12%);
-}
 .landing-profile__instrument-canvas {
   display: block;
   width: 100%;
@@ -10712,6 +10672,83 @@ function createLandingTraditionalColorWheelMaterial(THREE) {
   });
 }
 
+function mountProfileStaticColorWheel(host, THREE) {
+  if (!host || !THREE) return () => {};
+  const source = createMatchSculptureInstrumentSource(THREE);
+  const renderer = new THREE.WebGLRenderer({
+    alpha: true,
+    antialias: true,
+    powerPreference: 'high-performance',
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setClearColor(0x000000, 0);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.domElement.className = 'landing-profile__instrument-canvas';
+  host
+    .querySelectorAll('.landing-profile__instrument-canvas')
+    .forEach((node) => node.remove());
+  host.prepend(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const root = new THREE.Group();
+  scene.add(root);
+  const camera = new THREE.OrthographicCamera(-80, 80, 80, -80, 0.1, 100);
+  camera.position.set(0, 0, 10);
+  const fieldUnit = { x: 0.5, y: 0.5 };
+  const wheel = source.drawMatchSculptureColorWheelDisk(
+    { selectorRoot: root },
+    root,
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(1, 0, 0),
+    new THREE.Vector3(0, 1, 0),
+    66,
+    NaN,
+    {
+      fieldUnit,
+      centerColor: source.matchSculptureCieDisplayColorForFieldUnit(fieldUnit),
+      opacity: 1,
+      segments: 96,
+    },
+  );
+  if (wheel?.material) {
+    wheel.material.dispose?.();
+    wheel.material = createLandingTraditionalColorWheelMaterial(THREE);
+  }
+
+  const resize = () => {
+    const rect = host.getBoundingClientRect();
+    const width = Math.max(1, rect.width);
+    const height = Math.max(1, rect.height);
+    const aspect = width / height;
+    const viewHeight = Math.max(150, 150 / aspect);
+    const viewWidth = viewHeight * aspect;
+    camera.left = viewWidth / -2;
+    camera.right = viewWidth / 2;
+    camera.top = viewHeight / 2;
+    camera.bottom = viewHeight / -2;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height, false);
+    renderer.render(scene, camera);
+  };
+  const observer = new ResizeObserver(resize);
+  observer.observe(host);
+  resize();
+
+  return () => {
+    observer.disconnect();
+    scene.traverse((object) => {
+      object.geometry?.dispose?.();
+      if (Array.isArray(object.material)) {
+        object.material.forEach((material) => material.dispose?.());
+      } else {
+        object.material?.dispose?.();
+      }
+    });
+    renderer.dispose();
+    renderer.domElement.remove();
+  };
+}
+
 function mountProfileSamplerPart(host, THREE, part) {
   if (!host || !THREE) return () => {};
   const source = createMatchSculptureInstrumentSource(THREE);
@@ -11348,15 +11385,15 @@ const LANDING_AWARD_SECONDARY_PALETTE = [
 ];
 
 const LANDING_AWARD_STATIC_POINTS = [
-  { x: 17, y: 51 },
-  { x: 24, y: 34 },
-  { x: 31, y: 69 },
-  { x: 40, y: 22 },
-  { x: 50, y: 51 },
-  { x: 60, y: 78 },
-  { x: 69, y: 32 },
-  { x: 77, y: 66 },
-  { x: 83, y: 47 },
+  { x: 72, y: 38 },
+  { x: 50, y: 78 },
+  { x: 29, y: 37 },
+  { x: 82, y: 46 },
+  { x: 34, y: 70 },
+  { x: 18, y: 50 },
+  { x: 61, y: 27 },
+  { x: 76, y: 63 },
+  { x: 45, y: 21 },
 ];
 
 function landingProfileStaticAwardState(awardsOrCount = 9) {
@@ -11512,18 +11549,32 @@ function LandingProfileAwardClockConnections({ awards = [] }) {
 }
 
 function BeautifulGameLoadingSummaryInstrument({ part, awards = [] }) {
+  const hostRef = useRef(null);
+
+  useEffect(() => {
+    let dispose = () => {};
+    let cancelled = false;
+    const threeLoader = window.__loadThreeBundle || (() => window.__threePromise);
+    Promise.resolve(threeLoader?.()).then((bundle) => {
+      if (cancelled || !hostRef.current || !bundle?.THREE) return;
+      dispose = mountProfileStaticColorWheel(hostRef.current, bundle.THREE);
+    }).catch((error) => {
+      console.error('[loading-summary] Beautiful Game wheel failed', error);
+    });
+    return () => {
+      cancelled = true;
+      dispose();
+    };
+  }, [part]);
+
   return (
     <div
       className={`landing-profile__instrument landing-profile__instrument--${part}`}
       data-instrument-part={part}
       aria-hidden="true"
+      ref={hostRef}
     >
-      {part === 'wheel' && (
-        <>
-          <div className="landing-profile__static-wheel" />
-          <LandingProfileAwardClockSamplers awards={awards} />
-        </>
-      )}
+      {part === 'wheel' && <LandingProfileAwardClockSamplers awards={awards} />}
     </div>
   );
 }
