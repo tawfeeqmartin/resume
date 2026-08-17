@@ -4242,7 +4242,6 @@ function BlackbirdFeature({
 function HandOfGodFeature({
   videoSrc = "media/hand-of-god-demo-720.mp4",
   poster = "media/hand-of-god-demo-poster.jpg",
-  interactiveSrc = "media/interactive/hand-of-god.html",
   label = "08 · PERSONAL SKETCHES · THE BEAUTIFUL GAME / HAND OF GOD",
 }) {
   useEffect(() => {
@@ -4287,9 +4286,6 @@ function HandOfGodFeature({
             <p className="mono hand-of-god-feature__meta">
               BEAUTIFUL GAME · MATCH DATA · AI VIDEO ANALYSIS · CINEMATIC EXPORTS
             </p>
-            <a className="hand-of-god-feature__link mono" href={interactiveSrc} target="_blank" rel="noreferrer">
-              Open interactive prototype
-            </a>
           </div>
         </aside>
       </div>
